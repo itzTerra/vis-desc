@@ -1,0 +1,42 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "gen-types": "npx openapi-typescript http://api:8000/api/openapi.json -o ./types/schema.d.ts"
+  },
+  "dependencies": {
+    "@nuxt/icon": "2.0.0",
+    "@tailwindcss/vite": "^4.0.12",
+    "@vueuse/nuxt": "^13.9.0",
+    "daisyui": "^5.0.0",
+    "lodash-es": "^4.17.21",
+    "nuxt": "^4.0.3",
+    "tailwindcss": "^4.0.12",
+    "vue": "^3.5.13",
+    "vue-pdf-embed": "^2.1.2",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@iconify-json/lucide": "^1.2.66",
+    "@nuxt/eslint-config": "0.5.7",
+    "@types/lodash-es": "^4",
+    "@typescript-eslint/parser": "^8.24.0",
+    "eslint": "^9.20.1",
+    "eslint-import-resolver-typescript": "^3.8.0",
+    "eslint-plugin-import-x": "^4.6.1",
+    "eslint-plugin-vue": "^9.32.0",
+    "globals": "^15.15.0",
+    "nuxt-open-fetch": "^0.13.3",
+    "openapi-typescript": "^7.9.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0",
+    "vue-eslint-parser": "^9.4.3"
+  },
+  "packageManager": "pnpm@10.12.2+sha512.a32540185b964ee30bb4e979e405adc6af59226b438ee4cc19f9e8773667a66d302f5bfee60a39d3cac69e35e4b96e708a71dd002b7e9359c4112a1722ac323f"
+}

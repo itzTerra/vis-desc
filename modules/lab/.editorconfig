@@ -1,0 +1,27 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+
+[*.py]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*{.js,.ts,.vue,.json,.scss,.css,.html,.mjs,.mts,.cjs,.jsx,.tsx}]
+tab_width = 2
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+ij_vue_tab_width = 2
+ij_vue_indent_size = 2
+ij_vue_continuation_indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+insert_final_newline = false
+indent_style = space
+indent_size = 3

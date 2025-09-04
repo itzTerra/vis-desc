@@ -1,0 +1,24 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Build debug API",
+      "command": "docker compose -f docker-compose.yml -f docker-compose.debug.yml build api",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "Run debug API",
+      "command": "bash",
+      "args": [
+        "-c",
+        "trap \"docker compose -f docker-compose.yml -f docker-compose.debug.yml down api\" EXIT; docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d api && docker logs -f illustrator-app-api-1"
+      ],
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+  ]
+}

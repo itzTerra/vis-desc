@@ -1,0 +1,7 @@
+ENV=production
+DJANGO_DEBUG=off
+DJANGO_SETTINGS_MODULE=api.settings.production
+DJANGO_ALLOWED_HOSTS=localhost:8000,api,localhost,0.0.0.0,127.0.0.1
+DJANGO_SUPERUSER_USERNAME=super_admin
+DJANGO_SUPERUSER_PASSWORD=default_superuser_password
+CACHE=on

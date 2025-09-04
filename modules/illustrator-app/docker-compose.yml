@@ -1,0 +1,54 @@
+volumes:
+  postgres_data: {}
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./compose/api/Dockerfile
+      target: dev
+    env_file:
+      - .envs/.${ENVIRONMENT:-local}/.api
+    image: api
+    volumes:
+      - ./services/api/:/app
+      - ${API_DATA:-./data}:/app/data:cached
+    ports:
+      - ${API_PORT:-8000}:8000
+    stop_grace_period: 3s
+    networks:
+      - default
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./compose/frontend/Dockerfile
+      target: dev
+    env_file:
+      - .envs/.${ENVIRONMENT:-local}/.frontend
+    image: frontend
+    volumes:
+      - ./services/frontend/:/app
+    ports:
+      - ${FE_PORT:-3000}:3000
+      - "24678:24678"
+    networks:
+      - default
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy noeviction

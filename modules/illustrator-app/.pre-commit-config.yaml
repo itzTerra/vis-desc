@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.6.3
+    hooks:
+      - id: uv-lock
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        exclude: .*api\/.*migrations\/.*
+        args: [--fix]
+      - id: ruff-format
+        exclude: .*api\/.*migrations\/.*
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.20.1
+    hooks:
+      - id: eslint
+        files: \.([jt]sx?|vue)$ # *.js, *.jsx, *.ts, *.tsx and *.vue
+        types: [file]
+        exclude: schema.d.ts
+        additional_dependencies:
+          - eslint@^9.10
+        args: [--fix]

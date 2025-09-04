@@ -1,0 +1,5594 @@
+[
+  {
+    "index": 0,
+    "action": "saved",
+    "slug": "peter-pan"
+  },
+  {
+    "index": 1,
+    "action": "saved",
+    "slug": "o-pioneers"
+  },
+  {
+    "index": 2,
+    "action": "skipped"
+  },
+  {
+    "index": 3,
+    "action": "saved",
+    "slug": "herland"
+  },
+  {
+    "index": 4,
+    "action": "saved",
+    "slug": "the-time-machine"
+  },
+  {
+    "index": 5,
+    "action": "saved",
+    "slug": "the-war-of-the-worlds"
+  },
+  {
+    "index": 6,
+    "action": "skipped"
+  },
+  {
+    "index": 7,
+    "action": "skipped"
+  },
+  {
+    "index": 8,
+    "action": "skipped",
+    "slug": "anne-of-green-gables"
+  },
+  {
+    "index": 9,
+    "action": "skipped",
+    "slug": "anne-of-avonlea"
+  },
+  {
+    "index": 10,
+    "action": "skipped",
+    "slug": "anne-of-the-island"
+  },
+  {
+    "index": 11,
+    "action": "saved",
+    "slug": "the-marvelous-land-of-oz"
+  },
+  {
+    "index": 12,
+    "action": "saved",
+    "slug": "the-wonderful-wizard-of-oz"
+  },
+  {
+    "index": 13,
+    "action": "skipped"
+  },
+  {
+    "index": 14,
+    "action": "skipped"
+  },
+  {
+    "index": 15,
+    "action": "saved",
+    "slug": "a-princess-of-mars"
+  },
+  {
+    "index": 16,
+    "action": "saved",
+    "slug": "the-gods-of-mars"
+  },
+  {
+    "index": 17,
+    "action": "saved",
+    "slug": "the-warlord-of-mars"
+  },
+  {
+    "index": 18,
+    "action": "saved",
+    "slug": "thuvia-maid-of-mars"
+  },
+  {
+    "index": 19,
+    "action": "saved",
+    "slug": "jungle-tales-of-tarzan"
+  },
+  {
+    "index": 20,
+    "action": "saved",
+    "slug": "the-return-of-sherlock-holmes"
+  },
+  {
+    "index": 21,
+    "action": "skipped",
+    "slug": "freckles"
+  },
+  {
+    "index": 22,
+    "action": "skipped"
+  },
+  {
+    "index": 23,
+    "action": "saved",
+    "slug": "at-the-earth-s-core"
+  },
+  {
+    "index": 24,
+    "action": "saved",
+    "slug": "the-poison-belt"
+  },
+  {
+    "index": 25,
+    "action": "saved",
+    "slug": "the-lost-world"
+  },
+  {
+    "index": 26,
+    "action": "skipped"
+  },
+  {
+    "index": 27,
+    "action": "saved",
+    "slug": "the-lost-continent"
+  },
+  {
+    "index": 28,
+    "action": "saved",
+    "slug": "the-island-of-doctor-moreau"
+  },
+  {
+    "index": 29,
+    "action": "saved",
+    "slug": "the-insidious-dr-fu-manchu"
+  },
+  {
+    "index": 30,
+    "action": "saved",
+    "slug": "the-innocence-of-father-brown"
+  },
+  {
+    "index": 31,
+    "action": "saved",
+    "slug": "the-call-of-the-wild"
+  },
+  {
+    "index": 32,
+    "action": "saved",
+    "slug": "the-return-of-sherlock-holmes"
+  },
+  {
+    "index": 33,
+    "action": "saved",
+    "slug": "the-wisdom-of-father-brown"
+  },
+  {
+    "index": 34,
+    "action": "skipped",
+    "slug": "dear-enemy"
+  },
+  {
+    "index": 35,
+    "action": "saved",
+    "slug": "my-antonia"
+  },
+  {
+    "index": 36,
+    "action": "skipped"
+  },
+  {
+    "index": 37,
+    "action": "skipped"
+  },
+  {
+    "index": 38,
+    "action": "skipped",
+    "slug": "dream-days"
+  },
+  {
+    "index": 39,
+    "action": "saved",
+    "slug": "the-lost-continent"
+  },
+  {
+    "index": 40,
+    "action": "skipped"
+  },
+  {
+    "index": 41,
+    "action": "saved",
+    "slug": "the-wind-in-the-willows"
+  },
+  {
+    "index": 42,
+    "action": "skipped"
+  },
+  {
+    "index": 43,
+    "action": "skipped"
+  },
+  {
+    "index": 44,
+    "action": "skipped"
+  },
+  {
+    "index": 45,
+    "action": "skipped"
+  },
+  {
+    "index": 46,
+    "action": "skipped"
+  },
+  {
+    "index": 47,
+    "action": "skipped"
+  },
+  {
+    "index": 48,
+    "action": "skipped"
+  },
+  {
+    "index": 49,
+    "action": "saved",
+    "slug": "three-elephant-power-and-other-stories"
+  },
+  {
+    "index": 50,
+    "action": "skipped"
+  },
+  {
+    "index": 51,
+    "action": "saved",
+    "slug": "before-adam"
+  },
+  {
+    "index": 52,
+    "action": "saved",
+    "slug": "bunner-sisters"
+  },
+  {
+    "index": 53,
+    "action": "skipped",
+    "slug": "the-golden-road"
+  },
+  {
+    "index": 54,
+    "action": "saved",
+    "slug": "moran-of-the-lady-letty"
+  },
+  {
+    "index": 55,
+    "action": "skipped"
+  },
+  {
+    "index": 56,
+    "action": "skipped"
+  },
+  {
+    "index": 57,
+    "action": "skipped"
+  },
+  {
+    "index": 58,
+    "action": "skipped"
+  },
+  {
+    "index": 59,
+    "action": "saved",
+    "slug": "the-mucker"
+  },
+  {
+    "index": 60,
+    "action": "saved",
+    "slug": "the-burial-of-the-guns"
+  },
+  {
+    "index": 61,
+    "action": "skipped"
+  },
+  {
+    "index": 62,
+    "action": "skipped"
+  },
+  {
+    "index": 63,
+    "action": "skipped"
+  },
+  {
+    "index": 64,
+    "action": "skipped"
+  },
+  {
+    "index": 65,
+    "action": "skipped"
+  },
+  {
+    "index": 66,
+    "action": "skipped"
+  },
+  {
+    "index": 67,
+    "action": "skipped"
+  },
+  {
+    "index": 68,
+    "action": "skipped"
+  },
+  {
+    "index": 69,
+    "action": "skipped"
+  },
+  {
+    "index": 70,
+    "action": "skipped"
+  },
+  {
+    "index": 71,
+    "action": "skipped"
+  },
+  {
+    "index": 72,
+    "action": "skipped"
+  },
+  {
+    "index": 73,
+    "action": "saved",
+    "slug": "penrod"
+  },
+  {
+    "index": 74,
+    "action": "saved",
+    "slug": "the-magic-of-oz"
+  },
+  {
+    "index": 75,
+    "action": "saved",
+    "slug": "dorothy-and-the-wizard-in-oz"
+  },
+  {
+    "index": 76,
+    "action": "skipped"
+  },
+  {
+    "index": 77,
+    "action": "skipped",
+    "slug": "frivolous-cupid"
+  },
+  {
+    "index": 78,
+    "action": "skipped"
+  },
+  {
+    "index": 79,
+    "action": "saved",
+    "slug": "the-circular-staircase"
+  },
+  {
+    "index": 80,
+    "action": "skipped"
+  },
+  {
+    "index": 81,
+    "action": "skipped"
+  },
+  {
+    "index": 82,
+    "action": "saved",
+    "slug": "the-shadow-line-a-confession"
+  },
+  {
+    "index": 83,
+    "action": "saved",
+    "slug": "in-the-bishop-s-carriage"
+  },
+  {
+    "index": 84,
+    "action": "saved",
+    "slug": "ozma-of-oz-a-record-of-her-adventures-with-dorothy-gale-of-kansas-the-yellow-hen-the-scarecrow-the-tin-woodman-tiktok-the-cowardly-lion-and-the-hungry-tiger-besides-other-good-people-too-numerous-to-mention-faithfully-recorded-herein"
+  },
+  {
+    "index": 85,
+    "action": "saved",
+    "slug": "desert-gold"
+  },
+  {
+    "index": 86,
+    "action": "saved",
+    "slug": "the-emerald-city-of-oz"
+  },
+  {
+    "index": 87,
+    "action": "saved",
+    "slug": "the-enchanted-island-of-yew-whereon-prince-marvel-encountered-the-high-ki-of-twi-and-other-surprising-people"
+  },
+  {
+    "index": 88,
+    "action": "skipped"
+  },
+  {
+    "index": 89,
+    "action": "skipped"
+  },
+  {
+    "index": 90,
+    "action": "saved",
+    "slug": "the-end-of-the-tether"
+  },
+  {
+    "index": 91,
+    "action": "skipped"
+  },
+  {
+    "index": 92,
+    "action": "skipped",
+    "slug": "an-inland-voyage"
+  },
+  {
+    "index": 93,
+    "action": "saved",
+    "slug": "tales-of-terror-and-mystery"
+  },
+  {
+    "index": 94,
+    "action": "skipped"
+  },
+  {
+    "index": 95,
+    "action": "skipped"
+  },
+  {
+    "index": 96,
+    "action": "saved",
+    "slug": "under-the-andes"
+  },
+  {
+    "index": 97,
+    "action": "saved",
+    "slug": "the-land-that-time-forgot"
+  },
+  {
+    "index": 98,
+    "action": "saved",
+    "slug": "the-people-that-time-forgot"
+  },
+  {
+    "index": 99,
+    "action": "skipped"
+  },
+  {
+    "index": 100,
+    "action": "skipped"
+  },
+  {
+    "index": 101,
+    "action": "saved",
+    "slug": "rewards-and-fairies"
+  },
+  {
+    "index": 102,
+    "action": "saved",
+    "slug": "the-thirty-nine-steps"
+  },
+  {
+    "index": 103,
+    "action": "saved",
+    "slug": "greenmantle"
+  },
+  {
+    "index": 104,
+    "action": "skipped"
+  },
+  {
+    "index": 105,
+    "action": "skipped"
+  },
+  {
+    "index": 106,
+    "action": "saved",
+    "slug": "gulliver-of-mars"
+  },
+  {
+    "index": 107,
+    "action": "saved",
+    "slug": "pellucidar"
+  },
+  {
+    "index": 108,
+    "action": "saved",
+    "slug": "prester-john"
+  },
+  {
+    "index": 109,
+    "action": "skipped"
+  },
+  {
+    "index": 110,
+    "action": "skipped"
+  },
+  {
+    "index": 111,
+    "action": "skipped"
+  },
+  {
+    "index": 112,
+    "action": "skipped"
+  },
+  {
+    "index": 113,
+    "action": "skipped"
+  },
+  {
+    "index": 114,
+    "action": "skipped"
+  },
+  {
+    "index": 115,
+    "action": "skipped"
+  },
+  {
+    "index": 116,
+    "action": "skipped"
+  },
+  {
+    "index": 117,
+    "action": "skipped"
+  },
+  {
+    "index": 118,
+    "action": "skipped"
+  },
+  {
+    "index": 119,
+    "action": "skipped"
+  },
+  {
+    "index": 120,
+    "action": "skipped"
+  },
+  {
+    "index": 121,
+    "action": "skipped"
+  },
+  {
+    "index": 122,
+    "action": "saved",
+    "slug": "burning-daylight"
+  },
+  {
+    "index": 123,
+    "action": "skipped"
+  },
+  {
+    "index": 124,
+    "action": "saved",
+    "slug": "arizona-nights"
+  },
+  {
+    "index": 125,
+    "action": "saved",
+    "slug": "the-moon-pool"
+  },
+  {
+    "index": 126,
+    "action": "saved",
+    "slug": "when-the-sleeper-wakes"
+  },
+  {
+    "index": 127,
+    "action": "saved",
+    "slug": "the-war-in-the-air"
+  },
+  {
+    "index": 128,
+    "action": "skipped"
+  },
+  {
+    "index": 129,
+    "action": "skipped"
+  },
+  {
+    "index": 130,
+    "action": "skipped"
+  },
+  {
+    "index": 131,
+    "action": "skipped"
+  },
+  {
+    "index": 132,
+    "action": "saved",
+    "slug": "robin-hood"
+  },
+  {
+    "index": 133,
+    "action": "skipped"
+  },
+  {
+    "index": 134,
+    "action": "saved",
+    "slug": "the-story-of-the-amulet"
+  },
+  {
+    "index": 135,
+    "action": "skipped"
+  },
+  {
+    "index": 136,
+    "action": "skipped"
+  },
+  {
+    "index": 137,
+    "action": "skipped"
+  },
+  {
+    "index": 138,
+    "action": "skipped"
+  },
+  {
+    "index": 139,
+    "action": "saved",
+    "slug": "the-mysterious-affair-at-styles"
+  },
+  {
+    "index": 140,
+    "action": "skipped"
+  },
+  {
+    "index": 141,
+    "action": "skipped"
+  },
+  {
+    "index": 142,
+    "action": "skipped"
+  },
+  {
+    "index": 143,
+    "action": "skipped"
+  },
+  {
+    "index": 144,
+    "action": "skipped"
+  },
+  {
+    "index": 145,
+    "action": "skipped"
+  },
+  {
+    "index": 146,
+    "action": "skipped"
+  },
+  {
+    "index": 147,
+    "action": "saved",
+    "slug": "her-father-s-daughter"
+  },
+  {
+    "index": 148,
+    "action": "skipped"
+  },
+  {
+    "index": 149,
+    "action": "saved",
+    "slug": "white-fang"
+  },
+  {
+    "index": 150,
+    "action": "skipped",
+    "slug": "tales-of-the-fish-patrol"
+  },
+  {
+    "index": 151,
+    "action": "skipped"
+  },
+  {
+    "index": 152,
+    "action": "skipped"
+  },
+  {
+    "index": 153,
+    "action": "skipped"
+  },
+  {
+    "index": 154,
+    "action": "saved",
+    "slug": "tom-swift-and-his-electric-runabout-or-the-speediest-car-on-the-road"
+  },
+  {
+    "index": 155,
+    "action": "saved",
+    "slug": "tom-swift-and-his-sky-racer-or-the-quickest-flight-on-record"
+  },
+  {
+    "index": 156,
+    "action": "saved",
+    "slug": "tom-swift-and-his-air-glider-or-seeking-the-platinum-treasure"
+  },
+  {
+    "index": 157,
+    "action": "skipped"
+  },
+  {
+    "index": 158,
+    "action": "skipped"
+  },
+  {
+    "index": 159,
+    "action": "saved",
+    "slug": "the-patchwork-girl-of-oz"
+  },
+  {
+    "index": 160,
+    "action": "skipped"
+  },
+  {
+    "index": 161,
+    "action": "skipped"
+  },
+  {
+    "index": 162,
+    "action": "skipped"
+  },
+  {
+    "index": 163,
+    "action": "skipped"
+  },
+  {
+    "index": 164,
+    "action": "skipped"
+  },
+  {
+    "index": 165,
+    "action": "skipped"
+  },
+  {
+    "index": 166,
+    "action": "skipped"
+  },
+  {
+    "index": 167,
+    "action": "skipped"
+  },
+  {
+    "index": 168,
+    "action": "skipped"
+  },
+  {
+    "index": 169,
+    "action": "saved",
+    "slug": "the-first-men-in-the-moon"
+  },
+  {
+    "index": 170,
+    "action": "skipped"
+  },
+  {
+    "index": 171,
+    "action": "skipped"
+  },
+  {
+    "index": 172,
+    "action": "saved",
+    "slug": "the-lone-star-ranger-a-romance-of-the-border"
+  },
+  {
+    "index": 173,
+    "action": "saved",
+    "slug": "the-night-born"
+  },
+  {
+    "index": 174,
+    "action": "saved",
+    "slug": "joe-wilson-and-his-mates"
+  },
+  {
+    "index": 175,
+    "action": "skipped"
+  },
+  {
+    "index": 176,
+    "action": "skipped"
+  },
+  {
+    "index": 177,
+    "action": "saved",
+    "slug": "within-the-tides-tales"
+  },
+  {
+    "index": 178,
+    "action": "skipped"
+  },
+  {
+    "index": 179,
+    "action": "skipped"
+  },
+  {
+    "index": 180,
+    "action": "saved",
+    "slug": "the-world-set-free"
+  },
+  {
+    "index": 181,
+    "action": "skipped"
+  },
+  {
+    "index": 182,
+    "action": "saved",
+    "slug": "the-strength-of-the-strong"
+  },
+  {
+    "index": 183,
+    "action": "saved",
+    "slug": "the-wallet-of-kai-lung"
+  },
+  {
+    "index": 184,
+    "action": "saved",
+    "slug": "the-mirror-of-kong-ho"
+  },
+  {
+    "index": 185,
+    "action": "skipped"
+  },
+  {
+    "index": 186,
+    "action": "saved",
+    "slug": "the-arrow-of-gold-a-story-between-two-notes"
+  },
+  {
+    "index": 187,
+    "action": "saved",
+    "slug": "rolf-in-the-woods"
+  },
+  {
+    "index": 188,
+    "action": "saved",
+    "slug": "the-light-of-the-western-stars"
+  },
+  {
+    "index": 189,
+    "action": "skipped"
+  },
+  {
+    "index": 190,
+    "action": "saved",
+    "slug": "the-research-magnificent"
+  },
+  {
+    "index": 191,
+    "action": "skipped"
+  },
+  {
+    "index": 192,
+    "action": "saved",
+    "slug": "typhoon"
+  },
+  {
+    "index": 193,
+    "action": "skipped"
+  },
+  {
+    "index": 194,
+    "action": "saved",
+    "slug": "the-chessmen-of-mars"
+  },
+  {
+    "index": 195,
+    "action": "saved",
+    "slug": "the-voyages-of-doctor-dolittle"
+  },
+  {
+    "index": 196,
+    "action": "skipped"
+  },
+  {
+    "index": 197,
+    "action": "saved",
+    "slug": "fire-tongue"
+  },
+  {
+    "index": 198,
+    "action": "skipped"
+  },
+  {
+    "index": 199,
+    "action": "skipped",
+    "slug": "jerry-of-the-islands"
+  },
+  {
+    "index": 200,
+    "action": "skipped"
+  },
+  {
+    "index": 201,
+    "action": "saved",
+    "slug": "dope"
+  },
+  {
+    "index": 202,
+    "action": "saved",
+    "slug": "the-return-of-dr-fu-manchu"
+  },
+  {
+    "index": 203,
+    "action": "skipped"
+  },
+  {
+    "index": 204,
+    "action": "skipped"
+  },
+  {
+    "index": 205,
+    "action": "skipped"
+  },
+  {
+    "index": 206,
+    "action": "skipped"
+  },
+  {
+    "index": 207,
+    "action": "saved",
+    "slug": "south-sea-tales"
+  },
+  {
+    "index": 208,
+    "action": "skipped"
+  },
+  {
+    "index": 209,
+    "action": "saved",
+    "slug": "the-adventures-of-jimmie-dale"
+  },
+  {
+    "index": 210,
+    "action": "skipped"
+  },
+  {
+    "index": 211,
+    "action": "saved",
+    "slug": "on-the-track"
+  },
+  {
+    "index": 212,
+    "action": "saved",
+    "slug": "the-heritage-of-the-desert-a-novel"
+  },
+  {
+    "index": 213,
+    "action": "skipped"
+  },
+  {
+    "index": 214,
+    "action": "saved",
+    "slug": "kai-lung-s-golden-hours"
+  },
+  {
+    "index": 215,
+    "action": "skipped"
+  },
+  {
+    "index": 216,
+    "action": "skipped"
+  },
+  {
+    "index": 217,
+    "action": "skipped"
+  },
+  {
+    "index": 218,
+    "action": "skipped"
+  },
+  {
+    "index": 219,
+    "action": "skipped"
+  },
+  {
+    "index": 220,
+    "action": "skipped"
+  },
+  {
+    "index": 221,
+    "action": "skipped"
+  },
+  {
+    "index": 222,
+    "action": "skipped"
+  },
+  {
+    "index": 223,
+    "action": "saved",
+    "slug": "the-virginian-a-horseman-of-the-plains"
+  },
+  {
+    "index": 224,
+    "action": "skipped"
+  },
+  {
+    "index": 225,
+    "action": "saved",
+    "slug": "riders-of-the-purple-sage"
+  },
+  {
+    "index": 226,
+    "action": "skipped"
+  },
+  {
+    "index": 227,
+    "action": "skipped"
+  },
+  {
+    "index": 228,
+    "action": "saved",
+    "slug": "over-the-sliprails"
+  },
+  {
+    "index": 229,
+    "action": "saved",
+    "slug": "the-malefactor"
+  },
+  {
+    "index": 230,
+    "action": "skipped"
+  },
+  {
+    "index": 231,
+    "action": "skipped"
+  },
+  {
+    "index": 232,
+    "action": "skipped"
+  },
+  {
+    "index": 233,
+    "action": "skipped",
+    "slug": "the-cruise-of-the-cachalot-round-the-world-after-sperm-whales"
+  },
+  {
+    "index": 234,
+    "action": "skipped"
+  },
+  {
+    "index": 235,
+    "action": "skipped"
+  },
+  {
+    "index": 236,
+    "action": "skipped"
+  },
+  {
+    "index": 237,
+    "action": "skipped"
+  },
+  {
+    "index": 238,
+    "action": "skipped"
+  },
+  {
+    "index": 239,
+    "action": "skipped"
+  },
+  {
+    "index": 240,
+    "action": "skipped"
+  },
+  {
+    "index": 241,
+    "action": "skipped"
+  },
+  {
+    "index": 242,
+    "action": "skipped"
+  },
+  {
+    "index": 243,
+    "action": "skipped"
+  },
+  {
+    "index": 244,
+    "action": "skipped"
+  },
+  {
+    "index": 245,
+    "action": "saved",
+    "slug": "tarzan-the-untamed"
+  },
+  {
+    "index": 246,
+    "action": "skipped"
+  },
+  {
+    "index": 247,
+    "action": "skipped"
+  },
+  {
+    "index": 248,
+    "action": "skipped"
+  },
+  {
+    "index": 249,
+    "action": "saved",
+    "slug": "the-illustrious-prince"
+  },
+  {
+    "index": 250,
+    "action": "skipped"
+  },
+  {
+    "index": 251,
+    "action": "skipped"
+  },
+  {
+    "index": 252,
+    "action": "skipped"
+  },
+  {
+    "index": 253,
+    "action": "saved",
+    "slug": "the-golf-course-mystery"
+  },
+  {
+    "index": 254,
+    "action": "saved",
+    "slug": "the-crystal-stopper"
+  },
+  {
+    "index": 255,
+    "action": "saved",
+    "slug": "the-grey-room"
+  },
+  {
+    "index": 256,
+    "action": "saved",
+    "slug": "options"
+  },
+  {
+    "index": 257,
+    "action": "skipped"
+  },
+  {
+    "index": 258,
+    "action": "skipped"
+  },
+  {
+    "index": 259,
+    "action": "saved",
+    "slug": "whirligigs"
+  },
+  {
+    "index": 260,
+    "action": "skipped"
+  },
+  {
+    "index": 261,
+    "action": "saved",
+    "slug": "the-breaking-point"
+  },
+  {
+    "index": 262,
+    "action": "skipped"
+  },
+  {
+    "index": 263,
+    "action": "saved",
+    "slug": "the-blue-flower"
+  },
+  {
+    "index": 264,
+    "action": "skipped"
+  },
+  {
+    "index": 265,
+    "action": "saved",
+    "slug": "the-crock-of-gold"
+  },
+  {
+    "index": 266,
+    "action": "skipped"
+  },
+  {
+    "index": 267,
+    "action": "skipped"
+  },
+  {
+    "index": 268,
+    "action": "skipped"
+  },
+  {
+    "index": 269,
+    "action": "saved",
+    "slug": "the-wind-in-the-rose-bush-and-other-stories-of-the-supernatural"
+  },
+  {
+    "index": 270,
+    "action": "skipped"
+  },
+  {
+    "index": 271,
+    "action": "skipped"
+  },
+  {
+    "index": 272,
+    "action": "skipped"
+  },
+  {
+    "index": 273,
+    "action": "skipped"
+  },
+  {
+    "index": 274,
+    "action": "skipped"
+  },
+  {
+    "index": 275,
+    "action": "skipped"
+  },
+  {
+    "index": 276,
+    "action": "saved",
+    "slug": "the-mystery-of-the-yellow-room"
+  },
+  {
+    "index": 277,
+    "action": "saved",
+    "slug": "the-secret-of-the-night"
+  },
+  {
+    "index": 278,
+    "action": "saved",
+    "slug": "marie-an-episode-in-the-life-of-the-late-allan-quatermain"
+  },
+  {
+    "index": 279,
+    "action": "saved",
+    "slug": "the-man-who-was-thursday-a-nightmare"
+  },
+  {
+    "index": 280,
+    "action": "saved",
+    "slug": "the-club-of-queer-trades"
+  },
+  {
+    "index": 281,
+    "action": "saved",
+    "slug": "the-vanished-messenger"
+  },
+  {
+    "index": 282,
+    "action": "saved",
+    "slug": "dead-men-tell-no-tales"
+  },
+  {
+    "index": 283,
+    "action": "skipped"
+  },
+  {
+    "index": 284,
+    "action": "saved",
+    "slug": "the-man-who-knew-too-much"
+  },
+  {
+    "index": 285,
+    "action": "skipped"
+  },
+  {
+    "index": 286,
+    "action": "skipped"
+  },
+  {
+    "index": 287,
+    "action": "saved",
+    "slug": "finished"
+  },
+  {
+    "index": 288,
+    "action": "skipped"
+  },
+  {
+    "index": 289,
+    "action": "skipped"
+  },
+  {
+    "index": 290,
+    "action": "skipped"
+  },
+  {
+    "index": 291,
+    "action": "saved",
+    "slug": "twelve-stories-and-a-dream"
+  },
+  {
+    "index": 292,
+    "action": "skipped"
+  },
+  {
+    "index": 293,
+    "action": "saved",
+    "slug": "twilight-land"
+  },
+  {
+    "index": 294,
+    "action": "skipped"
+  },
+  {
+    "index": 295,
+    "action": "skipped"
+  },
+  {
+    "index": 296,
+    "action": "skipped"
+  },
+  {
+    "index": 297,
+    "action": "skipped"
+  },
+  {
+    "index": 298,
+    "action": "skipped"
+  },
+  {
+    "index": 299,
+    "action": "skipped"
+  },
+  {
+    "index": 300,
+    "action": "skipped"
+  },
+  {
+    "index": 301,
+    "action": "skipped"
+  },
+  {
+    "index": 302,
+    "action": "skipped"
+  },
+  {
+    "index": 303,
+    "action": "skipped"
+  },
+  {
+    "index": 304,
+    "action": "saved",
+    "slug": "the-agony-column"
+  },
+  {
+    "index": 305,
+    "action": "skipped"
+  },
+  {
+    "index": 306,
+    "action": "skipped"
+  },
+  {
+    "index": 307,
+    "action": "skipped"
+  },
+  {
+    "index": 308,
+    "action": "skipped"
+  },
+  {
+    "index": 309,
+    "action": "skipped"
+  },
+  {
+    "index": 310,
+    "action": "skipped"
+  },
+  {
+    "index": 311,
+    "action": "skipped"
+  },
+  {
+    "index": 312,
+    "action": "skipped"
+  },
+  {
+    "index": 313,
+    "action": "skipped"
+  },
+  {
+    "index": 314,
+    "action": "skipped"
+  },
+  {
+    "index": 315,
+    "action": "skipped"
+  },
+  {
+    "index": 316,
+    "action": "skipped"
+  },
+  {
+    "index": 317,
+    "action": "skipped"
+  },
+  {
+    "index": 318,
+    "action": "skipped"
+  },
+  {
+    "index": 319,
+    "action": "skipped"
+  },
+  {
+    "index": 320,
+    "action": "skipped"
+  },
+  {
+    "index": 321,
+    "action": "skipped"
+  },
+  {
+    "index": 322,
+    "action": "saved",
+    "slug": "the-yellow-crayon"
+  },
+  {
+    "index": 323,
+    "action": "skipped"
+  },
+  {
+    "index": 324,
+    "action": "skipped"
+  },
+  {
+    "index": 325,
+    "action": "saved",
+    "slug": "the-man-in-lower-ten"
+  },
+  {
+    "index": 326,
+    "action": "skipped"
+  },
+  {
+    "index": 327,
+    "action": "skipped"
+  },
+  {
+    "index": 328,
+    "action": "skipped"
+  },
+  {
+    "index": 329,
+    "action": "skipped"
+  },
+  {
+    "index": 330,
+    "action": "skipped"
+  },
+  {
+    "index": 331,
+    "action": "skipped"
+  },
+  {
+    "index": 332,
+    "action": "saved",
+    "slug": "a-millionaire-of-yesterday"
+  },
+  {
+    "index": 333,
+    "action": "saved",
+    "slug": "the-call-of-the-canyon"
+  },
+  {
+    "index": 334,
+    "action": "saved",
+    "slug": "the-bittermeads-mystery"
+  },
+  {
+    "index": 335,
+    "action": "saved",
+    "slug": "the-seventh-man"
+  },
+  {
+    "index": 336,
+    "action": "skipped"
+  },
+  {
+    "index": 337,
+    "action": "skipped"
+  },
+  {
+    "index": 338,
+    "action": "skipped"
+  },
+  {
+    "index": 339,
+    "action": "skipped"
+  },
+  {
+    "index": 340,
+    "action": "saved",
+    "slug": "long-odds"
+  },
+  {
+    "index": 341,
+    "action": "skipped"
+  },
+  {
+    "index": 342,
+    "action": "saved",
+    "slug": "the-second-jungle-book"
+  },
+  {
+    "index": 343,
+    "action": "skipped"
+  },
+  {
+    "index": 344,
+    "action": "skipped"
+  },
+  {
+    "index": 345,
+    "action": "skipped"
+  },
+  {
+    "index": 346,
+    "action": "saved",
+    "slug": "captain-blood"
+  },
+  {
+    "index": 347,
+    "action": "saved",
+    "slug": "the-path-of-the-king"
+  },
+  {
+    "index": 348,
+    "action": "skipped"
+  },
+  {
+    "index": 349,
+    "action": "saved",
+    "slug": "peter-ruff-and-the-double-four"
+  },
+  {
+    "index": 350,
+    "action": "skipped"
+  },
+  {
+    "index": 351,
+    "action": "saved",
+    "slug": "the-outlet"
+  },
+  {
+    "index": 352,
+    "action": "skipped"
+  },
+  {
+    "index": 353,
+    "action": "skipped"
+  },
+  {
+    "index": 354,
+    "action": "skipped"
+  },
+  {
+    "index": 355,
+    "action": "skipped"
+  },
+  {
+    "index": 356,
+    "action": "skipped"
+  },
+  {
+    "index": 357,
+    "action": "skipped"
+  },
+  {
+    "index": 358,
+    "action": "saved",
+    "slug": "the-lodger"
+  },
+  {
+    "index": 359,
+    "action": "skipped"
+  },
+  {
+    "index": 360,
+    "action": "saved",
+    "slug": "tarzan-the-terrible"
+  },
+  {
+    "index": 361,
+    "action": "skipped"
+  },
+  {
+    "index": 362,
+    "action": "skipped"
+  },
+  {
+    "index": 363,
+    "action": "skipped"
+  },
+  {
+    "index": 364,
+    "action": "skipped"
+  },
+  {
+    "index": 365,
+    "action": "skipped"
+  },
+  {
+    "index": 366,
+    "action": "skipped"
+  },
+  {
+    "index": 367,
+    "action": "skipped"
+  },
+  {
+    "index": 368,
+    "action": "skipped"
+  },
+  {
+    "index": 369,
+    "action": "saved",
+    "slug": "wildfire"
+  },
+  {
+    "index": 370,
+    "action": "skipped"
+  },
+  {
+    "index": 371,
+    "action": "skipped"
+  },
+  {
+    "index": 372,
+    "action": "skipped"
+  },
+  {
+    "index": 373,
+    "action": "skipped"
+  },
+  {
+    "index": 374,
+    "action": "saved",
+    "slug": "the-quest-of-the-sacred-slipper"
+  },
+  {
+    "index": 375,
+    "action": "skipped"
+  },
+  {
+    "index": 376,
+    "action": "skipped"
+  },
+  {
+    "index": 377,
+    "action": "skipped"
+  },
+  {
+    "index": 378,
+    "action": "skipped"
+  },
+  {
+    "index": 379,
+    "action": "skipped"
+  },
+  {
+    "index": 380,
+    "action": "skipped"
+  },
+  {
+    "index": 381,
+    "action": "skipped"
+  },
+  {
+    "index": 382,
+    "action": "saved",
+    "slug": "the-dark-flower"
+  },
+  {
+    "index": 383,
+    "action": "saved",
+    "slug": "kim"
+  },
+  {
+    "index": 384,
+    "action": "skipped"
+  },
+  {
+    "index": 385,
+    "action": "skipped"
+  },
+  {
+    "index": 386,
+    "action": "skipped"
+  },
+  {
+    "index": 387,
+    "action": "saved",
+    "slug": "the-lost-road"
+  },
+  {
+    "index": 388,
+    "action": "skipped"
+  },
+  {
+    "index": 389,
+    "action": "skipped"
+  },
+  {
+    "index": 390,
+    "action": "saved",
+    "slug": "havoc"
+  },
+  {
+    "index": 391,
+    "action": "skipped"
+  },
+  {
+    "index": 392,
+    "action": "skipped"
+  },
+  {
+    "index": 393,
+    "action": "skipped"
+  },
+  {
+    "index": 394,
+    "action": "skipped"
+  },
+  {
+    "index": 395,
+    "action": "skipped"
+  },
+  {
+    "index": 396,
+    "action": "saved",
+    "slug": "the-adventure-of-wisteria-lodge"
+  },
+  {
+    "index": 397,
+    "action": "skipped"
+  },
+  {
+    "index": 398,
+    "action": "saved",
+    "slug": "the-adventure-of-the-red-circle"
+  },
+  {
+    "index": 399,
+    "action": "saved",
+    "slug": "the-adventure-of-the-bruce-partington-plans"
+  },
+  {
+    "index": 400,
+    "action": "saved",
+    "slug": "the-adventure-of-the-dying-detective"
+  },
+  {
+    "index": 401,
+    "action": "skipped"
+  },
+  {
+    "index": 402,
+    "action": "saved",
+    "slug": "the-adventure-of-the-devil-s-foot"
+  },
+  {
+    "index": 403,
+    "action": "skipped"
+  },
+  {
+    "index": 404,
+    "action": "saved",
+    "slug": "the-after-house"
+  },
+  {
+    "index": 405,
+    "action": "skipped"
+  },
+  {
+    "index": 406,
+    "action": "skipped"
+  },
+  {
+    "index": 407,
+    "action": "saved",
+    "slug": "the-son-of-the-wolf"
+  },
+  {
+    "index": 408,
+    "action": "skipped"
+  },
+  {
+    "index": 409,
+    "action": "saved",
+    "slug": "the-mutiny-of-the-elsinore"
+  },
+  {
+    "index": 410,
+    "action": "skipped"
+  },
+  {
+    "index": 411,
+    "action": "skipped"
+  },
+  {
+    "index": 412,
+    "action": "saved",
+    "slug": "lost-face"
+  },
+  {
+    "index": 413,
+    "action": "skipped"
+  },
+  {
+    "index": 414,
+    "action": "skipped"
+  },
+  {
+    "index": 415,
+    "action": "skipped"
+  },
+  {
+    "index": 416,
+    "action": "skipped"
+  },
+  {
+    "index": 417,
+    "action": "skipped"
+  },
+  {
+    "index": 418,
+    "action": "skipped"
+  },
+  {
+    "index": 419,
+    "action": "skipped"
+  },
+  {
+    "index": 420,
+    "action": "skipped"
+  },
+  {
+    "index": 421,
+    "action": "skipped"
+  },
+  {
+    "index": 422,
+    "action": "skipped"
+  },
+  {
+    "index": 423,
+    "action": "skipped"
+  },
+  {
+    "index": 424,
+    "action": "skipped"
+  },
+  {
+    "index": 425,
+    "action": "saved",
+    "slug": "old-mother-west-wind"
+  },
+  {
+    "index": 426,
+    "action": "saved",
+    "slug": "trent-s-last-case"
+  },
+  {
+    "index": 427,
+    "action": "skipped"
+  },
+  {
+    "index": 428,
+    "action": "saved",
+    "slug": "queen-sheba-s-ring"
+  },
+  {
+    "index": 429,
+    "action": "skipped"
+  },
+  {
+    "index": 430,
+    "action": "skipped"
+  },
+  {
+    "index": 431,
+    "action": "skipped"
+  },
+  {
+    "index": 432,
+    "action": "skipped"
+  },
+  {
+    "index": 433,
+    "action": "skipped"
+  },
+  {
+    "index": 434,
+    "action": "skipped"
+  },
+  {
+    "index": 435,
+    "action": "skipped"
+  },
+  {
+    "index": 436,
+    "action": "skipped"
+  },
+  {
+    "index": 437,
+    "action": "skipped"
+  },
+  {
+    "index": 438,
+    "action": "skipped"
+  },
+  {
+    "index": 439,
+    "action": "skipped"
+  },
+  {
+    "index": 440,
+    "action": "skipped"
+  },
+  {
+    "index": 441,
+    "action": "skipped"
+  },
+  {
+    "index": 442,
+    "action": "skipped"
+  },
+  {
+    "index": 443,
+    "action": "skipped"
+  },
+  {
+    "index": 444,
+    "action": "saved",
+    "slug": "hunter-quatermain-s-story"
+  },
+  {
+    "index": 445,
+    "action": "saved",
+    "slug": "a-tale-of-three-lions"
+  },
+  {
+    "index": 446,
+    "action": "skipped"
+  },
+  {
+    "index": 447,
+    "action": "skipped"
+  },
+  {
+    "index": 448,
+    "action": "skipped"
+  },
+  {
+    "index": 449,
+    "action": "skipped"
+  },
+  {
+    "index": 450,
+    "action": "skipped"
+  },
+  {
+    "index": 451,
+    "action": "skipped"
+  },
+  {
+    "index": 452,
+    "action": "skipped"
+  },
+  {
+    "index": 453,
+    "action": "skipped"
+  },
+  {
+    "index": 454,
+    "action": "skipped"
+  },
+  {
+    "index": 455,
+    "action": "skipped"
+  },
+  {
+    "index": 456,
+    "action": "skipped"
+  },
+  {
+    "index": 457,
+    "action": "saved",
+    "slug": "the-grand-babylon-hotel"
+  },
+  {
+    "index": 458,
+    "action": "saved",
+    "slug": "dubliners"
+  },
+  {
+    "index": 459,
+    "action": "skipped"
+  },
+  {
+    "index": 460,
+    "action": "skipped"
+  },
+  {
+    "index": 461,
+    "action": "skipped"
+  },
+  {
+    "index": 462,
+    "action": "skipped"
+  },
+  {
+    "index": 463,
+    "action": "saved",
+    "slug": "the-hound-of-the-baskervilles"
+  },
+  {
+    "index": 464,
+    "action": "skipped"
+  },
+  {
+    "index": 465,
+    "action": "skipped"
+  },
+  {
+    "index": 466,
+    "action": "skipped"
+  },
+  {
+    "index": 467,
+    "action": "skipped"
+  },
+  {
+    "index": 468,
+    "action": "saved",
+    "slug": "the-green-mummy"
+  },
+  {
+    "index": 469,
+    "action": "skipped"
+  },
+  {
+    "index": 470,
+    "action": "saved",
+    "slug": "the-gold-bag"
+  },
+  {
+    "index": 471,
+    "action": "saved",
+    "slug": "irish-fairy-tales"
+  },
+  {
+    "index": 472,
+    "action": "skipped"
+  },
+  {
+    "index": 473,
+    "action": "skipped"
+  },
+  {
+    "index": 474,
+    "action": "skipped"
+  },
+  {
+    "index": 475,
+    "action": "skipped"
+  },
+  {
+    "index": 476,
+    "action": "skipped"
+  },
+  {
+    "index": 477,
+    "action": "skipped"
+  },
+  {
+    "index": 478,
+    "action": "skipped"
+  },
+  {
+    "index": 479,
+    "action": "skipped"
+  },
+  {
+    "index": 480,
+    "action": "skipped"
+  },
+  {
+    "index": 481,
+    "action": "skipped"
+  },
+  {
+    "index": 482,
+    "action": "skipped"
+  },
+  {
+    "index": 483,
+    "action": "skipped"
+  },
+  {
+    "index": 484,
+    "action": "skipped"
+  },
+  {
+    "index": 485,
+    "action": "skipped"
+  },
+  {
+    "index": 486,
+    "action": "saved",
+    "slug": "the-return"
+  },
+  {
+    "index": 487,
+    "action": "skipped"
+  },
+  {
+    "index": 488,
+    "action": "skipped"
+  },
+  {
+    "index": 489,
+    "action": "skipped"
+  },
+  {
+    "index": 490,
+    "action": "skipped"
+  },
+  {
+    "index": 491,
+    "action": "skipped"
+  },
+  {
+    "index": 492,
+    "action": "skipped"
+  },
+  {
+    "index": 493,
+    "action": "skipped"
+  },
+  {
+    "index": 494,
+    "action": "skipped"
+  },
+  {
+    "index": 495,
+    "action": "skipped"
+  },
+  {
+    "index": 496,
+    "action": "skipped"
+  },
+  {
+    "index": 497,
+    "action": "skipped"
+  },
+  {
+    "index": 498,
+    "action": "skipped"
+  },
+  {
+    "index": 499,
+    "action": "skipped"
+  },
+  {
+    "index": 500,
+    "action": "skipped"
+  },
+  {
+    "index": 501,
+    "action": "skipped"
+  },
+  {
+    "index": 502,
+    "action": "saved",
+    "slug": "the-wanderer-s-necklace"
+  },
+  {
+    "index": 503,
+    "action": "skipped"
+  },
+  {
+    "index": 504,
+    "action": "skipped"
+  },
+  {
+    "index": 505,
+    "action": "skipped"
+  },
+  {
+    "index": 506,
+    "action": "skipped"
+  },
+  {
+    "index": 507,
+    "action": "skipped"
+  },
+  {
+    "index": 508,
+    "action": "saved",
+    "slug": "the-enchanted-typewriter"
+  },
+  {
+    "index": 509,
+    "action": "saved",
+    "slug": "the-pursuit-of-the-house-boat"
+  },
+  {
+    "index": 510,
+    "action": "skipped"
+  },
+  {
+    "index": 511,
+    "action": "skipped"
+  },
+  {
+    "index": 512,
+    "action": "skipped"
+  },
+  {
+    "index": 513,
+    "action": "skipped"
+  },
+  {
+    "index": 514,
+    "action": "skipped"
+  },
+  {
+    "index": 515,
+    "action": "skipped"
+  },
+  {
+    "index": 516,
+    "action": "skipped"
+  },
+  {
+    "index": 517,
+    "action": "skipped"
+  },
+  {
+    "index": 518,
+    "action": "skipped"
+  },
+  {
+    "index": 519,
+    "action": "skipped"
+  },
+  {
+    "index": 520,
+    "action": "skipped"
+  },
+  {
+    "index": 521,
+    "action": "skipped"
+  },
+  {
+    "index": 522,
+    "action": "skipped"
+  },
+  {
+    "index": 523,
+    "action": "skipped"
+  },
+  {
+    "index": 524,
+    "action": "skipped"
+  },
+  {
+    "index": 525,
+    "action": "skipped"
+  },
+  {
+    "index": 526,
+    "action": "skipped"
+  },
+  {
+    "index": 527,
+    "action": "skipped"
+  },
+  {
+    "index": 528,
+    "action": "saved",
+    "slug": "the-valley-of-fear"
+  },
+  {
+    "index": 529,
+    "action": "saved",
+    "slug": "the-sea-hawk"
+  },
+  {
+    "index": 530,
+    "action": "skipped"
+  },
+  {
+    "index": 531,
+    "action": "skipped"
+  },
+  {
+    "index": 532,
+    "action": "skipped"
+  },
+  {
+    "index": 533,
+    "action": "skipped"
+  },
+  {
+    "index": 534,
+    "action": "saved",
+    "slug": "the-man-of-the-forest"
+  },
+  {
+    "index": 535,
+    "action": "skipped"
+  },
+  {
+    "index": 536,
+    "action": "skipped"
+  },
+  {
+    "index": 537,
+    "action": "skipped"
+  },
+  {
+    "index": 538,
+    "action": "saved",
+    "slug": "jeremy"
+  },
+  {
+    "index": 539,
+    "action": "skipped"
+  },
+  {
+    "index": 540,
+    "action": "saved",
+    "slug": "the-metal-monster"
+  },
+  {
+    "index": 541,
+    "action": "skipped"
+  },
+  {
+    "index": 542,
+    "action": "skipped"
+  },
+  {
+    "index": 543,
+    "action": "saved",
+    "slug": "the-king-of-ireland-s-son"
+  },
+  {
+    "index": 544,
+    "action": "skipped"
+  },
+  {
+    "index": 545,
+    "action": "skipped"
+  },
+  {
+    "index": 546,
+    "action": "skipped"
+  },
+  {
+    "index": 547,
+    "action": "skipped"
+  },
+  {
+    "index": 548,
+    "action": "skipped"
+  },
+  {
+    "index": 549,
+    "action": "skipped"
+  },
+  {
+    "index": 550,
+    "action": "skipped"
+  },
+  {
+    "index": 551,
+    "action": "skipped"
+  },
+  {
+    "index": 552,
+    "action": "skipped"
+  },
+  {
+    "index": 553,
+    "action": "skipped"
+  },
+  {
+    "index": 554,
+    "action": "skipped"
+  },
+  {
+    "index": 555,
+    "action": "skipped"
+  },
+  {
+    "index": 556,
+    "action": "saved",
+    "slug": "the-ruby-of-kishmoor"
+  },
+  {
+    "index": 557,
+    "action": "skipped"
+  },
+  {
+    "index": 558,
+    "action": "saved",
+    "slug": "dot-and-the-kangaroo"
+  },
+  {
+    "index": 559,
+    "action": "skipped"
+  },
+  {
+    "index": 560,
+    "action": "skipped"
+  },
+  {
+    "index": 561,
+    "action": "skipped"
+  },
+  {
+    "index": 562,
+    "action": "skipped"
+  },
+  {
+    "index": 563,
+    "action": "skipped"
+  },
+  {
+    "index": 564,
+    "action": "skipped"
+  },
+  {
+    "index": 565,
+    "action": "skipped"
+  },
+  {
+    "index": 566,
+    "action": "saved",
+    "slug": "huntingtower"
+  },
+  {
+    "index": 567,
+    "action": "skipped"
+  },
+  {
+    "index": 568,
+    "action": "skipped"
+  },
+  {
+    "index": 569,
+    "action": "saved",
+    "slug": "rilla-of-ingleside"
+  },
+  {
+    "index": 570,
+    "action": "skipped"
+  },
+  {
+    "index": 571,
+    "action": "skipped"
+  },
+  {
+    "index": 572,
+    "action": "saved",
+    "slug": "rolling-stones"
+  },
+  {
+    "index": 573,
+    "action": "saved",
+    "slug": "the-witch-of-prague-a-fantastic-tale"
+  },
+  {
+    "index": 574,
+    "action": "skipped"
+  },
+  {
+    "index": 575,
+    "action": "skipped"
+  },
+  {
+    "index": 576,
+    "action": "skipped"
+  },
+  {
+    "index": 577,
+    "action": "skipped"
+  },
+  {
+    "index": 578,
+    "action": "skipped"
+  },
+  {
+    "index": 579,
+    "action": "saved",
+    "slug": "australia-felix"
+  },
+  {
+    "index": 580,
+    "action": "skipped"
+  },
+  {
+    "index": 581,
+    "action": "skipped"
+  },
+  {
+    "index": 582,
+    "action": "skipped"
+  },
+  {
+    "index": 583,
+    "action": "skipped"
+  },
+  {
+    "index": 584,
+    "action": "skipped"
+  },
+  {
+    "index": 585,
+    "action": "skipped"
+  },
+  {
+    "index": 586,
+    "action": "skipped"
+  },
+  {
+    "index": 587,
+    "action": "skipped"
+  },
+  {
+    "index": 588,
+    "action": "skipped"
+  },
+  {
+    "index": 589,
+    "action": "saved",
+    "slug": "the-garden-of-survival"
+  },
+  {
+    "index": 590,
+    "action": "skipped"
+  },
+  {
+    "index": 591,
+    "action": "skipped"
+  },
+  {
+    "index": 592,
+    "action": "skipped"
+  },
+  {
+    "index": 593,
+    "action": "skipped"
+  },
+  {
+    "index": 594,
+    "action": "skipped"
+  },
+  {
+    "index": 595,
+    "action": "skipped"
+  },
+  {
+    "index": 596,
+    "action": "skipped"
+  },
+  {
+    "index": 597,
+    "action": "skipped"
+  },
+  {
+    "index": 598,
+    "action": "skipped"
+  },
+  {
+    "index": 599,
+    "action": "skipped"
+  },
+  {
+    "index": 600,
+    "action": "skipped"
+  },
+  {
+    "index": 601,
+    "action": "skipped"
+  },
+  {
+    "index": 602,
+    "action": "saved",
+    "slug": "don-rodriguez-chronicles-of-shadow-valley"
+  },
+  {
+    "index": 603,
+    "action": "skipped"
+  },
+  {
+    "index": 604,
+    "action": "skipped"
+  },
+  {
+    "index": 605,
+    "action": "skipped"
+  },
+  {
+    "index": 606,
+    "action": "skipped"
+  },
+  {
+    "index": 607,
+    "action": "skipped"
+  },
+  {
+    "index": 608,
+    "action": "skipped"
+  },
+  {
+    "index": 609,
+    "action": "skipped"
+  },
+  {
+    "index": 610,
+    "action": "skipped"
+  },
+  {
+    "index": 611,
+    "action": "skipped"
+  },
+  {
+    "index": 612,
+    "action": "skipped"
+  },
+  {
+    "index": 613,
+    "action": "skipped"
+  },
+  {
+    "index": 614,
+    "action": "skipped"
+  },
+  {
+    "index": 615,
+    "action": "skipped"
+  },
+  {
+    "index": 616,
+    "action": "skipped"
+  },
+  {
+    "index": 617,
+    "action": "skipped"
+  },
+  {
+    "index": 618,
+    "action": "skipped"
+  },
+  {
+    "index": 619,
+    "action": "skipped"
+  },
+  {
+    "index": 620,
+    "action": "skipped"
+  },
+  {
+    "index": 621,
+    "action": "skipped"
+  },
+  {
+    "index": 622,
+    "action": "skipped"
+  },
+  {
+    "index": 623,
+    "action": "saved",
+    "slug": "flappers-and-philosophers"
+  },
+  {
+    "index": 624,
+    "action": "saved",
+    "slug": "sowing-seeds-in-danny"
+  },
+  {
+    "index": 625,
+    "action": "skipped"
+  },
+  {
+    "index": 626,
+    "action": "saved",
+    "slug": "the-fortunate-youth"
+  },
+  {
+    "index": 627,
+    "action": "saved",
+    "slug": "under-fire-the-story-of-a-squad"
+  },
+  {
+    "index": 628,
+    "action": "saved",
+    "slug": "the-aran-islands"
+  },
+  {
+    "index": 629,
+    "action": "skipped"
+  },
+  {
+    "index": 630,
+    "action": "skipped"
+  },
+  {
+    "index": 631,
+    "action": "skipped"
+  },
+  {
+    "index": 632,
+    "action": "skipped"
+  },
+  {
+    "index": 633,
+    "action": "saved",
+    "slug": "tales-of-men-and-ghosts"
+  },
+  {
+    "index": 634,
+    "action": "saved",
+    "slug": "the-golden-snare"
+  },
+  {
+    "index": 635,
+    "action": "skipped"
+  },
+  {
+    "index": 636,
+    "action": "skipped"
+  },
+  {
+    "index": 637,
+    "action": "skipped"
+  },
+  {
+    "index": 638,
+    "action": "skipped"
+  },
+  {
+    "index": 639,
+    "action": "skipped"
+  },
+  {
+    "index": 640,
+    "action": "skipped"
+  },
+  {
+    "index": 641,
+    "action": "skipped"
+  },
+  {
+    "index": 642,
+    "action": "skipped"
+  },
+  {
+    "index": 643,
+    "action": "skipped"
+  },
+  {
+    "index": 644,
+    "action": "skipped"
+  },
+  {
+    "index": 645,
+    "action": "skipped"
+  },
+  {
+    "index": 646,
+    "action": "skipped"
+  },
+  {
+    "index": 647,
+    "action": "skipped"
+  },
+  {
+    "index": 648,
+    "action": "skipped"
+  },
+  {
+    "index": 649,
+    "action": "skipped"
+  },
+  {
+    "index": 650,
+    "action": "skipped"
+  },
+  {
+    "index": 651,
+    "action": "skipped"
+  },
+  {
+    "index": 652,
+    "action": "skipped"
+  },
+  {
+    "index": 653,
+    "action": "skipped"
+  },
+  {
+    "index": 654,
+    "action": "skipped"
+  },
+  {
+    "index": 655,
+    "action": "skipped"
+  },
+  {
+    "index": 656,
+    "action": "saved",
+    "slug": "saturday-s-child"
+  },
+  {
+    "index": 657,
+    "action": "skipped"
+  },
+  {
+    "index": 658,
+    "action": "skipped"
+  },
+  {
+    "index": 659,
+    "action": "saved",
+    "slug": "the-flaming-forest"
+  },
+  {
+    "index": 660,
+    "action": "skipped"
+  },
+  {
+    "index": 661,
+    "action": "saved",
+    "slug": "nomads-of-the-north-a-story-of-romance-and-adventure-under-the-open-stars"
+  },
+  {
+    "index": 662,
+    "action": "skipped"
+  },
+  {
+    "index": 663,
+    "action": "skipped"
+  },
+  {
+    "index": 664,
+    "action": "skipped"
+  },
+  {
+    "index": 665,
+    "action": "skipped"
+  },
+  {
+    "index": 666,
+    "action": "skipped"
+  },
+  {
+    "index": 667,
+    "action": "saved",
+    "slug": "the-shepherd-of-the-hills"
+  },
+  {
+    "index": 668,
+    "action": "skipped"
+  },
+  {
+    "index": 669,
+    "action": "skipped"
+  },
+  {
+    "index": 670,
+    "action": "saved",
+    "slug": "the-river-s-end"
+  },
+  {
+    "index": 671,
+    "action": "skipped"
+  },
+  {
+    "index": 672,
+    "action": "skipped"
+  },
+  {
+    "index": 673,
+    "action": "skipped"
+  },
+  {
+    "index": 674,
+    "action": "skipped"
+  },
+  {
+    "index": 675,
+    "action": "skipped"
+  },
+  {
+    "index": 676,
+    "action": "skipped"
+  },
+  {
+    "index": 677,
+    "action": "skipped"
+  },
+  {
+    "index": 678,
+    "action": "skipped"
+  },
+  {
+    "index": 679,
+    "action": "saved",
+    "slug": "the-blind-spot"
+  },
+  {
+    "index": 680,
+    "action": "skipped"
+  },
+  {
+    "index": 681,
+    "action": "skipped"
+  },
+  {
+    "index": 682,
+    "action": "skipped"
+  },
+  {
+    "index": 683,
+    "action": "skipped"
+  },
+  {
+    "index": 684,
+    "action": "skipped"
+  },
+  {
+    "index": 685,
+    "action": "skipped"
+  },
+  {
+    "index": 686,
+    "action": "skipped"
+  },
+  {
+    "index": 687,
+    "action": "skipped"
+  },
+  {
+    "index": 688,
+    "action": "skipped"
+  },
+  {
+    "index": 689,
+    "action": "skipped"
+  },
+  {
+    "index": 690,
+    "action": "skipped"
+  },
+  {
+    "index": 691,
+    "action": "skipped"
+  },
+  {
+    "index": 692,
+    "action": "skipped"
+  },
+  {
+    "index": 693,
+    "action": "skipped"
+  },
+  {
+    "index": 694,
+    "action": "skipped"
+  },
+  {
+    "index": 695,
+    "action": "skipped"
+  },
+  {
+    "index": 696,
+    "action": "saved",
+    "slug": "five-thousand-miles-underground-or-the-mystery-of-the-centre-of-the-earth"
+  },
+  {
+    "index": 697,
+    "action": "skipped"
+  },
+  {
+    "index": 698,
+    "action": "skipped"
+  },
+  {
+    "index": 699,
+    "action": "skipped"
+  },
+  {
+    "index": 700,
+    "action": "saved",
+    "slug": "the-rover-boys-in-business-or-the-search-for-the-missing-bonds"
+  },
+  {
+    "index": 701,
+    "action": "skipped"
+  },
+  {
+    "index": 702,
+    "action": "saved",
+    "slug": "the-motor-boys-on-the-pacific-or-the-young-derelict-hunters"
+  },
+  {
+    "index": 703,
+    "action": "skipped"
+  },
+  {
+    "index": 704,
+    "action": "skipped"
+  },
+  {
+    "index": 705,
+    "action": "saved",
+    "slug": "the-rainbow-trail"
+  },
+  {
+    "index": 706,
+    "action": "skipped"
+  },
+  {
+    "index": 707,
+    "action": "skipped"
+  },
+  {
+    "index": 708,
+    "action": "skipped"
+  },
+  {
+    "index": 709,
+    "action": "saved",
+    "slug": "the-tempting-of-tavernake"
+  },
+  {
+    "index": 710,
+    "action": "skipped"
+  },
+  {
+    "index": 711,
+    "action": "skipped"
+  },
+  {
+    "index": 712,
+    "action": "saved",
+    "slug": "the-adventures-of-jerry-muskrat"
+  },
+  {
+    "index": 713,
+    "action": "skipped"
+  },
+  {
+    "index": 714,
+    "action": "skipped"
+  },
+  {
+    "index": 715,
+    "action": "skipped"
+  },
+  {
+    "index": 716,
+    "action": "saved",
+    "slug": "allan-and-the-holy-flower"
+  },
+  {
+    "index": 717,
+    "action": "skipped"
+  },
+  {
+    "index": 718,
+    "action": "skipped"
+  },
+  {
+    "index": 719,
+    "action": "skipped"
+  },
+  {
+    "index": 720,
+    "action": "saved",
+    "slug": "ayesha-the-return-of-she"
+  },
+  {
+    "index": 721,
+    "action": "skipped"
+  },
+  {
+    "index": 722,
+    "action": "skipped"
+  },
+  {
+    "index": 723,
+    "action": "skipped",
+    "slug": "a-duet-with-an-occasional-chorus"
+  },
+  {
+    "index": 724,
+    "action": "skipped"
+  },
+  {
+    "index": 725,
+    "action": "saved",
+    "slug": "the-ball-and-the-cross"
+  },
+  {
+    "index": 726,
+    "action": "skipped"
+  },
+  {
+    "index": 727,
+    "action": "saved",
+    "slug": "the-paradise-mystery"
+  },
+  {
+    "index": 728,
+    "action": "skipped"
+  },
+  {
+    "index": 729,
+    "action": "skipped"
+  },
+  {
+    "index": 730,
+    "action": "skipped"
+  },
+  {
+    "index": 731,
+    "action": "skipped"
+  },
+  {
+    "index": 732,
+    "action": "skipped"
+  },
+  {
+    "index": 733,
+    "action": "skipped",
+    "slug": "raspberry-jam"
+  },
+  {
+    "index": 734,
+    "action": "skipped"
+  },
+  {
+    "index": 735,
+    "action": "skipped"
+  },
+  {
+    "index": 736,
+    "action": "skipped"
+  },
+  {
+    "index": 737,
+    "action": "skipped"
+  },
+  {
+    "index": 738,
+    "action": "skipped"
+  },
+  {
+    "index": 739,
+    "action": "saved",
+    "slug": "the-metropolis"
+  },
+  {
+    "index": 740,
+    "action": "saved",
+    "slug": "the-masquerader"
+  },
+  {
+    "index": 741,
+    "action": "skipped"
+  },
+  {
+    "index": 742,
+    "action": "skipped"
+  },
+  {
+    "index": 743,
+    "action": "skipped"
+  },
+  {
+    "index": 744,
+    "action": "skipped"
+  },
+  {
+    "index": 745,
+    "action": "saved",
+    "slug": "jimmie-higgins"
+  },
+  {
+    "index": 746,
+    "action": "saved",
+    "slug": "tales-of-chinatown"
+  },
+  {
+    "index": 747,
+    "action": "skipped"
+  },
+  {
+    "index": 748,
+    "action": "skipped"
+  },
+  {
+    "index": 749,
+    "action": "saved",
+    "slug": "smoke-bellew"
+  },
+  {
+    "index": 750,
+    "action": "skipped"
+  },
+  {
+    "index": 751,
+    "action": "saved",
+    "slug": "the-evil-shepherd"
+  },
+  {
+    "index": 752,
+    "action": "saved",
+    "slug": "she-and-allan"
+  },
+  {
+    "index": 753,
+    "action": "skipped"
+  },
+  {
+    "index": 754,
+    "action": "skipped"
+  },
+  {
+    "index": 755,
+    "action": "skipped"
+  },
+  {
+    "index": 756,
+    "action": "skipped"
+  },
+  {
+    "index": 757,
+    "action": "skipped"
+  },
+  {
+    "index": 758,
+    "action": "skipped"
+  },
+  {
+    "index": 759,
+    "action": "skipped"
+  },
+  {
+    "index": 760,
+    "action": "skipped"
+  },
+  {
+    "index": 761,
+    "action": "skipped"
+  },
+  {
+    "index": 762,
+    "action": "saved",
+    "slug": "the-great-impersonation"
+  },
+  {
+    "index": 763,
+    "action": "skipped"
+  },
+  {
+    "index": 764,
+    "action": "skipped"
+  },
+  {
+    "index": 765,
+    "action": "skipped"
+  },
+  {
+    "index": 766,
+    "action": "skipped"
+  },
+  {
+    "index": 767,
+    "action": "skipped"
+  },
+  {
+    "index": 768,
+    "action": "skipped"
+  },
+  {
+    "index": 769,
+    "action": "skipped"
+  },
+  {
+    "index": 770,
+    "action": "skipped"
+  },
+  {
+    "index": 771,
+    "action": "skipped"
+  },
+  {
+    "index": 772,
+    "action": "skipped"
+  },
+  {
+    "index": 773,
+    "action": "skipped"
+  },
+  {
+    "index": 774,
+    "action": "skipped"
+  },
+  {
+    "index": 775,
+    "action": "skipped"
+  },
+  {
+    "index": 776,
+    "action": "skipped"
+  },
+  {
+    "index": 777,
+    "action": "skipped"
+  },
+  {
+    "index": 778,
+    "action": "skipped"
+  },
+  {
+    "index": 779,
+    "action": "skipped"
+  },
+  {
+    "index": 780,
+    "action": "saved",
+    "slug": "captain-macklin-his-memoirs"
+  },
+  {
+    "index": 781,
+    "action": "skipped"
+  },
+  {
+    "index": 782,
+    "action": "skipped"
+  },
+  {
+    "index": 783,
+    "action": "saved",
+    "slug": "the-one-woman-a-story-of-modern-utopia"
+  },
+  {
+    "index": 784,
+    "action": "skipped"
+  },
+  {
+    "index": 785,
+    "action": "saved",
+    "slug": "smith-and-the-pharaohs-and-other-tales"
+  },
+  {
+    "index": 786,
+    "action": "skipped"
+  },
+  {
+    "index": 787,
+    "action": "skipped"
+  },
+  {
+    "index": 788,
+    "action": "saved",
+    "slug": "an-outback-marriage-a-story-of-australian-life"
+  },
+  {
+    "index": 789,
+    "action": "skipped"
+  },
+  {
+    "index": 790,
+    "action": "saved",
+    "slug": "the-extraordinary-adventures-of-arsene-lupin-gentleman-burglar"
+  },
+  {
+    "index": 791,
+    "action": "skipped"
+  },
+  {
+    "index": 792,
+    "action": "skipped"
+  },
+  {
+    "index": 793,
+    "action": "skipped"
+  },
+  {
+    "index": 794,
+    "action": "skipped"
+  },
+  {
+    "index": 795,
+    "action": "skipped"
+  },
+  {
+    "index": 796,
+    "action": "skipped"
+  },
+  {
+    "index": 797,
+    "action": "skipped"
+  },
+  {
+    "index": 798,
+    "action": "skipped"
+  },
+  {
+    "index": 799,
+    "action": "skipped"
+  },
+  {
+    "index": 800,
+    "action": "skipped"
+  },
+  {
+    "index": 801,
+    "action": "skipped"
+  },
+  {
+    "index": 802,
+    "action": "skipped"
+  },
+  {
+    "index": 803,
+    "action": "skipped"
+  },
+  {
+    "index": 804,
+    "action": "skipped"
+  },
+  {
+    "index": 805,
+    "action": "skipped"
+  },
+  {
+    "index": 806,
+    "action": "skipped"
+  },
+  {
+    "index": 807,
+    "action": "skipped"
+  },
+  {
+    "index": 808,
+    "action": "skipped"
+  },
+  {
+    "index": 809,
+    "action": "skipped"
+  },
+  {
+    "index": 810,
+    "action": "skipped"
+  },
+  {
+    "index": 811,
+    "action": "skipped"
+  },
+  {
+    "index": 812,
+    "action": "skipped"
+  },
+  {
+    "index": 813,
+    "action": "skipped"
+  },
+  {
+    "index": 814,
+    "action": "skipped"
+  },
+  {
+    "index": 815,
+    "action": "skipped"
+  },
+  {
+    "index": 816,
+    "action": "skipped"
+  },
+  {
+    "index": 817,
+    "action": "skipped"
+  },
+  {
+    "index": 818,
+    "action": "saved",
+    "slug": "three-soldiers"
+  },
+  {
+    "index": 819,
+    "action": "skipped"
+  },
+  {
+    "index": 820,
+    "action": "skipped"
+  },
+  {
+    "index": 821,
+    "action": "skipped"
+  },
+  {
+    "index": 822,
+    "action": "skipped"
+  },
+  {
+    "index": 823,
+    "action": "skipped"
+  },
+  {
+    "index": 824,
+    "action": "skipped"
+  },
+  {
+    "index": 825,
+    "action": "skipped"
+  },
+  {
+    "index": 826,
+    "action": "skipped"
+  },
+  {
+    "index": 827,
+    "action": "skipped"
+  },
+  {
+    "index": 828,
+    "action": "skipped"
+  },
+  {
+    "index": 829,
+    "action": "skipped"
+  },
+  {
+    "index": 830,
+    "action": "skipped"
+  },
+  {
+    "index": 831,
+    "action": "saved",
+    "slug": "darkness-and-dawn"
+  },
+  {
+    "index": 832,
+    "action": "skipped"
+  },
+  {
+    "index": 833,
+    "action": "saved",
+    "slug": "the-book-of-wonder"
+  },
+  {
+    "index": 834,
+    "action": "skipped"
+  },
+  {
+    "index": 835,
+    "action": "skipped"
+  },
+  {
+    "index": 836,
+    "action": "skipped"
+  },
+  {
+    "index": 837,
+    "action": "skipped"
+  },
+  {
+    "index": 838,
+    "action": "saved",
+    "slug": "crucial-instances"
+  },
+  {
+    "index": 839,
+    "action": "skipped"
+  },
+  {
+    "index": 840,
+    "action": "saved",
+    "slug": "the-eight-strokes-of-the-clock"
+  },
+  {
+    "index": 841,
+    "action": "skipped"
+  },
+  {
+    "index": 842,
+    "action": "skipped"
+  },
+  {
+    "index": 843,
+    "action": "skipped"
+  },
+  {
+    "index": 844,
+    "action": "skipped"
+  },
+  {
+    "index": 845,
+    "action": "skipped"
+  },
+  {
+    "index": 846,
+    "action": "skipped"
+  },
+  {
+    "index": 847,
+    "action": "skipped"
+  },
+  {
+    "index": 848,
+    "action": "skipped"
+  },
+  {
+    "index": 849,
+    "action": "skipped"
+  },
+  {
+    "index": 850,
+    "action": "skipped"
+  },
+  {
+    "index": 851,
+    "action": "skipped"
+  },
+  {
+    "index": 852,
+    "action": "skipped"
+  },
+  {
+    "index": 853,
+    "action": "skipped"
+  },
+  {
+    "index": 854,
+    "action": "saved",
+    "slug": "time-and-the-gods"
+  },
+  {
+    "index": 855,
+    "action": "skipped"
+  },
+  {
+    "index": 856,
+    "action": "skipped"
+  },
+  {
+    "index": 857,
+    "action": "skipped"
+  },
+  {
+    "index": 858,
+    "action": "skipped"
+  },
+  {
+    "index": 859,
+    "action": "skipped"
+  },
+  {
+    "index": 860,
+    "action": "skipped"
+  },
+  {
+    "index": 861,
+    "action": "saved",
+    "slug": "young-people-s-pride-a-novel"
+  },
+  {
+    "index": 862,
+    "action": "saved",
+    "slug": "the-mountebank"
+  },
+  {
+    "index": 863,
+    "action": "skipped"
+  },
+  {
+    "index": 864,
+    "action": "saved",
+    "slug": "the-path-of-life"
+  },
+  {
+    "index": 865,
+    "action": "skipped"
+  },
+  {
+    "index": 866,
+    "action": "skipped"
+  },
+  {
+    "index": 867,
+    "action": "skipped"
+  },
+  {
+    "index": 868,
+    "action": "skipped"
+  },
+  {
+    "index": 869,
+    "action": "skipped"
+  },
+  {
+    "index": 870,
+    "action": "skipped"
+  },
+  {
+    "index": 871,
+    "action": "skipped"
+  },
+  {
+    "index": 872,
+    "action": "skipped"
+  },
+  {
+    "index": 873,
+    "action": "skipped"
+  },
+  {
+    "index": 874,
+    "action": "skipped"
+  },
+  {
+    "index": 875,
+    "action": "skipped"
+  },
+  {
+    "index": 876,
+    "action": "skipped"
+  },
+  {
+    "index": 877,
+    "action": "skipped"
+  },
+  {
+    "index": 878,
+    "action": "skipped"
+  },
+  {
+    "index": 879,
+    "action": "skipped"
+  },
+  {
+    "index": 880,
+    "action": "skipped"
+  },
+  {
+    "index": 881,
+    "action": "skipped"
+  },
+  {
+    "index": 882,
+    "action": "skipped"
+  },
+  {
+    "index": 883,
+    "action": "saved",
+    "slug": "the-strong-arm"
+  },
+  {
+    "index": 884,
+    "action": "saved",
+    "slug": "the-last-galley-impressions-and-tales"
+  },
+  {
+    "index": 885,
+    "action": "skipped"
+  },
+  {
+    "index": 886,
+    "action": "saved",
+    "slug": "the-revolutions-of-time"
+  },
+  {
+    "index": 887,
+    "action": "skipped"
+  },
+  {
+    "index": 888,
+    "action": "skipped"
+  },
+  {
+    "index": 889,
+    "action": "skipped"
+  },
+  {
+    "index": 890,
+    "action": "skipped"
+  },
+  {
+    "index": 891,
+    "action": "skipped"
+  },
+  {
+    "index": 892,
+    "action": "skipped"
+  },
+  {
+    "index": 893,
+    "action": "skipped"
+  },
+  {
+    "index": 894,
+    "action": "skipped"
+  },
+  {
+    "index": 895,
+    "action": "skipped"
+  },
+  {
+    "index": 896,
+    "action": "skipped"
+  },
+  {
+    "index": 897,
+    "action": "saved",
+    "slug": "in-a-steamer-chair-and-other-shipboard-stories"
+  },
+  {
+    "index": 898,
+    "action": "skipped"
+  },
+  {
+    "index": 899,
+    "action": "skipped"
+  },
+  {
+    "index": 900,
+    "action": "skipped"
+  },
+  {
+    "index": 901,
+    "action": "skipped"
+  },
+  {
+    "index": 902,
+    "action": "saved",
+    "slug": "the-biography-of-a-grizzly"
+  },
+  {
+    "index": 903,
+    "action": "skipped"
+  },
+  {
+    "index": 904,
+    "action": "skipped"
+  },
+  {
+    "index": 905,
+    "action": "skipped"
+  },
+  {
+    "index": 906,
+    "action": "skipped"
+  },
+  {
+    "index": 907,
+    "action": "saved",
+    "slug": "the-incomplete-amorist"
+  },
+  {
+    "index": 908,
+    "action": "skipped"
+  },
+  {
+    "index": 909,
+    "action": "skipped"
+  },
+  {
+    "index": 910,
+    "action": "skipped"
+  },
+  {
+    "index": 911,
+    "action": "skipped"
+  },
+  {
+    "index": 912,
+    "action": "skipped"
+  },
+  {
+    "index": 913,
+    "action": "skipped"
+  },
+  {
+    "index": 914,
+    "action": "skipped"
+  },
+  {
+    "index": 915,
+    "action": "skipped"
+  },
+  {
+    "index": 916,
+    "action": "skipped"
+  },
+  {
+    "index": 917,
+    "action": "skipped"
+  },
+  {
+    "index": 918,
+    "action": "skipped"
+  },
+  {
+    "index": 919,
+    "action": "skipped"
+  },
+  {
+    "index": 920,
+    "action": "saved",
+    "slug": "the-four-faces-a-mystery"
+  },
+  {
+    "index": 921,
+    "action": "saved",
+    "slug": "it-happened-in-egypt"
+  },
+  {
+    "index": 922,
+    "action": "skipped"
+  },
+  {
+    "index": 923,
+    "action": "skipped"
+  },
+  {
+    "index": 924,
+    "action": "skipped"
+  },
+  {
+    "index": 925,
+    "action": "skipped"
+  },
+  {
+    "index": 926,
+    "action": "skipped"
+  },
+  {
+    "index": 927,
+    "action": "skipped"
+  },
+  {
+    "index": 928,
+    "action": "skipped"
+  },
+  {
+    "index": 929,
+    "action": "saved",
+    "slug": "the-avenger"
+  },
+  {
+    "index": 930,
+    "action": "skipped"
+  },
+  {
+    "index": 931,
+    "action": "saved",
+    "slug": "way-of-the-lawless"
+  },
+  {
+    "index": 932,
+    "action": "skipped"
+  },
+  {
+    "index": 933,
+    "action": "saved",
+    "slug": "k"
+  },
+  {
+    "index": 934,
+    "action": "skipped"
+  },
+  {
+    "index": 935,
+    "action": "saved",
+    "slug": "the-house-on-the-borderland"
+  },
+  {
+    "index": 936,
+    "action": "saved",
+    "slug": "the-mystery"
+  },
+  {
+    "index": 937,
+    "action": "skipped"
+  },
+  {
+    "index": 938,
+    "action": "skipped"
+  },
+  {
+    "index": 939,
+    "action": "skipped"
+  },
+  {
+    "index": 940,
+    "action": "skipped"
+  },
+  {
+    "index": 941,
+    "action": "saved",
+    "slug": "the-czar-s-spy-the-mystery-of-a-silent-love"
+  },
+  {
+    "index": 942,
+    "action": "skipped"
+  },
+  {
+    "index": 943,
+    "action": "skipped"
+  },
+  {
+    "index": 944,
+    "action": "skipped"
+  },
+  {
+    "index": 945,
+    "action": "skipped"
+  },
+  {
+    "index": 946,
+    "action": "saved",
+    "slug": "the-desert-of-wheat"
+  },
+  {
+    "index": 947,
+    "action": "skipped"
+  },
+  {
+    "index": 948,
+    "action": "skipped"
+  },
+  {
+    "index": 949,
+    "action": "skipped"
+  },
+  {
+    "index": 950,
+    "action": "skipped"
+  },
+  {
+    "index": 951,
+    "action": "saved",
+    "slug": "lady-into-fox"
+  },
+  {
+    "index": 952,
+    "action": "skipped"
+  },
+  {
+    "index": 953,
+    "action": "skipped"
+  },
+  {
+    "index": 954,
+    "action": "saved",
+    "slug": "stolen-treasure"
+  },
+  {
+    "index": 955,
+    "action": "saved",
+    "slug": "miss-lulu-bett"
+  },
+  {
+    "index": 956,
+    "action": "skipped"
+  },
+  {
+    "index": 957,
+    "action": "skipped"
+  },
+  {
+    "index": 958,
+    "action": "skipped"
+  },
+  {
+    "index": 959,
+    "action": "skipped"
+  },
+  {
+    "index": 960,
+    "action": "skipped"
+  },
+  {
+    "index": 961,
+    "action": "skipped"
+  },
+  {
+    "index": 962,
+    "action": "skipped"
+  },
+  {
+    "index": 963,
+    "action": "skipped"
+  },
+  {
+    "index": 964,
+    "action": "skipped"
+  },
+  {
+    "index": 965,
+    "action": "skipped"
+  },
+  {
+    "index": 966,
+    "action": "skipped"
+  },
+  {
+    "index": 967,
+    "action": "saved",
+    "slug": "three-john-silence-stories"
+  },
+  {
+    "index": 968,
+    "action": "skipped"
+  },
+  {
+    "index": 969,
+    "action": "skipped"
+  },
+  {
+    "index": 970,
+    "action": "skipped"
+  },
+  {
+    "index": 971,
+    "action": "saved",
+    "slug": "hilda-lessways"
+  },
+  {
+    "index": 972,
+    "action": "skipped"
+  },
+  {
+    "index": 973,
+    "action": "skipped"
+  },
+  {
+    "index": 974,
+    "action": "skipped"
+  },
+  {
+    "index": 975,
+    "action": "skipped"
+  },
+  {
+    "index": 976,
+    "action": "skipped"
+  },
+  {
+    "index": 977,
+    "action": "saved",
+    "slug": "children-of-the-frost"
+  },
+  {
+    "index": 978,
+    "action": "saved",
+    "slug": "the-story-of-the-champions-of-the-round-table"
+  },
+  {
+    "index": 979,
+    "action": "skipped"
+  },
+  {
+    "index": 980,
+    "action": "skipped"
+  },
+  {
+    "index": 981,
+    "action": "saved",
+    "slug": "the-worshipper-of-the-image"
+  },
+  {
+    "index": 982,
+    "action": "skipped"
+  },
+  {
+    "index": 983,
+    "action": "skipped"
+  },
+  {
+    "index": 984,
+    "action": "skipped"
+  },
+  {
+    "index": 985,
+    "action": "saved",
+    "slug": "the-white-waterfall"
+  },
+  {
+    "index": 986,
+    "action": "skipped"
+  },
+  {
+    "index": 987,
+    "action": "skipped"
+  },
+  {
+    "index": 988,
+    "action": "skipped"
+  },
+  {
+    "index": 989,
+    "action": "skipped"
+  },
+  {
+    "index": 990,
+    "action": "skipped"
+  },
+  {
+    "index": 991,
+    "action": "skipped"
+  },
+  {
+    "index": 992,
+    "action": "saved",
+    "slug": "the-eagle-s-shadow"
+  },
+  {
+    "index": 993,
+    "action": "skipped"
+  },
+  {
+    "index": 994,
+    "action": "skipped"
+  },
+  {
+    "index": 995,
+    "action": "saved",
+    "slug": "the-wendigo"
+  },
+  {
+    "index": 996,
+    "action": "skipped"
+  },
+  {
+    "index": 997,
+    "action": "saved",
+    "slug": "buried-alive-a-tale-of-these-days"
+  },
+  {
+    "index": 998,
+    "action": "skipped"
+  },
+  {
+    "index": 999,
+    "action": "saved",
+    "slug": "young-lives"
+  },
+  {
+    "index": 1000,
+    "action": "skipped"
+  },
+  {
+    "index": 1001,
+    "action": "skipped"
+  },
+  {
+    "index": 1002,
+    "action": "saved",
+    "slug": "elusive-isabel"
+  },
+  {
+    "index": 1003,
+    "action": "skipped"
+  },
+  {
+    "index": 1004,
+    "action": "skipped"
+  },
+  {
+    "index": 1005,
+    "action": "skipped"
+  },
+  {
+    "index": 1006,
+    "action": "skipped"
+  },
+  {
+    "index": 1007,
+    "action": "skipped"
+  },
+  {
+    "index": 1008,
+    "action": "saved",
+    "slug": "the-port-of-adventure"
+  },
+  {
+    "index": 1009,
+    "action": "skipped"
+  },
+  {
+    "index": 1010,
+    "action": "saved",
+    "slug": "the-cruise-of-the-dazzler"
+  },
+  {
+    "index": 1011,
+    "action": "skipped"
+  },
+  {
+    "index": 1012,
+    "action": "skipped"
+  },
+  {
+    "index": 1013,
+    "action": "skipped"
+  },
+  {
+    "index": 1014,
+    "action": "skipped"
+  },
+  {
+    "index": 1015,
+    "action": "skipped"
+  },
+  {
+    "index": 1016,
+    "action": "skipped"
+  },
+  {
+    "index": 1017,
+    "action": "skipped"
+  },
+  {
+    "index": 1018,
+    "action": "skipped"
+  },
+  {
+    "index": 1019,
+    "action": "skipped"
+  },
+  {
+    "index": 1020,
+    "action": "skipped"
+  },
+  {
+    "index": 1021,
+    "action": "skipped"
+  },
+  {
+    "index": 1022,
+    "action": "skipped"
+  },
+  {
+    "index": 1023,
+    "action": "skipped"
+  },
+  {
+    "index": 1024,
+    "action": "skipped"
+  },
+  {
+    "index": 1025,
+    "action": "skipped"
+  },
+  {
+    "index": 1026,
+    "action": "skipped"
+  },
+  {
+    "index": 1027,
+    "action": "skipped"
+  },
+  {
+    "index": 1028,
+    "action": "skipped"
+  },
+  {
+    "index": 1029,
+    "action": "skipped"
+  },
+  {
+    "index": 1030,
+    "action": "skipped"
+  },
+  {
+    "index": 1031,
+    "action": "skipped"
+  },
+  {
+    "index": 1032,
+    "action": "skipped"
+  },
+  {
+    "index": 1033,
+    "action": "skipped"
+  },
+  {
+    "index": 1034,
+    "action": "skipped"
+  },
+  {
+    "index": 1035,
+    "action": "skipped"
+  },
+  {
+    "index": 1036,
+    "action": "skipped"
+  },
+  {
+    "index": 1037,
+    "action": "skipped"
+  },
+  {
+    "index": 1038,
+    "action": "skipped"
+  },
+  {
+    "index": 1039,
+    "action": "skipped"
+  },
+  {
+    "index": 1040,
+    "action": "skipped"
+  },
+  {
+    "index": 1041,
+    "action": "skipped"
+  },
+  {
+    "index": 1042,
+    "action": "skipped"
+  },
+  {
+    "index": 1043,
+    "action": "skipped"
+  },
+  {
+    "index": 1044,
+    "action": "skipped"
+  },
+  {
+    "index": 1045,
+    "action": "skipped"
+  },
+  {
+    "index": 1046,
+    "action": "skipped"
+  },
+  {
+    "index": 1047,
+    "action": "skipped"
+  },
+  {
+    "index": 1048,
+    "action": "skipped"
+  },
+  {
+    "index": 1049,
+    "action": "skipped"
+  },
+  {
+    "index": 1050,
+    "action": "skipped"
+  },
+  {
+    "index": 1051,
+    "action": "skipped"
+  },
+  {
+    "index": 1052,
+    "action": "skipped"
+  },
+  {
+    "index": 1053,
+    "action": "skipped"
+  },
+  {
+    "index": 1054,
+    "action": "skipped"
+  },
+  {
+    "index": 1055,
+    "action": "skipped"
+  },
+  {
+    "index": 1056,
+    "action": "skipped"
+  },
+  {
+    "index": 1057,
+    "action": "skipped"
+  },
+  {
+    "index": 1058,
+    "action": "skipped"
+  },
+  {
+    "index": 1059,
+    "action": "skipped"
+  },
+  {
+    "index": 1060,
+    "action": "skipped"
+  },
+  {
+    "index": 1061,
+    "action": "skipped"
+  },
+  {
+    "index": 1062,
+    "action": "skipped"
+  },
+  {
+    "index": 1063,
+    "action": "skipped"
+  },
+  {
+    "index": 1064,
+    "action": "skipped"
+  },
+  {
+    "index": 1065,
+    "action": "skipped"
+  },
+  {
+    "index": 1066,
+    "action": "skipped"
+  },
+  {
+    "index": 1067,
+    "action": "skipped"
+  },
+  {
+    "index": 1068,
+    "action": "skipped"
+  },
+  {
+    "index": 1069,
+    "action": "skipped"
+  },
+  {
+    "index": 1070,
+    "action": "skipped"
+  },
+  {
+    "index": 1071,
+    "action": "skipped"
+  },
+  {
+    "index": 1072,
+    "action": "skipped"
+  },
+  {
+    "index": 1073,
+    "action": "skipped"
+  },
+  {
+    "index": 1074,
+    "action": "skipped"
+  },
+  {
+    "index": 1075,
+    "action": "skipped"
+  },
+  {
+    "index": 1076,
+    "action": "skipped"
+  },
+  {
+    "index": 1077,
+    "action": "skipped"
+  },
+  {
+    "index": 1078,
+    "action": "skipped"
+  },
+  {
+    "index": 1079,
+    "action": "skipped"
+  },
+  {
+    "index": 1080,
+    "action": "skipped"
+  },
+  {
+    "index": 1081,
+    "action": "skipped"
+  },
+  {
+    "index": 1082,
+    "action": "skipped"
+  },
+  {
+    "index": 1083,
+    "action": "skipped"
+  },
+  {
+    "index": 1084,
+    "action": "skipped"
+  },
+  {
+    "index": 1085,
+    "action": "skipped"
+  },
+  {
+    "index": 1086,
+    "action": "skipped"
+  },
+  {
+    "index": 1087,
+    "action": "skipped"
+  },
+  {
+    "index": 1088,
+    "action": "skipped"
+  },
+  {
+    "index": 1089,
+    "action": "skipped"
+  },
+  {
+    "index": 1090,
+    "action": "skipped"
+  },
+  {
+    "index": 1091,
+    "action": "skipped"
+  },
+  {
+    "index": 1092,
+    "action": "skipped"
+  },
+  {
+    "index": 1093,
+    "action": "saved",
+    "slug": "somewhere-in-france"
+  },
+  {
+    "index": 1094,
+    "action": "saved",
+    "slug": "no-hero"
+  },
+  {
+    "index": 1095,
+    "action": "skipped"
+  },
+  {
+    "index": 1096,
+    "action": "skipped"
+  },
+  {
+    "index": 1097,
+    "action": "skipped"
+  },
+  {
+    "index": 1098,
+    "action": "skipped"
+  },
+  {
+    "index": 1099,
+    "action": "skipped"
+  },
+  {
+    "index": 1100,
+    "action": "skipped"
+  },
+  {
+    "index": 1101,
+    "action": "skipped"
+  },
+  {
+    "index": 1102,
+    "action": "skipped"
+  },
+  {
+    "index": 1103,
+    "action": "saved",
+    "slug": "the-exploits-of-brigadier-gerard"
+  },
+  {
+    "index": 1104,
+    "action": "skipped"
+  },
+  {
+    "index": 1105,
+    "action": "skipped"
+  },
+  {
+    "index": 1106,
+    "action": "skipped"
+  },
+  {
+    "index": 1107,
+    "action": "skipped"
+  },
+  {
+    "index": 1108,
+    "action": "skipped"
+  },
+  {
+    "index": 1109,
+    "action": "skipped"
+  },
+  {
+    "index": 1110,
+    "action": "skipped"
+  },
+  {
+    "index": 1111,
+    "action": "skipped"
+  },
+  {
+    "index": 1112,
+    "action": "skipped"
+  },
+  {
+    "index": 1113,
+    "action": "saved",
+    "slug": "the-sky-line-of-spruce"
+  },
+  {
+    "index": 1114,
+    "action": "skipped"
+  },
+  {
+    "index": 1115,
+    "action": "skipped"
+  },
+  {
+    "index": 1116,
+    "action": "saved",
+    "slug": "the-willows"
+  },
+  {
+    "index": 1117,
+    "action": "skipped"
+  },
+  {
+    "index": 1118,
+    "action": "skipped"
+  },
+  {
+    "index": 1119,
+    "action": "skipped"
+  },
+  {
+    "index": 1120,
+    "action": "skipped"
+  },
+  {
+    "index": 1121,
+    "action": "saved",
+    "slug": "balcony-stories"
+  },
+  {
+    "index": 1122,
+    "action": "skipped"
+  },
+  {
+    "index": 1123,
+    "action": "skipped"
+  },
+  {
+    "index": 1124,
+    "action": "skipped"
+  },
+  {
+    "index": 1125,
+    "action": "skipped"
+  },
+  {
+    "index": 1126,
+    "action": "skipped"
+  },
+  {
+    "index": 1127,
+    "action": "skipped"
+  },
+  {
+    "index": 1128,
+    "action": "skipped"
+  },
+  {
+    "index": 1129,
+    "action": "skipped"
+  },
+  {
+    "index": 1130,
+    "action": "skipped"
+  },
+  {
+    "index": 1131,
+    "action": "skipped"
+  },
+  {
+    "index": 1132,
+    "action": "saved",
+    "slug": "the-eyes-of-the-world"
+  },
+  {
+    "index": 1133,
+    "action": "skipped"
+  },
+  {
+    "index": 1134,
+    "action": "skipped"
+  },
+  {
+    "index": 1135,
+    "action": "skipped"
+  },
+  {
+    "index": 1136,
+    "action": "skipped"
+  },
+  {
+    "index": 1137,
+    "action": "skipped"
+  },
+  {
+    "index": 1138,
+    "action": "skipped"
+  },
+  {
+    "index": 1139,
+    "action": "skipped"
+  },
+  {
+    "index": 1140,
+    "action": "skipped"
+  },
+  {
+    "index": 1141,
+    "action": "skipped"
+  },
+  {
+    "index": 1142,
+    "action": "skipped"
+  },
+  {
+    "index": 1143,
+    "action": "skipped"
+  },
+  {
+    "index": 1144,
+    "action": "skipped"
+  },
+  {
+    "index": 1145,
+    "action": "saved",
+    "slug": "yolanda-maid-of-burgundy"
+  },
+  {
+    "index": 1146,
+    "action": "skipped"
+  },
+  {
+    "index": 1147,
+    "action": "skipped"
+  },
+  {
+    "index": 1148,
+    "action": "skipped"
+  },
+  {
+    "index": 1149,
+    "action": "skipped"
+  },
+  {
+    "index": 1150,
+    "action": "skipped"
+  },
+  {
+    "index": 1151,
+    "action": "skipped"
+  },
+  {
+    "index": 1152,
+    "action": "skipped"
+  },
+  {
+    "index": 1153,
+    "action": "skipped"
+  },
+  {
+    "index": 1154,
+    "action": "skipped"
+  },
+  {
+    "index": 1155,
+    "action": "skipped"
+  },
+  {
+    "index": 1156,
+    "action": "skipped"
+  },
+  {
+    "index": 1157,
+    "action": "skipped"
+  },
+  {
+    "index": 1158,
+    "action": "skipped"
+  },
+  {
+    "index": 1159,
+    "action": "skipped"
+  },
+  {
+    "index": 1160,
+    "action": "skipped"
+  },
+  {
+    "index": 1161,
+    "action": "skipped"
+  },
+  {
+    "index": 1162,
+    "action": "skipped"
+  },
+  {
+    "index": 1163,
+    "action": "skipped"
+  },
+  {
+    "index": 1164,
+    "action": "skipped"
+  },
+  {
+    "index": 1165,
+    "action": "skipped"
+  },
+  {
+    "index": 1166,
+    "action": "skipped"
+  },
+  {
+    "index": 1167,
+    "action": "skipped"
+  },
+  {
+    "index": 1168,
+    "action": "skipped"
+  },
+  {
+    "index": 1169,
+    "action": "saved",
+    "slug": "castles-in-the-air"
+  },
+  {
+    "index": 1170,
+    "action": "skipped"
+  },
+  {
+    "index": 1171,
+    "action": "skipped"
+  },
+  {
+    "index": 1172,
+    "action": "skipped"
+  },
+  {
+    "index": 1173,
+    "action": "skipped"
+  },
+  {
+    "index": 1174,
+    "action": "skipped"
+  },
+  {
+    "index": 1175,
+    "action": "skipped"
+  },
+  {
+    "index": 1176,
+    "action": "skipped"
+  },
+  {
+    "index": 1177,
+    "action": "skipped"
+  },
+  {
+    "index": 1178,
+    "action": "saved",
+    "slug": "the-regent"
+  },
+  {
+    "index": 1179,
+    "action": "skipped"
+  },
+  {
+    "index": 1180,
+    "action": "skipped"
+  },
+  {
+    "index": 1181,
+    "action": "skipped"
+  },
+  {
+    "index": 1182,
+    "action": "skipped"
+  },
+  {
+    "index": 1183,
+    "action": "skipped"
+  },
+  {
+    "index": 1184,
+    "action": "skipped"
+  },
+  {
+    "index": 1185,
+    "action": "skipped"
+  },
+  {
+    "index": 1186,
+    "action": "skipped"
+  },
+  {
+    "index": 1187,
+    "action": "saved",
+    "slug": "wells-brothers-the-young-cattle-kings"
+  },
+  {
+    "index": 1188,
+    "action": "skipped"
+  },
+  {
+    "index": 1189,
+    "action": "saved",
+    "slug": "the-air-trust"
+  },
+  {
+    "index": 1190,
+    "action": "skipped"
+  },
+  {
+    "index": 1191,
+    "action": "skipped"
+  },
+  {
+    "index": 1192,
+    "action": "skipped"
+  },
+  {
+    "index": 1193,
+    "action": "skipped"
+  },
+  {
+    "index": 1194,
+    "action": "saved",
+    "slug": "the-price-of-love"
+  },
+  {
+    "index": 1195,
+    "action": "skipped"
+  },
+  {
+    "index": 1196,
+    "action": "skipped"
+  },
+  {
+    "index": 1197,
+    "action": "skipped"
+  },
+  {
+    "index": 1198,
+    "action": "saved",
+    "slug": "the-card-a-story-of-adventure-in-the-five-towns"
+  },
+  {
+    "index": 1199,
+    "action": "saved",
+    "slug": "the-uncrowned-king"
+  },
+  {
+    "index": 1200,
+    "action": "skipped",
+    "slug": "the-matador-of-the-five-towns-and-other-stories"
+  },
+  {
+    "index": 1201,
+    "action": "skipped"
+  },
+  {
+    "index": 1202,
+    "action": "skipped"
+  },
+  {
+    "index": 1203,
+    "action": "skipped"
+  },
+  {
+    "index": 1204,
+    "action": "skipped"
+  },
+  {
+    "index": 1205,
+    "action": "skipped"
+  },
+  {
+    "index": 1206,
+    "action": "skipped"
+  },
+  {
+    "index": 1207,
+    "action": "skipped"
+  },
+  {
+    "index": 1208,
+    "action": "skipped"
+  },
+  {
+    "index": 1209,
+    "action": "skipped"
+  },
+  {
+    "index": 1210,
+    "action": "skipped"
+  },
+  {
+    "index": 1211,
+    "action": "skipped"
+  },
+  {
+    "index": 1212,
+    "action": "skipped"
+  },
+  {
+    "index": 1213,
+    "action": "skipped"
+  },
+  {
+    "index": 1214,
+    "action": "saved",
+    "slug": "the-rules-of-the-game"
+  },
+  {
+    "index": 1215,
+    "action": "skipped"
+  },
+  {
+    "index": 1216,
+    "action": "skipped"
+  },
+  {
+    "index": 1217,
+    "action": "skipped"
+  },
+  {
+    "index": 1218,
+    "action": "skipped"
+  },
+  {
+    "index": 1219,
+    "action": "skipped"
+  },
+  {
+    "index": 1220,
+    "action": "saved",
+    "slug": "tales-of-the-five-towns"
+  },
+  {
+    "index": 1221,
+    "action": "skipped"
+  },
+  {
+    "index": 1222,
+    "action": "skipped"
+  },
+  {
+    "index": 1223,
+    "action": "skipped"
+  },
+  {
+    "index": 1224,
+    "action": "skipped"
+  },
+  {
+    "index": 1225,
+    "action": "skipped"
+  },
+  {
+    "index": 1226,
+    "action": "skipped"
+  },
+  {
+    "index": 1227,
+    "action": "skipped"
+  },
+  {
+    "index": 1228,
+    "action": "skipped"
+  },
+  {
+    "index": 1229,
+    "action": "saved",
+    "slug": "the-lost-ambassador-or-the-search-for-the-missing-delora"
+  },
+  {
+    "index": 1230,
+    "action": "skipped"
+  },
+  {
+    "index": 1231,
+    "action": "skipped"
+  },
+  {
+    "index": 1232,
+    "action": "skipped"
+  },
+  {
+    "index": 1233,
+    "action": "skipped"
+  },
+  {
+    "index": 1234,
+    "action": "skipped"
+  },
+  {
+    "index": 1235,
+    "action": "skipped"
+  },
+  {
+    "index": 1236,
+    "action": "skipped"
+  },
+  {
+    "index": 1237,
+    "action": "skipped"
+  },
+  {
+    "index": 1238,
+    "action": "skipped"
+  },
+  {
+    "index": 1239,
+    "action": "saved",
+    "slug": "the-white-morning-a-novel-of-the-power-of-the-german-women-in-wartime"
+  },
+  {
+    "index": 1240,
+    "action": "skipped"
+  },
+  {
+    "index": 1241,
+    "action": "saved",
+    "slug": "two-little-savages-being-the-adventures-of-two-boys-who-lived-as-indians-and-what-they-learned"
+  },
+  {
+    "index": 1242,
+    "action": "skipped",
+    "slug": "a-heroine-of-france-the-story-of-joan-of-arc"
+  },
+  {
+    "index": 1243,
+    "action": "skipped"
+  },
+  {
+    "index": 1244,
+    "action": "skipped"
+  },
+  {
+    "index": 1245,
+    "action": "skipped"
+  },
+  {
+    "index": 1246,
+    "action": "skipped"
+  },
+  {
+    "index": 1247,
+    "action": "skipped"
+  },
+  {
+    "index": 1248,
+    "action": "skipped"
+  },
+  {
+    "index": 1249,
+    "action": "skipped"
+  },
+  {
+    "index": 1250,
+    "action": "skipped"
+  },
+  {
+    "index": 1251,
+    "action": "skipped"
+  },
+  {
+    "index": 1252,
+    "action": "skipped"
+  },
+  {
+    "index": 1253,
+    "action": "skipped"
+  },
+  {
+    "index": 1254,
+    "action": "skipped"
+  },
+  {
+    "index": 1255,
+    "action": "skipped"
+  },
+  {
+    "index": 1256,
+    "action": "skipped"
+  },
+  {
+    "index": 1257,
+    "action": "skipped"
+  },
+  {
+    "index": 1258,
+    "action": "skipped"
+  },
+  {
+    "index": 1259,
+    "action": "skipped"
+  },
+  {
+    "index": 1260,
+    "action": "skipped"
+  },
+  {
+    "index": 1261,
+    "action": "skipped"
+  },
+  {
+    "index": 1262,
+    "action": "saved",
+    "slug": "lady-rose-s-daughter"
+  },
+  {
+    "index": 1263,
+    "action": "skipped"
+  },
+  {
+    "index": 1264,
+    "action": "skipped"
+  },
+  {
+    "index": 1265,
+    "action": "skipped"
+  },
+  {
+    "index": 1266,
+    "action": "skipped"
+  },
+  {
+    "index": 1267,
+    "action": "saved",
+    "slug": "tales-of-wonder"
+  },
+  {
+    "index": 1268,
+    "action": "saved",
+    "slug": "lady-merton-colonist"
+  },
+  {
+    "index": 1269,
+    "action": "skipped"
+  },
+  {
+    "index": 1270,
+    "action": "skipped"
+  },
+  {
+    "index": 1271,
+    "action": "saved",
+    "slug": "the-sign-of-the-red-cross-a-tale-of-old-london"
+  },
+  {
+    "index": 1272,
+    "action": "saved",
+    "slug": "no-13-washington-square"
+  },
+  {
+    "index": 1273,
+    "action": "skipped"
+  },
+  {
+    "index": 1274,
+    "action": "skipped"
+  },
+  {
+    "index": 1275,
+    "action": "skipped"
+  },
+  {
+    "index": 1276,
+    "action": "skipped"
+  },
+  {
+    "index": 1277,
+    "action": "skipped"
+  },
+  {
+    "index": 1278,
+    "action": "skipped"
+  },
+  {
+    "index": 1279,
+    "action": "skipped"
+  },
+  {
+    "index": 1280,
+    "action": "skipped"
+  },
+  {
+    "index": 1281,
+    "action": "saved",
+    "slug": "the-mysterious-rider"
+  },
+  {
+    "index": 1282,
+    "action": "skipped"
+  },
+  {
+    "index": 1283,
+    "action": "saved",
+    "slug": "the-hill-of-dreams"
+  },
+  {
+    "index": 1284,
+    "action": "skipped"
+  },
+  {
+    "index": 1285,
+    "action": "skipped"
+  },
+  {
+    "index": 1286,
+    "action": "skipped"
+  },
+  {
+    "index": 1287,
+    "action": "skipped"
+  },
+  {
+    "index": 1288,
+    "action": "saved",
+    "slug": "king-alfred-s-viking-a-story-of-the-first-english-fleet"
+  },
+  {
+    "index": 1289,
+    "action": "skipped"
+  },
+  {
+    "index": 1290,
+    "action": "saved",
+    "slug": "mr-britling-sees-it-through"
+  },
+  {
+    "index": 1291,
+    "action": "saved",
+    "slug": "gordon-keith"
+  },
+  {
+    "index": 1292,
+    "action": "skipped"
+  },
+  {
+    "index": 1293,
+    "action": "skipped"
+  },
+  {
+    "index": 1294,
+    "action": "skipped"
+  },
+  {
+    "index": 1295,
+    "action": "skipped"
+  },
+  {
+    "index": 1296,
+    "action": "skipped"
+  },
+  {
+    "index": 1297,
+    "action": "skipped"
+  },
+  {
+    "index": 1298,
+    "action": "skipped"
+  },
+  {
+    "index": 1299,
+    "action": "skipped"
+  },
+  {
+    "index": 1300,
+    "action": "saved",
+    "slug": "the-marriage-of-william-ashe"
+  },
+  {
+    "index": 1301,
+    "action": "skipped"
+  },
+  {
+    "index": 1302,
+    "action": "skipped"
+  },
+  {
+    "index": 1303,
+    "action": "saved",
+    "slug": "if-winter-comes"
+  },
+  {
+    "index": 1304,
+    "action": "skipped"
+  },
+  {
+    "index": 1305,
+    "action": "skipped"
+  },
+  {
+    "index": 1306,
+    "action": "saved",
+    "slug": "the-red-redmaynes"
+  },
+  {
+    "index": 1307,
+    "action": "skipped"
+  },
+  {
+    "index": 1308,
+    "action": "skipped"
+  },
+  {
+    "index": 1309,
+    "action": "saved",
+    "slug": "the-golden-scarecrow"
+  },
+  {
+    "index": 1310,
+    "action": "skipped"
+  },
+  {
+    "index": 1311,
+    "action": "skipped"
+  },
+  {
+    "index": 1312,
+    "action": "saved",
+    "slug": "the-romance-of-tristan-and-iseult"
+  },
+  {
+    "index": 1313,
+    "action": "skipped"
+  },
+  {
+    "index": 1314,
+    "action": "skipped"
+  },
+  {
+    "index": 1315,
+    "action": "skipped"
+  },
+  {
+    "index": 1316,
+    "action": "saved",
+    "slug": "the-necromancers"
+  },
+  {
+    "index": 1317,
+    "action": "skipped"
+  },
+  {
+    "index": 1318,
+    "action": "saved",
+    "slug": "truxton-king-a-story-of-graustark"
+  },
+  {
+    "index": 1319,
+    "action": "saved",
+    "slug": "atlantida"
+  },
+  {
+    "index": 1320,
+    "action": "saved",
+    "slug": "queed-a-novel"
+  }
+]

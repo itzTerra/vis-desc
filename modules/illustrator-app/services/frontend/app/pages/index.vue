@@ -45,10 +45,10 @@
     </div>
     <div v-if="pdfUrl" class="flex bg-base-300">
       <div class="flex-grow">
-        <div class="relative border border-gray-300 rounded overflow-hidden">
+        <div class="relative border border-gray-300 rounded">
           <ClientOnly>
             <div ref="pdfEmbedWrapper" class="pdf-wrapper">
-              <div v-for="pageNum in pageNums" :key="pageNum" ref="pageRefs" :style="(getPagePlaceholderStyle(pageNum) as StyleValue)">
+              <div v-for="pageNum in pageNums" :key="pageNum" ref="pageRefs" :style="(pagePlaceholderStyles[pageNum - 1] as StyleValue)">
                 <VuePdfEmbed
                   v-if="pageVisibility[pageNum]"
                   annotation-layer
@@ -60,28 +60,20 @@
                 <div
                   v-else
                   class="skeleton h-full w-full"
+                  :data-page="pageNum"
                   style="position:absolute; inset:0;"
                 />
               </div>
-              <PolygonHighlight
-                v-if="alignedSegments.length"
-                :segments="alignedSegments"
+              <HighlightLayer
+                v-if="highlights.length"
+                ref="highlightLayer"
+                :highlights="highlights"
+                :selected-highlights="selectedHighlights"
                 :page-refs="pageRefs"
+                @select="(index) => toggleHighlightSelection(index)"
               />
             </div>
           </ClientOnly>
-          <!-- Highlights Layer -->
-          <Highlight
-            v-for="(highlight, index) in highlights"
-            :key="index"
-            ref="highlightDivs"
-            :highlight="highlight"
-            :index="index"
-            :highlights="highlights"
-            :selected-highlights="selectedHighlights"
-            :style="(highlightStyles[index] as StyleValue)"
-            @select="toggleHighlightSelection"
-          />
         </div>
       </div>
       <div class="w-[512px] h-[90dvh]">
@@ -98,6 +90,7 @@
             <img v-else :src="highlight.imageUrl" alt="ai-illustration">
           </Transition>
         </figure>
+        <div>container width: {{ containerWidth }}</div>
         <div v-for="(visible, page) in pageVisibility" :key="page">
           {{ page }}: {{ visible }}
         </div>
@@ -139,20 +132,17 @@
 </template>
 
 <script setup lang="ts">
-import type { Highlight, AlignedSegment } from "~/types/common";
+import type { Highlight } from "~/types/common";
 import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
 import type { StyleValue } from "vue";
 import "vue-pdf-embed/dist/styles/annotationLayer.css";
 import "vue-pdf-embed/dist/styles/textLayer.css";
-import type HighlightComponent from "~/components/Highlight.vue";
-import PolygonHighlight from "~/components/PolygonHighlight.vue";
 
 type Segment = { segment: string, score: number, time_received: number };
 type SocketMessage = { content: unknown, type: "segment" | "info" | "error" | "success" };
 
 const SCORE_THRESHOLD = 0.95;
 
-const { highlights, performSearch, resetHighlight } = usePdfViewer();
 const nuxtApp = useNuxtApp();
 const call = nuxtApp.$api;
 
@@ -161,7 +151,7 @@ const modelSelect = ref<string>("random");
 const isLoading = ref(false);
 const segmentCount = ref(0);
 const scoredSegments = reactive<Segment[]>([]);
-const alignedSegments = reactive<AlignedSegment[]>([]);
+const highlights = reactive<Highlight[]>([]);
 const selectedHighlights = reactive<Highlight[]>([]);
 const searchInput = ref("");
 const currentSearchIndex = ref(0);
@@ -171,7 +161,7 @@ const currentSearchIndex = ref(0);
  */
 const currentSearchSetIndex = ref(0);
 
-const highlightDivs = ref<(typeof HighlightComponent)[]>([]);
+const highlightLayer = ref<InstanceType<typeof import("~/components/HighlightLayer.vue").default> | null>(null);
 const pdfEmbedWrapper = ref<HTMLElement | null>(null);
 const { doc } = useVuePdfEmbed({ source: pdfUrl });
 const pdfRenderKey = ref(0);
@@ -186,46 +176,43 @@ const PRELOAD_PAGES = 4;
 const DEFAULT_PAGE_ASPECT_RATIO = 1.4142; // A4 fallback (height / width)
 const pageAspectRatios = reactive<Record<number, number>>({});
 const containerWidth = ref(0);
-let resizeObserver: ResizeObserver | null = null;
-
-onMounted(() => {
-  // Track width so placeholders keep correct height on resize
-  nextTick(() => {
-    if (pdfEmbedWrapper.value) {
-      resizeObserver = new ResizeObserver(entries => {
-        for (const entry of entries) {
-          containerWidth.value = entry.contentRect.width;
-        }
-      });
-      resizeObserver.observe(pdfEmbedWrapper.value);
-      containerWidth.value = pdfEmbedWrapper.value.getBoundingClientRect().width;
-    }
-  });
-
-  // Pre-fetch first page ratio to improve initial placeholder accuracy
-  watch(doc, async (d) => {
-    if (d) {
-      const page = await d.getPage(1);
-      const vp = page.getViewport({ scale: 1 });
-      pageAspectRatios[1] = vp.height / vp.width;
-    }
-  }, { immediate: true });
+const resizeObserver: ResizeObserver | null = new ResizeObserver(entries => {
+  for (const entry of entries) {
+    containerWidth.value = entry.contentRect.width;
+  }
 });
 
+// Pre-fetch first page ratio to improve initial placeholder accuracy
+watch(doc, async (d) => {
+  if (d) {
+    const page = await d.getPage(1);
+    const vp = page.getViewport({ scale: 1 });
+    pageAspectRatios[1] = vp.height / vp.width;
+  }
+}, { immediate: true });
 
-function getPageHeight(pageNum: number) {
-  const ratio = pageAspectRatios[pageNum] || pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
+watch(pdfEmbedWrapper, (newVal, oldVal) => {
+  if (oldVal && resizeObserver) {
+    resizeObserver.unobserve(oldVal);
+    return;
+  }
+  if (newVal && resizeObserver) {
+    resizeObserver.observe(newVal);
+    containerWidth.value = newVal.getBoundingClientRect().width;
+  }
+});
+
+const pageHeight = computed(() => {
+  const ratio = pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
   return containerWidth.value ? containerWidth.value * ratio : 1000; // fallback height
-}
+});
 
-// Compute placeholder style for pages not yet rendered
-function getPagePlaceholderStyle(pageNum: number) {
-  const height = getPageHeight(pageNum);
-  return {
-    minHeight: `${height}px`,
+const pagePlaceholderStyles = computed(() => {
+  return pageNums.value.map(() => ({
+    minHeight: `${pageHeight.value}px`,
     position: "relative",
-  };
-}
+  }));
+});
 
 const resetPageIntersectionObserver = () => {
   pageIntersectionObserver?.disconnect();
@@ -254,7 +241,7 @@ const resetPageIntersectionObserver = () => {
     });
   }, {
     root: null,
-    rootMargin: `${PRELOAD_PAGES * getPageHeight(1)}px 0px`, // pre-load ahead
+    rootMargin: `${PRELOAD_PAGES * pageHeight.value}px 0px`, // pre-load ahead
     threshold: 0.05, // require some actual area visible
   });
   pageRefs.value.forEach((element) => {
@@ -291,12 +278,16 @@ const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
     // console.log("socket received:", data);
     switch (data.type) {
     case "segment":
-      scoredSegments.push({
-        ...(data.content as Segment),
-        time_received: Date.now()
-      });
-      highlightSegment(data.content as Segment);
-      break;
+    { scoredSegments.push({
+      ...(data.content as Segment),
+      time_received: Date.now()
+    });
+    const foundSegment = highlights.find((seg) => seg.text === (data.content as Segment).segment);
+    if (foundSegment) {
+      foundSegment.score = (data.content as Segment).score;
+    }
+    highlightSegment(data.content as Segment);
+    break; }
     case "info":
       console.log("WS[INFO]:", data.content);
       break;
@@ -314,10 +305,8 @@ const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
 
 function fullReset() {
   stopSegmentLoading();
-  resetHighlight();
   pdfUrl.value = null;
   pdfRenderKey.value++;
-  highlights.length = 0;
   selectedHighlights.length = 0;
   searchInput.value = "";
 }
@@ -340,7 +329,7 @@ const handleFileUpload = async (event: any) => {
     segmentCount.value = data.segment_count;
     // collect initial aligned segments with polygons if provided
     if (Array.isArray(data.segments)) {
-      alignedSegments.splice(0, alignedSegments.length, ...data.segments);
+      highlights.splice(0, highlights.length, ...data.segments);
     }
     socket.open();
     socket.send(JSON.stringify({ ws_key: data.ws_key }));
@@ -359,42 +348,35 @@ function stopSegmentLoading() {
   onDisconnected();
 }
 
-const searchFailedHighlights = reactive<Highlight[]>([]);
-function printFailedHighlights() {
-  console.log("Failed highlights:", searchFailedHighlights);
+function getHighlightBounding(highlight: Highlight) {
+  // Need to convert normalized first polygon to bounding box
+  if (!highlight.polygons) return null;
+  const firstPoly = highlight.polygons[Object.keys(highlight.polygons)[0] as any];
+  // get lowest and highest of y and the other extremes for x
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of firstPoly) {
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
 }
-if (!("$printFailedHighlights" in nuxtApp)) {
-  nuxtApp.provide("printFailedHighlights", printFailedHighlights);
-}
-
-const highlightStyles = computed(() =>
-  highlights.map((highlight) => getHighlightStyle(highlight))
-);
-function getHighlightStyle(highlight: Highlight) {
-  if (!pdfEmbedWrapper.value) return {};
-  const pdfEmbedBounding = pdfEmbedWrapper.value.getBoundingClientRect();
-  const res = {
-    top: `${highlight.y - (pdfEmbedBounding.y + window.scrollY)}px`,
-    left: `${highlight.x - (pdfEmbedBounding.x + window.scrollX)}px`,
-    width: `${highlight.width}px`,
-    height: `${highlight.height}px`,
-    position: "absolute",
-    borderRadius: "4px",
-  };
-  // console.log("getHighlightStyle called, result:", res);
-  return res;
-};
 
 const IMAGE_HEIGHT = 512;
 
 function getHighlightImageStyle(highlight: Highlight) {
   if (!pdfEmbedWrapper.value) return {};
   const pdfEmbedBounding = pdfEmbedWrapper.value.getBoundingClientRect();
-  let top = highlight.y - (pdfEmbedBounding.y + window.scrollY);
-  if (highlight.height < IMAGE_HEIGHT) {
+  const highlightBounding = getHighlightBounding(highlight);
+  if (!highlightBounding) return {};
+  let top = highlightBounding.y - (pdfEmbedBounding.y + window.scrollY);
+  if (highlightBounding.height < IMAGE_HEIGHT) {
     // align center of image to center of highlight
-    top = top - IMAGE_HEIGHT / 2 + highlight.height / 2;
-
+    top = top - IMAGE_HEIGHT / 2 + highlightBounding.height / 2;
   }
   return {
     top: `${top}px`,
@@ -403,19 +385,7 @@ function getHighlightImageStyle(highlight: Highlight) {
 }
 
 function highlightSegment(segment: Segment) {
-  const found = performSearch(pdfEmbedWrapper.value!, segment.segment);
-  if (found.length === 0) {
-    searchFailedHighlights.push({
-      text: segment.segment,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      score: segment.score
-    });
-    return;
-  }
-  for (const highlight of found) {
+  for (const highlight of highlights) {
     if (highlight.text === segment.segment) {
       highlight.score = segment.score;
       if (highlight.score >= SCORE_THRESHOLD && !selectedHighlights.includes(highlight)) {
@@ -443,7 +413,7 @@ function onSearchPrevNext(index: number) {
     searchInput.value = highlight.text || "";
     const highlightsIndex = currentSearchSet.value === highlights ? index : highlights.findIndex(h => h.text === highlight.text);
     console.log("highlightsIndex:", highlightsIndex);
-    highlightDivs.value[highlightsIndex]?.$el.scrollIntoView({
+    highlightLayer.value?.highlightRefs[highlightsIndex]?.scrollIntoView({
       block: "center"
     });
   }

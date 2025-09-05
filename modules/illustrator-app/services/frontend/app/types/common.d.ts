@@ -10,28 +10,10 @@ export type ParagraphPosition = {
 }
 
 export type Highlight = {
-  text?: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  score?: number;
+  text: string;
+  polygons: Record<number, number[][]>; // page -> list of polygons, each polygon a list of [x,y]
+  score?: number; // may be attached later when scoring arrives
   imageLoading?: boolean;
   imageUrl?: string;
-};
-
-// Backend aligned segment page span with polygon geometry (normalized coordinates 0-1)
-export type SegmentPageSpan = {
-  page: number;
-  start: number;
-  end: number;
-  polygons: number[][][]; // list of polygons, each polygon a list of [x,y]
-};
-
-export type AlignedSegment = {
-  text: string;
-  found: boolean;
-  page_spans: SegmentPageSpan[];
-  score?: number; // may be attached later when scoring arrives
 };
 

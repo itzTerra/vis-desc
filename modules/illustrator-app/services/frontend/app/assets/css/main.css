@@ -1,13 +1,6 @@
 .highlight-dropdown {
   position: absolute;
-  /* TODO make this work */
-  /* user-select: none;
-  pointer-events: none; */
-
-  /* > :not(.dropdown-content) {
-    user-select: none;
-    pointer-events: none;
-  } */
+  position-area: unset;
 
   .highlight-dropdown-content {
     width: 100%;
@@ -17,16 +10,20 @@
     &:hover,
     &:has(+ .dropdown-content:hover),
     &.highlight-dropdown-content__hovered {
-      background-color: oklch(from var(--color-info) l c h / 0.25);
+      .poly-shape {
+        stroke: oklch(from var(--color-info) l c h / 0.25);
+        background-color: oklch(from var(--color-info) l c h / 0.25);
+        opacity: 0.4;
+      }
     }
   }
 
-  .dropdown-content {
-    top: 95%;
-  }
-
   .highlight-selected {
-    background-color: oklch(from var(--color-primary) l c h / 0.25);
+    .poly-shape {
+        stroke: oklch(from var(--color-info) l c h / 0.25);
+        background-color: oklch(from var(--color-info) l c h / 0.25);
+        opacity: 0.4;
+      }
   }
 }
 

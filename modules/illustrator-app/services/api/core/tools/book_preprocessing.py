@@ -474,123 +474,189 @@ class TextAlignmentIndex:
             )
         return results
 
-    def _page_word_index(self, doc, page_number: int):
-        if page_number in self.page_words_cache:
-            return (
-                self.raw_pages[page_number],
-                self.page_words_cache[page_number],
-                doc[page_number],
-            )
-        page = doc[page_number]
-        page_raw = (
-            self.raw_pages[page_number] if page_number < len(self.raw_pages) else ""
-        )
-        if not page_raw:
-            return "", [], page
-        tp = page.get_textpage()
-        try:
-            words = tp.extractWORDS()  # (x0,y0,x1,y1,word,block,line,word_no)
-        except Exception:
-            # fallback to char index
-            return self.raw_pages[page_number], [], page
+    def spans_to_page_polygons(
+        self, doc, page_spans: list[SegmentPageSpan]
+    ) -> dict[int, list[tuple[float, float]]]:
+        """Return precise paragraph polygons per page (at most 2 pages).
 
-        pointer = 0
-        items = []
-        for x0, y0, x1, y1, wtext, _block, line_no, _wno in words:
-            search_from = pointer
-            while search_from < len(page_raw) and page_raw[search_from].isspace():
-                search_from += 1
-            candidate_start = page_raw.find(
-                wtext, search_from, min(len(page_raw), search_from + 500)
-            )
-            if candidate_start == -1:
-                # Could not align this word; skip but do not move pointer
-                continue
-            start = candidate_start
-            end = start + len(wtext)
-            pointer = end
-            items.append(
-                {"start": start, "end": end, "line": line_no, "rect": (x0, y0, x1, y1)}
-            )
-        self.page_words_cache[page_number] = items
-        return page_raw, items, page
-
-    def _merge_line_rects(
-        self, rects: list[tuple], gap_tolerance: float = 2.0
-    ) -> list[tuple]:
-        if not rects:
-            return []
-        rects_sorted = sorted(rects, key=lambda r: r[0])  # by x0
-        merged: list[tuple] = []
-        cur = list(rects_sorted[0])  # mutable
-        for r in rects_sorted[1:]:
-            cur[0] = min(cur[0], r[0])
-            cur[1] = min(cur[1], r[1])
-            cur[2] = max(cur[2], r[2])
-            cur[3] = max(cur[3], r[3])
-        merged.append(tuple(cur))
-        return merged
-
-    def _segment_polygons_for_page_span(
-        self,
-        doc,
-        page_idx: int,
-        start: int,
-        end: int,
-    ) -> list[list[list[float]]]:
-        """Return list of polygons (each polygon list of (x,y) points) for a span on a page.
-        Coordinates normalized to (0,1).
-        Approximation using per-character boxes from PyMuPDF.
+        Requirements:
+        - Respect exact start/end offsets (can begin/end mid-line).
+        - Produce a single polygon per page following ragged left/right paragraph edges.
+        - Avoid earlier bottom-right glitches (deduplicate sequential identical points).
+        - Normalized coordinates (0..1) with final point repeated to close.
         """
-        page_text, word_items, page = self._page_word_index(doc, page_idx)
-        if not page_text or not word_items:
-            return []
 
-        page_raw = self.raw_pages[page_idx]
-        page_len = len(page_raw)
-        start = max(0, min(start, page_len))
-        end = max(start, min(end, page_len))
-        slice_words = [
-            w for w in word_items if not (w["end"] <= start or w["start"] >= end)
-        ]
-        if not slice_words:
-            return []
+        if not page_spans:
+            return {}
 
-        by_line: dict[int, list[tuple]] = {}
-        for w in slice_words:
-            by_line.setdefault(w["line"], []).append(w["rect"])
+        # Group spans by page (normally at most one span per page for a continuous segment).
+        spans_by_page: dict[int, list[tuple[int, int]]] = {}
+        for ps in page_spans:
+            spans_by_page.setdefault(ps.page, []).append((ps.start, ps.end))
 
-        polygons: list[list[list[float]]] = []
-        w = page.rect.width
-        h = page.rect.height
-        for line_no, rects in sorted(by_line.items()):
-            for x0, y0, x1, y1 in self._merge_line_rects(rects):
-                poly = [
-                    [x0 / w, y0 / h],
-                    [x1 / w, y0 / h],
-                    [x1 / w, y1 / h],
-                    [x0 / w, y1 / h],
-                ]
-                polygons.append(poly)
-        return polygons
+        page_to_polygon: dict[int, list[tuple[float, float]]] = {}
+
+        for page_idx in sorted(spans_by_page.keys())[:2]:  # limit to two pages
+            if page_idx >= len(self.raw_pages):
+                continue
+            page_raw = self.raw_pages[page_idx]
+            if not page_raw:
+                continue
+
+            ranges = spans_by_page[page_idx]
+            # Merge to single continuous inclusive range covering text for this segment on the page.
+            span_start = min(r[0] for r in ranges)
+            span_end = max(r[1] for r in ranges)
+            p_len = len(page_raw)
+            span_start = max(0, min(span_start, p_len))
+            span_end = max(span_start, min(span_end, p_len))
+            if span_start == span_end:
+                continue
+
+            # Ensure word cache for page
+            if page_idx not in self.page_words_cache:
+                page = doc[page_idx]
+                tp = page.get_textpage()
+                try:
+                    words = tp.extractWORDS()
+                except Exception:
+                    self.page_words_cache[page_idx] = []
+                else:
+                    pointer = 0
+                    items: list[dict] = []
+                    for x0, y0, x1, y1, wtext, _block, line_no, _wno in words:
+                        search_from = pointer
+                        while (
+                            search_from < len(page_raw)
+                            and page_raw[search_from].isspace()
+                        ):
+                            search_from += 1
+                        candidate_start = page_raw.find(
+                            wtext, search_from, min(len(page_raw), search_from + 500)
+                        )
+                        if candidate_start == -1:
+                            continue
+                        start_off = candidate_start
+                        end_off = start_off + len(wtext)
+                        pointer = end_off
+                        items.append(
+                            {
+                                "start": start_off,
+                                "end": end_off,
+                                "line": line_no,
+                                "rect": (x0, y0, x1, y1),
+                                "text": wtext,
+                            }
+                        )
+                    self.page_words_cache[page_idx] = items
+
+            words = [
+                w
+                for w in self.page_words_cache.get(page_idx, [])
+                if not (w["end"] <= span_start or w["start"] >= span_end)
+            ]
+            if not words:
+                continue
+
+            # Group by line number preserving order (PyMuPDF words already top->bottom, left->right)
+            lines: dict[int, list[dict]] = {}
+            for w in words:
+                lines.setdefault(w["line"], []).append(w)
+            # Sort each line's words by x0
+            for arr in lines.values():
+                arr.sort(key=lambda w: w["rect"][0])
+
+            # Derive per-line left/right bounds with partial-word cropping
+            line_entries: list[
+                tuple[float, float, float, float]
+            ] = []  # (y_top,y_bottom,left_x,right_x)
+            for line_no in sorted(
+                lines.keys(), key=lambda ln: min(w["rect"][1] for w in lines[ln])
+            ):
+                wlist = lines[line_no]
+                # Compute left boundary
+                left_x = None
+                right_x = None
+                y_top = min(w["rect"][1] for w in wlist)
+                y_bottom = max(w["rect"][3] for w in wlist)
+                for w in wlist:
+                    if w["end"] > span_start:  # first word intersecting start
+                        x0, y0, x1, y1 = w["rect"]
+                        if span_start > w["start"] and span_start < w["end"]:
+                            # partial word start
+                            frac = (span_start - w["start"]) / (w["end"] - w["start"])
+                            left_x = x0 + (x1 - x0) * frac
+                        else:
+                            left_x = x0
+                        break
+                # Compute right boundary
+                for w in reversed(wlist):
+                    if w["start"] < span_end:  # last word intersecting end
+                        x0, y0, x1, y1 = w["rect"]
+                        if span_end < w["end"] and span_end > w["start"]:
+                            frac = (span_end - w["start"]) / (w["end"] - w["start"])
+                            right_x = x0 + (x1 - x0) * frac
+                        else:
+                            right_x = x1
+                        break
+                if left_x is None or right_x is None:
+                    continue
+                if right_x < left_x:  # safety
+                    continue
+                line_entries.append((y_top, y_bottom, left_x, right_x))
+
+            if not line_entries:
+                continue
+
+            # Sort by vertical position (already roughly sorted but ensure)
+            line_entries.sort(key=lambda t: t[0])
+
+            # Build a simple non-self-intersecting outline.
+            # Left boundary top->bottom with horizontal steps when left_x changes.
+            left_boundary: list[tuple[float, float]] = []
+            for i, (y_top, y_bottom, left_x, right_x) in enumerate(line_entries):
+                left_boundary.append((left_x, y_top))
+                left_boundary.append((left_x, y_bottom))
+
+            # Right boundary bottom->top mirrored with steps where width changes.
+            right_boundary: list[tuple[float, float]] = []
+            for i, (y_top, y_bottom, left_x, right_x) in enumerate(
+                reversed(line_entries)
+            ):
+                # Ascend to top of this line
+                right_boundary.append((right_x, y_bottom))
+                right_boundary.append((right_x, y_top))
+
+            # Combine: left boundary (top->bottom), then right boundary (bottom->top), then close via top-left.
+            outline = left_boundary + right_boundary
+            if outline and outline[0] != outline[-1]:
+                outline.append(outline[0])
+
+            # Remove consecutive duplicates just in case
+            cleaned: list[tuple[float, float]] = []
+            for pt in outline:
+                if not cleaned or cleaned[-1] != pt:
+                    cleaned.append(pt)
+            outline = cleaned
+
+            # Normalize
+            page = doc[page_idx]
+            width = page.rect.width or 1.0
+            height = page.rect.height or 1.0
+            polygon = [(x / width, y / height) for (x, y) in outline]
+            page_to_polygon[page_idx] = polygon
+
+        return page_to_polygon
 
     def align_segments_and_get_polygons(self, segments: list[str], doc) -> list[dict]:
         aligned: list[AlignedSegment] = self.align_segments(segments)
         out: list[dict] = []
         for a in aligned:
-            polygons = [
-                {
-                    "page": ps.page,
-                    "points": self._segment_polygons_for_page_span(
-                        doc, ps.page, ps.start, ps.end
-                    ),
-                }
-                for ps in a.page_spans
-            ]
+            page_map = self.spans_to_page_polygons(doc, a.page_spans)
             out.append(
                 {
                     "text": a.segment_text,
-                    "polygons": polygons,
+                    "polygons": page_map,
                 }
             )
         return out

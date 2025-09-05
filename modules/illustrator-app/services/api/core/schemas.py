@@ -19,8 +19,9 @@ class RedisToProcessCtx(Schema):
 
 class SegmentWithPos(Schema):
     text: str
-    page: int
-    polygon: list[tuple[float, float]]  # list of [x,y] points normalized
+    polygons: dict[
+        int, list[tuple[float, float]]
+    ]  # page: polygon (list of [x,y] points normalized)
 
 
 class ProcessPdfResponse(Schema):

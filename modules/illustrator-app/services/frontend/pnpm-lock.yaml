@@ -45,6 +45,9 @@ importers:
       '@iconify-json/lucide':
         specifier: ^1.2.66
         version: 1.2.66
+      '@iconify-json/uil':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@nuxt/eslint-config':
         specifier: 0.5.7
         version: 0.5.7(@typescript-eslint/utils@8.41.0(eslint@9.34.0(jiti@2.5.1))(typescript@5.9.2))(eslint@9.34.0(jiti@2.5.1))(typescript@5.9.2)
@@ -624,6 +627,9 @@ packages:
 
   '@iconify-json/lucide@1.2.66':
     resolution: {integrity: sha512-TrhmfThWY2FHJIckjz7g34gUx3+cmja61DcHNdmu0rVDBQHIjPMYO1O8mMjoDSqIXEllz9wDZxCqT3lFuI+f/A==}
+
+  '@iconify-json/uil@1.2.3':
+    resolution: {integrity: sha512-if91+UBhDQc6glPsIaXecGIcXnbQZfEO4Gdv89TV2xQ+V5e9GWbY5rNl2fsKZd8COsRQ5lRQAKimVQVL0CZZVg==}
 
   '@iconify/collections@1.0.590':
     resolution: {integrity: sha512-QEbIchT89ktf1Uiy7aM5G3fDZkkfTauLszZlYXQiec9QUugDWYhyZzKFJJaBVq7vf8aeWgK2+TWAsN89Bi5pqg==}
@@ -5413,6 +5419,10 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@iconify-json/lucide@1.2.66':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/uil@1.2.3':
     dependencies:
       '@iconify/types': 2.0.0
 

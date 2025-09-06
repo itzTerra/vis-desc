@@ -3,8 +3,8 @@
     <button class="btn btn-ghost" @click="cycleSearchedSets">
       <Icon name="lucide:arrow-up-down" size="20px" />
     </button>
-    <div class="flex items-center border rounded-field" style="border-color: oklch(from var(--color-base-content) l c h / 0.25)">
-      <label class="input input-bordered">
+    <div class="join flex items-center border rounded-field border-base-content/25 bg-base-100">
+      <label class="input input-ghost join-item">
         <input
           v-model="searchQuery"
           type="text"
@@ -15,12 +15,14 @@
         >
         <span class="label">{{ found === 0 ? 0 : currentIndex + 1 }}/{{ found }}</span>
       </label>
-      <button class="btn btn-ghost" :disabled="!found" @click="onPrev">
-        <Icon name="lucide:chevron-up" size="20px" />
-      </button>
-      <button class="btn btn-ghost" :disabled="!found" @click="onNext">
-        <Icon name="lucide:chevron-down" size="20px" />
-      </button>
+      <div class="join-item flex flex-row">
+        <button class="btn btn-ghost" :disabled="!found" @click="onPrev">
+          <Icon name="lucide:chevron-up" size="20px" />
+        </button>
+        <button class="btn btn-ghost" :disabled="!found" @click="onNext">
+          <Icon name="lucide:chevron-down" size="20px" />
+        </button>
+      </div>
     </div>
   </div>
 </template>

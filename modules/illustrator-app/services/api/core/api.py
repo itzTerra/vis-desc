@@ -32,11 +32,11 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     redis_client.set(
         f"ws_key:{ws_key}",
         value=json.dumps({"segments": segments, "model": model.model}),
-        ex=settings.WS_KEY_EXPIRY_SECONDS,
+        ex=settings.WS_KEY_EXPIRY_SEC,
     )
     return {
         "ws_key": ws_key,
-        "expires_in": settings.WS_KEY_EXPIRY_SECONDS,
+        "expires_in": settings.WS_KEY_EXPIRY_SEC,
         "segment_count": len(segments),
         "segments": segments_with_pos,
     }

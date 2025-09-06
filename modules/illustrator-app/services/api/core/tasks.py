@@ -17,17 +17,16 @@ def check_consumer_status(redis, channel_name: str):
 
 
 @dramatiq.actor(
-    time_limit=60 * 60 * 1000,
+    time_limit=10 * 60 * 1000,
     max_retries=0,
+    max_age=10 * 60 * 1000,
     throws=(TimeLimitExceeded,),
 )
 def process_segments(segments: list[str], model: Evaluator, channel_name: str):
-    logger = process_segments.logger # type: ignore
+    logger = process_segments.logger  # type: ignore
     actor_name = process_segments.actor_name
     if not check_consumer_status(worker_resources["redis"], channel_name):
-        logger.info(
-            f"Worker {actor_name} aborted"
-        )
+        logger.info(f"Worker {actor_name} aborted")
         return
 
     channel_layer = get_channel_layer()
@@ -39,13 +38,9 @@ def process_segments(segments: list[str], model: Evaluator, channel_name: str):
 
     for res in evaluate_segments(evaluator, segments):
         if not check_consumer_status(worker_resources["redis"], channel_name):
-            logger.info(
-                f"Worker {actor_name} aborted"
-            )
+            logger.info(f"Worker {actor_name} aborted")
             return
-        logger.info(
-            f"Worker {actor_name} sent segment {count} of {segment_count}"
-        )
+        logger.info(f"Worker {actor_name} sent segment {count} of {segment_count}")
         async_to_sync(channel_layer.send)(
             channel_name,
             {
@@ -58,9 +53,7 @@ def process_segments(segments: list[str], model: Evaluator, channel_name: str):
         )
         count += 1
 
-    logger.info(
-        f"Worker {actor_name} finished"
-    )
+    logger.info(f"Worker {actor_name} finished")
     async_to_sync(channel_layer.send)(
         channel_name,
         {

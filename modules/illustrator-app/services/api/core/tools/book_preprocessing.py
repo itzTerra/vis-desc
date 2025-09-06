@@ -4,11 +4,15 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 import multiprocessing as mp
 import logging
-from ninja import UploadedFile
+from django.conf import settings
 import pymupdf
 from dataclasses import dataclass
 import regex
 from typing import Optional
+
+
+POLYGON_X_SMOOTH_MAX_GAP_PX = settings.POLYGON_X_SMOOTH_MAX_GAP_PX
+POLYGON_PADDING_PX = settings.POLYGON_PADDING_PX
 
 
 class BookPreprocessor:
@@ -256,7 +260,7 @@ class PdfBookPreprocessor(BookPreprocessor):
                 # Join pages that cut a sentence in half
                 if (
                     last_line_of_last_page
-                    and self.patterns["line_breaked_sentence_a_end"].match(
+                    and self.patterns["line_breaked_sentence_a_end"].search(
                         last_line_of_last_page
                     )
                     and cleaned_page_text
@@ -283,7 +287,7 @@ class PdfBookPreprocessor(BookPreprocessor):
         return "".join(pages)
 
     def extract_from_memory(
-        self, pdf_file: UploadedFile, config: PdfExtractionConfig | None = None
+        self, pdf_file, config: PdfExtractionConfig | None = None
     ) -> str:
         if config is None:
             config = PdfExtractionConfig()
@@ -474,18 +478,87 @@ class TextAlignmentIndex:
             )
         return results
 
+    @staticmethod
+    def _smooth_boundary(
+        boundary: list[tuple[float, float]],
+        is_left: bool,
+    ):
+        """When two consecutive lines start or end at slightly different x or y, smooth the step.
+        Then, deduplicate points with identical x and close y.
+        """
+        if not boundary or len(boundary) < 2:
+            return
+
+        # Iteratively smooth smallest horizontal deltas until exceeding threshold.
+        max_iterations = len(boundary) * 2  # safety guard
+        for _ in range(max_iterations):
+            min_idx = -1
+            min_diff = float("inf")
+            prev_x = boundary[0][0]
+            for i in range(1, len(boundary)):
+                cur_x = boundary[i][0]
+                if cur_x != prev_x:
+                    d = abs(cur_x - prev_x)
+                    if d < min_diff:
+                        min_diff = d
+                        min_idx = i
+                prev_x = cur_x
+
+            if min_idx == -1 or min_diff > POLYGON_X_SMOOTH_MAX_GAP_PX:
+                break
+
+            last_x, last_y = boundary[min_idx - 1]
+            new_x, new_y = boundary[min_idx]
+            changed = False
+
+            if (is_left and new_x < last_x) or (not is_left and new_x > last_x):
+                if last_x != new_x:
+                    boundary[min_idx - 1] = (new_x, last_y)
+                    changed = True
+                if (
+                    min_idx > 1
+                    and boundary[min_idx - 2][0] == last_x
+                    and boundary[min_idx - 2][0] != new_x
+                ):
+                    boundary[min_idx - 2] = (new_x, boundary[min_idx - 2][1])
+                    changed = True
+            else:
+                if new_x != last_x:
+                    boundary[min_idx] = (last_x, new_y)
+                    changed = True
+                if (
+                    min_idx + 1 < len(boundary)
+                    and boundary[min_idx + 1][0] == new_x
+                    and boundary[min_idx + 1][0] != last_x
+                ):
+                    boundary[min_idx + 1] = (last_x, boundary[min_idx + 1][1])
+                    changed = True
+
+            if not changed:
+                break
+
+        # Deduplicate sequential points with identical x and close y
+        deduped: list[tuple[float, float]] = []
+        for pt in boundary:
+            if deduped and pt[0] == deduped[-1][0] and abs(pt[1] - deduped[-1][1]) < 2:
+                continue
+            deduped.append(pt)
+
+        # Update boundary in place
+        boundary[:] = deduped
+
+        # Straighten horizontal joins by averaging y between sequential points
+        for i in range(1, len(boundary)):
+            if boundary[i][0] == boundary[i - 1][0]:
+                continue
+            avg_y = (boundary[i - 1][1] + boundary[i][1]) / 2
+            boundary[i - 1] = (boundary[i - 1][0], avg_y)
+            boundary[i] = (boundary[i][0], avg_y)
+
     def spans_to_page_polygons(
         self, doc, page_spans: list[SegmentPageSpan]
     ) -> dict[int, list[tuple[float, float]]]:
-        """Return precise paragraph polygons per page (at most 2 pages).
-
-        Requirements:
-        - Respect exact start/end offsets (can begin/end mid-line).
-        - Produce a single polygon per page following ragged left/right paragraph edges.
-        - Avoid earlier bottom-right glitches (deduplicate sequential identical points).
-        - Normalized coordinates (0..1) with final point repeated to close.
-        """
-
+        """Return precise paragraph polygons per page (at most 2 pages)."""
         if not page_spans:
             return {}
 
@@ -513,7 +586,6 @@ class TextAlignmentIndex:
             if span_start == span_end:
                 continue
 
-            # Ensure word cache for page
             if page_idx not in self.page_words_cache:
                 page = doc[page_idx]
                 tp = page.get_textpage()
@@ -524,7 +596,7 @@ class TextAlignmentIndex:
                 else:
                     pointer = 0
                     items: list[dict] = []
-                    for x0, y0, x1, y1, wtext, _block, line_no, _wno in words:
+                    for x0, y0, x1, y1, wtext, block, line_no, _wno in words:
                         search_from = pointer
                         while (
                             search_from < len(page_raw)
@@ -543,6 +615,7 @@ class TextAlignmentIndex:
                             {
                                 "start": start_off,
                                 "end": end_off,
+                                "block": block,
                                 "line": line_no,
                                 "rect": (x0, y0, x1, y1),
                                 "text": wtext,
@@ -559,91 +632,97 @@ class TextAlignmentIndex:
                 continue
 
             # Group by line number preserving order (PyMuPDF words already top->bottom, left->right)
-            lines: dict[int, list[dict]] = {}
+            lines: dict[str, list[dict]] = {}
             for w in words:
-                lines.setdefault(w["line"], []).append(w)
-            # Sort each line's words by x0
+                lines.setdefault(f"{w['block']}.{w['line']}", []).append(w)
             for arr in lines.values():
                 arr.sort(key=lambda w: w["rect"][0])
 
-            # Derive per-line left/right bounds with partial-word cropping
+            # Derive per-line left/right bounds
             line_entries: list[
                 tuple[float, float, float, float]
-            ] = []  # (y_top,y_bottom,left_x,right_x)
+            ] = []  # (y_top, y_bottom, left_x, right_x)
             for line_no in sorted(
                 lines.keys(), key=lambda ln: min(w["rect"][1] for w in lines[ln])
             ):
                 wlist = lines[line_no]
-                # Compute left boundary
                 left_x = None
                 right_x = None
                 y_top = min(w["rect"][1] for w in wlist)
                 y_bottom = max(w["rect"][3] for w in wlist)
+                # Compute left line boundary (first word intersecting start)
                 for w in wlist:
-                    if w["end"] > span_start:  # first word intersecting start
-                        x0, y0, x1, y1 = w["rect"]
-                        if span_start > w["start"] and span_start < w["end"]:
-                            # partial word start
-                            frac = (span_start - w["start"]) / (w["end"] - w["start"])
-                            left_x = x0 + (x1 - x0) * frac
-                        else:
-                            left_x = x0
-                        break
-                # Compute right boundary
+                    if w["end"] <= span_start:
+                        continue
+                    x0, y0, x1, y1 = w["rect"]
+                    left_x = x0
+                    break
+                # Compute right line boundary (last word intersecting end)
                 for w in reversed(wlist):
-                    if w["start"] < span_end:  # last word intersecting end
-                        x0, y0, x1, y1 = w["rect"]
-                        if span_end < w["end"] and span_end > w["start"]:
-                            frac = (span_end - w["start"]) / (w["end"] - w["start"])
-                            right_x = x0 + (x1 - x0) * frac
-                        else:
-                            right_x = x1
-                        break
-                if left_x is None or right_x is None:
-                    continue
-                if right_x < left_x:  # safety
+                    if w["start"] >= span_end:
+                        continue
+                    x0, y0, x1, y1 = w["rect"]
+                    right_x = x1
+                    break
+                if left_x is None or right_x is None or right_x < left_x:
                     continue
                 line_entries.append((y_top, y_bottom, left_x, right_x))
 
             if not line_entries:
                 continue
 
-            # Sort by vertical position (already roughly sorted but ensure)
-            line_entries.sort(key=lambda t: t[0])
-
             # Build a simple non-self-intersecting outline.
             # Left boundary top->bottom with horizontal steps when left_x changes.
             left_boundary: list[tuple[float, float]] = []
-            for i, (y_top, y_bottom, left_x, right_x) in enumerate(line_entries):
+            for y_top, y_bottom, left_x, right_x in line_entries:
                 left_boundary.append((left_x, y_top))
                 left_boundary.append((left_x, y_bottom))
-
             # Right boundary bottom->top mirrored with steps where width changes.
             right_boundary: list[tuple[float, float]] = []
-            for i, (y_top, y_bottom, left_x, right_x) in enumerate(
-                reversed(line_entries)
-            ):
-                # Ascend to top of this line
+            for y_top, y_bottom, left_x, right_x in reversed(line_entries):
                 right_boundary.append((right_x, y_bottom))
                 right_boundary.append((right_x, y_top))
 
-            # Combine: left boundary (top->bottom), then right boundary (bottom->top), then close via top-left.
-            outline = left_boundary + right_boundary
-            if outline and outline[0] != outline[-1]:
-                outline.append(outline[0])
+            # Smooth and deduplicate boundaries
+            self._smooth_boundary(left_boundary, is_left=True)
+            self._smooth_boundary(right_boundary, is_left=False)
 
-            # Remove consecutive duplicates just in case
-            cleaned: list[tuple[float, float]] = []
-            for pt in outline:
-                if not cleaned or cleaned[-1] != pt:
-                    cleaned.append(pt)
-            outline = cleaned
+            # Combine: left boundary (top->bottom), then right boundary (bottom->top), then close via top-left.
+            # Average y between boundary joins to straighten horizontal joins
+            avg_y_bottom = (left_boundary[-1][1] + right_boundary[0][1]) / 2
+            left_boundary[-1] = (left_boundary[-1][0], avg_y_bottom)
+            right_boundary[0] = (right_boundary[0][0], avg_y_bottom)
+            avg_y_top = (left_boundary[0][1] + right_boundary[-1][1]) / 2
+            left_boundary[0] = (left_boundary[0][0], avg_y_top)
+            right_boundary[-1] = (right_boundary[-1][0], avg_y_top)
+            outline = left_boundary + right_boundary
 
             # Normalize
             page = doc[page_idx]
             width = page.rect.width or 1.0
             height = page.rect.height or 1.0
             polygon = [(x / width, y / height) for (x, y) in outline]
+
+            # Scale polygon outwards by PADDING_PX
+            cx = sum(x for x, _ in polygon) / len(polygon)
+            cy = sum(y for _, y in polygon) / len(
+                polygon
+            )  # compute pixel half-width/height
+            min_x = min(p[0] for p in polygon)
+            max_x = max(p[0] for p in polygon)
+            min_y = min(p[1] for p in polygon)
+            max_y = max(p[1] for p in polygon)
+            cur_w_px = (max_x - min_x) * width
+            cur_h_px = (max_y - min_y) * height
+            sx = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_w_px, 1e-6)
+            sy = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_h_px, 1e-6)
+            scaled = []
+            for x, y in polygon:
+                x2 = cx + (x - cx) * sx
+                y2 = cy + (y - cy) * sy
+                scaled.append((min(1.0, max(0.0, x2)), min(1.0, max(0.0, y2))))
+            polygon = scaled
+
             page_to_polygon[page_idx] = polygon
 
         return page_to_polygon
@@ -651,10 +730,11 @@ class TextAlignmentIndex:
     def align_segments_and_get_polygons(self, segments: list[str], doc) -> list[dict]:
         aligned: list[AlignedSegment] = self.align_segments(segments)
         out: list[dict] = []
-        for a in aligned:
+        for i, a in enumerate(aligned):
             page_map = self.spans_to_page_polygons(doc, a.page_spans)
             out.append(
                 {
+                    "id": i,
                     "text": a.segment_text,
                     "polygons": page_map,
                 }

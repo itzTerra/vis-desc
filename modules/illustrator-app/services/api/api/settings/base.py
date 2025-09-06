@@ -189,6 +189,11 @@ DRAMATIQ_BROKER = {
 # AdminMiddleware is enabled.  The default value is "default".
 DRAMATIQ_TASKS_DATABASE = "default"
 
-WS_KEY_EXPIRY_SECONDS = 3600
+WORKER_COUNT = env.int("WORKER_COUNT", default=1)
+WS_RESPONSE_INTERVAL_SEC = 1
+WS_KEY_EXPIRY_SEC = 3600
 SEGMENT_CHARS_MIN = 150
 SEGMENT_CHARS_MAX = 500
+# Max horizontal gap to consider for smoothing
+POLYGON_X_SMOOTH_MAX_GAP_PX = 12
+POLYGON_PADDING_PX = 1

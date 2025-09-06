@@ -1,5 +1,15 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from "@tailwindcss/vite";
+import { readFileSync } from "fs";
+import { execSync } from "child_process";
+
+const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+let gitHash = "unknown";
+
+try {
+  gitHash = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
+} catch {
+  console.warn("Could not get git hash");
+}
 
 export default defineNuxtConfig({
   app: {
@@ -21,6 +31,10 @@ export default defineNuxtConfig({
       // can be overridden by NUXT_PUBLIC_BASE_*_URL environment variables
       baseApiUrl: "",
       baseUrl: "",
+      githubUrl: "https://github.com/itzTerra/vis-desc",
+      appVersion: packageJson.version,
+      gitHash,
+      buildTime: new Date().toISOString()
     }
   },
   vite: {

@@ -1,7 +1,7 @@
 <template>
   <button
     v-show="isVisible"
-    class="fixed bottom-4 right-4 btn btn-primary"
+    class="fixed bottom-12 right-2 btn btn-primary"
     aria-label="Back to top"
     @click="scrollToTop"
   >

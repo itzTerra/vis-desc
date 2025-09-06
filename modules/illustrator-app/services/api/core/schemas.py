@@ -18,6 +18,7 @@ class RedisToProcessCtx(Schema):
 
 
 class SegmentWithPos(Schema):
+    id: int
     text: str
     polygons: dict[
         int, list[tuple[float, float]]

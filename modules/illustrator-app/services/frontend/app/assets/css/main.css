@@ -1,3 +1,33 @@
+html {
+  font-family: "Open Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+.pdf-container {
+  position: relative;
+}
+
+.hero {
+  min-height: calc(100vh - 114px);
+}
+
+@media (width >= 40rem) {
+  .hero {
+    min-height: calc(100vh - 58px);
+  }
+}
+
+.polygon-highlight-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.poly-shape {
+  fill: oklch(from var(--color-info) l c h / 0.1);
+  stroke: oklch(from var(--color-info) l c h / 0.5);
+  rx: 2px;
+}
+
 .highlight-dropdown {
   position: absolute;
   position-area: unset;
@@ -9,21 +39,12 @@
 
     &:hover,
     &:has(+ .dropdown-content:hover),
-    &.highlight-dropdown-content__hovered {
+    &.highlight-selected {
       .poly-shape {
-        stroke: oklch(from var(--color-info) l c h / 0.25);
-        background-color: oklch(from var(--color-info) l c h / 0.25);
-        opacity: 0.4;
+        fill: oklch(from var(--color-info) l c h / 0.25);
+        stroke: oklch(from var(--color-info) l c h / 0.8);
       }
     }
-  }
-
-  .highlight-selected {
-    .poly-shape {
-        stroke: oklch(from var(--color-info) l c h / 0.25);
-        background-color: oklch(from var(--color-info) l c h / 0.25);
-        opacity: 0.4;
-      }
   }
 }
 

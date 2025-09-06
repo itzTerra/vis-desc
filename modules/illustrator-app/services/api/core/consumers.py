@@ -1,5 +1,6 @@
 import json
 import logging
+import asyncio
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from pydantic_core import ValidationError
 from core.schemas import RedisToProcessCtx
@@ -14,6 +15,10 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger("django")
         self.redis = redis_from_url(settings.REDIS_URL)
+        # Batching related attributes
+        self._pending_messages: list[dict] = []
+        self._flush_task: asyncio.Task | None = None
+        self._finished_worker_count = 0
 
     async def connect(self):
         self.logger.info(f"WebSocket connected with channel name: {self.channel_name}")
@@ -27,13 +32,23 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
             ),
         )
         await self.accept()
+        # Start background flushing loop for batched worker responses
+        self._flush_task = asyncio.create_task(self._flush_loop())
 
     async def disconnect(self, code):
-        for msg_id in self.processing_msg_ids:
+        for msg_id in getattr(self, "processing_msg_ids", []):
             try:
                 abort(msg_id)
             except Exception as e:
                 self.logger.error(f"Failed to abort message {msg_id}: {e}")
+
+        # Cancel background flush task
+        if self._flush_task and not self._flush_task.done():
+            self._flush_task.cancel()
+            try:
+                await self._flush_task
+            except asyncio.CancelledError:
+                pass
 
         await self.redis.set(
             "active_channels",
@@ -78,8 +93,17 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
             return
 
         self.authenticated = True
-        msg = process_segments.send(data.segments, data.model, self.channel_name)
-        self.processing_msg_ids.add(msg.message_id)
+        self._finished_worker_count = 0
+
+        # Distribute segments to process across workers
+        segments_per_batch = max(1, len(data.segments) // settings.WORKER_COUNT)
+        worker_batches = [
+            data.segments[i : i + segments_per_batch]
+            for i in range(0, len(data.segments), segments_per_batch)
+        ]
+        for batch in worker_batches:
+            msg = process_segments.send(batch, data.model, self.channel_name)
+            self.processing_msg_ids.add(msg.message_id)
         await self.send_json(
             {
                 "type": "info",
@@ -88,9 +112,50 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def worker_response(self, payload):
-        # Redirect to the websocket
-        # self.logger.info(f"Redirecting worker response: {payload}")
-        await self.send_json(payload["content"])
+        # Accumulate worker responses for periodic batching
+        content = payload["content"]
+        if content.get("type") == "segment":
+            self._pending_messages.append(content["content"])
 
-        if payload["content"]["type"] == "success":
-            await self.close()
+        if content.get("type") == "success":
+            self._finished_worker_count += 1
+
+    async def _flush_loop(self):
+        try:
+            while True:
+                await asyncio.sleep(settings.WS_RESPONSE_INTERVAL_SEC)
+                if not self._pending_messages:
+                    if self._finished_worker_count == settings.WORKER_COUNT:
+                        # No pending messages but closure requested (edge case)
+                        await self.close()
+                        return
+                    continue
+
+                to_send = self._pending_messages
+                self._pending_messages = []
+                try:
+                    await self.send_json(
+                        {
+                            "type": "batch",
+                            "content": to_send,
+                        }
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to send batched messages: {e}")
+
+                if self._finished_worker_count == settings.WORKER_COUNT:
+                    await self.close()
+                    return
+        except asyncio.CancelledError:
+            # Attempt a final flush before shutting down, if there is anything pending
+            if self._pending_messages:
+                try:
+                    await self.send_json(
+                        {
+                            "type": "batch",
+                            "content": self._pending_messages,
+                        }
+                    )
+                except Exception:
+                    pass
+            raise

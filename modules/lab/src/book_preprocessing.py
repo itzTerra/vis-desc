@@ -7,7 +7,6 @@ import logging
 import pymupdf
 from dataclasses import dataclass
 import regex
-from typing import Optional
 
 
 POLYGON_X_SMOOTH_MAX_GAP_PX = 12
@@ -239,10 +238,6 @@ class PdfBookPreprocessor(BookPreprocessor):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger("django")
-        # Raw unmodified page texts (extracted directly)
-        self._raw_pages: list[str] = []
-        # Alignment index (built after extraction)
-        self._alignment_index: TextAlignmentIndex | None = None
 
     def _get_from_doc(self, doc, page_limit: int | None = None) -> str:
         if page_limit is None:
@@ -253,7 +248,6 @@ class PdfBookPreprocessor(BookPreprocessor):
             try:
                 page = doc[i]
                 page_text = page.get_textpage().extractText(sort=True)  # type: ignore
-                self._raw_pages.append(page_text)
                 cleaned_page_text = self.clean_text(page_text, last_line_of_last_page)
 
                 # Join pages that cut a sentence in half
@@ -276,12 +270,6 @@ class PdfBookPreprocessor(BookPreprocessor):
                 last_line_of_last_page = last_page.splitlines()[-1] if last_page else ""
             except Exception as e:
                 self.logger.warning("Skipping page %d due to error: %s", i, e)
-
-        try:
-            self._alignment_index = TextAlignmentIndex(self._raw_pages)
-        except Exception:
-            self.logger.exception("Failed building alignment index")
-            self._alignment_index = None
 
         return "".join(pages)
 
@@ -321,14 +309,12 @@ class PdfBookPreprocessor(BookPreprocessor):
         """Map cleaned segments to original page polygons.
         Returns a list of dicts:
         {
-          'text': segment_text,
-          'polygons': list[{
-            'page': int,  # 0-based page index
-            'points': list[tuple[float, float]]
-           }]
+            'id': int,  # segment index
+            'text': segment_text,
+            'polygons': { page_index: [(x1, y1), (x2, y2), ...]  }  # normalized coordinates
         }
         """
-        if not self._alignment_index or not self._last_pdf_bytes:
+        if not self._last_pdf_bytes:
             raise RuntimeError("A book must be processed before alignment")
 
         doc = None
@@ -338,144 +324,157 @@ class PdfBookPreprocessor(BookPreprocessor):
             self.logger.exception("Failed to reopen PDF for polygons")
             return [
                 {
+                    "id": i,
                     "text": seg,
-                    "polygons": [],
+                    "polygons": {},
                 }
-                for seg in segments
+                for i, seg in enumerate(segments)
             ]
 
-        out = self._alignment_index.align_segments_and_get_polygons(segments, doc)
+        seg_to_page_to_polygon = self._segments_to_page_polygons(doc, segments)
         if doc is not None:
             doc.close()
-        return out
+        return [
+            {
+                "id": i,
+                "text": seg,
+                "polygons": seg_to_page_to_polygon.get(i, {}),
+            }
+            for i, seg in enumerate(segments)
+        ]
 
+    def _segments_to_page_polygons(
+        self, doc, segments: list[str]
+    ) -> dict[int, list[tuple[float, float]]]:
+        """Convert a segment of text into page polygons."""
+        segments = [self._normalize(s) for s in segments]
+        segment_idx = 0
+        per_segment_idx = 0
+        seg_to_page_to_lines = {}
 
-REMOVED_CHARS = set([" ", "\t", "\r", "\n", "-", "‐", "‑", "‒", "–", "—"])
-
-
-def _keep_char(ch: str) -> bool:
-    return ch not in REMOVED_CHARS
-
-
-def _normalize(s: str) -> str:
-    return "".join(c.lower() for c in s if _keep_char(c))
-
-
-@dataclass
-class NormalizedCharOrigin:
-    page: int
-    page_offset: int  # offset in the original raw page text
-    char: str  # original character kept in normalized stream
-
-
-@dataclass
-class SegmentPageSpan:
-    page: int
-    start: int  # inclusive (raw page offset)
-    end: int  # exclusive (raw page offset)
-
-
-@dataclass
-class AlignedSegment:
-    segment_text: str
-    page_spans: list[SegmentPageSpan]  # ordered, non-overlapping
-
-
-class TextAlignmentIndex:
-    """
-    Builds a normalized searchable string over ALL raw pages while keeping
-    a mapping from each normalized character back to (page, page_offset).
-    """
-
-    def __init__(self, raw_pages: list[str]):
-        self.raw_pages = raw_pages
-        self.normalized_chars: list[str] = []
-        self.origins: list[NormalizedCharOrigin] = []
-        for page_idx, page_text in enumerate(raw_pages):
-            for i, ch in enumerate(page_text):
-                if _keep_char(ch):
-                    self.normalized_chars.append(ch.lower())
-                    self.origins.append(
-                        NormalizedCharOrigin(
-                            page=page_idx,
-                            page_offset=i,
-                            char=ch,
-                        )
-                    )
-        self.normalized = "".join(self.normalized_chars)
-        self.page_words_cache: dict[int, list[dict]] = {}
-
-    def normalize_fragment(self, fragment: str) -> str:
-        return _normalize(fragment)
-
-    def _locate(
-        self, cleaned_segment: str, start_hint: int = 0
-    ) -> Optional[tuple[int, int]]:
-        """
-        Returns (norm_start, norm_end_exclusive) in normalized space
-        or None if not found.
-        """
-        norm_seg = self.normalize_fragment(cleaned_segment)
-        if not norm_seg:
-            return None
-        idx = self.normalized.find(norm_seg, start_hint)
-        if idx == -1:
-            # fallback full search
-            idx = self.normalized.find(norm_seg)
-            if idx == -1:
-                return None
-        return idx, idx + len(norm_seg)
-
-    def _map_norm_range_to_page_spans(
-        self, norm_start: int, norm_end: int
-    ) -> list[SegmentPageSpan]:
-        origins_slice = self.origins[norm_start:norm_end]
-        if not origins_slice:
-            return []
-        spans: list[SegmentPageSpan] = []
-        current_page = origins_slice[0].page
-        start_offset = origins_slice[0].page_offset
-        prev_offset = origins_slice[0].page_offset
-        for o in origins_slice[1:]:
-            if o.page == current_page and o.page_offset == prev_offset + 1:
-                prev_offset = o.page_offset
+        for page_idx, page in enumerate(doc):
+            try:
+                words = page.get_textpage().extractWORDS()
+            except Exception:
                 continue
-            spans.append(
-                SegmentPageSpan(
-                    page=current_page, start=start_offset, end=prev_offset + 1
-                )
-            )
-            current_page = o.page
-            start_offset = o.page_offset
-            prev_offset = o.page_offset
-        spans.append(
-            SegmentPageSpan(page=current_page, start=start_offset, end=prev_offset + 1)
-        )
-        return spans
+            for x0, y0, x1, y1, wtext, block, line_no, _wno in words:
+                norm_wtext = self._normalize(wtext)
+                if not norm_wtext:
+                    continue
 
-    def align_segments(self, segments: list[str]) -> list[AlignedSegment]:
-        results: list[AlignedSegment] = []
-        search_cursor = 0
-        for seg in segments:
-            loc = self._locate(seg, search_cursor)
-            if not loc:
-                results.append(
-                    AlignedSegment(
-                        segment_text=seg,
-                        page_spans=[],
+                seg = segments[segment_idx]
+                remaining_seg = seg[per_segment_idx:]
+
+                if remaining_seg.startswith(norm_wtext):
+                    seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
+                        page_idx, {}
+                    ).setdefault(f"{block}.{line_no}", []).append(
+                        {
+                            "text": wtext,
+                            "rect": (x0, y0, x1, y1),
+                        }
                     )
-                )
-                continue
-            norm_start, norm_end = loc
-            page_spans = self._map_norm_range_to_page_spans(norm_start, norm_end)
-            search_cursor = norm_end
-            results.append(
-                AlignedSegment(
-                    segment_text=seg,
-                    page_spans=page_spans,
-                )
-            )
-        return results
+
+                    per_segment_idx += len(norm_wtext)
+                    if per_segment_idx >= len(seg):
+                        segment_idx += 1
+                        per_segment_idx = 0
+
+        seg_to_page_to_polygon = {}
+
+        for segment_idx, page_to_lines in seg_to_page_to_lines.items():
+            for page_idx, lines in page_to_lines.items():
+                for arr in lines.values():
+                    arr.sort(key=lambda w: w["rect"][0])
+
+                # Derive per-line left/right bounds
+                line_entries: list[
+                    tuple[float, float, float, float]
+                ] = []  # (y_top, y_bottom, left_x, right_x)
+                for line_no in sorted(
+                    lines.keys(), key=lambda ln: min(w["rect"][1] for w in lines[ln])
+                ):
+                    wlist = lines[line_no]
+                    left_x = None
+                    right_x = None
+                    y_top = min(w["rect"][1] for w in wlist)
+                    y_bottom = max(w["rect"][3] for w in wlist)
+                    # Compute left line boundary (first word intersecting start)
+                    for w in wlist:
+                        x0, y0, x1, y1 = w["rect"]
+                        left_x = x0
+                        break
+                    # Compute right line boundary (last word intersecting end)
+                    for w in reversed(wlist):
+                        x0, y0, x1, y1 = w["rect"]
+                        right_x = x1
+                        break
+                    if left_x is None or right_x is None or right_x < left_x:
+                        continue
+                    line_entries.append((y_top, y_bottom, left_x, right_x))
+
+                if not line_entries:
+                    continue
+
+                # Build a simple non-self-intersecting outline.
+                # Left boundary top->bottom with horizontal steps when left_x changes.
+                left_boundary: list[tuple[float, float]] = []
+                for y_top, y_bottom, left_x, right_x in line_entries:
+                    left_boundary.append((left_x, y_top))
+                    left_boundary.append((left_x, y_bottom))
+                # Right boundary bottom->top mirrored with steps where width changes.
+                right_boundary: list[tuple[float, float]] = []
+                for y_top, y_bottom, left_x, right_x in reversed(line_entries):
+                    right_boundary.append((right_x, y_bottom))
+                    right_boundary.append((right_x, y_top))
+
+                # Smooth and deduplicate boundaries
+                self._smooth_boundary(left_boundary, is_left=True)
+                self._smooth_boundary(right_boundary, is_left=False)
+
+                # Combine: left boundary (top->bottom), then right boundary (bottom->top), then close via top-left.
+                # Average y between boundary joins to straighten horizontal joins
+                avg_y_bottom = (left_boundary[-1][1] + right_boundary[0][1]) / 2
+                left_boundary[-1] = (left_boundary[-1][0], avg_y_bottom)
+                right_boundary[0] = (right_boundary[0][0], avg_y_bottom)
+                avg_y_top = (left_boundary[0][1] + right_boundary[-1][1]) / 2
+                left_boundary[0] = (left_boundary[0][0], avg_y_top)
+                right_boundary[-1] = (right_boundary[-1][0], avg_y_top)
+                outline = left_boundary + right_boundary
+
+                # Normalize
+                page = doc[page_idx]
+                width = page.rect.width or 1.0
+                height = page.rect.height or 1.0
+                polygon = [(x / width, y / height) for (x, y) in outline]
+
+                # Scale polygon outwards by PADDING_PX
+                cx = sum(x for x, _ in polygon) / len(polygon)
+                cy = sum(y for _, y in polygon) / len(
+                    polygon
+                )  # compute pixel half-width/height
+                min_x = min(p[0] for p in polygon)
+                max_x = max(p[0] for p in polygon)
+                min_y = min(p[1] for p in polygon)
+                max_y = max(p[1] for p in polygon)
+                cur_w_px = (max_x - min_x) * width
+                cur_h_px = (max_y - min_y) * height
+                sx = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_w_px, 1e-6)
+                sy = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_h_px, 1e-6)
+                scaled = []
+                for x, y in polygon:
+                    x2 = cx + (x - cx) * sx
+                    y2 = cy + (y - cy) * sy
+                    scaled.append((min(1.0, max(0.0, x2)), min(1.0, max(0.0, y2))))
+                polygon = scaled
+
+                seg_to_page_to_polygon.setdefault(segment_idx, {})[page_idx] = polygon
+
+        return seg_to_page_to_polygon
+
+    @staticmethod
+    def _normalize(s: str) -> str:
+        return re.sub(r"[\s\-‐‑‒–—]+", "", s)
 
     @staticmethod
     def _smooth_boundary(
@@ -553,189 +552,3 @@ class TextAlignmentIndex:
             avg_y = (boundary[i - 1][1] + boundary[i][1]) / 2
             boundary[i - 1] = (boundary[i - 1][0], avg_y)
             boundary[i] = (boundary[i][0], avg_y)
-
-    def spans_to_page_polygons(
-        self, doc, page_spans: list[SegmentPageSpan]
-    ) -> dict[int, list[tuple[float, float]]]:
-        """Return precise paragraph polygons per page (at most 2 pages)."""
-        if not page_spans:
-            return {}
-
-        # Group spans by page (normally at most one span per page for a continuous segment).
-        spans_by_page: dict[int, list[tuple[int, int]]] = {}
-        for ps in page_spans:
-            spans_by_page.setdefault(ps.page, []).append((ps.start, ps.end))
-
-        page_to_polygon: dict[int, list[tuple[float, float]]] = {}
-
-        for page_idx in sorted(spans_by_page.keys())[:2]:  # limit to two pages
-            if page_idx >= len(self.raw_pages):
-                continue
-            page_raw = self.raw_pages[page_idx]
-            if not page_raw:
-                continue
-
-            ranges = spans_by_page[page_idx]
-            # Merge to single continuous inclusive range covering text for this segment on the page.
-            span_start = min(r[0] for r in ranges)
-            span_end = max(r[1] for r in ranges)
-            p_len = len(page_raw)
-            span_start = max(0, min(span_start, p_len))
-            span_end = max(span_start, min(span_end, p_len))
-            if span_start == span_end:
-                continue
-
-            if page_idx not in self.page_words_cache:
-                page = doc[page_idx]
-                tp = page.get_textpage()
-                try:
-                    words = tp.extractWORDS()
-                except Exception:
-                    self.page_words_cache[page_idx] = []
-                else:
-                    pointer = 0
-                    items: list[dict] = []
-                    for x0, y0, x1, y1, wtext, block, line_no, _wno in words:
-                        search_from = pointer
-                        while (
-                            search_from < len(page_raw)
-                            and page_raw[search_from].isspace()
-                        ):
-                            search_from += 1
-                        candidate_start = page_raw.find(
-                            wtext, search_from, min(len(page_raw), search_from + 500)
-                        )
-                        if candidate_start == -1:
-                            continue
-                        start_off = candidate_start
-                        end_off = start_off + len(wtext)
-                        pointer = end_off
-                        items.append(
-                            {
-                                "start": start_off,
-                                "end": end_off,
-                                "block": block,
-                                "line": line_no,
-                                "rect": (x0, y0, x1, y1),
-                                "text": wtext,
-                            }
-                        )
-                    self.page_words_cache[page_idx] = items
-
-            words = [
-                w
-                for w in self.page_words_cache.get(page_idx, [])
-                if not (w["end"] <= span_start or w["start"] >= span_end)
-            ]
-            if not words:
-                continue
-
-            # Group by line number preserving order (PyMuPDF words already top->bottom, left->right)
-            lines: dict[str, list[dict]] = {}
-            for w in words:
-                lines.setdefault(f"{w['block']}.{w['line']}", []).append(w)
-            for arr in lines.values():
-                arr.sort(key=lambda w: w["rect"][0])
-
-            # Derive per-line left/right bounds
-            line_entries: list[
-                tuple[float, float, float, float]
-            ] = []  # (y_top, y_bottom, left_x, right_x)
-            for line_no in sorted(
-                lines.keys(), key=lambda ln: min(w["rect"][1] for w in lines[ln])
-            ):
-                wlist = lines[line_no]
-                left_x = None
-                right_x = None
-                y_top = min(w["rect"][1] for w in wlist)
-                y_bottom = max(w["rect"][3] for w in wlist)
-                # Compute left line boundary (first word intersecting start)
-                for w in wlist:
-                    if w["end"] <= span_start:
-                        continue
-                    x0, y0, x1, y1 = w["rect"]
-                    left_x = x0
-                    break
-                # Compute right line boundary (last word intersecting end)
-                for w in reversed(wlist):
-                    if w["start"] >= span_end:
-                        continue
-                    x0, y0, x1, y1 = w["rect"]
-                    right_x = x1
-                    break
-                if left_x is None or right_x is None or right_x < left_x:
-                    continue
-                line_entries.append((y_top, y_bottom, left_x, right_x))
-
-            if not line_entries:
-                continue
-
-            # Build a simple non-self-intersecting outline.
-            # Left boundary top->bottom with horizontal steps when left_x changes.
-            left_boundary: list[tuple[float, float]] = []
-            for y_top, y_bottom, left_x, right_x in line_entries:
-                left_boundary.append((left_x, y_top))
-                left_boundary.append((left_x, y_bottom))
-            # Right boundary bottom->top mirrored with steps where width changes.
-            right_boundary: list[tuple[float, float]] = []
-            for y_top, y_bottom, left_x, right_x in reversed(line_entries):
-                right_boundary.append((right_x, y_bottom))
-                right_boundary.append((right_x, y_top))
-
-            # Smooth and deduplicate boundaries
-            self._smooth_boundary(left_boundary, is_left=True)
-            self._smooth_boundary(right_boundary, is_left=False)
-
-            # Combine: left boundary (top->bottom), then right boundary (bottom->top), then close via top-left.
-            # Average y between boundary joins to straighten horizontal joins
-            avg_y_bottom = (left_boundary[-1][1] + right_boundary[0][1]) / 2
-            left_boundary[-1] = (left_boundary[-1][0], avg_y_bottom)
-            right_boundary[0] = (right_boundary[0][0], avg_y_bottom)
-            avg_y_top = (left_boundary[0][1] + right_boundary[-1][1]) / 2
-            left_boundary[0] = (left_boundary[0][0], avg_y_top)
-            right_boundary[-1] = (right_boundary[-1][0], avg_y_top)
-            outline = left_boundary + right_boundary
-
-            # Normalize
-            page = doc[page_idx]
-            width = page.rect.width or 1.0
-            height = page.rect.height or 1.0
-            polygon = [(x / width, y / height) for (x, y) in outline]
-
-            # Scale polygon outwards by PADDING_PX
-            cx = sum(x for x, _ in polygon) / len(polygon)
-            cy = sum(y for _, y in polygon) / len(
-                polygon
-            )  # compute pixel half-width/height
-            min_x = min(p[0] for p in polygon)
-            max_x = max(p[0] for p in polygon)
-            min_y = min(p[1] for p in polygon)
-            max_y = max(p[1] for p in polygon)
-            cur_w_px = (max_x - min_x) * width
-            cur_h_px = (max_y - min_y) * height
-            sx = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_w_px, 1e-6)
-            sy = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_h_px, 1e-6)
-            scaled = []
-            for x, y in polygon:
-                x2 = cx + (x - cx) * sx
-                y2 = cy + (y - cy) * sy
-                scaled.append((min(1.0, max(0.0, x2)), min(1.0, max(0.0, y2))))
-            polygon = scaled
-
-            page_to_polygon[page_idx] = polygon
-
-        return page_to_polygon
-
-    def align_segments_and_get_polygons(self, segments: list[str], doc) -> list[dict]:
-        aligned: list[AlignedSegment] = self.align_segments(segments)
-        out: list[dict] = []
-        for i, a in enumerate(aligned):
-            page_map = self.spans_to_page_polygons(doc, a.page_spans)
-            out.append(
-                {
-                    "id": i,
-                    "text": a.segment_text,
-                    "polygons": page_map,
-                }
-            )
-        return out

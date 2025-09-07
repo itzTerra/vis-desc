@@ -144,6 +144,15 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
                     self.logger.error(f"Failed to send batched messages: {e}")
 
                 if self._finished_worker_count == settings.WORKER_COUNT:
+                    try:
+                        await self.send_json(
+                            {
+                                "type": "success",
+                                "content": "Processing complete",
+                            }
+                        )
+                    except Exception:
+                        pass
                     await self.close()
                     return
         except asyncio.CancelledError:

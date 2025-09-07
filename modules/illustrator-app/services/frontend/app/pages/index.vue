@@ -19,37 +19,18 @@
             </select>
           </div>
         </div>
-        <div v-if="isLoading || isCancelled" class="flex items-center ms-4">
-          <div class="flex flex-col">
-            <progress class="progress progress-info w-52" :value="scoredSegments.length" :max="segmentCount" />
-            <div class="flex justify-between mt-0.5 text-sm opacity-60">
-              <template v-if="!isCancelled && segmentCount">
-                <span>{{ scoredSegments.length }}/{{ segmentCount }}</span>
-                <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
-              </template>
-              <template v-else-if="!isCancelled">
-                <span>Loading...</span>
-              </template>
-              <template v-else>
-                <span>{{ scoredSegments.length }}/{{ segmentCount }}</span>
-                <span>Loading canceled</span>
-              </template>
-            </div>
-          </div>
-          <button v-if="!isCancelled" class="btn btn-error btn-sm mx-2" @click="cancelSegmentLoading">
-            Stop
-          </button>
-        </div>
+        <EvalProgress
+          :is-loading="isLoading"
+          :is-cancelled="isCancelled"
+          :highlights="highlights"
+          @cancel="cancelSegmentLoading"
+        />
       </div>
-      <TextSearch
-        v-model:index="currentSearchIndex"
-        v-model:current-set-index="currentSearchSetIndex"
-        :input="searchInput"
-        :found="currentSearchSet.length"
-        :searched-set-count="2"
-        @prev="onSearchPrevNext"
-        @next="onSearchPrevNext"
-        @cycle="changeSearchSet"
+      <HighlightNav
+        ref="highlightNav"
+        :highlights="highlights"
+        :selected-highlights="selectedHighlights"
+        @update="goToHighlight"
       />
     </div>
     <div v-if="pdfUrl" class="flex bg-base-100">
@@ -70,7 +51,7 @@
                   v-else
                   class="skeleton h-full w-full"
                   :data-page="pageNum"
-                  style="position:absolute; inset:0;"
+                  style="position: absolute; inset:0;"
                 />
               </div>
               <HighlightLayer
@@ -80,54 +61,22 @@
                 :selected-highlights="selectedHighlights"
                 :page-refs="pageRefs"
                 :page-visibility="pageVisibility"
-                @select="(index) => toggleHighlightSelection(index)"
+                @select="toggleHighlightSelection"
+                @gen-image="genImage"
               />
             </div>
           </ClientOnly>
         </div>
       </div>
-      <div class="w-[512px] h-[90dvh]">
-        <figure
-          v-for="(highlight, index) in highlights.filter(h => h.imageUrl || h.imageLoading)"
-          :key="index"
-          :style="(getHighlightImageStyle(highlight) as StyleValue)"
-          :title="highlight.text"
-        >
-          <Transition>
-            <div v-if="highlight.imageLoading" class="flex justify-center items-center">
-              <div class="loading loading-spinner loading-md" />
-            </div>
-            <img v-else :src="highlight.imageUrl" alt="ai-illustration">
-          </Transition>
-        </figure>
-      </div>
+      <ImageLayer
+        ref="imageLayer"
+        :highlights="highlights"
+        :page-aspect-ratios="pageAspectRatios"
+        :pdf-embed-wrapper="pdfEmbedWrapper"
+        :page-refs="pageRefs"
+      />
     </div>
-    <div v-else class="hero bg-custom">
-      <div class="hero-content flex-col lg:flex-row-reverse max-w-[64rem]">
-        <img src="/vis-desc-image.png" alt="hero-image" width="400" height="400">
-        <div>
-          <h1 class="text-5xl font-bold">
-            Upload a file in PDF format to get started
-          </h1>
-          <p class="py-6">
-            The tool is is designed to evaluate literature in English language, specially fiction, travel and history genres. Results for other types of content may vary.
-          </p>
-          <div class="max-w-xl">
-            <label
-              class="flex justify-center w-full h-24 px-4 transition border-2 border-dashed rounded-md appearance-none cursor-pointer text-base-content/50 border-base-content/50 hover:border-base-content/30 focus:outline-none hover:bg-primary/10"
-            >
-              <span class="flex items-center space-x-2 ">
-                <Icon name="lucide:upload" />
-                <span class="font-medium">
-                  Drop file here or click in this area
-                </span>
-              </span>
-              <input type="file" accept="application/pdf" name="file_upload" class="hidden" @change="handleFileUpload">
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Hero v-else @file-selected="handleFileUpload" />
     <BottomBar />
     <BackToTop />
     <Alert />
@@ -151,20 +100,15 @@ const call = nuxtApp.$api;
 
 const pdfUrl = ref<string | null>(null);
 const modelSelect = ref<string>("random");
-const isLoading = ref(false);
+// Holds start timestamp (ms) when loading begins; null when idle
+const isLoading = ref<number | null>(null);
 const isCancelled = ref(false);
-const segmentCount = ref(0);
 const highlights = reactive<Highlight[]>([]);
 const selectedHighlights = reactive<Set<number>>(new Set());
-const searchInput = ref("");
-const currentSearchIndex = ref(0);
-enum SearchSet {
-  AllHighlights = 0,
-  SelectedHighlights = 1
-}
-const currentSearchSetIndex = ref<SearchSet>(SearchSet.AllHighlights);
 
 const highlightLayer = ref<InstanceType<typeof import("~/components/HighlightLayer.vue").default> | null>(null);
+const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.vue").default> | null>(null);
+const imageLayer = ref<InstanceType<typeof import("~/components/ImageLayer.vue").default> | null>(null);
 const pdfEmbedWrapper = ref<HTMLElement | null>(null);
 const { doc } = useVuePdfEmbed({ source: pdfUrl });
 const pdfRenderKey = ref(0);
@@ -176,7 +120,6 @@ const pageNums = computed(() =>
   doc.value ? [...Array(doc.value.numPages + 1).keys()].slice(1) : []
 );
 const PRELOAD_PAGES = 4;
-const DEFAULT_PAGE_ASPECT_RATIO = 1.4142; // A4 fallback (height / width)
 const pageAspectRatios = reactive<Record<number, number>>({});
 const containerWidth = ref(0);
 const resizeObserver: ResizeObserver | null = new ResizeObserver(entries => {
@@ -257,29 +200,40 @@ watch(pageNums, (newPageNums) => {
   nextTick(resetPageIntersectionObserver);
 });
 
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  pageIntersectionObserver?.disconnect();
-});
+const handleFileUpload = async (event: any) => {
+  const file = event.target?.files?.[0];
+  if (!file) {
+    return;
+  }
+  event.target.value = "";
+  fullReset();
 
-const scoredSegments = computed(() =>
-  highlights.filter(h => typeof h.score === "number" && h.score_received_at) as (Highlight & {
-    score: number;
-    score_received_at: number;
-  })[]
-);
-
-/** Heuristic time remaining based on the time taken to get already scored segments */
-const etaMs = computed(() => {
-  if (scoredSegments.value.length <= 1) return 0;
-  const timeTaken = scoredSegments.value[scoredSegments.value.length - 1].score_received_at - scoredSegments.value[0].score_received_at;
-  return (timeTaken / (scoredSegments.value.length - 1)) * (segmentCount.value - scoredSegments.value.length);
-});
+  isLoading.value = Date.now();
+  pdfUrl.value = URL.createObjectURL(file);
+  const formData = new FormData();
+  formData.append("pdf", file, file.name);
+  formData.append("model", modelSelect.value);
+  call("/api/process/pdf", {
+    method: "POST",
+    body: formData as any
+  }).then((data) => {
+    // collect initial aligned segments with polygons if provided
+    if (Array.isArray(data.segments)) {
+      highlights.splice(0, highlights.length, ...data.segments);
+    }
+    socket.open();
+    socket.send(JSON.stringify({ ws_key: data.ws_key }));
+  }).catch((error) => {
+    console.error("Failed to process PDF:", error);
+    isLoading.value = null;
+    useNotifier().error("Failed to process document. Please try again.");
+  });
+};
 
 const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
   immediate: false,
   onConnected: () => {
-    console.log("socket connected");
+    console.log("WS: connected");
   },
   onDisconnected: onDisconnected,
   onMessage: (ws, e) => {
@@ -290,23 +244,13 @@ const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
     {
       const batch = data.content as Segment[];
       for (const segment of batch) {
-        const foundSegment = highlights.find((seg) => seg.text === segment.text);
-        if (foundSegment) {
-          foundSegment.score = segment.score;
-          foundSegment.score_received_at = Date.now();
-        }
-        highlightSegment(segment);
+        scoreSegment(segment);
       }
       break;
     }
     case "segment":
     {
-      const foundSegment = highlights.find((seg) => seg.text === (data.content as Segment).text);
-      if (foundSegment) {
-        foundSegment.score = (data.content as Segment).score;
-        foundSegment.score_received_at = Date.now();
-      }
-      highlightSegment(data.content as Segment);
+      scoreSegment(data.content as Segment);
       break;
     }
     case "info":
@@ -324,50 +268,9 @@ const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
   },
 });
 
-function fullReset() {
-  socket.close();
-  onDisconnected();
-  isCancelled.value = false;
-  pdfUrl.value = null;
-  pdfRenderKey.value++;
-  selectedHighlights.clear();
-  searchInput.value = "";
-}
-
-const handleFileUpload = async (event: any) => {
-  const file = event.target?.files?.[0];
-  if (!file) {
-    return;
-  }
-  event.target.value = "";
-  fullReset();
-
-  isLoading.value = true;
-  pdfUrl.value = URL.createObjectURL(file);
-  const formData = new FormData();
-  formData.append("pdf", file, file.name);
-  formData.append("model", modelSelect.value);
-  call("/api/process/pdf", {
-    method: "POST",
-    body: formData as any
-  }).then((data) => {
-    segmentCount.value = data.segment_count;
-    // collect initial aligned segments with polygons if provided
-    if (Array.isArray(data.segments)) {
-      highlights.splice(0, highlights.length, ...data.segments);
-    }
-    socket.open();
-    socket.send(JSON.stringify({ ws_key: data.ws_key }));
-  }).catch((error) => {
-    console.error("Failed to process PDF:", error);
-    isLoading.value = false;
-    useNotifier().error("Failed to process document. Please try again.");
-  });
-};
-
 function onDisconnected() {
-  console.log("socket disconnected");
-  isLoading.value = false;
+  console.log("WS: disconnected");
+  isLoading.value = null;
 }
 
 function cancelSegmentLoading() {
@@ -379,128 +282,78 @@ function cancelSegmentLoading() {
   onDisconnected();
 }
 
-function getHighlightBoundingNormalized(highlight: Highlight) {
-  // Need to convert normalized first polygon to bounding box
-  if (!highlight.polygons) return null;
-  const firstPoly = highlight.polygons[Object.keys(highlight.polygons)[0] as any];
-  // get lowest and highest of y and the other extremes for x
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const [x, y] of firstPoly) {
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
+function scoreSegment(segment: Segment) {
+  const segmentHighlight = highlights.find((seg) => seg.text === segment.text);
+  if (!segmentHighlight) {
+    return;
   }
-  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-}
-
-const IMAGE_HEIGHT = 512;
-
-function getHighlightImageStyle(highlight: Highlight) {
-  if (!pdfEmbedWrapper.value) return {};
-  const pdfEmbedBounding = pdfEmbedWrapper.value.getBoundingClientRect();
-  const highlightBounding = getHighlightBoundingNormalized(highlight);
-  if (!highlightBounding) return {};
-  // convert to real coordinates using page aspect ratio
-  const ratio = pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
-  const width = pdfEmbedBounding.width;
-  const height = width * ratio;
-  let top = pdfEmbedBounding.top + highlightBounding.y * height + window.scrollY;
-
-  if (highlightBounding.height < IMAGE_HEIGHT) {
-    // align center of image to center of highlight
-    top = top - IMAGE_HEIGHT / 2 + highlightBounding.height / 2;
-  }
-  console.log("getHighlightImageStyle", { top, highlightBounding, pdfEmbedBounding });
-  return {
-    top: `${top}px`,
-    position: "relative"
-  };
-}
-
-function highlightSegment(segment: Segment) {
-  for (const highlight of highlights) {
-    if (highlight.text === segment.text) {
-      if ((highlight?.score ?? 0) >= SCORE_THRESHOLD && !selectedHighlights.has(highlight.id)) {
-        selectedHighlights.add(highlight.id);
-      }
+  segmentHighlight.score = segment.score;
+  if ((segmentHighlight?.score ?? 0) >= SCORE_THRESHOLD && !selectedHighlights.has(segmentHighlight.id)) {
+    // Autoselect high-score highlights
+    selectedHighlights.add(segmentHighlight.id);
+    if (selectedHighlights.size === 1) {
+      // If this is the first selected highlight, navigate to it
+      goToHighlight(segmentHighlight);
     }
   }
 }
 
-function toggleHighlightSelection(index: number) {
-  const highlight = highlights[index];
-  assertIsDefined(highlight);
-  if (selectedHighlights.has(highlight.id)) {
-    selectedHighlights.delete(highlight.id);
+async function goToHighlight(highlight: Highlight) {
+  // Make page of the first polygon visible
+  const firstPolyPage = highlight.polygons ? Number(Object.keys(highlight.polygons)[0]) : null;
+  if (firstPolyPage && !pageVisibility.value[firstPolyPage + 1]) {
+    pageVisibility.value[firstPolyPage + 1] = true;
+    await nextTick();
+  }
+  // Scroll to the highlight
+  await scrollIntoView(() => `[data-segment-id="${highlight.id}"]`);
+  // Spawn a marker animation to the left
+  highlightLayer.value?.spawnMarker(highlight.id);
+}
+
+
+function toggleHighlightSelection(id: number) {
+  if (selectedHighlights.has(id)) {
+    selectedHighlights.delete(id);
   } else {
-    selectedHighlights.add(highlight.id);
+    selectedHighlights.add(id);
   }
 }
 
-async function onSearchPrevNext(index: number) {
-  const highlight = currentSearchSet.value[index];
-  console.log("onSearchPrevNext called with index:", index);
-  console.log("highlight:", highlight);
-  if (highlight) {
-    searchInput.value = highlight.text || "";
-    const highlightsIndex = currentSearchSet.value === highlights ? index : highlights.findIndex(h => h.text === highlight.text);
-    console.log("highlightsIndex:", highlightsIndex);
-    // Make page of the first polygon visible
-    const firstPolyPage = highlight.polygons ? Number(Object.keys(highlight.polygons)[0]) : null;
-    if (firstPolyPage && !pageVisibility.value[firstPolyPage + 1]) {
-      pageVisibility.value[firstPolyPage + 1] = true;
-      // Wait 1 second for the page to render
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    // Scroll to the highlight
-    highlightLayer.value?.highlightRefs[highlightsIndex]?.scrollIntoView({
-      block: "center"
-    });
-  }
+async function genImage(highlightId: number) {
+  const realHighlight = highlights.find(h => h.id === highlightId);
+  if (!realHighlight) return;
+
+  realHighlight.imageLoading = true;
+  const res = await call("/api/gen-image-bytes", {
+    method: "POST",
+    body: { text: realHighlight.text }
+  });
+  const blob = new Blob([res as any], { type: "image/png" });
+  const url = URL.createObjectURL(blob);
+  realHighlight.imageUrl = url;
+  realHighlight.imageLoading = false;
+  imageLayer.value?.bringImageToFront(realHighlight);
+  return { blob, url };
 }
 
-const currentSearchSet = computed(() => {
-  if (currentSearchSetIndex.value === SearchSet.AllHighlights) {
-    return highlights || [];
-  } else if (currentSearchSetIndex.value === SearchSet.SelectedHighlights) {
-    return highlights.filter(h => selectedHighlights.has(h.id)) || [];
-  }
-  return [];
-});
-
-watch([highlights, selectedHighlights], () => {
-  if (currentSearchSet.value.length === 1) {
-    onSearchPrevNext(0);
-  }
-});
-
-watch(currentSearchIndex, (newIndex) => {
-  console.log("newIndex:", newIndex);
-});
-
-async function changeSearchSet() {
-  await nextTick();
-  const index = currentSearchSet.value.findIndex(h => h.text === searchInput.value);
-  if (index !== -1) {
-    currentSearchIndex.value = index;
-  } else {
-    currentSearchIndex.value = 0;
-  }
-  onSearchPrevNext(currentSearchIndex.value);
-}
-
-/** Round to full minutes if > 90 sec, else round to full seconds */
-function formatEta(etaMs: number) {
-  if (etaMs > 90000) {
-    return `${Math.round(etaMs / 60 / 1000)} min`;
-  }
-  return `${Math.round(etaMs / 1000)} sec`;
+function fullReset() {
+  isCancelled.value = false;
+  socket.close();
+  onDisconnected();
+  highlightNav.value?.reset();
+  imageLayer.value?.reset();
+  selectedHighlights.clear();
+  highlights.length = 0;
+  pdfUrl.value = null;
+  pdfRenderKey.value++;
 }
 
 nuxtApp.$debugPanel.track("containerWidth", containerWidth);
 nuxtApp.$debugPanel.track("pageVisibility", pageVisibility);
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  pageIntersectionObserver?.disconnect();
+});
 </script>

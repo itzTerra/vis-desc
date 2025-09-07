@@ -23,9 +23,7 @@ html {
 }
 
 .poly-shape {
-  fill: oklch(from var(--color-info) l c h / 0.1);
-  stroke: oklch(from var(--color-info) l c h / 0.5);
-  rx: 2px;
+  fill: none;
 }
 
 .highlight-dropdown {
@@ -37,9 +35,15 @@ html {
     height: 100%;
     cursor: pointer;
 
-    &:hover,
-    &:has(+ .dropdown-content:hover),
     &.highlight-selected {
+      .poly-shape {
+        fill: oklch(from var(--color-info) l c h / 0.15);
+        stroke: oklch(from var(--color-info) l c h / 0.6);
+      }
+    }
+
+    &:hover,
+    &:has(+ .dropdown-content:hover) {
       .poly-shape {
         fill: oklch(from var(--color-info) l c h / 0.25);
         stroke: oklch(from var(--color-info) l c h / 0.8);
@@ -58,5 +62,36 @@ html {
   & > .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
+  }
+}
+
+.highlight-marker::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -1.25rem; /* bring arrow closer to content */
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-top: 0.55rem solid transparent;
+  border-bottom: 0.55rem solid transparent;
+  border-left: 0.9rem solid oklch(from var(--color-info) l c h / 0.85); /* arrow color */
+  opacity: 0;
+  animation: arrow-pulse 1.25s ease-out;
+  pointer-events: none;
+}
+
+@keyframes arrow-pulse {
+  0% {
+    transform: translateY(-50%) scale(0.6);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50%) scale(0.6);
+    opacity: 0;
   }
 }

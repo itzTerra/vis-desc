@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isVisible" class="toast toast-top toast-center z-[9999]" @click="closeAlert">
+  <div v-if="isVisible" class="toast toast-top toast-right z-[9999]" @click="closeAlert">
     <div class="alert" :class="computedClass">
       <Icon
         :name="{

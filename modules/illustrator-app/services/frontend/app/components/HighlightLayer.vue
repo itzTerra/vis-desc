@@ -10,17 +10,27 @@
         v-for="(highlight, index) in page.highlights"
         v-show="highlight.score !== undefined"
         :key="index"
-        ref="highlightRefs"
         class="dropdown dropdown-right dropdown-center dropdown-hover highlight-dropdown"
         :style="getHighlightStyle(highlight)"
       >
-        <div class="highlight-dropdown-content" :class="{'highlight-selected': selectedHighlights.has(highlight.id)}" @click="$emit('select', index)">
+        <div
+          ref="highlightRefs"
+          class="highlight-dropdown-content"
+          :class="{'highlight-selected': selectedHighlights.has(highlight.id)}"
+          :data-page="pageNum"
+          :data-segment-id="highlight.id"
+          v-on="highlight.hasSiblings ? {
+            mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
+            mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),
+            click: () => $emit('select', highlight.id)
+          } : {
+            click: () => $emit('select', highlight.id)
+          }"
+        >
           <svg :viewBox="`0 0 ${highlight.bbox.width} ${highlight.bbox.height}`" class="absolute inset-0 w-full h-full pointer-events-none">
             <polygon
               :points="highlight.relPolygon.map(p => `${p[0]} ${p[1]}`).join(' ')"
               class="poly-shape"
-              :title="highlight.text"
-              :data-page="pageNum"
             />
           </svg>
         </div>
@@ -38,7 +48,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <button class="btn btn-sm btn-primary ms-auto" :disabled="!highlight.text" @click="genImage(highlight)">
+              <button class="btn btn-sm btn-primary ms-auto" :disabled="!highlight.text" @click="$emit('genImage', highlight.id)">
                 <span v-if="highlight.imageLoading" class="loading loading-spinner loading-sm" />
                 Generate image <Icon name="lucide:chevron-right" size="24" />
               </button>
@@ -61,13 +71,11 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
-  select: [index: number]
+  select: [index: number],
+  genImage: [highlightId: number],
 }>();
 
 const highlightRefs = ref<HTMLElement[]>([]);
-defineExpose({
-  highlightRefs,
-});
 
 interface HighlightRenderData {
   id: number;
@@ -76,6 +84,7 @@ interface HighlightRenderData {
   // Polygon points translated relative to bounding box (0,0 origin)
   relPolygon: number[][];
   bbox: { x: number; y: number; width: number; height: number };
+  hasSiblings: boolean;
   text: string;
   score?: number;
   imageLoading?: boolean;
@@ -90,6 +99,7 @@ const pageMap = computed<PageMap>(() => {
   const norm: Record<number, {
     id: number;
     polygon: number[][];
+    hasSiblings: boolean;
     text: string;
     score?: number;
     imageLoading?: boolean;
@@ -103,6 +113,7 @@ const pageMap = computed<PageMap>(() => {
       norm[pageNum].push({
         id: seg.id,
         polygon: poly,
+        hasSiblings: Object.keys(seg.polygons).length > 1,
         text: seg.text,
         score: seg.score,
         imageLoading: seg.imageLoading,
@@ -135,6 +146,7 @@ const pageMap = computed<PageMap>(() => {
         polygon: scaledPoly,
         relPolygon,
         bbox: { x: minX, y: minY, width: bboxWidth, height: bboxHeight },
+        hasSiblings: p.hasSiblings,
         text: p.text,
         score: p.score,
         imageLoading: p.imageLoading,
@@ -167,27 +179,32 @@ function getPageLayerStyle(pageNum: number | string): Record<string, string> {
   };
 }
 
-const { $api } = useNuxtApp();
-
-async function genImage(highlight: Omit<Highlight, "id" | "score" | "polygons">) {
-  if (!highlight.text) return;
-  const realHighlight = props.highlights.find(h => h.text === highlight.text);
-  if (!realHighlight) return;
-
-  realHighlight.imageLoading = true;
-  const res = await $api("/api/gen-image-bytes", {
-    method: "POST",
-    body: { text: realHighlight.text }
-  });
-  console.log(res);
-  const blob = new Blob([res as any], { type: "image/png" });
-  const url = URL.createObjectURL(blob);
-  // const link = document.createElement("a");
-  // link.href = url;
-  // link.target = "_blank";
-  // link.click();
-  realHighlight.imageUrl = url;
-  realHighlight.imageLoading = false;
-  return { blob, url };
+function onMouseEnter(eventTarget: any, id: number) {
+  const otherHighlightsOfSegment = highlightRefs.value.filter(el => el !== eventTarget && Number(el.dataset.segmentId) === id);
+  for (const el of otherHighlightsOfSegment) {
+    el.classList.add("highlight-selected");
+  }
 }
+
+function onMouseLeave(eventTarget: any, id: number) {
+  const otherHighlightsOfSegment = highlightRefs.value.filter(el => el !== eventTarget && Number(el.dataset.segmentId) === id);
+  for (const el of otherHighlightsOfSegment) {
+    el.classList.remove("highlight-selected");
+  }
+}
+
+function spawnMarker(highlightId: number) {
+  const els = highlightRefs.value.filter(el => Number(el.dataset.segmentId) === highlightId);
+  for (const el of els) {
+    el.classList.add("highlight-marker");
+    setTimeout(() => {
+      el.classList.remove("highlight-marker");
+    }, 2000);
+  }
+}
+
+defineExpose({
+  highlightRefs,
+  spawnMarker,
+});
 </script>

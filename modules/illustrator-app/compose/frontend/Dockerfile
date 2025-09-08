@@ -21,8 +21,6 @@ EXPOSE 24678
 
 FROM base AS dev
 
-COPY package.json ./
-
 WORKDIR /app
 
 CMD ["pnpm", "dev"]
@@ -39,9 +37,6 @@ COPY ./services/frontend/ ./
 RUN pnpm config set store /root/.pnpm-store
 RUN --mount=type=cache,target=/root/.pnpm-store,sharing=locked \
     pnpm install --prod
-
-COPY .git ./
-COPY package.json ./
 
 # Build the app
 RUN pnpm build

@@ -63,11 +63,11 @@ jobs:
         env:
           VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
           VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
-        run: pnpm run build
+        run: pnpm run generate
 
       - name: Package artifact
         run: |
-          tar -czf dist-${{ steps.vars.outputs.version }}.tar.gz -C ./.output .
+          tar -czf dist-${{ steps.vars.outputs.version }}.tar.gz -C ./.output/public .
 
       - name: Create Git tag (if new)
         run: |

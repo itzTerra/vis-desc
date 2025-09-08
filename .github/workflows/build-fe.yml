@@ -68,6 +68,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -75,11 +80,6 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: |
             modules/illustrator-app/services/frontend/pnpm-lock.yaml
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
 
       - name: Derive version & commit hash
         id: vars

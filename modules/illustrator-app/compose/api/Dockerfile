@@ -73,4 +73,4 @@ ENV DJANGO_SETTINGS_MODULE=project.settings \
     PYTHONUNBUFFERED=1 \
     PORT=8000
 
-CMD ["sh", "-c", "uv run python manage.py migrate && exec uv run daphne -b 0.0.0.0 -p $PORT project.asgi:application"]
+CMD ["sh", "-c", "exec uv run daphne -b 0.0.0.0 -p $PORT api.asgi:application"]

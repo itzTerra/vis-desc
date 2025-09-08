@@ -64,6 +64,8 @@ jobs:
         env:
           VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
           VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          NUXT_PUBLIC_OPEN_FETCH_API_BASE_URL: ${{ vars.NUXT_PUBLIC_OPEN_FETCH_API_BASE_URL }}
         run: pnpm run generate
 
       - name: Package artifact

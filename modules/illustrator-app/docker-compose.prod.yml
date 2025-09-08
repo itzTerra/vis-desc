@@ -1,0 +1,24 @@
+volumes:
+  postgres_data: {}
+
+services:
+  api:
+    extends:
+      file: docker-compose.yml
+      service: api
+    build:
+      context: .
+      dockerfile: ./compose/api/Dockerfile
+      target: release
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 128mb --maxmemory-policy noeviction

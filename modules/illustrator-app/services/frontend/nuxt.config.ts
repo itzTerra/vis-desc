@@ -1,15 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync } from "fs";
-import { execSync } from "child_process";
 
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
-let gitHash = "unknown";
-
-try {
-  gitHash = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
-} catch {
-  console.warn("Could not get git hash");
-}
 
 export default defineNuxtConfig({
   app: {
@@ -33,7 +25,6 @@ export default defineNuxtConfig({
       baseUrl: "",
       githubUrl: "https://github.com/itzTerra/vis-desc",
       appVersion: packageJson.version,
-      gitHash,
       buildTime: new Date().toISOString()
     }
   },

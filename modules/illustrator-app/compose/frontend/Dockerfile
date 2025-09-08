@@ -21,7 +21,6 @@ EXPOSE 24678
 
 FROM base AS dev
 
-COPY .git ./
 COPY package.json ./
 
 WORKDIR /app

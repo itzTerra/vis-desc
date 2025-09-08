@@ -13,13 +13,21 @@ repos:
       - id: ruff-format
         exclude: .*api\/.*migrations\/.*
 
-  - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v9.20.1
-    hooks:
-      - id: eslint
-        files: \.([jt]sx?|vue)$ # *.js, *.jsx, *.ts, *.tsx and *.vue
-        types: [file]
-        exclude: schema.d.ts
-        additional_dependencies:
-          - eslint@^9.10
-        args: [--fix]
+  # - repo: local
+  #   hooks:
+  #     - id: eslint-deps
+  #       name: "install eslint deps"
+  #       language: script
+  #       entry: modules/illustrator-app/utils/eslint_install_deps.sh
+  #       require_serial: true
+
+  # - repo: https://github.com/pre-commit/mirrors-eslint
+  #   rev: v9.20.1
+  #   hooks:
+  #     - id: eslint
+  #       files: \.([jt]sx?|vue)$ # *.js, *.jsx, *.ts, *.tsx and *.vue
+  #       types: [file]
+  #       exclude: schema.d.ts
+  #       additional_dependencies:
+  #         - eslint@^9.10
+  #       args: [--fix, --config, modules/illustrator-app/eslint.config.mjs]

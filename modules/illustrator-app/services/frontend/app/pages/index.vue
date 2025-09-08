@@ -97,6 +97,7 @@ const SCORE_THRESHOLD = 0.95;
 
 const nuxtApp = useNuxtApp();
 const call = nuxtApp.$api;
+const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
 const modelSelect = ref<string>("random");
@@ -230,7 +231,7 @@ const handleFileUpload = async (event: any) => {
   });
 };
 
-const socket = useWebSocket("ws://localhost:8000/ws/progress/", {
+const socket = useWebSocket(`ws://${runtimeConfig.public.openFetch.api.baseURL}/ws/progress/`, {
   immediate: false,
   onConnected: () => {
     console.log("WS: connected");

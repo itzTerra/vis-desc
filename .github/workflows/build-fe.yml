@@ -58,6 +58,7 @@ jobs:
   build-frontend:
     needs: pre-commit
     name: Build Frontend
+    environment: Production
     runs-on: ubuntu-latest
     defaults:
       run:

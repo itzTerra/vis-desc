@@ -18,6 +18,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: Production
     defaults:
       run:
         working-directory: modules/illustrator-app/services/frontend

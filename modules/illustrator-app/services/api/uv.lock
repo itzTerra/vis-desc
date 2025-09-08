@@ -34,6 +34,7 @@ dependencies = [
     { name = "redis" },
     { name = "regex" },
     { name = "requests" },
+    { name = "requests" },
     { name = "semantic-text-splitter" },
 ]
 
@@ -57,6 +58,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.26.4" },
     { name = "redis", specifier = ">=5.3.1" },
     { name = "regex", specifier = ">=2025.8.29" },
+    { name = "requests", specifier = ">=2.32.5" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "semantic-text-splitter", specifier = ">=0.27.0" },
 ]

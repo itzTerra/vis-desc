@@ -17,13 +17,16 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   runtimeConfig: {
     public: {
-      // can be overridden by NUXT_PUBLIC_BASE_*_URL environment variables
-      baseApiUrl: "",
-      baseUrl: "",
+      // can be overridden by NUXT_PUBLIC_* environment variables
       githubUrl: "https://github.com/itzTerra/vis-desc",
       appVersion: process.env.VITE_APP_VERSION || "1.0.0",
       commitHash: process.env.VITE_COMMIT_HASH || "unknown",
-      buildTime: new Date().toISOString()
+      buildTime: new Date().toISOString(),
+      openFetch: {
+        api: {
+          baseURL: "http://localhost:8000",
+        },
+      },
     }
   },
   vite: {
@@ -48,7 +51,7 @@ export default defineNuxtConfig({
   openFetch: {
     clients: {
       api: {
-        baseURL: process.env.VITE_API_BASE_URL,
+        baseURL: process.env.VITE_API_BASE_URL || "http://localhost:8000",
         schema: "http://api:8000/api/openapi.json"
       }
     }

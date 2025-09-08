@@ -1,0 +1,100 @@
+name: Build Frontend
+
+on:
+  push:
+    branches: [ main, preview ]
+    paths:
+      - 'modules/illustrator-app/services/frontend/**'
+      - 'modules/illustrator-app/package.json'
+      - 'modules/illustrator-app/pnpm-lock.yaml'
+      - '.github/workflows/build-fe.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: prod-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: Pre-commit Hooks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modules/illustrator-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node (for eslint hook)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-
+
+      - name: Install pre-commit
+        run: pip install pre-commit
+
+      - name: Run pre-commit (all files)
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  build-frontend:
+    needs: pre-commit
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modules/illustrator-app/services/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: |
+            modules/illustrator-app/services/frontend/pnpm-lock.yaml
+
+      - name: Derive version & commit hash
+        id: vars
+        run: |
+          VERSION=$(node -p "require('../../package.json').version")
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COMMIT_HASH=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "commit=${GITHUB_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build (production)
+        env:
+          VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
+          VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
+        run: pnpm run build

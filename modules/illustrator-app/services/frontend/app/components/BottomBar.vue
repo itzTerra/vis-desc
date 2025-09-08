@@ -4,7 +4,7 @@
       <Icon name="uil:github" size="28px" />
       <div class="pe-2 text-xs/3 flex flex-col grow-0 font-light font-mono">
         <span class="text-base-content/70">v{{ $config.public.appVersion }}</span>
-        <small class="truncate text-base-content/50 max-w-[60px]">#{{ $config.public.gitHash }}</small>
+        <small class="truncate text-base-content/50 max-w-[60px]">#{{ $config.public.commitHash }}</small>
       </div>
     </NuxtLink>
     <ThemeToggle />

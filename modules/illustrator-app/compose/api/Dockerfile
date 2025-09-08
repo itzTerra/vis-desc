@@ -70,8 +70,7 @@ CMD ["sh", "-c", "uv run manage.py migrate; uv run manage.py runserver 0.0.0.0:8
 FROM builder AS release
 
 ENV DJANGO_SETTINGS_MODULE=project.settings \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PORT=8000
 
-RUN uv run python manage.py collectstatic --noinput
-
-CMD ["sh", "-c", "uv run python manage.py migrate && exec uv run daphne -b 0.0.0.0 -p 8000 project.asgi:application"]
+CMD ["sh", "-c", "uv run python manage.py migrate && exec uv run daphne -b 0.0.0.0 -p $PORT project.asgi:application"]

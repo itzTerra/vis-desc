@@ -5,6 +5,7 @@ from django.core.files.base import ContentFile
 from django.template.defaultfilters import slugify
 import time
 
+
 class Provider(str, Enum):
     POLLINATIONS = "pollinations"
 

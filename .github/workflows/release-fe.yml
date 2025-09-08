@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/frontend
+        working-directory: modules/illustrator-app/services/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,8 +33,7 @@ jobs:
           node-version: 20
           cache: 'pnpm'
           cache-dependency-path: |
-            pnpm-lock.yaml
-            services/frontend/pnpm-lock.yaml
+            modules/illustrator-app/services/frontend/pnpm-lock.yaml
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v3
@@ -83,7 +82,7 @@ jobs:
           tag_name: ${{ steps.vars.outputs.tag }}
           name: Release ${{ steps.vars.outputs.version }}
           prerelease: ${{ inputs.prerelease }}
-          files: services/frontend/dist-${{ steps.vars.outputs.version }}.tar.gz
+          files: modules/illustrator-app/services/frontend/dist-${{ steps.vars.outputs.version }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

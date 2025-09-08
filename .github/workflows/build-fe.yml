@@ -4,10 +4,10 @@ on:
   push:
     branches: [ main, preview ]
     paths:
-      - 'services/frontend/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/build.yml'
+      - 'modules/illustrator-app/services/frontend/**'
+      - 'modules/illustrator-app/package.json'
+      - 'modules/illustrator-app/pnpm-lock.yaml'
+      - '.github/workflows/build-fe.yml'
   workflow_dispatch: {}
 
 permissions:
@@ -22,6 +22,9 @@ jobs:
   pre-commit:
     name: Pre-commit Hooks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modules/illustrator-app/services/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/frontend
+        working-directory: modules/illustrator-app/services/frontend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -71,8 +74,7 @@ jobs:
           node-version: 20
           cache: 'pnpm'
           cache-dependency-path: |
-            pnpm-lock.yaml
-            services/frontend/pnpm-lock.yaml
+            modules/illustrator-app/services/frontend/pnpm-lock.yaml
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v3

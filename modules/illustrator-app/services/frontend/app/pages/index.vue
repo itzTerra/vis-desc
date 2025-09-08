@@ -13,7 +13,7 @@
               <option value="random">
                 Random [debug]
               </option>
-              <option value="deberta_mnli">
+              <option value="deberta_mnli" disabled>
                 DeBERTa-MNLI
               </option>
             </select>

@@ -51,7 +51,7 @@ export default defineNuxtConfig({
   openFetch: {
     clients: {
       api: {
-        baseURL: process.env.VITE_API_BASE_URL,
+        baseURL: process.env.VITE_API_BASE_URL || "http://localhost:8000",
         schema: "http://api:8000/api/openapi.json"
       }
     }

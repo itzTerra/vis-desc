@@ -231,7 +231,7 @@ const handleFileUpload = async (event: any) => {
   });
 };
 
-const socket = useWebSocket(`ws://${runtimeConfig.public.openFetch.api.baseURL}/ws/progress/`, {
+const socket = useWebSocket(`${runtimeConfig.public.wsBaseUrl}/ws/progress/`, {
   immediate: false,
   onConnected: () => {
     console.log("WS: connected");

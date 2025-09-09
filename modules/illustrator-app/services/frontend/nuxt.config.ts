@@ -22,6 +22,7 @@ export default defineNuxtConfig({
       appVersion: process.env.VITE_APP_VERSION || "1.0.0",
       commitHash: process.env.VITE_COMMIT_HASH || "unknown",
       buildTime: new Date().toISOString(),
+      wsBaseUrl: process.env.VITE_API_WS_BASE_URL || "ws://localhost:8000",
       openFetch: {
         api: {
           baseURL: "http://localhost:8000",

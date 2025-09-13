@@ -210,4 +210,6 @@ data/**/*
 !data/processed_books.json
 !data/to-annotate
 !data/to-annotate/**/*
+!data/datasets
+!data/datasets/**/*
 src/experiments

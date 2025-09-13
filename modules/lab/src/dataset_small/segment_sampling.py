@@ -38,6 +38,9 @@ class SegmentSampler:
                 }
                 segments_with_meta.append(segment)
             self._all_segments_cache.extend(segments_with_meta)
+        self._all_segments_cache.sort(
+            key=lambda s: s["segment_id"]
+        )  # for consistent sampling later
         return self._all_segments_cache
 
     def _load_used_segments(self):

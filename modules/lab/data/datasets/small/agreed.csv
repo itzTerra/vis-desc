@@ -1,20 +1,20 @@
-task_id	text	annotator_1	annotator_2	agreed_rating
-1	“While he was still looking at me, but stealing side-glances at a doorway before which was draped a most wonderful curtain of a sort of flamingo colour, this curtain was suddenly pulled aside, and a girl came in.	3		
-2	These chances Wang Ho at first forecast by means of dreams, portents and other manifestations of an admittedly supernatural tendency, but as his name grew large and the number of his clients increased vastly, while his capacity for dreaming remained the same, he found it no less effective to close his eyes and to become inspired rapidly of numbers as they were thus revealed to him.	2		
+segment_id	text	annotator_1	annotator_2	agreed_rating
+1	“While he was still looking at me, but stealing side-glances at a doorway before which was draped a most wonderful curtain of a sort of flamingo colour, this curtain was suddenly pulled aside, and a girl came in.	3	4	
+2	These chances Wang Ho at first forecast by means of dreams, portents and other manifestations of an admittedly supernatural tendency, but as his name grew large and the number of his clients increased vastly, while his capacity for dreaming remained the same, he found it no less effective to close his eyes and to become inspired rapidly of numbers as they were thus revealed to him.	2	0	
 3	"“Now to business,” went on Mr. Blowitz, after a pause. “Did I understand you to say you had hired that large motor boat?”
-“We have; for several weeks,” answered Jerry, who, by consent of Ned and Bob, had been elected spokesman."	1		
+“We have; for several weeks,” answered Jerry, who, by consent of Ned and Bob, had been elected spokesman."	1	1	1
 4	"He turned over the pages rapidly and read aloud.
 
 
-“Reginald Cyril Brott, born 18—, son of John Reginald Brott, Esq., of Manchester. Educated at Harrow and Merton College, Cambridge, M.A., LL.D., and winner of the Rudlock History Prize. Also tenth wrangler. Entered the diplomatic service on leaving college, and served as junior attache at Vienna.”"	2		
-5	The sun had hidden behind clouds all the latter part of that day, an unusual occurrence for that region even in winter.  And now, as the light waned suddenly, telling of the hidden sunset, a cold dry, penetrating wind sprang up and blew in Gale's face.  Not at first, but by imperceptible degrees it chilled him.  He untied his coat from the back of the saddle and put it on.  A few cold drops of rain touched his cheek.	4		
-6	We do not torture our criminals when we lynch them. We do not invite spectators to enjoy their death agony. We put no such hideous disgrace upon the United States. We execute our criminals by the swiftest means, and in the quietest way. Do you think the principle is the same?”	0		
+“Reginald Cyril Brott, born 18—, son of John Reginald Brott, Esq., of Manchester. Educated at Harrow and Merton College, Cambridge, M.A., LL.D., and winner of the Rudlock History Prize. Also tenth wrangler. Entered the diplomatic service on leaving college, and served as junior attache at Vienna.”"	2	1	
+5	The sun had hidden behind clouds all the latter part of that day, an unusual occurrence for that region even in winter.  And now, as the light waned suddenly, telling of the hidden sunset, a cold dry, penetrating wind sprang up and blew in Gale's face.  Not at first, but by imperceptible degrees it chilled him.  He untied his coat from the back of the saddle and put it on.  A few cold drops of rain touched his cheek.	4	4	4
+6	We do not torture our criminals when we lynch them. We do not invite spectators to enjoy their death agony. We put no such hideous disgrace upon the United States. We execute our criminals by the swiftest means, and in the quietest way. Do you think the principle is the same?”	0	0	0
 7	"“And personal experiences of your own, Colonel Wragge?” asked John Silence earnestly, his manner showing the greatest possible interest and sympathy.
-The soldier gave an almost imperceptible start. He looked distinctly uncomfortable."	0		
+The soldier gave an almost imperceptible start. He looked distinctly uncomfortable."	0	0	0
 8	"The heavy clamour gradually died away, but before it had ceased Witherspoon had jumped to his feet, his hair and beard all on end, and had said—
-“I move, as an amendment, that Comrade Syme be appointed to the post.”"	2		
-9	His face and stubby beard were dust-colored, and his eyes seemed sullen, watchful. He made Bostil think of a dusty, scaly, hard, desert rattlesnake. Bostil eyed this right-hand man of Cordts's and certainly felt no fear of him, though Sears had the fame of swift and deadly skill with a gun.	3		
-10	She was radiant, adorable, irresistible; I had to own that my first impression of her had been far too weak.	0		
+“I move, as an amendment, that Comrade Syme be appointed to the post.”"	2	3	
+9	His face and stubby beard were dust-colored, and his eyes seemed sullen, watchful. He made Bostil think of a dusty, scaly, hard, desert rattlesnake. Bostil eyed this right-hand man of Cordts's and certainly felt no fear of him, though Sears had the fame of swift and deadly skill with a gun.	3	3	3
+10	She was radiant, adorable, irresistible; I had to own that my first impression of her had been far too weak.	0	1	
 11	He laughed, “I take it you do not.” Becoming solemn again, he continued, “Our land, Daem is on the edge of ruin, and has been for all of my life and those of many generations before me.	0		
 12	"About half-past twelve Mr. Morton shut his own book with a slap, leaned back, and began to fill his pipe.
 ""Nothing seems very important,"" he said.
@@ -464,7 +464,7 @@ Behind appeared a tall figure in black. Everybody in the room advanced, includin
 
 Then the barons saw themselves mocked and cheated, and they turned with sneers to Tristan, for they thought him to have counselled the trick. But Tristan, when he had looked on the Hair of Gold, remembered Iseult the Fair and smiled and said this:"	2	1	
 268	He must shoot very neatly to hit the cockade and not the head, or even the hat. If the shots had really gone at random, the chances are a thousand to one that they would not have hit such prominent and picturesque objects.	2	3	
-269	There has been a stoppage of the trades, and now it's howling right out of the trade quarter.” He waved his hand into the darkness, as if his vision could dimly penetrate for hundreds of miles. “It is off to the westward. There is something big making off there somewhere—a hurricane or something. We're lucky to be so far to the eastward. But this is only a little blow,” he added. “It can't last. I can tell you that much.”	0		
+269	There has been a stoppage of the trades, and now it's howling right out of the trade quarter.” He waved his hand into the darkness, as if his vision could dimly penetrate for hundreds of miles. “It is off to the westward. There is something big making off there somewhere—a hurricane or something. We're lucky to be so far to the eastward. But this is only a little blow,” he added. “It can't last. I can tell you that much.”	0	2	
 270	"The dancing ceased the moment the banquet was ready. The cooks had
 experienced considerable trouble in restraining some of the boys from the
 too free exercise of what they looked upon as the inalienable right of man"	1		

@@ -11,6 +11,7 @@ import label_studio_models as lsm
 
 
 Category = int  # 0..5 inclusive
+MAX_CATEGORY: int = 5
 
 
 @dataclass(slots=True)
@@ -50,18 +51,24 @@ def _filter_outliers_iqr(values: List[float]) -> List[float]:
 
 
 def _extract_rating_from_annotation(
-    ann: lsm.Annotation, label_name: str = "rating"
+    ann: lsm.Annotation,
+    label_name: str = "rating",
+    visual_action_name: str = "visual_action",
 ) -> Category | None:
     """Return the integer rating (0..5) for a single annotation or None."""
-    choices = ann.choices_by_from_name().get(label_name)
-    if not choices:
+    all_choices = ann.choices_by_from_name()
+    rating_choices = all_choices.get(label_name)
+    if not rating_choices:
         return None
-    # take first, ignore extras
-    choice = choices[0]
+    # take first rating value, ignore extras
+    choice = rating_choices[0]
     try:
         val = int(choice)
     except Exception:
         return None
+    va_choices = all_choices.get(visual_action_name) or []
+    if any(c.strip().lower() == "true" for c in va_choices):
+        val = min(val + 1, MAX_CATEGORY)
     return val
 
 

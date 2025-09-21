@@ -17,10 +17,10 @@
           <span class="label">{{ currentSearchSet.length === 0 ? 0 : currentIndex + 1 }}/{{ currentSearchSet.length }}</span>
         </label>
         <div class="join-item flex flex-row">
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" @click="onPrev">
+          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Previous Segment" @click="onPrev">
             <Icon name="lucide:chevron-up" size="20px" />
           </button>
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" @click="onNext">
+          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Next Segment" @click="onNext">
             <Icon name="lucide:chevron-down" size="20px" />
           </button>
         </div>
@@ -130,9 +130,7 @@ const props = defineProps<{
   selectedHighlights: Set<number>;
 }>();
 
-const emit = defineEmits<{
-  update: [highlight: Highlight]
-}>();
+const { callHook } = useNuxtApp();
 
 const isExpanded = ref(false);
 const currentIndex = ref<number>(0);
@@ -165,7 +163,7 @@ function onPrevNext() {
     return;
   }
   searchInput.value = highlight.text || "";
-  emit("update", highlight);
+  callHook("custom:goToHighlight", highlight);
 }
 
 function onSelectFromTable(index: number) {

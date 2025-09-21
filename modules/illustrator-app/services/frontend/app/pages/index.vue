@@ -30,52 +30,14 @@
         ref="highlightNav"
         :highlights="highlights"
         :selected-highlights="selectedHighlights"
-        @update="goToHighlight"
       />
     </div>
-    <div v-if="pdfUrl" class="flex bg-base-100">
-      <div class="flex-grow">
-        <div class="relative border border-gray-300 rounded">
-          <ClientOnly>
-            <div ref="pdfEmbedWrapper" class="pdf-wrapper">
-              <div v-for="pageNum in pageNums" :key="pageNum" ref="pageRefs" :style="(pagePlaceholderStyles[pageNum - 1] as StyleValue)">
-                <VuePdfEmbed
-                  v-if="pageVisibility[pageNum]"
-                  annotation-layer
-                  text-layer
-                  :source="doc"
-                  :page="pageNum"
-                  class="pdf-embed"
-                />
-                <div
-                  v-else
-                  class="skeleton h-full w-full"
-                  :data-page="pageNum"
-                  style="position: absolute; inset:0;"
-                />
-              </div>
-              <HighlightLayer
-                v-if="highlights.length"
-                ref="highlightLayer"
-                :highlights="highlights"
-                :selected-highlights="selectedHighlights"
-                :page-refs="pageRefs"
-                :page-visibility="pageVisibility"
-                @select="toggleHighlightSelection"
-                @gen-image="genImage"
-              />
-            </div>
-          </ClientOnly>
-        </div>
-      </div>
-      <ImageLayer
-        ref="imageLayer"
-        :highlights="highlights"
-        :page-aspect-ratios="pageAspectRatios"
-        :pdf-embed-wrapper="pdfEmbedWrapper"
-        :page-refs="pageRefs"
-      />
-    </div>
+    <PdfViewer
+      v-if="pdfUrl"
+      v-model:highlights="highlights"
+      v-model:selected-highlights="selectedHighlights"
+      :pdf-url="pdfUrl"
+    />
     <Hero v-else @file-selected="handleFileUpload" />
     <BottomBar />
     <BackToTop />
@@ -85,18 +47,13 @@
 
 <script setup lang="ts">
 import type { Highlight } from "~/types/common";
-import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
-import type { StyleValue } from "vue";
-import "vue-pdf-embed/dist/styles/annotationLayer.css";
-import "vue-pdf-embed/dist/styles/textLayer.css";
 
 type Segment = { text: string, score: number };
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
 const SCORE_THRESHOLD = 0.95;
 
-const nuxtApp = useNuxtApp();
-const call = nuxtApp.$api;
+const { $api: call, callHook } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
@@ -106,100 +63,7 @@ const isLoading = ref<number | null>(null);
 const isCancelled = ref(false);
 const highlights = reactive<Highlight[]>([]);
 const selectedHighlights = reactive<Set<number>>(new Set());
-
-const highlightLayer = ref<InstanceType<typeof import("~/components/HighlightLayer.vue").default> | null>(null);
 const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.vue").default> | null>(null);
-const imageLayer = ref<InstanceType<typeof import("~/components/ImageLayer.vue").default> | null>(null);
-const pdfEmbedWrapper = ref<HTMLElement | null>(null);
-const { doc } = useVuePdfEmbed({ source: pdfUrl });
-const pdfRenderKey = ref(0);
-const pageRefs = ref<Element[]>([]);
-const pageVisibility = ref<Record<number, boolean>>({});
-let pageIntersectionObserver: IntersectionObserver | undefined;
-
-const pageNums = computed(() =>
-  doc.value ? [...Array(doc.value.numPages + 1).keys()].slice(1) : []
-);
-const PRELOAD_PAGES = 4;
-const pageAspectRatios = reactive<Record<number, number>>({});
-const containerWidth = ref(0);
-const resizeObserver: ResizeObserver | null = new ResizeObserver(entries => {
-  for (const entry of entries) {
-    containerWidth.value = entry.contentRect.width;
-  }
-});
-
-// Pre-fetch first page ratio to improve initial placeholder accuracy
-watch(doc, async (d) => {
-  if (d) {
-    const page = await d.getPage(1);
-    const vp = page.getViewport({ scale: 1 });
-    pageAspectRatios[1] = vp.height / vp.width;
-  }
-}, { immediate: true });
-
-watch(pdfEmbedWrapper, (newVal, oldVal) => {
-  if (oldVal && resizeObserver) {
-    resizeObserver.unobserve(oldVal);
-    return;
-  }
-  if (newVal && resizeObserver) {
-    resizeObserver.observe(newVal);
-    containerWidth.value = newVal.getBoundingClientRect().width;
-  }
-});
-
-const pageHeight = computed(() => {
-  const ratio = pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
-  return containerWidth.value ? containerWidth.value * ratio : 1000; // fallback height
-});
-
-const pagePlaceholderStyles = computed(() => {
-  return pageNums.value.map(() => ({
-    minHeight: `${pageHeight.value}px`,
-    position: "relative",
-  }));
-});
-
-const resetPageIntersectionObserver = () => {
-  pageIntersectionObserver?.disconnect();
-  pageIntersectionObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        const index = pageRefs.value.indexOf(entry.target);
-        if (index === -1) return;
-        const pageNum = pageNums.value[index];
-        if (!pageVisibility.value[pageNum]) {
-          pageVisibility.value[pageNum] = true;
-
-          // (Optional) refine aspect ratio once page is requested
-          doc.value?.getPage(pageNum)
-            .then((p) => {
-              if (p) {
-                const vp = p.getViewport({ scale: 1 });
-                pageAspectRatios[pageNum] = vp.height / vp.width;
-              }
-            })
-            .catch((e) => {
-              console.warn("Failed to fetch page for ratio", pageNum, e);
-            });
-        }
-      }
-    });
-  }, {
-    root: null,
-    rootMargin: `${PRELOAD_PAGES * pageHeight.value}px 0px`, // pre-load ahead
-    threshold: 0.05, // require some actual area visible
-  });
-  pageRefs.value.forEach((element) => {
-    pageIntersectionObserver!.observe(element);
-  });
-};
-
-watch(pageNums, (newPageNums) => {
-  pageVisibility.value = { [newPageNums[0]]: true };
-  nextTick(resetPageIntersectionObserver);
-});
 
 const handleFileUpload = async (event: any) => {
   const file = event.target?.files?.[0];
@@ -294,48 +158,9 @@ function scoreSegment(segment: Segment) {
     selectedHighlights.add(segmentHighlight.id);
     if (selectedHighlights.size === 1) {
       // If this is the first selected highlight, navigate to it
-      goToHighlight(segmentHighlight);
+      callHook("custom:goToHighlight", segmentHighlight);
     }
   }
-}
-
-async function goToHighlight(highlight: Highlight) {
-  // Make page of the first polygon visible
-  const firstPolyPage = highlight.polygons ? Number(Object.keys(highlight.polygons)[0]) : null;
-  if (firstPolyPage && !pageVisibility.value[firstPolyPage + 1]) {
-    pageVisibility.value[firstPolyPage + 1] = true;
-    await nextTick();
-  }
-  // Scroll to the highlight
-  await scrollIntoView(() => `[data-segment-id="${highlight.id}"]`);
-  // Spawn a marker animation to the left
-  highlightLayer.value?.spawnMarker(highlight.id);
-}
-
-
-function toggleHighlightSelection(id: number) {
-  if (selectedHighlights.has(id)) {
-    selectedHighlights.delete(id);
-  } else {
-    selectedHighlights.add(id);
-  }
-}
-
-async function genImage(highlightId: number) {
-  const realHighlight = highlights.find(h => h.id === highlightId);
-  if (!realHighlight) return;
-
-  realHighlight.imageLoading = true;
-  const res = await call("/api/gen-image-bytes", {
-    method: "POST",
-    body: { text: realHighlight.text }
-  });
-  const blob = new Blob([res as any], { type: "image/png" });
-  const url = URL.createObjectURL(blob);
-  realHighlight.imageUrl = url;
-  realHighlight.imageLoading = false;
-  imageLayer.value?.bringImageToFront(realHighlight);
-  return { blob, url };
 }
 
 function fullReset() {
@@ -343,18 +168,8 @@ function fullReset() {
   socket.close();
   onDisconnected();
   highlightNav.value?.reset();
-  imageLayer.value?.reset();
   selectedHighlights.clear();
   highlights.length = 0;
   pdfUrl.value = null;
-  pdfRenderKey.value++;
 }
-
-nuxtApp.$debugPanel.track("containerWidth", containerWidth);
-nuxtApp.$debugPanel.track("pageVisibility", pageVisibility);
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  pageIntersectionObserver?.disconnect();
-});
 </script>

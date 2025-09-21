@@ -158,6 +158,11 @@ function createPanel(): { api: DebugPanelApi } {
     if (typeof v === "number") return `<span style="color:#b5cea8">${v}</span>`;
     if (typeof v === "boolean") return `<span style="color:#569cd6">${v}</span>`;
     if (v instanceof Date) return `<span>${v.toISOString()}</span>`;
+    if (v instanceof Map) {
+      const obj: Record<string, any> = {};
+      v.forEach((val, key) => { obj[String(key)] = val; });
+      v = obj;
+    }
     try {
       return `<code>${escapeHtml(JSON.stringify(v, (_, val) => typeof val === "bigint" ? val.toString() + "n" : val, 2))}</code>`;
     } catch {

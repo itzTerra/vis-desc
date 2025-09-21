@@ -2,7 +2,7 @@
   <div
     ref="imagesContainer"
     class="relative w-[512px] border-l border-base-300 overflow-hidden select-none"
-    :style="{ height: pdfHeight ? pdfHeight + 'px' : undefined, minHeight: '90dvh' }"
+    :style="{ height: pageHeight + 'px', minHeight: '90dvh' }"
   >
     <figure
       v-for="(highlight, index) in highlights.filter(h => h.imageUrl || h.imageLoading)"
@@ -31,36 +31,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, onBeforeUnmount } from "vue";
 import type { StyleValue } from "vue";
 import type { Highlight } from "~/types/common";
-import { DEFAULT_PAGE_ASPECT_RATIO } from "~/utils/utils";
 
 const props = defineProps<{
   pdfEmbedWrapper: HTMLElement | null;
   highlights: Highlight[];
-  pageAspectRatios: Record<number, number>;
+  pageAspectRatio: number;
+  pageHeight: number;
   pageRefs?: Element[]; // optional list of page wrapper elements (index = pageNum - 1)
 }>();
 
 const imagesContainer = ref<HTMLElement | null>(null);
-const pdfHeight = ref(0);
-let pdfResizeObserver: ResizeObserver | null = null;
 
-watch(() => props.pdfEmbedWrapper, (el, oldEl) => {
-  if (oldEl && pdfResizeObserver) pdfResizeObserver.unobserve(oldEl);
-  if (el) {
-    if (!pdfResizeObserver) {
-      pdfResizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          pdfHeight.value = Math.round(entry.contentRect.height);
-        }
-      });
-    }
-    pdfResizeObserver.observe(el);
-    pdfHeight.value = Math.round(el.getBoundingClientRect().height);
-  }
-}, { immediate: true });
 const IMAGE_HEIGHT = 512;
 
 function getHighlightImageStyle(highlight: Highlight) {
@@ -72,20 +55,19 @@ function getHighlightImageStyle(highlight: Highlight) {
   // Determine page index: polygon keys are 0-based (see usage in index.vue where +1 is applied)
   const firstPageKey = Object.keys(highlight.polygons || {})[0];
   const pageIndex = Number(firstPageKey) || 0; // 0-based
-  const pageNum = pageIndex + 1; // 1-based for ratios & PDF pages
   // Attempt to use actual page element metrics for more accurate placement
   const pageEl = props.pageRefs?.[pageIndex] as HTMLElement | undefined;
   let globalTop: number;
   if (pageEl) {
     const pageRect = pageEl.getBoundingClientRect();
     const actualPageHeight = pageRect.height || (() => {
-      const ratio = props.pageAspectRatios[pageNum] || props.pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
+      const ratio = props.pageAspectRatio;
       return pdfEmbedBounding.width * ratio; // fallback
     })();
     globalTop = pageRect.top + window.scrollY + highlightBounding.y * actualPageHeight;
   } else {
     // Fallback to estimated cumulative height method
-    const ratio = props.pageAspectRatios[pageNum] || props.pageAspectRatios[1] || DEFAULT_PAGE_ASPECT_RATIO;
+    const ratio = props.pageAspectRatio;
     const width = pdfEmbedBounding.width;
     const pageHeight = width * ratio;
     const pageOffset = pageIndex * pageHeight; // pageIndex is 0-based
@@ -229,7 +211,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("pointermove", onImagePointerMove);
   window.removeEventListener("scroll", onScrollWhileDragging);
-  pdfResizeObserver?.disconnect();
 });
 
 function clamp(v: number, min: number, max: number) {

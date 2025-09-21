@@ -29,7 +29,7 @@ docker compose run --rm frontend pnpm gen-types
 ### Dramatiq
 
 ```bash
-docker compose run --rm --user root api python manage.py rundramatiq -p 4 -t 2
+docker compose run --rm --user root api python manage.py rundramatiq -p 2 -t 2
 ```
 
 ## Pre-commit

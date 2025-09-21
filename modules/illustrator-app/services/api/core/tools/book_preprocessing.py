@@ -1,8 +1,5 @@
 from __future__ import annotations
 import re
-import unicodedata
-from concurrent.futures import ThreadPoolExecutor
-import multiprocessing as mp
 import logging
 from django.conf import settings
 import pymupdf
@@ -18,10 +15,11 @@ class BookPreprocessor:
     def __init__(self):
         self.patterns = {
             "page_numbers": re.compile(
-                r"^\s*(?:page\s+)?(?:\d+|\[?\d+\]?)\s*$", re.IGNORECASE
+                r"[\n\r][^\S\r\n]*(?:page\s+)?(?:\d+|\[?\d+\]?)[^\S\r\n]*(?=[\n\r]|$)",
+                re.IGNORECASE,
             ),
             "chapter_headers": re.compile(
-                r"^\s*(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivx]+|\d+)(?:\.|:|\s|$)",
+                r"^\s*(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
                 re.IGNORECASE,
             ),
             "roman_numerals": re.compile(r"^\s*[ivxlcdm]{1,7}\s*$", re.IGNORECASE),
@@ -93,65 +91,92 @@ class BookPreprocessor:
         self.text_keywords = {"!", "?", '"', ":", "”"}
         self.short_line_threshold = 10
 
-    def clean_text(self, text: str, prev_line: str = "") -> str:
+    def clean_text(
+        self, text: str, prev_line: str = "", return_split_with_removed=False
+    ) -> str | tuple[str, list[str], set[int]]:
         """prev_line is for cases where you are using clean_text on segments of connected text"""
 
         text = self._before_clean(text)
 
         if not text or len(text) < 10:
+            if return_split_with_removed:
+                return text, [text], []
             return text
 
         lines = text.split("\n")
 
-        # Parallel processing for large texts
-        if len(lines) > 1000:
-            return self._parallel_clean(lines, prev_line)
-        else:
-            return self._sequential_clean(lines, prev_line)
+        cleaned, removed_lines = self._sequential_clean(lines, prev_line)
+        if return_split_with_removed:
+            return cleaned, lines, removed_lines
+        return cleaned
+        # if len(lines) > 1000:
+        #     return self._parallel_clean(lines, prev_line)
+        # else:
+        #     return self._sequential_clean(lines, prev_line)
 
     def _before_clean(self, text: str) -> str:
         """Hook for preprocessing before cleaning"""
 
-        return text.strip().replace("\r\n", "\n")
+        text = text.strip().replace("\r\n", "\n")
 
-    def _parallel_clean(self, lines: list[str], prev_line: str = "") -> str:
-        """Parallel processing for large texts"""
-        batch_size = max(100, len(lines) // mp.cpu_count())
-        batches = [
-            (lines[i : i + batch_size], lines[i - 1] if i > 0 else prev_line)
-            for i in range(0, len(lines), batch_size)
-        ]
+        text = self.patterns["page_numbers"].sub("", text)
 
-        with ThreadPoolExecutor(max_workers=mp.cpu_count()) as executor:
-            processed_batches = list(
-                executor.map(
-                    lambda ctx: self._process_batch(ctx[0], ctx[1]),
-                    batches,
-                )
-            )
+        # Unhyphenate
+        text = self.patterns["hyphenated_sentence"].sub("", text)
 
-        # Flatten results
-        processed_lines = []
-        for batch_lines in processed_batches:
-            processed_lines.extend(batch_lines)
+        # Remove functional newlines for page width control - they break the text splitter semantics
+        # -> replace newline in the middles of sentences with a white space, e.g. 'Soon\nanother clock began, on a hard, decisive note.'
+        text = self.patterns["line_breaked_sentence"].sub(" ", text)
 
-        return self._after_clean(processed_lines)
+        return text
 
-    def _sequential_clean(self, lines: list[str], prev_line: str = "") -> str:
+    # def _parallel_clean(self, lines: list[str], prev_line: str = "") -> str:
+    #     """Parallel processing for large texts"""
+    #     batch_size = max(100, len(lines) // mp.cpu_count())
+    #     batches = [
+    #         (lines[i : i + batch_size], lines[i - 1] if i > 0 else prev_line)
+    #         for i in range(0, len(lines), batch_size)
+    #     ]
+
+    #     with ThreadPoolExecutor(max_workers=mp.cpu_count()) as executor:
+    #         processed_batches = list(
+    #             executor.map(
+    #                 lambda ctx: self._process_batch(ctx[0], ctx[1]),
+    #                 batches,
+    #             )
+    #         )
+
+    #     # Flatten results
+    #     processed_lines = []
+    #     for batch_lines in processed_batches:
+    #         processed_lines.extend(batch_lines)
+
+    #     return self._after_clean(processed_lines)
+
+    def _sequential_clean(
+        self, lines: list[str], prev_line: str = ""
+    ) -> tuple[str, set[int]]:
         """Sequential processing for smaller texts"""
-        processed_lines = self._process_batch(lines, prev_line)
-        return self._after_clean(processed_lines)
+        processed_lines, removed_lines = self._process_batch(lines, prev_line)
+        return self._after_clean(processed_lines), removed_lines
 
-    def _process_batch(self, lines: list[str], saved_prev_line="") -> list[str]:
+    def _process_batch(
+        self, lines: list[str], saved_prev_line=""
+    ) -> tuple[list[str], set[int]]:
         """Process a batch of lines and filter them"""
-        processed = []
+        processed: list[str] = []
+        removed_lines: set[int] = set()
         total_lines = len(lines)
+
         for i, line in enumerate(lines):
             prev_line = lines[i - 1] if i > 0 else saved_prev_line
             result = self.process_line(line, prev_line, i, total_lines)
+            if not result or result.isspace():
+                removed_lines.add(i)
             if result is not None:
                 processed.append(result)
-        return processed
+
+        return processed, removed_lines
 
     def process_line(
         self, line: str, prev_line: str, line_num: int, total_lines: int
@@ -178,9 +203,6 @@ class BookPreprocessor:
             )
         ):
             return "\n"
-
-        if self.patterns["page_numbers"].search(line):
-            return ""
 
         line_lower = line.lower()
         words_lower = line_lower.split()
@@ -220,14 +242,14 @@ class BookPreprocessor:
         text = "\n".join(processed_lines)
 
         # Unhyphenate
-        text = self.patterns["hyphenated_sentence"].sub("", text)
+        # text = self.patterns["hyphenated_sentence"].sub("", text)
 
         # Remove functional newlines for page width control - they break the text splitter semantics
         # -> replace newline in the middles of sentences with a white space, e.g. 'Soon\nanother clock began, on a hard, decisive note.'
-        text = self.patterns["line_breaked_sentence"].sub(" ", text)
+        # text = self.patterns["line_breaked_sentence"].sub(" ", text)
 
-        # Remove None values and normalize
-        return unicodedata.normalize("NFKC", text)
+        # text = unicodedata.normalize("NFKC", text)
+        return text
 
 
 @dataclass
@@ -239,17 +261,32 @@ class PdfBookPreprocessor(BookPreprocessor):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger("django")
+        self._normalized_full_text = ""
+        self._removed_ranges: list[tuple[int, int]] = []
 
     def _get_from_doc(self, doc, page_limit: int | None = None) -> str:
         if page_limit is None:
             page_limit = len(doc)
         pages: list[str] = []
         last_line_of_last_page = ""
+        self._normalized_full_text = ""
+        self._removed_ranges = []
         for i in range(page_limit):
             try:
                 page = doc[i]
                 page_text = page.get_textpage().extractText(sort=True)  # type: ignore
-                cleaned_page_text = self.clean_text(page_text, last_line_of_last_page)
+                cleaned_page_text, lines, removed_lines = self.clean_text(
+                    page_text, last_line_of_last_page, return_split_with_removed=True
+                )
+
+                # Fill _normalized_full_text and _removed_ranges
+                for i, line in enumerate(lines):
+                    normalized_line = self._normalize(line)
+                    self._normalized_full_text += normalized_line
+                    if i in removed_lines:
+                        start = len(self._normalized_full_text) - len(normalized_line)
+                        end = len(self._normalized_full_text)
+                        self._removed_ranges.append((start, end))
 
                 # Join pages that cut a sentence in half
                 if (
@@ -349,8 +386,11 @@ class PdfBookPreprocessor(BookPreprocessor):
     ) -> dict[int, list[tuple[float, float]]]:
         """Convert a segment of text into page polygons."""
         segments = [self._normalize(s) for s in segments]
+        concat_segments = "".join(segments)
         segment_idx = 0
         per_segment_idx = 0
+        concat_segments_idx = 0
+        original_text_idx = 0
         seg_to_page_to_lines = {}
 
         for page_idx, page in enumerate(doc):
@@ -363,10 +403,54 @@ class PdfBookPreprocessor(BookPreprocessor):
                 if not norm_wtext:
                     continue
 
-                seg = segments[segment_idx]
-                remaining_seg = seg[per_segment_idx:]
+                if not self._normalized_full_text.startswith(
+                    norm_wtext, original_text_idx
+                ):
+                    self.logger.warning(
+                        f"Word '{wtext}' does not match word at original_text_idx {original_text_idx}"
+                    )
+                    continue
 
-                if remaining_seg.startswith(norm_wtext):
+                original_text_idx += len(norm_wtext)
+                word_in_removed_range = self._word_overlaps_removed_ranges(
+                    original_text_idx - len(norm_wtext), original_text_idx
+                )
+                if word_in_removed_range:
+                    continue
+
+                if concat_segments.startswith(norm_wtext, concat_segments_idx):
+                    per_segment_idx += len(norm_wtext)
+                    concat_segments_idx += len(norm_wtext)
+
+                    if per_segment_idx > len(segments[segment_idx]):
+                        # add part of word rect to current segment, other part to next segment
+                        split_at = len(norm_wtext) - (
+                            per_segment_idx - len(segments[segment_idx])
+                        )
+                        avg_letter_width = (x1 - x0) / len(wtext)
+
+                        seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
+                            page_idx, {}
+                        ).setdefault(f"{block}.{line_no}", []).append(
+                            {
+                                "text": wtext,
+                                "rect": (x0, y0, x0 + split_at * avg_letter_width, y1),
+                            }
+                        )
+                        per_segment_idx -= len(segments[segment_idx])
+                        segment_idx += 1
+                        if segment_idx >= len(segments):
+                            break
+                        seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
+                            page_idx, {}
+                        ).setdefault(f"{block}.{line_no}", []).append(
+                            {
+                                "text": wtext,
+                                "rect": (x0 + split_at * avg_letter_width, y0, x1, y1),
+                            }
+                        )
+                        continue
+
                     seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
                         page_idx, {}
                     ).setdefault(f"{block}.{line_no}", []).append(
@@ -375,11 +459,11 @@ class PdfBookPreprocessor(BookPreprocessor):
                             "rect": (x0, y0, x1, y1),
                         }
                     )
-
-                    per_segment_idx += len(norm_wtext)
-                    if per_segment_idx >= len(seg):
+                    if per_segment_idx == len(segments[segment_idx]):
                         segment_idx += 1
                         per_segment_idx = 0
+                        if segment_idx >= len(segments):
+                            break
 
         seg_to_page_to_polygon = {}
 
@@ -421,11 +505,17 @@ class PdfBookPreprocessor(BookPreprocessor):
                 # Left boundary top->bottom with horizontal steps when left_x changes.
                 left_boundary: list[tuple[float, float]] = []
                 for y_top, y_bottom, left_x, right_x in line_entries:
+                    # Skip if y_bottom <= last y_bottom to negate pymupdf parsing errors
+                    if left_boundary and y_bottom <= left_boundary[-1][1]:
+                        continue
                     left_boundary.append((left_x, y_top))
                     left_boundary.append((left_x, y_bottom))
                 # Right boundary bottom->top mirrored with steps where width changes.
                 right_boundary: list[tuple[float, float]] = []
                 for y_top, y_bottom, left_x, right_x in reversed(line_entries):
+                    # Skip if y_top >= last y_top to negate pymupdf parsing errors
+                    if right_boundary and y_top >= right_boundary[-1][1]:
+                        continue
                     right_boundary.append((right_x, y_bottom))
                     right_boundary.append((right_x, y_top))
 
@@ -472,6 +562,32 @@ class PdfBookPreprocessor(BookPreprocessor):
                 seg_to_page_to_polygon.setdefault(segment_idx, {})[page_idx] = polygon
 
         return seg_to_page_to_polygon
+
+    def _word_overlaps_removed_ranges(self, word_start: int, word_end: int) -> bool:
+        """Efficiently check if a word range overlaps with any removed range."""
+        if not self._removed_ranges:
+            return False
+
+        left, right = 0, len(self._removed_ranges)
+        while left < right:
+            mid = (left + right) // 2
+            range_start, range_end = self._removed_ranges[mid]
+
+            if range_end <= word_start:
+                # This range ends before our word starts, look right
+                left = mid + 1
+            else:
+                # This range might overlap, look left
+                right = mid
+
+        for i in range(left, len(self._removed_ranges)):
+            range_start, range_end = self._removed_ranges[i]
+            if range_start >= word_end:
+                break
+            if range_start < word_end and range_end > word_start:
+                return True
+
+        return False
 
     @staticmethod
     def _normalize(s: str) -> str:

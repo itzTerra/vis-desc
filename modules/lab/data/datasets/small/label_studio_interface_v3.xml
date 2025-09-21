@@ -1,0 +1,189 @@
+<View>
+  <Text name="text" value="$text" granularity="word" />
+  <Style> .cls-name { display: flex; align-items: center; gap: 10px; }</Style>
+  <View className="cls-name">
+    <Header size="5" value="VDL spans (optional):" />
+    <View>
+      <Labels name="label" toName="text">
+        <Label value="VDL" background="#2bff00" hotkey="q" />
+        <Label value="IVDL" background="#dba100" hotkey="w" />
+      </Labels>
+    </View>
+  </View>
+
+  <Header size="4"
+    value="How visually descriptive is this text segment? Pick the highest guideline 1-5 rating found in the segment or 0 if there is none. Do not forget +1 for visualizable action." />
+  <Header size="5"
+    value="Note 1: If the text contains more visual perspectives. Rate the perspective which has the highest visual value and include only the details from the chosen perspective and not the others. Example:"
+    style="font-size: 16px; font-weight: normal;" />
+  <Header size="5"
+    value="'Billy climbed the tree wearing his backpack, which contained his slingshot, some pebbles and a magnifying glass' -> PERSPECTIVE 1: 'Billy climbed the tree wearing his backpack' | PERSPECTIVE 2: 'backpack, which contained his slingshot, some pebbles and a magnifying glass'"
+    style="font-size: 16px; font-weight: normal; margin-top: 0; opacity: 0.75; margin-left: 16px;" />
+  <Header size="5"
+    value="Note 2: You can rate metaphorical content only if the meaning behind the metaphor is visual. Example:"
+    style="font-size: 16px; font-weight: normal;" />
+  <Header size="5"
+    value="✓ 'the cathedral advanced like a headless creature in a long, shapeless coat' | ✗ 'he fought his illness as he would have fought a devil'"
+    style="font-size: 16px; font-weight: normal; margin-top: 0; opacity: 0.75; margin-left: 16px;" />
+  <Header size="5"
+    value="Note 3: You can rate theoretical or spoken-about content, if it is not either a) present tense imperative OR b) expression of character's purpose or intention. Example:"
+    style="font-size: 16px; font-weight: normal;" />
+  <Header size="5"
+    value="✓ &quot;No&quot;, hesitated Jim. &quot;The ranch won't hold no more cattle than it always has.&quot; | ✗ &quot;Take a hold of your note-book, Shawn.&quot; | ✗ I came back the same way on the chance of finding the moose."
+    style="font-size: 16px; font-weight: normal; margin-top: 0; opacity: 0.75; margin-left: 16px;" />
+
+  <Choices name="rating" toName="text" choice="single" required="true">
+    <Choice value="5" hotkey="5"
+      html="&lt;div style=&quot;display: flex; gap: 4px;&quot;&gt;
+    &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;5&lt;/span&gt;
+    &lt;div
+      style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 2px 6px; background-color: #eeeeee22; line-height: normal;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🏞️
+        &lt;div&gt;
+          &lt;div&gt;can visualize a full scene with vivid background, foreground objects and compelling details (e.g. time of
+            day)&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;The sun was setting behind the mountains, casting long shadows over the bustling
+            village square where children played and vendors packed up their stalls.&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;" />
+    <Choice value="4" hotkey="4"
+      html="&lt;div style=&quot;display: flex; gap: 4px;&quot;&gt;
+    &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;4&lt;/span&gt;
+    &lt;div
+      style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 2px 6px; background-color: #eeeeee22; line-height: normal;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🏞️
+        &lt;div&gt;
+          &lt;div&gt;can visualize a full scene with some details - must have atleast 3 of: 1) background/surroundings 2) action/main scene 3) describable character(s) 4) other detail (counts multiple times for multiple different details)&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;A river flowed through the meadow, with a few trees scattered along its banks and a
+            small wooden bridge crossing over.&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; opacity: 0.75;&quot;&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+        &lt;div style=&quot;padding: 0 10px;&quot;&gt;OR&lt;/div&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🧔🏽
+        &lt;div&gt;
+          &lt;div&gt;can visualize a full character with clothing and body details&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;She wore a long red coat over a white dress, her curly hair tied back with a blue
+            ribbon, and her boots were splattered with mud.&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;" />
+    <Choice value="3" hotkey="3"
+      html="&lt;div style=&quot;display: flex; gap: 4px;&quot;&gt;
+    &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;3&lt;/span&gt;
+    &lt;div
+      style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 2px 6px; background-color: #eeeeee22; line-height: normal;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🏞️
+        &lt;div&gt;
+          &lt;div&gt;can visualize a scene without details&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;car driving down a busy street; the teacher sat down in his chair&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; opacity: 0.75;&quot;&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+        &lt;div style=&quot;padding: 0 10px;&quot;&gt;OR&lt;/div&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🧔🏽
+        &lt;div&gt;
+          &lt;div&gt;can visualize a detailed face&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;Brown patches of skin had appeared on his cheeks. The patches extended down the
+            sides of his face and down. Everything about him was old, including his eyes. They were the same color as
+            the sea and they looked cheerful and untwisted.&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;" />
+    <Choice value="2" hotkey="2"
+      html="&lt;div style=&quot;display: flex; gap: 4px;&quot;&gt;
+    &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;2&lt;/span&gt;
+    &lt;div
+      style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 2px 6px; background-color: #eeeeee22; line-height: normal;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🏞️
+        &lt;div&gt;
+          &lt;div&gt;can visualize a building, room or place, the looks of which are commonly known, or an interesting/unusual object, body part, clothing, or accessory in detail&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;castle; bathroom; field; king's sword covered in blood; crown with a missing jewel
+          &lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; opacity: 0.75;&quot;&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+        &lt;div style=&quot;padding: 0 10px;&quot;&gt;OR&lt;/div&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🧔🏽
+        &lt;div&gt;
+          &lt;div&gt;can visualize a character without details&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;king&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;" />
+    <Choice value="1" hotkey="1"
+      html="&lt;div style=&quot;display: flex; gap: 4px;&quot;&gt;
+    &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;1&lt;/span&gt;
+    &lt;div
+      style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 2px 6px; background-color: #eeeeee22; line-height: normal;&quot;&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🏞️
+        &lt;div&gt;
+          &lt;div&gt;can visualize an ordinary animal, object, body part, or clothing&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;frog; book; his hands were dirty&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; opacity: 0.75;&quot;&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+        &lt;div style=&quot;padding: 0 10px;&quot;&gt;OR&lt;/div&gt;
+        &lt;div style=&quot;flex-grow: 1; border-bottom: 1px dashed #eee;&quot;&gt;&lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div style=&quot;display: flex; align-items: center; gap: 8px;&quot;&gt;
+        🧔🏽
+        &lt;div&gt;
+          &lt;div&gt;can visualize an unknown looking person if the person is physically described in the scene by the narrator or other character (a person behind a monologue/dialogue does not count; theoretical person or person only mentioned in a dialogue does not count)&lt;/div&gt;
+          &lt;div style=&quot;opacity: 0.6;&quot;&gt;Mr. and Mrs. Smith just arrived&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;" />
+    <Choice value="0" hotkey="0"
+      html="&lt;div style=&quot;display: flex; gap: 4px; line-height: normal;&quot;&gt;     &lt;span style=&quot;font-size: x-large; font-weight: bold;&quot;&gt;0&lt;/span&gt;     &lt;div       style=&quot;display: flex; flex-direction: column; border: 1px solid #eee; border-radius: 4px; padding: 4px 6px; background-color: #eeeeee22;&quot;&gt;       hard to visualize anything     &lt;/div&gt;   &lt;/div&gt;" />
+  </Choices>
+  <Choices name="visual_action" toName="text" choice="single">
+    <Choice value="true"
+      html="(+1) Select if the level is depicted in a visualizable action (e.g. [1] a book → [2] closing a book)"
+      hotkey="v" />
+  </Choices>
+  <View>
+    <Header size="2" value="Optional" />
+
+    <Header size="4" value="Type" />
+    <Choices name="type" toName="text" choice="single">
+      <Choice value="Indoor" />
+      <Choice value="Outdoor" />
+      <Choice value="Character" />
+      <Choice value="Action" />
+      <Choice value="Dialogue" />
+      <Choice value="Other" />
+    </Choices>
+
+    <Header size="4"
+      value="Suitable for illustration: Would the image be a positive addition to the book?" />
+    <Choices name="illsuitable" toName="text" choice="single">
+      <Choice value="Yes" hotkey="y" />
+      <Choice value="No" hotkey="n" />
+    </Choices>
+  </View>
+</View>

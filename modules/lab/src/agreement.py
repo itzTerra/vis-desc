@@ -264,12 +264,26 @@ def load_any(paths: Iterable[str | Path]) -> List[lsm.Task]:
     return collected
 
 
+def get_tasks_with_multiple_annotators(task_ratings: List[TaskRatings]) -> set[int]:
+    """Return set of task IDs that have ratings from 2 or more annotators."""
+    return {tr.task_id for tr in task_ratings if len(tr.ratings) >= 2}
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Quadratic weighted Cohen's kappa for 'rating' label"
     )
     parser.add_argument(
         "paths", nargs="+", help="One or more JSON export files or directories"
+    )
+    parser.add_argument(
+        "--old",
+        dest="old_paths",
+        nargs="+",
+        help=(
+            "One or more prior annotation JSON files/dirs whose task IDs with 2+ annotators should be excluded from the current computation. "
+            "Only tasks that had multiple annotators (and thus were used in kappa calculations) in the old data will be excluded."
+        ),
     )
     parser.add_argument(
         "--label", default="rating", help="Label (from_name) to use (default: rating)"
@@ -301,6 +315,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     tasks = load_any(args.paths)
+
+    # If --old provided, collect task ids with 2+ annotators from those and exclude them.
+    excluded_ids: set[int] = set()
+    if args.old_paths:
+        try:
+            old_tasks = load_any(args.old_paths)
+            old_tr = collect_task_ratings(old_tasks, label_name=args.label)
+            excluded_ids = get_tasks_with_multiple_annotators(old_tr)
+        except Exception as e:  # pragma: no cover
+            print(f"Warning: failed to load --old paths: {e}")
+    if excluded_ids:
+        orig_count = len(tasks)
+        tasks = [t for t in tasks if t.id not in excluded_ids]
+        removed = orig_count - len(tasks)
+        sample_ids = sorted(list(excluded_ids))[:10]
+        more = "" if len(excluded_ids) <= 10 else f" (+{len(excluded_ids) - 10} more)"
+        print(
+            f"Excluded {removed} tasks with 2+ annotators in old data (task_ids sample: {sample_ids}{more})"
+        )
+
     tr = collect_task_ratings(tasks, label_name=args.label)
     if not tr:
         print("No ratings found for label", args.label)
@@ -338,9 +372,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             except Exception as e:  # pragma: no cover
                 print(f"Warning: failed to read from-csv '{args.from_csv}': {e}")
         task_map: dict[int, lsm.Task] = {t.id: t for t in tasks}
-        # Exclude annotator id 0 from CSV (treated as system / do-not-export per requirement)
-        annotator_ids = sorted({aid for rec in tr for aid in rec.ratings if aid != 0})
-        # Sort rows by segment_id as requested
+        annotator_ids = sorted({aid for rec in tr for aid in rec.ratings})
         sorted_tr = sorted(tr, key=lambda rec: rec.task_id)
         try:
             with open(args.csv_path, "w", encoding="utf-8", newline="") as f:

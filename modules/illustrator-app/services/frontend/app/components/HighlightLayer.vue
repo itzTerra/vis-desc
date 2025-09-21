@@ -1,11 +1,12 @@
 <template>
-  <div
-    v-for="(page, pageNum) in pageMap"
-    :key="pageNum"
-    class="polygon-highlight-layer"
-    :style="getPageLayerStyle(pageNum)"
-  >
-    <div v-if="pageVisibility[Number(pageNum) + 1]">
+  <div class="polygon-highlight-layer">
+    <div
+      v-for="[pageNum, page] in pageMap.entries().filter(([pageNum]) => (pageNum + 1) in pageVisibility && pageVisibility[pageNum + 1])"
+      :key="pageNum"
+      :data-page="pageNum + 1"
+      style="position: absolute; z-index: 5;"
+      :style="getHighlightPageStyle(pageNum)"
+    >
       <div
         v-for="(highlight, index) in page.highlights"
         v-show="highlight.score !== undefined"
@@ -15,10 +16,12 @@
       >
         <div
           ref="highlightRefs"
-          class="highlight-dropdown-content"
+          class="highlight-dropdown-activator"
           :class="{'highlight-selected': selectedHighlights.has(highlight.id)}"
-          :data-page="pageNum"
           :data-segment-id="highlight.id"
+          :style="{
+            clipPath: `polygon(${highlight.relPolygon.map(p => `${p[0]}px ${p[1]}px`).join(',')})`
+          }"
           v-on="highlight.hasSiblings ? {
             mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
             mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),
@@ -34,7 +37,14 @@
             />
           </svg>
         </div>
-        <div class="dropdown-content bg-base-300 hover:bg-base-200 rounded-box z-1 p-2 shadow-sm" :class="{'w-64': !highlight.imageLoading, 'w-72': highlight.imageLoading}">
+        <div
+          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box z-1 p-2 shadow-sm"
+          :class="{'w-64': !highlight.imageLoading, 'w-72': highlight.imageLoading}"
+          v-on="highlight.hasSiblings ? {
+            mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
+            mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),
+          } : {}"
+        >
           <div class="hidden">
             {{ highlight.text }}
           </div>
@@ -68,6 +78,7 @@ const props = defineProps<{
   selectedHighlights: Set<number>;
   pageRefs: Element[];
   pageVisibility: Record<number, boolean>;
+  defaultPageSize: { width: number; height: number };
 }>();
 
 defineEmits<{
@@ -91,10 +102,10 @@ interface HighlightRenderData {
   imageUrl?: string;
 }
 
-type PageMap = Record<number, { width: number; height: number; highlights: HighlightRenderData[] }>;
+type PageMap = Map<number, { width: number; height: number; highlights: HighlightRenderData[] }>;
 
 const pageMap = computed<PageMap>(() => {
-  const map: PageMap = {};
+  const map: PageMap = new Map();
   // Build temporary structure of normalized polygons per page
   const norm: Record<number, {
     id: number;
@@ -129,7 +140,7 @@ const pageMap = computed<PageMap>(() => {
     const rect = el.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    map[page] = { width, height, highlights: [] };
+    map.set(page, { width, height, highlights: [] });
     for (const p of polys) {
       const scaledPoly = p.polygon.map(([x, y]) => [x * width, y * height]);
       const xs = scaledPoly.map(pt => pt[0]);
@@ -141,7 +152,7 @@ const pageMap = computed<PageMap>(() => {
       const bboxWidth = Math.max(1, maxX - minX) + 1; // avoid zero width
       const bboxHeight = Math.max(1, maxY - minY) + 1; // avoid zero height
       const relPolygon = scaledPoly.map(([x, y]) => [x - minX, y - minY]);
-      map[page].highlights.push({
+      map.get(page)?.highlights.push({
         id: p.id,
         polygon: scaledPoly,
         relPolygon,
@@ -167,29 +178,48 @@ function getHighlightStyle(h: HighlightRenderData): Record<string, string> {
   };
 }
 
-function getPageLayerStyle(pageNum: number | string): Record<string, string> {
-  const el = props.pageRefs[Number(pageNum)] as HTMLElement | undefined;
-  if (!el) return {};
+let lastRenderedPageStyle: {
+  top: string;
+  left: string;
+  width: string;
+  height: string;
+} = {
+  top: "0px",
+  left: "0px",
+  width: `${props.defaultPageSize.width}px`,
+  height: `${props.defaultPageSize.height}px`,
+};
+
+function getHighlightPageStyle(pageNum: number): Record<string, string> {
+  const el = props.pageRefs[pageNum] as HTMLElement | undefined;
+  if (el && (el.offsetWidth !== 300 || el.offsetHeight !== 150)) {
+    lastRenderedPageStyle = {
+      top: `${el.offsetTop}px`,
+      left: `${el.offsetLeft}px`,
+      width: `${el.clientWidth}px`,
+      height: `${el.clientHeight}px`,
+    };
+  } else {
+    console.log("!!!!!", pageNum);
+    console.log(el, JSON.stringify(el), el?.offsetTop, el?.offsetLeft, el?.clientWidth, el?.clientHeight);
+  }
   return {
-    position: "absolute",
-    top: `${el.offsetTop}px`,
-    left: `${el.offsetLeft}px`,
-    width: `${el.clientWidth}px`,
-    height: `${el.clientHeight}px`,
+    ...lastRenderedPageStyle,
+    top: `${el?.offsetTop ?? 0}px`
   };
 }
 
 function onMouseEnter(eventTarget: any, id: number) {
   const otherHighlightsOfSegment = highlightRefs.value.filter(el => el !== eventTarget && Number(el.dataset.segmentId) === id);
   for (const el of otherHighlightsOfSegment) {
-    el.classList.add("highlight-selected");
+    el.classList.add("highlight-selected-hover");
   }
 }
 
 function onMouseLeave(eventTarget: any, id: number) {
   const otherHighlightsOfSegment = highlightRefs.value.filter(el => el !== eventTarget && Number(el.dataset.segmentId) === id);
   for (const el of otherHighlightsOfSegment) {
-    el.classList.remove("highlight-selected");
+    el.classList.remove("highlight-selected-hover");
   }
 }
 

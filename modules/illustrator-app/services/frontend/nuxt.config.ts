@@ -45,6 +45,9 @@ export default defineNuxtConfig({
         "lodash-es",
         "vue-pdf-embed"
       ]
+    },
+    build: {
+      sourcemap: true // process.env.NODE_ENV === "development"
     }
   },
   css: ["~/assets/css/app.css", "~/assets/css/main.css"],

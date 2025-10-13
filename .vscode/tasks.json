@@ -1,0 +1,71 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "IAA Details Comparison",
+			"type": "shell",
+			"command": "python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details --old ${input:oldAnnotationFiles}",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "IAA CSV Generation",
+			"type": "shell",
+			"command": "python3",
+			"args": [
+				"modules/lab/src/agreement.py",
+				"${input:annotationFile}",
+				"--csv",
+				"${input:outputCsvFile}",
+				"--from-csv",
+				"${input:inputCsvFile}"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "newAnnotationFile",
+			"description": "Path to the new annotation JSON file",
+			"default": "modules/lab/data/datasets/small/annotated03.json",
+			"type": "promptString"
+		},
+		{
+			"id": "oldAnnotationFiles",
+			"description": "Paths to old annotation JSON files (space-separated)",
+			"default": "modules/lab/data/datasets/small/annotated01.json modules/lab/data/datasets/small/annotated02.json",
+			"type": "promptString"
+		},
+		{
+			"id": "annotationFile",
+			"description": "Path to the annotation JSON file",
+			"default": "modules/lab/data/datasets/small/annotated03.json",
+			"type": "promptString"
+		},
+		{
+			"id": "outputCsvFile",
+			"description": "Path to the output CSV file",
+			"default": "modules/lab/data/datasets/small/agreed-new.csv",
+			"type": "promptString"
+		},
+		{
+			"id": "inputCsvFile",
+			"description": "Path to the input CSV file",
+			"default": "modules/lab/data/datasets/small/agreed.csv",
+			"type": "promptString"
+		}
+	]
+}

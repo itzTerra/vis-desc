@@ -13,6 +13,17 @@ POLYGON_PADDING_PX = settings.POLYGON_PADDING_PX
 
 class BookPreprocessor:
     def __init__(self):
+        self.before_clean_translation_table = str.maketrans(
+            {
+                "\r": None,
+                "’": "'",
+                "“": '"',
+                "”": '"',
+                "？": "?",
+                "！": "!",
+            }
+        )
+
         self.patterns = {
             "page_numbers": re.compile(
                 r"[\n\r][^\S\r\n]*(?:page\s+)?(?:\d+|\[?\d+\]?)[^\S\r\n]*(?=[\n\r]|$)",
@@ -40,10 +51,10 @@ class BookPreprocessor:
             ),
             "numeric_only": re.compile(r"^\s*[\d\s\.\-\/]+\s*$"),
             "line_breaked_sentence": regex.compile(
-                r"(?<=[^.!?。！？:\"'’”–—-])(?:\n(?=[–—-]?(?:\p{L}|[\"'’”])))|(?:\s+(?=[–—-]?(?:\p{Ll}|I[ ']|[\"'’”])))"
+                r"(?<=[^.!?。:\"'–—-])(?:\n(?=[–—-]?(?:\p{L}|[\"'])))|(?:\s+(?=[–—-]?(?:\p{Ll}|I[ ']|[\"'])))"
             ),
-            "line_breaked_sentence_a_end": regex.compile(r"[^.!?。！？:\"'’”–—-]$"),
-            "line_breaked_sentence_b_start": regex.compile(r"[–—-]?(?:\p{L}|[\"'’”])"),
+            "line_breaked_sentence_a_end": regex.compile(r"[^.!?。:\"'–—-]$"),
+            "line_breaked_sentence_b_start": regex.compile(r"[–—-]?(?:\p{L}|[\"'])"),
             "hyphenated_sentence": regex.compile(r"(?<=\p{Ll})-\n(?=\p{Ll})"),
         }
 
@@ -80,15 +91,11 @@ class BookPreprocessor:
             "!",
             "?",
             "。",
-            "！",
-            "？",
             ":",
             '"',
             "'",
-            "’",
-            "”",
         }
-        self.text_keywords = {"!", "?", '"', ":", "”"}
+        self.text_keywords = {"!", "?", '"', ":"}
         self.short_line_threshold = 10
 
     def clean_text(
@@ -117,7 +124,7 @@ class BookPreprocessor:
     def _before_clean(self, text: str) -> str:
         """Hook for preprocessing before cleaning"""
 
-        text = text.strip().replace("\r\n", "\n")
+        text = text.strip().translate(self.before_clean_translation_table)
 
         text = self.patterns["page_numbers"].sub("", text)
 

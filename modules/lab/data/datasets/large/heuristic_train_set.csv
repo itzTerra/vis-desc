@@ -1,0 +1,779 @@
+dataset_idx,example_idx,text,possible_scores,score
+2,1309,"Three men, one wearing a white shirt and a cowboy hat, and another wearing a long-sleeve blue shirt, and the other in a long-sleeve black shirt are fist fighting each other.","[4, 3, 2]",3
+2,228,A woman with a baseball cap on riding a bike while pulling a man sitting in a cart.,"[4, 3, 2]",3
+2,51,A man wearing a black shirt smoothing out concrete in an urban area.,"[4, 3, 2]",3
+2,563,The man is performing a trick on a snowboard high in the air.,"[4, 3, 2]",2
+2,501,a fireman spraying water into the hood of small white car on a jack,"[4, 3, 2]",3
+2,457,A group of people stand on a balcony near a colorful circus building.,"[4, 3, 2]",3
+2,285,Two workers that are working on the side of a street in neon yellow vests.,"[4, 3, 2]",3
+2,209,A little baby dressed in green and yellow wearing a bib cries.,"[4, 3, 2]",3
+2,1385,four men in a van one man turned around giving peace sign to man behind him.,"[4, 3, 2]",4
+2,1116,A woman motions to a child in a house as the people surrounding watch.,"[4, 3, 2]",2
+2,178,"Three people enter a building with a handwritten sign that says "" Welcome Bikers. ""","[4, 3, 2]",3
+2,1209,Two men wearing reflective vests walking on the side of the road.,"[4, 3, 2]",3
+2,864,A man is on the roof of a building while he paints the outside window trim.,"[4, 3, 2]",3
+2,65,A woman is balancing a big bowl of fruit in front of the ocean.,"[4, 3, 2]",4
+2,61,The people are quietly listening while the story of the ice cabin was explained to them.,"[4, 3, 2]",2
+2,191,A youth with long dirty blond-hair wearing a denim jacket and jeans looks at the conveyor belt of groceries while waiting at a checkout line.,"[4, 3, 2]",4
+2,447,A tired businessman takes a quick nap while riding the train.,"[4, 3, 2]",3
+2,476,A gymnast is capture midair while vaulting over several steps.,"[4, 3, 2]",2
+2,1034,A man in a purple shirt is about to talk to a man in a white shirt with suspenders.,"[4, 3, 2]",2
+2,1232,Woman in white in foreground and a man slightly behind walking with a sign for John 's Pizza and Gyro in the background.,"[4, 3, 2]",3
+2,54,Someone is standing on a long bridge with a cloudy blue sky in the background.,"[4, 3, 2]",4
+2,1149,A woman carrying a mannequin is walking down the sidewalk and talking on a mobile phone.,"[4, 3, 2]",4
+2,407,Two people with backpacks hike up a rocky dirt path next to a conifer tree.,"[4, 3, 2]",4
+2,1466,A canoe in the distance on a lake as seen from another canoe.,"[4, 3, 2]",3
+2,1330,"Eight young girls in a school gym are on mats, wearing gym clothes and practicing cheerleader moves while in the background are the backs of two more young girls, not on the mats, who are also practicing moves.","[4, 3, 2]",4
+2,1436,Two young children are walking hand in hand on an outdoor path.,"[4, 3, 2]",3
+2,859,A young boy jumping barefoot on a trampoline in his grassy backyard.,"[4, 3, 2]",4
+2,451,A woman grilling a variety of different kinds of meats at a cookout.,"[4, 3, 2]",3
+2,919,A person in a white shirt with blue stripes is holding a large bucket shaped object on the head.,"[4, 3, 2]",3
+2,1206,Negros walk across a train track that stretches over dirt and garbage beside a row of poor shacks.,"[4, 3, 2]",4
+2,569,A man wearing a brown t-shirt is talking to a woman wearing a flowered tank top at an outdoor music concert.,"[4, 3, 2]",4
+2,13,A man wearing a reflective vest and a hard hat holds a flag in the road,"[4, 3, 2]",3
+2,326,A man wearing yellow and another man ride down a body of water in a wooden boat.,"[4, 3, 2]",3
+2,1429,"Students taking study time to study, read paper or daydream at the window.","[4, 3, 2]",3
+2,865,"A person wearing a red, white, and blue helmet sitting on a motorcycle.","[4, 3, 2]",3
+2,696,Two children ride their tricycles on a sidewalk in front of a brightly painted wall.,"[4, 3, 2]",4
+2,318,"A man with a mustache, sitting in a restaurant eating a meal.","[4, 3, 2]",3
+2,440,A smiling man and a boy with a backpack on are walking on a sidewalk.,"[4, 3, 2]",3
+2,689,A group of young people are standing and sitting around a table eating and drinking with one another.,"[4, 3, 2]",3
+2,189,A woman wearing a blue helmet rides her bicycle in a parking lot.,"[4, 3, 2]",3
+2,778,A river is winding through a wooded area that is heavily leaf covered.,"[4, 3, 2]",3
+2,198,"A young man wearing a baseball cap brushes at the base of a statue of Jesus Christ, during the day.","[4, 3, 2]",4
+2,735,Local African boy doing his daily work guiding the animals that are pulling a cart.,"[4, 3, 2]",3
+2,704,Group of people watching a fountain in a city skyline with palm trees.,"[4, 3, 2]",4
+2,1236,"A Lady in a Green and Black Jacket, and Blue pants, taking a Photos of a Horse.","[4, 3, 2]",3
+2,541,A young boy wearing a name tag is running on a soccer field.,"[4, 3, 2]",3
+2,88,A skier is overlooking the beautiful white snow covered landscape.,"[4, 3, 2]",3
+2,1494,"Person in yellow shorts, gray shirt with logo jumping from bank into the water.","[4, 3, 2]",3
+2,940,A woman is leaning on the chair and playing the electric guitar.,"[4, 3, 2]",3
+2,1098,"People are waiting in line to order food, while others are walking away with their food.","[4, 3, 2]",3
+3,63,Dirty kitchen with cleaning supplies placed allover the counters.,"[3, 2]",2
+3,498,A bathroom with a large bathtub next to a sink and toilet.flying high in the sky with no floor.,"[3, 2]",3
+3,472,"A bathroom with blue walls and a pink tub, toilet, and sink.","[3, 2]",3
+3,193,A Dairy Queen sign on a major road advertising it's special.,"[3, 2]",2
+3,40,A plethora of kites flying in the sky next to some mountains.,"[3, 2]",3
+3,282,A kitchen with white cabinets and stainless steel oven and hood.,"[3, 2]",2
+3,150,"The corner of a kitchen showing a dishwasher, sink and household items. ","[3, 2]",2
+3,424,A catchup bottle sits on a table while a tv plays and a woman stands at a counter.,"[3, 2]",3
+3,321,An old-fashioned kitchen with wooden walls and a cooking fireplace and a central preparation table and wooden chairs in its middle.,"[3, 2]",3
+3,316,A young boy holding a skateboard behind his back at a skate shop.,"[3, 2]",3
+3,453,There is a young man in a commercial kitchen opening the door of some culinary equipment. ,"[3, 2]",3
+3,441,"City street with various vehicles and several traffic lights, mountains in the background","[3, 2]",3
+3,185,A small bathroom with a sink and toilet underneath a window.,"[3, 2]",2
+3,295,A kitchen with white kitchen appliances and white cupboards.,"[3, 2]",2
+3,98,A young person with red and white face paint holds an umbrella.,"[3, 2]",3
+3,360,a decorated kitchen with a potted plant and a metal frog on the wall,"[3, 2]",3
+3,35,A restaurant kitchen with bowls and pans ready for the night.,"[3, 2]",2
+3,23,This is a toaster with a green stem from a tree in front of it.,"[3, 2]",3
+3,338,A man wearing surgical gloves with his arms on a toilet that is missing the top.,"[3, 2]",3
+3,116,Kitchen ware sitting behind the counter top at a restaurant.,"[3, 2]",2
+3,395,Two men stand by a parking meter talking with a jewelry store in the background.,"[3, 2]",3
+3,148,An empty bathroom with a sink and toilette underneath a hand drying towel.,"[3, 2]",2
+3,437,The eat-in kitchen and pot rack show the efficient use of the small space in this apartment.,"[3, 2]",2
+3,119,"A kitchen with wooden drawers, table, chairs and stone counter tops.","[3, 2]",3
+3,443,A bathroom with a black shower curtain next to a white toilet.,"[3, 2]",2
+3,51,A young woman walking down the street while talking on her cell phone,"[3, 2]",3
+3,194,A disorganized kitchen with missing appliances and cabinets.,"[3, 2]",2
+3,142,Women walk by a person sitting on a public bench with a dog.,"[3, 2]",3
+3,232,A young man standing in front of a bathroom sink with a mirror.,"[3, 2]",3
+3,325,A man in a suit standing in front of a vintage U.S. Mail airplane.,"[3, 2]",3
+3,427,a line of bathroom stalls with a colored floor and white toilets,"[3, 2]",2
+3,186,A group of people well dressed standing around a kitchen with lots of food.,"[3, 2]",3
+3,83,An older woman preparing to blow out the candle on her birthday cake standing besides an older man ,"[3, 2]",3
+3,189,"A cyclist giving the ""thumbs up"" poses with his bicycle by a right of way sign at a park.","[3, 2]",3
+3,181,Four people sitting on a ski lift going up a snowy mountain.,"[3, 2]",3
+3,107,A bathroom with two sinks a bathtub and a shower with lots of lighting from the windows,"[3, 2]",3
+3,343,A tennis player in the middle of a play with spectators in the background.,"[3, 2]",3
+3,136,A man wearing plate armor and metal helmet while talking on a cell phone.,"[3, 2]",3
+3,359,A motorcycle parked next to a walkway in front of a building.,"[3, 2]",3
+3,479,Three men preparing food in a professional metallic kitchen.,"[3, 2]",3
+3,349,A hipster standing in a dirty kitchen in front of a glass of alcohol.,"[3, 2]",3
+3,331,"A bowl of fruit sitting on a table to include a banana, kiwi, apples, and oranges. ","[3, 2]",2
+3,36,The top of a kitchen cabinet covered with brass pots and pans.,"[3, 2]",2
+3,311,A black and white photo of two people holding hands in a city on a rainy day. ,"[3, 2]",3
+3,87,The yellow flowers sits atop the counter in a clean bathroom.,"[3, 2]",3
+3,273,A microwave on top of a refrigerator in a room with hardwood floors.,"[3, 2]",3
+3,373,"Inside there is a small kitchen and couch, with clutter, viewed through a lens.","[3, 2]",3
+3,125,"A small wood paneled bathroom with a sink, mirror and toilette.","[3, 2]",2
+3,236,"A bathroom with a white sink, tub, toilet and wooden door opened.  ","[3, 2]",2
+3,138,Bathroom pictures are seen decorated with frilly accessories.,"[3, 2]",2
+4,473,cat in laundry basket on top of open wash machine the basket is starting to fall in with him,"[4, 3, 2, 1]",3
+4,327,This is Monty sitting like a good boy in the kitchen while we make dinner.,"[4, 3, 2, 1]",3
+4,352,marks in the beach sand made by a tractor that pulls the boats out of the water.,"[4, 3, 2, 1]",3
+4,285,"Had to try a black and white with this. There's more. Po' Monkey's Lounge in Merigold, MS.","[4, 3, 2, 1]",1
+4,112,"A crayfish, under a thin layer of ice in a creek in a small canyon near my house in Frosty Hollow, WV USA.","[4, 3, 2, 1]",4
+4,350,Mahogany map table built in my home workshop. Showing book rest propped up.,"[4, 3, 2, 1]",3
+4,166,"living room and kitchen levels, radius wall framing and bow window void in living room(upper deck)","[4, 3, 2, 1]",2
+4,431,A lonely boat in the water off Bamboo island off the coast of Ao Nang Beach Thailand,"[4, 3, 2, 1]",3
+4,393,Pool from 7th floor balcony ... yikes we're above the palm trees!,"[4, 3, 2, 1]",3
+4,397,Unknown persons swimming in Lake Spafford. Not recommended if you want to live. This water is pretty nasty.,"[4, 3, 2, 1]",3
+4,28,The pump house (second building in the background) and some other building next to it (in the foreground),"[4, 3, 2, 1]",2
+4,117,"Close-up of stoic tree trunks reflected in water of creek inside Riley Park, Greenfield, IN.","[4, 3, 2, 1]",4
+4,420,That's the bottom of the old smoke stack. It extends through the roof of the building into the water in the other pictures.,"[4, 3, 2, 1]",3
+4,16,The day is over .. the big red sunball goes to sleep painting the sky in red,"[4, 3, 2, 1]",2
+4,412,Pitcher plant in the hot house at the winter gardens in the Auckland Domain.,"[4, 3, 2, 1]",3
+4,161,Blueberries turning blue from green in the butterfly garden at the Elkton Community Education Center.,"[4, 3, 2, 1]",3
+4,205,"A beautiful pink flower inside the main conservatory at Longwood Gardens near Kennett Square, Pennsylvania","[4, 3, 2, 1]",3
+4,137,Old castle in Srebrenik. Inside of the calstle view to the master tower,"[4, 3, 2, 1]",2
+4,33,"Glass knobs in Stone Glass design for furniture knobs, dresser knobs, bathroom knobs, kitchen knobs and more. Custom sizes available by Uneek Glass Fusions.","[4, 3, 2, 1]",2
+4,108,Trevor Basin & Pontcysyllte Aquaduct in anaglyph 3D red blue glasses to view,"[4, 3, 2, 1]",2
+4,467,These are growing in a window box outside out kitchen. Ilove that the blossoms are also purple.,"[4, 3, 2, 1]",2
+4,482,Do not wait for your ship to come inget in your boat and row out,"[4, 3, 2, 1]",1
+4,290,"Sanding with ultra fine sand paper made by the Mona Lisa Company, the box awaits its final coat of polyurethane.","[4, 3, 2, 1]",2
+4,448,Just through the wall from the kitchen garden with a view to the kitchen window for signals of 'tea's in the pot!',"[4, 3, 2, 1]",2
+4,367,pics at camelia road house in New Bern after dad's funeral--June 2004,"[4, 3, 2, 1]",2
+4,335,"Cut from my garden, in front of my kitchen window with the afternoon sun glowing through its silken petals.","[4, 3, 2, 1]",3
+4,255,Plan is to replace the space above the stove with a space saver microwave oven.,"[4, 3, 2, 1]",2
+4,202,I like the clarity of these buildings despite the low light. And the green glow of the street light under the trees.,"[4, 3, 2, 1]",3
+4,452,Playing with long exposures in the back yard. The fog and street lamp make for eerie lighting.,"[4, 3, 2, 1]",3
+4,468,We are looking over the building site where our future house is to be built...,"[4, 3, 2, 1]",2
+4,329,"Behind the flower bench in front of our house on a late September evening, watching the clouds withdrawing.","[4, 3, 2, 1]",4
+4,234,"Aspens, Mountains, and blue sky in the Colorado Rocky Mountains","[4, 3, 2, 1]",2
+4,73,Old road and rail bridge over Kiel-Canal at Levensau (part of Kiel-Suchsdorf) built 1893,"[4, 3, 2, 1]",2
+4,135,Guitar leaning on a tree on an island on O.S.A. lake in Killarney Provincial Park.,"[4, 3, 2, 1]",3
+4,71,the boy was playing while his parents are away in the paddy field across the road. DSC_3597_1,"[4, 3, 2, 1]",3
+4,126,"twee schildpadden in een grote vijver in het bos !! Gedumpt door een onverlaat, die er genoeg van had....","[4, 3, 2, 1]",1
+4,381,She sits atop my lime green Christmas tree in my home office. The tree is decorated in pink and white.,"[4, 3, 2, 1]",3
+4,287,"Taken near Bolton Priory, a forest walk upto the River Strid. The forest floor was covered in blue bells.","[4, 3, 2, 1]",3
+4,275,Two little dickie birds sitting in a tree!I've added a blue filter to this to make the photo a bit more interesting.,"[4, 3, 2, 1]",3
+4,134,a strange selection of objects found on the kitchen table in the morning,"[4, 3, 2, 1]",1
+4,382,I was trying to get the sun exactly behind the cross and building when the bird flew in at the right time!,"[4, 3, 2, 1]",3
+4,299,Yucca cactus in a rock garden with bunny ears cactus and purple prickly pear cactus in front of a dark red stucco wall.,"[4, 3, 2, 1]",4
+4,219,On the Road to Hana you will find the beautiful arch formed near a black sand beach,"[4, 3, 2, 1]",3
+4,459,There is nothing left in the building but these books were outside in the grass along with some other papers,"[4, 3, 2, 1]",3
+4,298,well he did it saved $128.25 working on thngs around the house for his new bike,"[4, 3, 2, 1]",2
+4,204,Two male Elephant Seals fight for dominance in the surf at a beach in San Simeon.,"[4, 3, 2, 1]",3
+4,185,"Revolving doors and light sculpture in an office building on Victoria Street, London","[4, 3, 2, 1]",3
+4,70,"View onto the lake at home in Finland with sky reflecting on water surface, I like the colour...","[4, 3, 2, 1]",3
+4,260,Breakfast in our #kabul office :) u car order this everyday at the office before 10am. #fb,"[4, 3, 2, 1]",1
+4,252,The internals. It was (obviously) a laptop in a previous life. The screen is 800x600 and has thousands of colors.,"[4, 3, 2, 1]",1
+5,46,"The sequel to the TV movie entitled The Incident, a small-town lawyer, Harmon Cobb, and his family move to Baltimore where he becomes the law partner of his old adversary, where he goes against the State of Maryland, suing on behalf of an institutionalized mental patient for release.http://www.tcm.com/tcmdb/title.jsp?","[3, 2, 1, 0]",1
+5,386,"As they are about to leave, Chiun-Hwa's lawyer walks in and asks them if they are Sunny. He reads Chiun-Hwa's will, which bequeathes that Na-Mi will be the leader of Sunny.","[3, 2, 1, 0]",2
+5,24,"Bhagwaan angrily confronts Bijli. Devastated, Bijli humbly confesses she lied about working with the police. Bhagwaan strikes her and throws her out of the house … and the whole neighbourhood.","[3, 2, 1, 0]",2
+5,440,"Together with Jusa, they go to Lapland where Kata has her summer job. In Jusa's wild company, Pete experiences something which he never felt before as they decide to take a trip to Mombasa via Lapland, together with Kata, as this is the last Jusa's wish before his death.","[3, 2, 1, 0]",0
+5,56,"Bhavana constantly uses religion as an excuse to not be intimate with her husband, Diya aspires to be an actress, and Sonia is a lawyer who is obsessed with her cases.","[3, 2, 1, 0]",0
+5,78,Chitra decides to marry Karthik for herself and her son. She plans to meet him at the station to express her decision. While returning home she meets her mother-in-law  who at one time opposed the marriage of her son Srikanth with her.,"[3, 2, 1, 0]",1
+5,321,"Hades intervenes and shoots Briareos, revealing a personal vendetta against Karl; he is killed by Deunan as she and Briareos make their escape into the sea.","[3, 2, 1, 0]",3
+5,81,"Katherine hires private investigator Jack Mize to figure out, only Mize isn't so sure Katherine's version of reality is the truth.","[3, 2, 1, 0]",0
+5,405,"As Chrissy is driving away, Corey runs outside to try to make up with her, but she doesn't hear him behind her. An emotionally upset Chrissy arrives back at the Daggers' house, tells her brother she is going back to Indiana, and asks to be driven to the bus station in the morning; she goes upstairs to pack.","[3, 2, 1, 0]",3
+5,348,Joe decides to instead pursue his old flame Iris Dawn  just as Miss Healy begins to genuinely fall in love with him.,"[3, 2, 1, 0]",0
+5,216,"Since his father dies while in service, Shivan is forced to take up his father's job as a fire service man. He meets Thavamani , a beautiful rustic while on a posting in a village and they fall in love.","[3, 2, 1, 0]",1
+5,305,"To avoid the loneliness he buys a Great Dane puppy and tries to meet new girls. When he gets tired of having the dog, he meets Julia . He finds an apartment and gets a job in a plastic surgery clinic.","[3, 2, 1, 0]",2
+5,32,"When hostile Indians threaten the farm, the three are forced to escape down the river on Harry's raft. That night they set up camp by the river, and Matt and Kay argue about the wisdom of pursuing Harry.","[3, 2, 1, 0]",3
+5,197,Lenny also tricks her into telling him about the child she gave up for adoption. He persuades Linda to quit her profession and even bribes her violent pimp with basketball tickets to let Linda go.,"[3, 2, 1, 0]",1
+5,195,"James McGregor receives a fax of a stranger's obituary. The next day, he is arrested and charged with the stranger's murder.","[3, 2, 1, 0]",2
+5,239,"They make a deal: Waymon will try to move Bobby to the trainee broker program if he will help him meet Natalie, the girl of his dreams. There's only one problem, everyone will have to change.","[3, 2, 1, 0]",0
+5,270,"When Day makes play for her, she spurns his advances, loyal to her fiance, Johnny. When the fiance is framed for a crime committed by one of Day's clients, Day's affection for Celia not only prompts Day to defend Johnny by implicating his client in the crime, but to reconsider his life of getting criminals out of jail sentences.","[3, 2, 1, 0]",0
+5,128,"Director Sean Cain  pulls out all the stops in this macabre, character-driven nightmare, a gore-filled love letter to midnight movie fans everywhere.","[3, 2, 1, 0]",1
+5,497,"The film concerns Dr. Akagi, a doctor on an island in the Seto Inland Sea area during World War II. He runs into conflict with the military while trying to combat a hepatitis epidemic.","[3, 2, 1, 0]",2
+5,283,Thanks to a series of coincidences—not least of which involves a friendly stage magician—the kids become convinced that they have succeeded in emulating Aladdin.,"[3, 2, 1, 0]",2
+5,482,"The concluding section of the film ends with a flash-forward to the mid-1960s during the Mao cult and the beginning of the Cultural Revolution. By now, Puyi has become a simple gardener who lives a peasant proletarian existence.","[3, 2, 1, 0]",1
+5,5,"Cecilia later finds it in the elevator. The name in the backpack reads ""Natasha Rimsky"". The ceiling, shoddily patched by Veeck, leaks again. At school, Cecilia appears to get into a fight with Natasha, who appears to control her hand while painting.","[3, 2, 1, 0]",3
+5,369,It is up to Wishbone and his friends to come to Wanda's rescue.,"[3, 2, 1, 0]",0
+5,58,"This little triangle is interrupted by rich girl Joan who cons the good Doc into building a sanitorium for the wealthy with her father's money. Doc is momentarily swayed, but comes to his senses just as a forest fire threatens his original cabins around the warm spring.","[3, 2, 1, 0]",3
+5,349,"Rupert's secretary informs Rachel that he has not been in to work, and Rachel reports him missing to the police. Kyle and Lamar are assigned to the case.","[3, 2, 1, 0]",1
+5,453,"An amnesiac, ""Step"" Allison , accused of murder searches for the truth with the help of a cabbie, Patty Mitchell .","[3, 2, 1, 0]",1
+5,274,"Philip and Alexandria Marcus are a young couple who decide to take a vacation to a friend's house in the Arizona desert to rekindle their passion, only to have their vacation turn into a nightmare when they cross paths with a homicidal ex-con named Randall and his seductive hitchhiking partner/lover Maggie who hold Philip and Alex hostage in their house, thus beginning a web of mind games, deceit and lust among all four involved.","[3, 2, 1, 0]",3
+5,384,"Raja's well wisher and tribal leader Mangola  performs the rites on behalf of Pooja's father. To avenge this, Nagender attempts to molest Pooja and beat Raja.","[3, 2, 1, 0]",3
+5,136,"After arriving home at a semi-fancy row house, Rod works in his darkroom in the basement developing the photos when his work is interrupted by the appearance of a mysterious black cat, which has apparently been adopted by his live-in girlfriend Annabel.","[3, 2, 1, 0]",3
+5,393,"A frog who lives there consoles Tubby; both are treated poorly, as neither is thought to be capable or worthy of a solo. The frog teaches Tubby a melody and the two part ways.","[3, 2, 1, 0]",1
+5,328,"After preparing, she arrives at a club, which is not the site of the party--it turns out there was no party at all. When discovering this, Vanessa goes ballistic and takes an overdose of her mother's sleeping pills, but survives and only passes out.","[3, 2, 1, 0]",2
+5,174,"Meanwhile the former governess Diana, kidnaps Jacqueline to try to get the banker's money.","[3, 2, 1, 0]",1
+5,57,"6. On his third attempt with the rocket, he lights the fuse but it burns quickly and fires successfully out from under him before he could get ready and leaves Wile floating in midair with a cloud of dust blocking his view below.","[3, 2, 1, 0]",3
+5,150,"When it is demonstrated that Terr can read Draag script, the leader  is willing to accept Terr into the tribe, but the Wizard is not, and demands a trial by combat – to the death.","[3, 2, 1, 0]",0
+5,222,"So this is where their journey begins, where they will find a meaning to their lives, along with other interesting characters on the way.","[3, 2, 1, 0]",0
+5,80,"Sapna, a vivacious lady and a successful model, is the only source of love, affection and fun in Abbas's life. Rajveer and Abbas hate each other from the world go.","[3, 2, 1, 0]",1
+5,232,"Tensions appear, not only between the couple and the stranger, but also between Daniel and Laura. When Daniel walks away from the vehicle after having an argument with Laura, the stranger seduces Laura and makes love with her.","[3, 2, 1, 0]",2
+5,1,"She then comforts the dying Rue with a song. Afterward, she gathers and arranges flowers around Rue's body. When this is televised, it sparks a riot in Rue's District 11.","[3, 2, 1, 0]",3
+5,488,"This telefilm describes the meeting between Cambodian restaurateur Bopha , a survivor of the genocide of the Khmer Rouge, and a Vietnamese man named Mihn, a ""boat people"" refugee who drives a taxi at night and works as a deliveryman during the day for his uncle's grocery store.","[3, 2, 1, 0]",3
+5,448,"They also hire female singer Mimi, who becomes a fashion icon, but they face their trials when they lose a band member who was killed by fire at the club and forced break-up due to military dictatorship, but Sang-kyu plans to come back for his band members in concert again called Devils Recital.","[3, 2, 1, 0]",2
+5,368,"The SBT are trained in close quarters combat, improvised weapons and modern tactical warfare methods by the extremely secretive CSD, the Covert Situations Division of the Swedish Military.","[3, 2, 1, 0]",1
+5,134,"Hannah is here, in his mind, strictly to help Zandy and his family run the ranch. Zandy is unaccustomed to the ways of the world and clearly a fish out of water during a visit to San Francisco.","[3, 2, 1, 0]",2
+5,256,"They pose as a couple in order to keep the proceedings a secret until the court date. The Cunninghams disapprove of the match, but begin to accept Jake's ""girlfriend"" just as Jake and Brandi are truly becoming a couple.","[3, 2, 1, 0]",0
+5,390,"Henery meanwhile is at a pond trying to catch a fish. Foghorn then turns his attention to Henery, who based on advice from the cat is digging for a bone.","[3, 2, 1, 0]",3
+5,91,"Rebecca is invited to understudy the famous movie star Simone Harwin , in the play Electra. Although Rebecca's unfulfillment is compounded: despite outshining the Action Star with her own talent, Rebecca is treated as second class, either bullied or ignored by the cast and crew including the director Ian, the stage manager Alison.","[3, 2, 1, 0]",0
+5,259,"Ultimately, Duffy receives word of rumors that Weinstein, one of the most powerful producers in Hollywood, has had him blacklisted; Miramax puts the film in turnaround, conference calls are refused, and soon Duffy is without any movie industry contract at all.","[3, 2, 1, 0]",0
+5,467,"The hitch is, she is all Thai and he can't converse with her at all. A ray of hope comes his way the next day when Jasmine turns up desperately in need of a doctor.","[3, 2, 1, 0]",0
+5,54,"The film escalates into chaos, which ends when Mose bursts, revealing him having been a construction  the whole time. Graveyard Jamboree with Mysterious Mose is a short film made in 1998 by film makers Seamus Walsh and Mark Caballero of Screen Novelties.","[3, 2, 1, 0]",0
+5,445,"Competiting with him is Bhanumati's nephew , whose father  too encourages him to chase his cousins, and marry either of them to inherit their property.","[3, 2, 1, 0]",0
+5,320,"Suddenly, Diego appears and fights with Will, who kills him. Lucia and Will go to her uncle's apartment but find out that Jean and her hitman Gorman have killed her uncle.","[3, 2, 1, 0]",3
+6,152,"In a meeting with Hendrix, Max reluctantly admits to faking his record to get into space. Hendrix defers the matter until their return to Earth. The Asgard then departs for Halcyon, a human colony planet orbiting Nu Pegasi.","[3, 2, 1, 0]",0
+6,430,"Saccard is at first unable to get the money to make his initial investments but then his wife falls victim to a terminal illness. Even while she lies dying in the next room, Saccard (in a brilliant scene of breathtaking callousness) is already making arrangements to marry rich girl Renée, who is pregnant and whose family wishes to avoid scandal by offering a huge dowry to any man who will marry her and claim the baby as his own.","[3, 2, 1, 0]",3
+6,327,"A man ruined that world by informing the humans that their dreams will shape the world. Enough humans listened to make the vision a reality. Upon waking, the cat undertakes a spiritual quest for justice.","[3, 2, 1, 0]",0
+6,259,"Dolores's ""confession"" develops into the story of her life, her troubled marriage, and her relationship with her employer. Unlike many other works by King, there is little focus on the supernatural; the only such event in the book are two telepathic visions, which form a link to King's novel Gerald's Game; although reviewer Sean Piccoli observed the novel otherwise contained ""vintage bone-yard King: the tiny town, the secret lives.","[3, 2, 1, 0]",1
+6,311,Needing some of Veda's money to balance the books - and fearing that Wally might target the girl's assets if they are exposed - Mildred goes to her house to confront her.,"[3, 2, 1, 0]",1
+6,101,"At the same time the gun falls into the hands of the people on the ground. In the saucer Paul meets a being calling itself Tigerishka. A large, female telepathic feline creature, she initially mistakes Miaow as the intelligent being whose thoughts she can hear, and Paul as a ""monkey"".","[3, 2, 1, 0]",3
+6,78,"Merry and Pippin escape into Fangorn Forest, where they are befriended by Treebeard, the oldest of the tree-like Ents. Aragorn, Gimli and Legolas track the hobbits to Fangorn, and encounter Gandalf, resurrected as the significantly more powerful ""Gandalf the White"" after his mutually fatal duel with the Balrog.","[3, 2, 1, 0]",3
+6,191,"Still, Emma sees something mysterious in Jane's sudden return to Highbury and imagines that Jane and Miss Campbell's husband, Mr. Dixon, were mutually attracted, and that is why she has come home instead of going to Ireland to visit them.","[3, 2, 1, 0]",0
+6,390,"The recounting of Jesus' human and godlike qualities, combined with Biff's earthy debauchery, leads to its all-too-familiar tragic ending, but humorously explains many things: the origins of judo (a pun that is definitely intended), why Jews eat Chinese food on Christmas, and how rabbits became associated with Easter.","[3, 2, 1, 0]",1
+6,82,"As he gets drunk, the hotel urges Jack to kill his wife and son. Wendy and Danny get the better of Jack, locking him into the walk-in pantry, but the ghost of Delbert Grady, a former caretaker who murdered his family and then committed suicide, releases him.","[3, 2, 1, 0]",3
+6,276,"For example, in her notebook she compares Sport to a ""little old woman"" for his continual worrying about his father. Harriet has given her honest opinion of the world as she sees it and does not mean to be rude.","[3, 2, 1, 0]",1
+6,488,"Only there can they hope to sell the pearl for a decent price and finally help Coyotito with the scorpion sting. Kino, Juana, and Coyotito leave in the dark of the night.","[3, 2, 1, 0]",2
+6,398,"The same room is also the location of a large ebony clock that ominously clangs at each hour, upon which everyone stops talking or dancing and the orchestra stops playing.","[3, 2, 1, 0]",3
+6,472,"Santiago straps the marlin to the side of his skiff and heads home, thinking about the high price the fish will bring him at the market and how many people he will feed.","[3, 2, 1, 0]",3
+6,271,"Horace, after discovering this, tells Regina he is going to change his will in favor of their daughter, and also will claim he gave Leo the bonds as a loan, thereby cutting Regina out of the deal completely.","[3, 2, 1, 0]",0
+6,470,"Nancy, however, is sympathetic towards Oliver and saves him from beatings by Fagin and Sikes. In a renewed attempt to draw Oliver into a life of crime, Fagin forces him to participate in a burglary.","[3, 2, 1, 0]",0
+6,0,Squealer reports that the van was purchased by the hospital and the writing from the previous owner had not been repainted. He recounts a tale of Boxer's death in the hands of the best medical care.,"[3, 2, 1, 0]",2
+6,306,"The Kafirs, who were pagans, not Muslims, acclaimed Dravot as a god (the son of Alexander the Great). The Kafirs practiced a form of Masonic ritual and the adventurers knew Masonic secrets that only the oldest priest remembered.","[3, 2, 1, 0]",1
+6,165,"As she is being led to the gallows, Quasimodo swings down by the bell rope of Notre Dame and carries her off to the cathedral under the law of sanctuary.","[3, 2, 1, 0]",3
+6,250,"Sauron's desire was to destroy the Númenóreans and their proud king with the wrath of the Valar (though not to destroy their kingdom), although he underestimated their power.","[3, 2, 1, 0]",2
+6,9,"When Deckard, Batty, and Holden finally clash, Batty's inhuman fighting prowess leads Holden to believe he has been duped all along and that Batty is the sixth replicant; he shoots him.","[3, 2, 1, 0]",3
+6,57,"ABC News, for instance, is allegedly under pressure not to air any stories that are overly critical of Disney, its parent company. Other chains, such as Wal-Mart, often threaten to pull various products off of their shelves, forcing manufacturers and publishers to comply with their demands.","[3, 2, 1, 0]",1
+6,475,"The struggles of four of John Singer's acquaintances make up the majority of the narrative. They are: Mick Kelly, a tomboyish young girl who loves music and dreams of buying a piano; Jake Blount, an alcoholic labor agitator; Biff Brannon, the observant owner of a diner; and Dr.","[3, 2, 1, 0]",2
+6,185,"While the first five parts ""sections"" develop the novel in the present and through use of flash-backs, the novel significantly darkens in chapters 32–41.","[3, 2, 1, 0]",0
+6,449,"Sun intends to lure Liu Bei to Jiangdong to marry his sister Lady Sun and hold Liu hostage to exchange his freedom for Jing Province, but the plot fails and the newlywed couple return home safely.","[3, 2, 1, 0]",0
+6,425,"It is not a complete novel. Only the first section is written in detail. After that, the remaining three parts are written as a draft, in note form, with Sade's footnotes to himself still present in most translations.","[3, 2, 1, 0]",0
+6,413,"Dozens of background characters appear, fade, and reappear. The colonel and Clive are only the central figures in The Newcomes, the action of which begins before the colonel's birth.","[3, 2, 1, 0]",0
+6,157,"The microbe contains chemical elements required for terrestrial life and appears to have a crystalline structure, but lacks DNA, RNA, proteins, and amino acids, yet it directly transforms matter to energy and vice versa.","[3, 2, 1, 0]",1
+6,122,"Meanwhile, still without a warrant, Fix sees Hong Kong as his last chance to arrest Fogg on British soil. Around this time, Passepartout becomes convinced that Fix is a spy from the Reform Club trying to see if Fogg is really going around the world.","[3, 2, 1, 0]",1
+6,29,"By tradition, all blind Fremen are abandoned in the desert, but Paul shocks the Fremen and entrenches his godhead by proving he can still see, even without eyes.","[3, 2, 1, 0]",2
+6,123,"In makeshift camps, they hear many stories from others, some coming back from California, and are forced to confront the possibility that their prospects may not be what they hoped.","[3, 2, 1, 0]",1
+6,290,"Silk begins an affair with Faunia Farley, a 34-year-old local woman who works as a janitor at the college and is married to an abusive Vietnam veteran.","[3, 2, 1, 0]",2
+6,484,"Other stations are abandoned, and Osiris and Anubis are the only two powers in the Universe now. Osiris cultivates life where he can, while Anubis works to destroy it.","[3, 2, 1, 0]",0
+6,40,"God tests Abraham by demanding that he sacrifice Isaac. As Abraham is about to lay the knife upon his son, God restrains him, promising him numberless descendants.","[3, 2, 1, 0]",1
+6,43,"Claudius, now fearing for his life, finds a legitimate excuse to get rid of the prince: he sends Hamlet to England on a diplomatic pretext, accompanied (and closely watched) by Rosencrantz and Guildenstern.","[3, 2, 1, 0]",0
+6,374,In the morning the boy wakes up to the sound of faint whining and goes outside to find Sounder standing there. The dog can only use three of its legs and only has one ear and one eye.,"[3, 2, 1, 0]",3
+6,248,"Gandalf and Pippin then head for Minas Tirith in Gondor in preparation for the imminent war against Mordor, while Théoden, Merry and Aragorn remain behind to begin the muster of Rohan, to ride to the aid of Gondor.","[3, 2, 1, 0]",0
+6,417,"While growing up, Omar becomes mischievous and learns hypnosis. As a birthday present, Omar Khayyám Shakil's ""mothers"" allow him to leave ""Q."" He enrolls in a school and is convinced by his tutor (Eduardo Rodriguez) to become a doctor.","[3, 2, 1, 0]",0
+6,35,"Beatty knows that Montag has a book but acts casual about it, stating that it's natural that every fireman gets curious about books and starts to possess one.","[3, 2, 1, 0]",1
+6,389,"When his publisher, Julian, comes to visit, Julian finds himself attracted to Rose. They eventually marry. Macon hires Muriel Pritchett, a quirky young woman with a sickly son, to train his unruly dog, and soon finds himself drifting into a relationship with the two of them.","[3, 2, 1, 0]",1
+6,272,"But after viewing two kids die of electrocution, her mind finally snaps; she decides to set fire to the gym. She leaves the prom-goers and chaperones to die in the fire, including Tommy.","[3, 2, 1, 0]",3
+6,392,"At the same time, a chaste relationship develops between Raskolnikov and Sonya. Sonya, though a prostitute, is full of Christian virtue and is only driven into the profession by her family's poverty.","[3, 2, 1, 0]",0
+6,64,"As with VALIS, Radio Free Albemuth deals with author Philip Dick's highly personal style of Christianity (or Gnosticism). It further examines the moral and ethical repercussions of informing on trusting friends for the authorities.","[3, 2, 1, 0]",0
+6,65,"In the spring, Elizabeth visits Charlotte and Mr Collins in Kent. Elizabeth and her hosts are frequently invited to Rosings Park, home of Lady Catherine de Bourgh, Darcy's aunt; coincidentally, Darcy also arrives to visit.","[3, 2, 1, 0]",0
+6,337,"Larry has significant spiritual adventures in India and comes back to Paris. What he actually found in India and what he finally concluded are held back from the reader for a considerable time until, in a scene late in the book, Maugham discusses India and spirituality with Larry in a café long into the evening.","[3, 2, 1, 0]",3
+6,243,"&#34; Ishmael makes the point that this story of the Fall of Man, which the Takers have adopted as their own, was in fact developed by Leavers to explain the origin of the Takers.","[3, 2, 1, 0]",0
+6,281,"Genar-Hofoen is lured to Sleeper Service on a pretext, and only later told that he is there to work with Dajeil to help her recover from her psychological trauma.","[3, 2, 1, 0]",0
+6,84,"To show there are no hard feelings, he invites Sir Henry to dine with him and his sister on Friday. Sir Henry then becomes the person doing the surprising, when he and Watson walk in on Barrymore, catching him at night in the room with a candle.","[3, 2, 1, 0]",3
+6,135,"Finally, white stripes and ridges start growing over their bodies. Ulam reports that the cells seem to sing. Through infection, conversion and assimilation of humans and other organisms the cells eventually aggregate most of the biosphere of North America into a region seven thousand kilometres wide.","[3, 2, 1, 0]",3
+6,270,"Superficially a harmless but expensive hobby, stardropping reins in a fanaticism resembling addiction, where some users assemble in semi-social communes and spend all of their money on increasingly improved equipment.","[3, 2, 1, 0]",1
+7,446,"""Hum! Golly de do to-day? Hum! Lily-white Buckra Sailee What dickens you doin' here, sar? Why debbil you want to come? Hum! Picaninnee, dere isn't no sea In City Canoodle-Dum!""
+""Oh, mine is a doleful tale! They've treated me werry badly In Lunnon, from where I hail. I'm one of the Family Royal— No common Jack Tar you see; I'm WILLIAM THE FOURTH, far up in the North, A King in my own countree!""","[2, 1, 0]",2
+7,310,"""Hold on there, Andy Foger! I want to see you!""
+""Ta! ta!""
+""See you later,""
+""Better go home and take a bath, and then sail away in your submarine, I'll bet it will sink.""","[2, 1, 0]",2
+7,216,"""Why--it's the baby! Du kleine, du! Du suszes-- Olga--where's Olga?""
+""She did not come.""
+""Didn't come?""
+""Then we'll go, dear. They won't be a minute over your trunks, I'm sure. Just follow me.""","[2, 1, 0]",1
+7,493,"""I think she will live, And about the suffering more, we will face that like men, and see what can be done about it. This makes three little graves on the hill, Jimmy, what do they mean to ye?""
+""Domn bad luck,""
+""Nothing more? Na responsibility at all. Ye are the father of those children. Have ye never been to the doctor, and asked why ye lost them?""
+""No, I haven't,""
+""That is ane thing we will do now, and then we will do more, much more.""
+""What are you driving at?""
+""The secret of Mary's heart,""","[2, 1, 0]",0
+7,108,"""Get out of here!""
+""If you do, you son of a— I'll mash in your face for you before you get out of here!""
+""Admiral Dewey""","[2, 1, 0]",0
+7,475,"""I am glad ye are feeling so fine, I had a notion that ye wad be crosser than a badger when ye came to.""
+""What's the fun?""","[2, 1, 0]",0
+7,276,"""I want to talk with you,""
+""What do you want with me? I am your friend, I saw you in the slave-market last week, and regretted that I did not speak to you then. I returned in the evening, but you was gone.""","[2, 1, 0]",0
+7,386,"""You must not stop here, You must come away at once.""
+""The Sleeper. What has happened to the Sleeper?""","[2, 1, 0]",0
+7,373,"""Did we open up much of a hole?""
+""Pretty good, Let's give her another.""","[2, 1, 0]",0
+7,353,"""Into the boat with them! And guard them well, Lieutenant Drascalo, for I heard them plotting to escape,""
+""Lieutenant Drascalo, eh? I think they made a mistake naming him. It ought to be Rascalo. He looks like a rascal.""
+""Silenceo!""
+""Bless my spark plug! He's a regular fire-eater!""
+""Silenceo!""","[2, 1, 0]",0
+7,102,"""I'll be glad to sleep in the barn.""
+""Well, I dunno, Do you smoke?""
+""Sometimes, but I'll do it out of doors. How much will it cost me? I haven't very much money.""
+""I reckon about twenty cents for supper, I won't charge ye for the barn.""","[2, 1, 0]",0
+7,365,"""Now for the Advance!""
+""Come back! Come back, dogs of Americans!""","[2, 1, 0]",0
+7,159,"""I've read your thesis, Where did you get your information, Miss Brandeis?""
+""I got it at the mill.""
+""From one of the employees?""
+""Oh, no. I worked there, in the rag-room.""
+""I thought that perhaps the editor of the Courier might like to see it--it being local. And interesting.""","[2, 1, 0]",2
+7,204,"""None of that socialistic stuff, This isn't a Benevolent Association we're running. It's the biggest mail order business in the world, and its back-bone is System. I've been just fifteen years perfecting that System. It's my job. Hands off.""
+""A fifteen year old system ought to be scrapped, Anyway, the Simon Legree thing has gone out.""","[2, 1, 0]",0
+7,343,"""They certainly must be trying to sink us, Come, Tom, we'll take a look from the stern and see what they're up to.""
+""And get the stern electric gun ready to fire, We must protect ourselves. Mr. Sharp and I will go to the bow. There is no telling what they may do. They're desperate, and may ram us from in front.""","[2, 1, 0]",1
+7,332,"""Well, are we all ready?""
+""All ready, dad,""
+""Then let's get aboard, But first let me take an observation.""
+""Did you see anything?""
+""Well, there is a boat lying off there, And some one is observing us through a glass. But I don't believe it matters. Probably they're only trying to see what sort of an odd fish we are.""
+""All aboard, then,""","[2, 1, 0]",2
+7,191,"""Takes your breath away, rather, doesn't it? All that color?""
+""Almost too obvious for my taste. I like 'em a little more subdued, myself. Heh, try that! Lie flat. It softens the whole thing. Like this. Now look at it. The lake's like molten copper flowing in. And you can see that silly sun going down in jerks, like a balloon on a string.""","[2, 1, 0]",2
+7,224,"""And I'll always wear white, and there'll be pitchers on every table, frosty on the outside, and minty on the inside, and you're all invited.""
+""Imagine Mrs. Fenger's face at sight of Mizzi, and Theodore with his violin, and Otti with her shawls and paraphernalia. Though, it's mighty kind of you, and generous--and just like a man.""
+""It isn't kindness nor generosity that makes me want to do things for you.""
+""Modest, as always.""
+""Don't try the ingenue on me, Fanny.""","[2, 1, 0]",0
+7,460,"""GEORGIE, stop it! Pray you, drop it; Hark to my appealing: To this foolish Papal rule-ish Twaddle put an ending; This a swerve is From our Service Plain and unpretending.""
+""It's a pity— They're so pritty; Yet in mode becoming, Mother tender, I'll surrender— I'll be unaffected—""
+""Who is this, sir,— Ballet miss, sir? 'T is my mother, And no other, Go along, sir! You are wrong, sir; You have years in plenty, While this hussy (Gracious mussy!) Isn't two and twenty!""","[2, 1, 0]",0
+7,264,"""Whom did you wish to see?""
+""Miss Gertrude,""
+""What did you want to see her for?""
+""My mistress told me to give her and Master Henry her compliments, and ask them to come over and spend the evening.""
+""Who is your mistress?""
+""Mrs. Miller, sir,""
+""And what's your name?""
+""Clotelle, sir,""","[2, 1, 0]",0
+7,231,"""It went, didn't it? They're like clods, these American audiences. Gad! I'm hungry. What makes this Fenger hang around so? I'm going to tell him to keep away, some day. The way he stares at you. Let's go somewhere to-night, Fan. Or have some people in. I can't sit about after I've played. Olga always used to have a supper party, or something.""
+""All right, Ted. Would you like the theater?""","[2, 1, 0]",0
+7,61,"""The lady has fainted!""
+""The sun has been too much for her, It is most dangerous walking about at this time of day.""","[2, 1, 0]",2
+7,126,"""Mr. Utterson, sir, asking to see you,""
+""Tell him I cannot see any one,""
+""Thank you, sir,""","[2, 1, 0]",0
+7,115,"""It's a case of us or the other fellow, and I say the other fellow, every time,""
+""Still, he never did us any harm.""
+""He was doing it to somebody as hard as he could, you can be sure of that,""","[2, 1, 0]",0
+7,32,"""Now den, Chambers, we's gwine to talk business, en dey ain't gwine to be no mo' foolishness. In de fust place, you gits fifty dollahs a month; you's gwine to han' over half of it to yo' ma. Plank it out!""
+""Chambers, how much is you in debt?""
+""Nearly three hundred dollars.""
+""How is you gwine to pay it?""
+""Oh, I don't know; don't ask me such awful questions.""","[2, 1, 0]",0
+7,173,"""Look here, God! Look here, God! She's done her part. It's up to You now. Don't You let her die! Look at her. Look at her! Is that fair? That's a rotten trick to play on a woman that gave what she gave! What did she ever have of life? Nothing! That little miserable, dirty store, and those little miserable, dirty people. You give her a chance, d'You hear? You give her a chance, God, or I'll----""
+""You can come down now. They're all here, I guess. Doctor Thalmann's going to begin.""","[2, 1, 0]",0
+7,10,"""That nasty office,""
+""I wish it was burnt down,""
+""He's—he's—there's a little matter of business that keeps my partner rather late,""
+""Oh-h! Business. Don't tell me!""","[2, 1, 0]",1
+7,301,"""Who is he?""
+""I don't know, but, whoever he is, dad seems afraid of him. I'm going to keep my eyes open.""","[2, 1, 0]",0
+7,283,"""What have you done for me?""
+""I am the boots, sir.""
+""What do I owe you?""
+""I took your honor's letter to the post, yesterday, sir.""
+""In the name of the Lord, what am I indebted to you for?""
+""I told yer vership vot time it vas, this morning.""
+""Well! ask here who o'clock it is, and you have got to pay for it.""","[2, 1, 0]",0
+7,117,"""What do you want?""
+""Does Marija Berczynskas live here?""
+""I dunno, What you want wid her?""
+""I want to see her, she's a relative of mine.""
+""Come in. I'll go see. What's yo' name?""
+""Tell her it's Jurgis, Dey ain't no sich person here.""
+""I was told this was where she lived! De lady says dey ain't no sich person here,""","[2, 1, 0]",0
+7,112,"""Christ! I thought I was done for that time. Did he cut me?""
+""Don't see anything, Jake, What's the matter with him?""
+""Just crazy drunk, A lame duck, too—but he 'most got me under the bar. Youse had better call the wagon, Billy.""
+""No, He's got no more fight in him, I guess—and he's only got a block to go. Git up here, you!""","[2, 1, 0]",1
+7,3,"""If I do—But you know better; why should I speak to you!""
+""I don't know anything of the sort, What do you say, Marion?""","[2, 1, 0]",0
+7,36,"""What's the matter with the other one? What is the blond one going back on us for? Explain! Explain!""
+""We have made an unfortunate mistake, gentlemen. I find that the Count Angelo Capello is opposed to our creed--is a teetotaler, in fact, and was not intending to apply for membership with us. He desires that we reconsider the vote by which he was elected. What is the pleasure of the house?""","[2, 1, 0]",0
+7,362,"""Fortune favors us! Come on! Make for the small boat. It's near the side ladder. We'll lower the boat and pull to the submarine.""
+""Look! The submarine. She's dragged her anchors!""
+""It's the San Paulo that's dragging her anchors, not the submarine! We're bearing down on her! We must act quickly. Come on, we'll lower the boat!""","[2, 1, 0]",2
+7,323,"""Is everything ready, Tom?""
+""Everything,""
+""Then open the tanks and admit the water,""","[2, 1, 0]",0
+7,30,"""Ain't you ever gwine to he'p me, Marse Tom?""
+""No! Now go away and don't bother me any more.""","[2, 1, 0]",0
+7,34,"""Well, how does the law come on? Had a case yet?""
+""No--not yet,""","[2, 1, 0]",0
+7,463,"""Such a big majority of book critics and authors have begun to teach, whether they really believe it or not, that no book is TRUE TO LIFE unless it is true to the WORST IN LIFE, that the idea has infected even the women.""
+""What I Have Done with Birds,""","[2, 1, 0]",0
+7,16,"""What is it! Will no one look at me? Will no one speak to me? Does no one know me? Is there no voice among you all, to tell me what it is!""
+""She is gone.""
+""Gone!""
+""Fled, my dear Alfred! Gone from her home and us. To-night! She writes that she has made her innocent and blameless choice—entreats that we will forgive her—prays that we will not forget her—and is gone.""
+""With whom? Where?""","[2, 1, 0]",0
+7,440,"""Oh, my ship, my ship is the first of the Hundred and Seventy-ones!""
+""Come down, Little Buttercup, come""","[2, 1, 0]",1
+7,169,"""Why--what time is it? What? Have I been sleeping all afternoon? Your mother's getting old.""
+""What is it? What's the matter?""
+""A stitch, I guess. It's this miserable cold coming on. Is there any asperin in the house? I'll dose myself after supper, and take a hot foot bath and go to bed. I'm dead.""","[2, 1, 0]",0
+7,263,"""I don't like dese steamboats, no how, I hope when massa goes on anoder journey, he take de carriage and de hosses.""
+""William, you are now a free man, and can go on to Canada, I shall go to Virginia, in search of my daughter.""","[2, 1, 0]",0
+7,121,"""I thought it was madness, and now I begin to fear it is disgrace.""
+""If any one knows, it will be Lanyon,""","[2, 1, 0]",0
+7,142,"""Tired, Fanchen?""
+""A little.""
+""Bet you're hungry!""
+""I was, but I'm not now.""
+""M-m-m--wait! Noodle soup. And chicken!""","[2, 1, 0]",1
+7,342,"""They won't give up,""
+""No, we've got to race them for it, just as Berg proposed, But if they want a straightaway race we'll give it to 'em. Let's run her to the limit, dad.""
+""That's what we've been doing, Tom.""
+""No, not exactly, for we've been submerged a little too much to get the best speed out of our craft. Let's go a little nearer the surface, and give them the best race they'll ever have.""","[2, 1, 0]",0
+7,248,"""What have you been about, sir, and where was you last night when I was called?""
+""I don't know, sir. I 'spose I was asleep,""","[2, 1, 0]",0
+7,109,"""Hold up your hands,""
+""What for? I'll see you in hell first.""
+""Do you want to go to jail? I'll have the police—""
+""Have 'em! But you won't put your hands on me till you do! I haven't touched anything in your damned house, and I'll not have you touch me!""
+""Get out of here!""","[2, 1, 0]",0
+7,67,"""It shall be as you ask, You may read the message, Mr. Gordon.""
+""This is it,""","[2, 1, 0]",0
+7,370,"""At last, Can it be possible we are about to get the treasure?""
+""That's the Boldero, all right, I recognize her, even if the name wasn't on her bow. Go right down on the bottom, Tom, and we'll get out the diving suits and make an examination.""","[2, 1, 0]",0
+7,478,"""Don't be feeling so badly about it, Dannie, I could have told you when you went after him last night that he would go back as soon as he wakened to-day. I know he is gone. I watched him lave.""
+""Noo, dinna ye misjudge him, Mary. He's goin' to a coon hunt to-nicht. Dinna ye see him take my gun?""
+""There's a traveling man frae Boston in town, Mary, and he was edifying the boys a little, and Jimmy dinna like it. He's going to show him a little country sport to-nicht to edify him.""","[2, 1, 0]",1
+8,903,"These have been attributed to the sharpening of flint and other stone axe @-@ blades on these sarsens . It is possible that these tools were sharpened for use in cutting and carving the timber levers and struts which would have been used in erecting the stones and constructing the tomb . Similar evidence for the sharpening of tools has been found at West Kennet Long Barrow , as well as later prehistoric monuments such as Stonehenge .","[2, 1, 0]",2
+8,584,"The name is still used in the local Marathi language . The Portuguese named the island "" Elephanta Island "" in honour of a huge rock @-@ cut black stone statue of an elephant that was then installed on a mound , a short distance east of Gharapuri village . The elephant now sits in the Jijamata Udyaan zoo in Mumbai .","[2, 1, 0]",2
+8,590,"Other carvings related to the legend of Shiva are also seen in the main hall at strategic locations in exclusive cubicles ; these include Kalyanasundaramurti , depicting Shiva 's marriage to the goddess Parvati , Andhakasuravadamurti or Andhakasuramardana , the slaying of the demon Andhaka by Shiva , Shiva @-@ Parvati on Mount Kailash ( the abode of Shiva ) , and Ravananugraha , depicting the demon @-@ king Ravana shaking Kailash .","[2, 1, 0]",2
+8,484,"These two components shape the portrayal of Trujillo and his regime in The Feast of the Goat . As Lorenzo observes , Vargas Llosa "" reveals traditions of machismo , of abusive fathers , and of child @-@ rearing practices that repeat the shaming of children , so that each generation bequeaths a withering of the soul to the subsequent one . ""","[2, 1, 0]",0
+8,248,"The Egyptians also devised false etymologies giving more meanings to divine names . A passage in the Coffin Texts renders the name of the funerary god Sokar as sk r , meaning "" cleaning of the mouth "" , to link his name with his role in the Opening of the Mouth ritual , while one in the Pyramid Texts says the name is based on words shouted by Osiris , connecting Sokar with the most important funerary deity .","[2, 1, 0]",1
+8,803,"Twenty @-@ five museums and a host of other institutions were destroyed during the war . According to one estimate , by war 's end 43 % of the infrastructure of Poland 's educational and research institutions and 14 % of its museums had been destroyed .","[2, 1, 0]",1
+8,826,They compiled reports on looted and destroyed works and provided artists and scholars with means to continue their work and their publications and to support their families .,"[2, 1, 0]",0
+8,416,The vast majority of reagents are monosubstituted at the ylide carbon ( either R1 or R2 as hydrogen ) . Disubstituted reagents are much rarer but have been described :,"[2, 1, 0]",0
+8,194,"He idolized his elder brother Terry , who was considered a top NHL prospect until Terry 's career was ended when he suffered a broken neck after being hit from behind into the boards during a college game . While his brother was highly sought by American universities , John received only two scholarship offers , choosing to play for Boston University ( BU ) in 1983 .","[2, 1, 0]",1
+8,96,"The Seven Sacraments ; baptismal font panels , St. Andrew 's , Croydon","[2, 1, 0]",0
+8,99,"Out of Great Tribulation ; memorial chapel , Norbury Medthodist church , 1948","[2, 1, 0]",0
+8,674,The synagogue became too small to accommodate the needs of the ever @-@ growing community . In 1921 a renovation was undertaken to increase the number of available seats . A 1931 plan to increase the capacity to 944 seats was ultimately abandoned . A central heating system was installed in 1933 .,"[2, 1, 0]",1
+8,441,"Concerned also with the possibility that a direct attack on the town would cause artillery shells to cross the border into the United States which could provoke an outside intervention , and faced with a series of peace proposals from Díaz , Madero hesitated in attacking the city .","[2, 1, 0]",1
+8,362,"Pustularia carbonaria , published by Heinrich Rehm in 1884 , is a synonym of G. carbonaria . Louis @-@ Joseph Grélet proposed the variety Geopyxis carbonaria var. sessilis in 1937 , referring to forms producing fruitbodies without a stalk , but the taxon is not considered to have independent taxonomic significance .","[2, 1, 0]",1
+8,433,"Aggarwal has developed an alternative method employing the same sulfide as above and a novel alkylation involving a rhodium carbenoid formed in situ . The method too has limited substrate scope , failing for any electrophiles possessing basic substituents due to competitive consumption of the carbenoid .","[2, 1, 0]",0
+8,420,"The R @-@ groups on the sulfur , though typically methyls , have been used to synthesize reagents that can perform enantioselective variants of the reaction ( See Variations below ) . The size of the groups can also influence diastereoselectivity in alicyclic substrates .","[2, 1, 0]",0
+8,478,"Colonel Abbes "" may be the devil , but he 's useful to the Chief ; everything bad is attributed to him and only the good to Trujillo "" . Trujillo 's son , Ramfis Trujillo , is a loyal supporter of the Chief .","[2, 1, 0]",0
+8,884,"Local folklore grew up around the site , associating it with the burial of a prince and the countless stones motif . The ruin attracted the interest of antiquarians in the 19th century , while archaeological excavation took place in the early 20th . After limited reconstruction , in 1926 ownership was transferred to heritage charity The National Trust . It is open without charge to visitors all year around .","[2, 1, 0]",1
+8,746,"He also appeared for the Scottsdale Scorpions in the 1994 Arizona Fall League , batting .252 against the top prospects in baseball . On November 1 , 1994 , his number 23 was retired by the Bulls in a ceremony that included the erection of a permanent sculpture known as The Spirit outside the new United Center .","[2, 1, 0]",1
+8,55,"The previous year , club members working with women 's organizations throughout the state , raised money to furnish the Arkansas Building of the Columbian Exposition at The Chicago World 's Fair . At the fair 's conclusion , artifacts from the exhibit were displayed in the Tower Building , with the Æsthetic Club invited to meet in the "" Columbian Room . ""","[2, 1, 0]",0
+8,689,"Several French and British military ships were damaged out at sea . In the Carolinas , salt , sugar , rice , and lumber industries suffered considerably , and several individuals were killed .","[2, 1, 0]",2
+8,669,"The composition of the main facade , with its dominant drawn @-@ out and elevated projection and the two symmetrical lower lateral parts , reflects the internal division into three naves . At ground @-@ floor level , the front was distinguished by the three @-@ arch entrance and bifora , whereas the first @-@ floor level had a high triforium with an elevated arch and the quadrifoliate rosettes on the staircases .","[2, 1, 0]",2
+8,661,"Townsend 's employs a variety of vocal techniques in his work , including screaming , growling or even falsetto . His vocal range has been noted to be over 5 octaves ( C2 to F7 ) .","[2, 1, 0]",0
+8,100,"I Am Among You As He That Serveth ; stained glass window design , St. Edmund 's , Pitlake , 1962","[2, 1, 0]",1
+8,62,"Barker was a devout Anglican , and donated her artworks to Christian fundraisers and missionary organizations . She produced a few Christian @-@ themed books such as The Children ' s Book of Hymns and , in collaboration with her sister Dorothy , He Leadeth Me . She designed a stained glass window for St. Edmund 's Church , Pitlake , and her painting of the Christ Child , The Darling of the World Has Come , was purchased by Queen Mary .","[2, 1, 0]",1
+8,412,"Solvation of charges in the betaine by counterions such as lithium with greater solvation allowing more facile rotation in the betaine intermediate , lowering the amount of reversibility .","[2, 1, 0]",0
+8,745,"Jordan has stated this decision was made to pursue the dream of his late father , who had always envisioned his son as a Major League Baseball player . The White Sox were another team owned by Bulls owner Jerry Reinsdorf , who continued to honor Jordan 's basketball contract during the years he played baseball .","[2, 1, 0]",1
+8,347,"However , Allied control of the Strait of Otranto meant that the Austro @-@ Hungarian Navy was , for all intents and purposes , effectively bottled up in the Adriatic . Nonetheless , the presence of the Zrínyi and other battleships tied down a substantial force of Allied ships .","[2, 1, 0]",1
+8,819,"More than a million Polish citizens were deported to Siberia , many to Gulag concentration camps , for years or decades . Others died , including over 20 @,@ 000 military officers who perished in the Katyn massacres .","[2, 1, 0]",0
+8,882,"Although representing part of an architectural tradition of long barrow building that was widespread across Neolithic Europe , the Coldrum Stones belong to a localised regional variant of barrows produced in the vicinity of the River Medway , now known as the Medway Megaliths .","[2, 1, 0]",2
+8,111,"The leading margins of the disc are gently concave and converge at a broad angle to the pointed tip of the snout . The small eyes are placed close together , and behind them are the spiracles .","[2, 1, 0]",1
+8,254,"Nine , the product of three and three , represents a multitude , so the Egyptians called several large groups "" enneads "" , or sets of nine , even if they had more than nine members . The most prominent ennead was the Ennead of Heliopolis , an extended family of deities descended from the creator god Atum , which incorporates many important gods . The term "" ennead "" was often extended to include all of Egypt 's deities .","[2, 1, 0]",0
+8,196,"The National Hockey League passed him over , however , as he went unclaimed in the 1984 NHL Entry Draft . He was named to the Hockey East All @-@ Star Teams in 1985 , 1986 and 1987 , and a National Collegiate Athletic Association East Second Team All @-@ American in 1986 . He graduated as BU 's all @-@ time scoring leader with 241 points , and was named to BU 's Hockey East 25th anniversary team in 2009 .","[2, 1, 0]",0
+8,549,"On April 5 , 2011 , Fey 's autobiography , Bossypants , was released to a positive review from The New York Times .","[2, 1, 0]",0
+8,459,"He also maintained the existing federal system , by keeping the sitting judges of the Supreme Court , the legislators in federal and state assemblies and the bureaucrats of the various federal agencies .","[2, 1, 0]",0
+8,143,"The instrumentation facilitated recording of occurrences of eclipse , appearance of comets , Satellites of Jupiter and Mercury ' s transit . As an addition , under the patronage of Pope Pius X , four rotary observatory domes were also added at strategic locations on the 1 @,@ 300 feet ( 400 m ) long fortification walls , more than a thousand years old .","[2, 1, 0]",2
+8,432,"The trouble stems from the need for a nucleophilic sulfide that efficiently generates the ylide which can also act as a good leaving group to form the epoxide . Since the factors underlying these desiderata are at odds , tuning of the catalyst properties has proven difficult . Shown below are several of the most successful catalysts along with the yields and enantiomeric excess for their use in synthesis of ( E ) -stilbene oxide .","[2, 1, 0]",0
+8,187,"Later that year , she auctioned a breakfast in Mayfair , London , where she raised around £ 4000 for the Pratham NGO , which helps children 's primary education .","[2, 1, 0]",0
+8,285,"But many of the practices involved in their worship , such as processions and oracles , were adapted to fit Christian ideology and persisted as part of the Coptic Church .","[2, 1, 0]",1
+8,473,"Each has been wronged by Trujillo and his regime , by torture and brutality , or through assaults on their pride , their religious faith , their morality , or their loved ones .","[2, 1, 0]",0
+8,255,"Horus was the most important god in the Early Dynastic Period , Ra rose to preeminence in the Old Kingdom , Amun was supreme in the New , and in the Ptolemaic and Roman periods , Isis was the divine queen and creator goddess .","[2, 1, 0]",0
+8,895,"For instance , they would have been taller than most other tomb @-@ shrines in Britain , with internal heights of up to 10 ft . Nevertheless , as with other regional groupings of Early Neolithic tomb @-@ shrines ( such as the Cotswold @-@ Severn group ) , there are also various idiosyncrasies in the different monuments , such as Coldrum 's rectilinear shape , the Chestnut long barrow 's facade , and the long , thin mounds at Addington and Kit 's Coty .","[2, 1, 0]",1
+8,945,"In 1986 , during excavation for the new right @-@ of @-@ way , the Department of Transportation found archeological items from the Narragansett Indians dating from about 2 @,@ 000 to 4 @,@ 500 years prior . Although the findings were not centralized in the area , this caused delays for the extension of the freeway . On August 6 , 1988 , RIODT completed construction and performed a ribbon @-@ cutting ceremony for the new highway .","[2, 1, 0]",2
+8,77,"Barker died at Worthing Hospital on 16 February 1973 , aged 77 years . Two funeral services were held – one in Storrington Church and one in Barker 's maisonette . Her ashes were scattered in Storrington churchyard . In 1989 , Frederick Warne , a division of Penguin Books since 1983 , acquired the Flower Fairies properties .","[2, 1, 0]",2
+8,453,"The revolutionary forces were to be demobilized as soon as possible and the federal forces were to be the only army in Mexico . This was in order to appease the army , which had opposed a compromise with Madero .","[2, 1, 0]",0
+8,827,"Other important patrons of Polish culture included the Roman Catholic Church and Polish aristocrats , who likewise supported artists and safeguarded Polish heritage ( notable patrons included Cardinal Adam Stefan Sapieha and a former politician , Janusz Radziwiłł ) . Some private publishers , including Stefan Kamieński , Zbigniew Mitzner and the Ossolineum publishing house , paid writers for books that would be delivered after the war .","[2, 1, 0]",1
+8,876,"The ship continued on to Kiel via Neufahrwasser in Danzig ; she then went on to Wilhelmshaven , where the mine damage was repaired . The work was completed at the Imperial Dockyard from 6 to 23 November . After repairs were completed , Markgraf returned to guard duty in the North Sea . She missed an attempted raid on a British convoy on 23 – 25 April 1918 , as she was in dock in Kiel from 15 March to 5 May for the installation of a new foremast .","[2, 1, 0]",1
+8,563,"She also supports the Love Our Children USA organization , which fights violence against children , who named her among their Mothers Who Make a Difference , in 2009 . She was the 2009 national spokesperson for the Light the Night Walk , which benefits the Leukemia & Lymphoma Society .","[2, 1, 0]",0
+8,51,"In 1864 , after Little Rock fell to the Union Army and the arsenal had been recaptured , General Fredrick Steele marched 8 @,@ 500 troops from the arsenal beginning the Camden Expedition .","[2, 1, 0]",2
+8,667,"However , a new urban planning scheme of 1864 reduced the area available for construction , and the community decided to buy another parcel of 1 @,@ 540 square metres ( 16 @,@ 600 sq ft ) in Maria Valeria Street , approximately 80 metres ( 260 ft ) south of the original location .","[2, 1, 0]",0
+9,276,"In addition to the frustration over the report, the family has been unable to hold an inquest or a funeral as Ms Coriam's remains have not been recovered.","[2, 1, 0]",0
+9,428,"The married English teacher and Burnley FC season ticket holder added: ""People have been told times are getting better but that is not what it seems if you have lost your job or are suffering welfare cuts.""","[2, 1, 0]",0
+9,7,"Ministers said the new formula was needed to tackle uneven levels of funding across England, with the best funded areas getting more than £6,300 per pupil per year, while the worst-funded averaging £4,200.","[2, 1, 0]",0
+9,496,"22 November 2015 Last updated at 14:58 GMT
+Yusf Pirot said he wanted to show people that ""not all Muslims are terrorists"".
+Another video of a blindfolded Muslim man asking for hugs in the aftermath of the Paris attacks has also gone viral.","[2, 1, 0]",2
+9,47,"Cobham - familiar to Chelsea footballers and their WAGS - has average prices of £1.043m.
+And anyone wanting to buy in Beaconsfield can expect to pay £1.003m.","[2, 1, 0]",0
+9,474,"Another attack in Edinburgh included an attempt to cut off a victim's finger.
+Passing sentence, judge Lord Kingarth said: ""You showed yourself capable of taking sadistic pleasure in the infliction of pain and the inspiration of real terror over long periods. You pose a substantial danger to the public.""","[2, 1, 0]",1
+9,385,Hawaii's remoteness from the mainland makes it hard to get emergency supplies to the state. Stores have had to quickly restock bottled water and other supplies.,"[2, 1, 0]",1
+9,434,"The casualties occurred before the ""medevac"" helicopter was called in.
+Some reports said the helicopter, believed to be a UH-60 Black Hawk, had also come under fire.","[2, 1, 0]",1
+9,121,"The council, on which he represents Taverham South ward, welcomed the news.
+""We are very pleased that this issue has been resolved and Councillor Clancy can now put this difficult period behind him,"" said a spokeswoman.","[2, 1, 0]",0
+9,85,"""That's our law so why would you accept that gender?"" he said.
+""Wherever God placed you, just remain there. Do not mix it upâ€¦ You erase the great divide between a woman and a man,"" he added.","[2, 1, 0]",0
+9,208,"Told by her teacher to stop studying and get a job, Marieme plays truant with her new group of friends and becomes a gang fighter. Soon, footage of her beating up other girls is filmed and put on to social media.","[2, 1, 0]",2
+9,248,"But he lost the use of his legs in an accident during a live show in 2013.
+He said equipment for people with disabilities could prove expensive so the money would be put to good use.","[2, 1, 0]",1
+9,246,"Codenamed Operation Chastise, eight of the 19 planes were lost, 53 men died and three were captured.
+Despite Mr Johnson describing it as a ""thrilling experience"", he said he was ""disgusted"" Bomber Command had never been given its own campaign medal.","[2, 1, 0]",0
+9,109,"Anyone with specific concerns about a child is asked to call Hertfordshire County Council on 0300 123 4043.
+A statement from the LL Camps team was posted its Facebook page on Thursday. It said the camp had closed with ""immediate effect"" and it ""cannot disclose any further information"".","[2, 1, 0]",0
+9,442,"He then won five of the six frames in Monday's opening session to drag his rival into unfamiliar territory, O'Sullivan having never before trailed heading into the final session of a Crucible final.","[2, 1, 0]",0
+9,205,"Mr Gallagher had reported a fire at his home about half a mile away in Blind Lane, minutes before police were called to the farmhouse on Sudburys Farm Road on 30 July.","[2, 1, 0]",1
+9,462,"Dalton Tyler, who said he was a friend of Mr Roof, told ABC News the suspect had spoken in support of racial segregation and had said ""he wanted to start a civil war"".","[2, 1, 0]",0
+9,30,"His co-owner, Manish Chandani, told AFP news agency they had never intended to glorify Hitler.
+""I was not aware of Hitler being responsible for the killings of six million people before the shop's inauguration. This time I will choose a non-controversial name.""","[2, 1, 0]",0
+9,84,"""We will not rush him and we will make sure he is fine before he comes back.""
+Bradstock said she hoped to see the 10-year-old race at the Punchestown Gold Cup in Ireland on 26 April but could not guarantee he would make the Bowl Chase at Aintree on 6 April.","[2, 1, 0]",0
+9,194,"Please click on this page for the latest listings.
+Fixtures and start times are subject to change. The BBC is not responsible for any changes that may be made.","[2, 1, 0]",0
+9,1,"""His absence, however, does give opportunities to other players who are desperate to play in the first XI.
+""In the past we have coped well without an overseas player and I expect us to do so now.""","[2, 1, 0]",0
+9,199,"Smoke was seen rising above the scene of the attack in the north of the city.
+Reports suggested the bombers' vehicle was stopped outside the facility by guards.","[2, 1, 0]",1
+9,135,"""We will do whatever we can to support the authorities investigating her disappearance and searching for her, as well as providing support to her colleagues, who are anxious for her wellbeing.""","[2, 1, 0]",0
+9,401,"Det Supt Dave McLaren said further information about the incident would be released in due course.
+""At this time the investigation is in its very early stages,"" he said.","[2, 1, 0]",0
+9,232,"""Every driver owes it to themselves, their passengers and other road users to make sure they are fit to get behind the wheel, and that includes not being too tired.","[2, 1, 0]",1
+9,146,"However, a recent survey of the UK construction sector suggested that activity had picked up again in January.
+And Howard Archer, an economist at IHS Global Insight, noted that while housebuilding had dipped in the final quarter of 2014, it was still up 18.7% from a year earlier.","[2, 1, 0]",0
+9,216,"But the headlines belonged to 21-year-old Phillips, who doubled his career tally for Leeds during the first half to put the visitors in control.
+New Zealand forward Wood, who scored 30 goals last season as Leeds narrowly missed out on the play-offs, also opened his account with a clinical header in off the underside of the bar.","[2, 1, 0]",0
+9,356,But some experts see real opportunities for Russia either way: if the Greek marriage to the EU were to end in a messy divorce or if Greece stays in but continues to hedge its bets through friendship with Moscow.,"[2, 1, 0]",0
+9,490,"The National Weather Service is predicting that the chance of thunderstorms will continue in the region throughout the week, with temperatures expected to reach 32C (92F).","[2, 1, 0]",0
+9,374,The Chinese push for renewable energy is the largest the world has ever seen. And look at the global figure for solar panels installed last year - it was half a million every day.,"[2, 1, 0]",0
+9,284,"In a statement, the Polish foreign ministry said: ""We share the pain of the family and the loved ones of the victims and express our most sincere condolences.","[2, 1, 0]",0
+9,338,"""Then when it came to matching up musical ideas that I'd had with likely topics for the album, and having watched the footage of Gagarin's reception on returning to Earth, it seemed to make sense to me in quite an attractively odd and incongruous way.","[2, 1, 0]",1
+9,367,"Afterwards, Ferris got out of the car and spoke to Mrs Carson who was lying on the pavement.
+What he said was not heard, but a bystander then saw him put his hands to his head and shout before running from the scene.","[2, 1, 0]",2
+9,249,"He was taken to a vet to warm up.
+The gull was then taken to a nearby wildlife centre for further care before he will be released into the wild.
+Firefighters used a rescue sled, which is like an inflatable raft, to reach the gull.","[2, 1, 0]",2
+9,79,"""This is a tough day. I love this game and I love this team and today I am saying goodbye to both,"" Rodriguez said.
+""This is also a proud day. I was 18 when I broke into the big leagues and I never thought I would play for 22 years.","[2, 1, 0]",0
+9,97,"""Familiar, yet better than ever, Windows 10 brings back the Start menu you know and love.""
+He also highlighted new additions, including:
+Many company watchers had not expected the launch of the product to happen until later in the year.","[2, 1, 0]",0
+9,151,"Some shareholders are keen for Premier to seek a higher offer.
+David Cumming, head of equities at Standard Life Investments, the fund arm of insurer Standard Life, which controls 7% of Premier, said: ""Although we believe the 60p  bid indicated by McCormick is too low, we remain open to a bid at a higher level.","[2, 1, 0]",0
+9,111,"Boston-born Atkin, who initially competed for the US before switching to Great Britain aged 15, was making her 15th appearance at a World Cup event.
+Atkin will be competing at the Freestyle World Championships in Sierra Nevada, Spain (9-19 March). The event will be live on the BBC Sport website, app, connected TV and red button.","[2, 1, 0]",0
+9,495,"Wurz added that it ""could almost be seen as 'business first and safety second'"".
+Four-time champion Sebastian Vettel, a director of the GPDA, said: ""I haven't read exactly what the reasoning was. It still remains positive that from 2018 onwards it is going to be on the car.""","[2, 1, 0]",0
+9,29,"He had match figures of 0-104 as England won by nine wickets to take a 2-0 lead in the three-Test series.
+The final match at Lord's starts on 9 June.","[2, 1, 0]",0
+9,296,"Attempt blocked. Andrés Iniesta (Spain) right footed shot from outside the box is blocked.
+Leonardo Bonucci (Italy) is shown the yellow card for a bad foul.","[2, 1, 0]",2
+9,376,"He began buying property in Las Vegas in 1962 after selling his charter airline, which he later re-purchased.
+""When you're a self-made man you start very early in life,"" he once told the Las Vegas Review-Journal. ""You get a drive that's a little different, maybe a little stronger, than somebody who inherited.""","[2, 1, 0]",0
+9,277,"""The court was informed that all the parties in the suit had come to an amicable settlement,"" Gary Edward Chong, a lawyer for the family, told the AFP news agency on Tuesday.","[2, 1, 0]",0
+9,31,"The militants took the town by surprise when they launched their attack on Thursday, five months after IS was removed by Kurdish fighters backed by US-led coalition strikes.","[2, 1, 0]",0
+9,382,"The Outlet was opened in 2007 at a cost of £70m but struggled to fill all its units.
+There are plans to switch part of its use from retail to leisure with a cinema and restaurants.","[2, 1, 0]",2
+9,160,"When it comes to National Insurance numbers, on the other hand, there is no minimum stay in the UK. Everyone who wants to work in the UK must have a National Insurance number, even if they're only working in the country for a few weeks.","[2, 1, 0]",0
+9,25,"Shaw, 30, will combine his playing duties with helping boss Jon McCarthy.
+Chester have also made an offer to coach Chris Iwelumo to remain.
+The club are hopeful that the 38-year-old much-travelled Scot will continue to combine his coaching role with his media work.","[2, 1, 0]",0
+9,299,"The IOC is exploring ""legal options"" before deciding whether to implement ""a collective ban"" on all Russian competitors for the global showpiece, which starts on 5 August.","[2, 1, 0]",0
+9,244,Police have confirmed there were no explosives in the package and are now investigating.,"[2, 1, 0]",1
+9,257,"The Dutch Safety Board says its preliminary report was based on the contents of the flight and cockpit data recorders, other communication with the plane, as well as forensic examination of the wreckage where possible.","[2, 1, 0]",1
+10,135,"ok price older hotel somewhat run, check quick, room king bed small, a/c noisy, good breakfast dining area grungy looking.hotel plus convenient space needle.their transport safeco field small shuttle bus told handle 14 passengers, realizing not hold crowd waiting hotel cab saw shuttle 35 minute wait, slow trip game rush hour n't shuttle make trips forth,  ","[2, 1, 0]",1
+10,40,"delightful stay stayed park hotel amsterdam 12th 15th january 2008 hotel remodernised staff extremely pleasant helpful stay better.a delightful days spent lovely city.david pat bishop stockport cheshire uk,  ","[2, 1, 0]",1
+10,14,"perfect location 13-year-old nephew stayed hotel globus nights week june, rooms reviewers stated small, nonetheless quite happy globus florence home days, block mercato centrale fascinating fun shopping street vendors, staff members terrific helping tickets train schedules dinner recommendations, fact restaurants suggested highlights trip, room clean comfortable stay,  ","[2, 1, 0]",1
+10,130,"excellent hotel miramar busy hotel based middle kowloon opposite good shopping center close restaurantsand shops busy kowloon, stay recommend newly refurbished execuitve rooms.the staff hotel good food served average, great hotel reasonable price continue stay hong kong,  ","[2, 1, 0]",2
+10,20,"great place husband couple stayed breezes punta cana march, know late just opinion, none knew expect arrived wow, airport great checking hotel not problem, awe hotel, ca n't believe negative opinions place gets, guess sees things differently, want place bad make way little mind, guess goes saying treat people respect treated respect, wonderful time enjoyed stay hotel not accomodating planning returning punta cana staying breezes,  ","[2, 1, 0]",0
+10,47,"ok tried cheap half decent hotel singapore knows impossible task, not smitten reviews did n't want spend fortune hotel beginning travels chose sea hotel, room quite depressing smelled damp smoke, location great no traffic noise pedestrenised area, stay, probably not, tight budget ok choice,  ","[2, 1, 0]",1
+10,17,"light light shaddow, reception horrably slow unefficient, rooms standart different quality, facilities not outstanding, long ways walk b. good breakfast, aircon room not strong got 26 degree c,  ","[2, 1, 0]",0
+10,152,"drab dreary smelled mildew rooms drab dreary constantly smelled mildew, location ok central district better place stay, definetly not stay nor recommend staying, money experience better,  ","[2, 1, 0]",0
+10,193,"good hotel stayed hotel night year thought great, decor chic loved bowler hats bellboys wore.the rooms nice clean roomie comfortable, stayed colleagues rooms nice clean, overall no complaints reasonably priced nyc,  ","[2, 1, 0]",1
+10,172,"excellent choice quadroom 1 king 2 double beds floor pleased size cleanliness atmosphere room contained small safe, room faced accademia 1 block hotel duomo, breakfast nice staff friendly helpful.hotel blocks outside city tourist center enjoyed quieter nice neighborhood, walked roller suitcases hotel train station florence sidewalks narrow makes chore normal consider taxi heavy bags, walked attractions hotel stay,  ","[2, 1, 0]",2
+10,60,"royal treatment guests, trip caribbean n't amaising, hotel treat guests fantasticly, recomend crown club good price lts free food drinks, choose not stay crown club amaising time participate water activity free long not scuba diving invloves motor, hotel simply delightful amaising,  ","[2, 1, 0]",0
+10,103,"lesson learned air conditioners dont 78 degrees mildew smell seedy-nasty staff low class clientle, scene no problems, evidently used not time stay marriott,  ","[2, 1, 0]",0
+10,30,"little gem husband just returned 3 nights hotel, tram ride outside berlin city centre price great little hotel.the staff young incredibly helpful knowledgable transport, rooms small clean warm, bar tiny not pricey, restaurant underused small menu food tasty cooked, tram berlin city stops just outside hotel takes 10-15 mins run frequently time, recommend travellers getting travel pass airport excellent airport express train city, great trip,  ","[2, 1, 0]",1
+10,145,"gem hotel fabulous location just returned paris 3 night sidetrip amsterdam, best trip hotel new amsterdam staff.we arrived wet cold immediately sat offered choice hot drink machine, not asked congenial welcome.our room 311 floor looked directly canal herengracht, beautiful quiet street amsterdam minute stroll, yes rooms tiny little need beds comfy, cleanliness warmth congeniality location free breakfast 24 hour drinks machine ensure return amsterdam make beeline new amsterdam,  ","[2, 1, 0]",2
+10,63,"basic good hotel fair distance city centre close hyde park, hotel provides basic service, breakfast meal served guests encouraged eat order take-away directory provided room various restaurants, room microwave kitchen area laundry rooms available various floors, self-serve hotel, general hotel clean rooms cleaned daily,  ","[2, 1, 0]",1
+10,148,"superb location smallish rooms ca n't ask misses stars room/floor felt smoky, understand asked not smoke bed does n't mean ca n't smoke try ask n/s floor.that apart location not faulted, 5 mins walk west exit shinjuku just road kabuchiko.rooms compact hard work getting 2 suitcases clean comfortable, good choice tokyo,  ","[2, 1, 0]",0
+10,192,"decent uninspired five-star hotel good things large room comfortably furnished modern, general ambience impressive five-star establishment, service professional, executive lounge excellent including free breakfast evening drinks hors-d`oeuvres, good choice restaurants pretty expensive location, handy pleasant ebisu garden palace area shops restaurants easy minute walk mainly moving walkways ebisu station, not actually main areas visitors tokyo want see.very frustrating no swimming pool,  ","[2, 1, 0]",1
+10,10,"brilliant, just 3 nights st christpohe loved, 3rd trip paris hotel location best far, close place monge metro market shops, walk saint germaine pantheon, staff really friendly helpful, room ok size paris little dated clean good bathroom, concern rooms little hot provide fan, nice weather not hot not sure enjoyed stay 25 degrees, apart great hotel struggle better value paris,  ","[2, 1, 0]",0
+10,158,"excellant hotel partner stayed hotel week booked hotel expedia didnt know location hadnt hong kong arrived hotel excellant built 2004 lobby mable doormen really attentive choose deluxe room standard high hotel right road happy valley race course taxis cheap hong kong getting easy place felt safe definately recommend hotel,  ","[2, 1, 0]",0
+10,195,"rest relaxation n't golf enjoy beach pool day like, swim suit day dressy casual evening, food wonderful people friendly, poor country dollars service warms heart belief, wonderful time,  ","[2, 1, 0]",1
+10,107,"lovely hotel dodgy area nice hotel helpful staff clean rooms.was pickpocketed right outside hotel organised gang, police not interested just watch, care rambla approaches ready defend way money,  ","[2, 1, 0]",1
+10,168,"fun w mexico city stayed w mexico city business, nice contrast stuffy work life lead, rooms intense contrast color red innovative twist hammock shower, thought property showing wear bar restaurants lovely massage spa excellent, close professional district fun alive,  ","[2, 1, 0]",1
+10,149,"great, friends wonderful stay hotel fusion, hotel new nicely remodeled, people worked helpful friendly, stayed rm 405. 4th floor city noise pretty loud, surprisingly warm weekend windows open, n't think noise bad windows closed, highly recommendthis hotel, thanks,  ","[2, 1, 0]",0
+10,144,"beautiful florence hotel berchielli excellent hotel wonderful location just yards ponte vecchio reasonably quiet spot, room 207 no balcony overlooked tiny piazza small chapel, room clean good size lovely bathroom, breakfast continental good selection meats cheeses cereals fruit, staff professional helpful, terrace garden 4th floor worth finding late afternoon tea rest while.would definitely stay particularly location high standards service,  ","[2, 1, 0]",1
+10,133,"good experience having booked minute escape university tower hotel review proved excellent minute find.central clean rooms good views albeit rooms exec levels n't exactly spacious.try book executive rooms possible good choice breakfast hors d'oeuvres day makes overall package palatable.restaurant little pricey good food staying night skip try benihana just road hotel great food atmosphere,  ","[2, 1, 0]",0
+10,80,"beautiful hotel river view hotel wife accross river, building farthest right,  ","[2, 1, 0]",2
+10,66,"worst experience hotel not stay hotelstaff unhelpfulrooms dirty dodgy wireingbathroom dirty mould bath cracked toilet plus mirror mould itrestaurant waiters rude arrogant slamming plates downi meal hotel spent night toilet haveing diahoreah tablets stop vomitinghad booked paid wanted credit card details security, checked morning taken 2 nights tried contact hotel money did not understand money credit card companyi thought pics reviews hotel good worst experience not let hamster stay,  ","[2, 1, 0]",2
+10,52,"austin powers decor familiar, hotel seattlewhere sheets 3 different colors hair.but okbecause clean second day.the bathroom friend cringe.she asked brought flip flops sanitizer spray.the dirty shag carpet did n't stop wall.it crawled inches.i star saw shining worse,  ","[2, 1, 0]",1
+10,171,"not bad booked hotel web, decided read reviews night went break, horrified read did gone amsterdam 6 years thought booked bit expensive better facilities used i.e, roomservice ensuite.the reviews negative, decided not bother just make minds oursleves, glad did say stay great rooms adequate shower powerful clean lots hot water, room service good, no-one bothered good away quiet break, rated average hotel price not near bad reviews,  ","[2, 1, 0]",0
+10,174,"loved avenida palace great weekend wife avenida palace staff helpful dont think better hotel,  ","[2, 1, 0]",0
+10,61,"nice stay nice hotel considering collection old houses charm, hotel canal trendy area amsterdam, service excellent beds comfortable, room loft, main floor double bed loft single beds, staircase loft steep difficult navigate, tourist attractions walking distance, overall recommend staying hotel,  ","[2, 1, 0]",2
+10,67,"nice hotel booked standard room palace disappointed walked lobby long line people waiting check, suddenly staff appeared started checking people tower lobby, upgraded large room tower, room beautiful large, tower section feel small hotel, service good entire trip, not know happy room booked, not wanted pay 450 room got normal rate 300 night enjoyed, enjoyed location walked,  ","[2, 1, 0]",0
+10,101,"not return web site hotel mis-leading.we asked ground floor issues stairs, assured ground floor steps, bad, bad, narrow steps narrow steps, impossiable handicap steps hand rail managed, staff kids close 11pm open 9am, room small smelled needed cleaned, bed pillow good sheets clean room warm, bathroom not nice needed cleaned, saw breakfest food cereal coffee fee.we disappointed 3rd class hotel gays, looking decent gay hotel not, try tfor senior couple,  ","[2, 1, 0]",1
+10,33,"great hotel times great, book hotel transfer airport water magazines car, amazed time stayed hotel doorman open car door greeted immediatly seen rooms modern comfortable, great small treats day cream small cakes fresh fruits, travelling yummi, breakfast die, dinner michelin starred restaurant, definitely looked hotel,  ","[2, 1, 0]",0
+10,165,"terribly rude service, second time stayed hotel time months ago rude lady reception checked just rude patronising, not nice welcome, bar man steve extremely rude service worst experienced bar and/or hotel world, not stay time definitely book intercontinental spent time told langham concierge stopped serving dinner drinks evening, intercontinental dream tried change hotels no space,  ","[2, 1, 0]",0
+10,76,"happy nice stay hotel, sprang junior suite enormous dutch standards, glass bathroom neat view dam square outstanding, staff really wonderful, let check hours early greatly appreciated, free internet access real boon, unlike poster happy quality room felt clean exactly depicted photos.my caveats really business hotel feel atmosphere prices, second really loud trams people right outside window, nice right middle stopping room packages use bathroom easy, noise considered booking,  ","[2, 1, 0]",2
+10,117,"superbe stayed recently 3 night break celebrating birthday wife, moment stepped air conditioned reception following journey gdg airport bus, not fault hotel whatsoever, friendliness assistance warm atmosphere place gave confidence place right start, looked trip advisor information people kindly share having commented, just felt pleased decision stay hotel warranted comment, thankyou phillipe matheau staff keppler.certainly stay,  ","[2, 1, 0]",0
+10,170,"good nights sleep beaten track room clean modern, location wise hotel little way action probably 10-15 minutes walk metro station close, stay given value money, berlin amazing definitely recommend walking tour,  ","[2, 1, 0]",0
+10,18,"fantastic hotel, husband just returned 4 night stay benjamin just wanted comment lovely hotel, 1 bedroom suite spacious comfortable hotel staff friendly efficient, make use concierge knowledgable restaurant reservations great places, did not use gym spa not comment did experience certainly stay recommending friends visit new york,  ","[2, 1, 0]",0
+10,2,"returning just returned staying property business trip, used outstanding service premier hotels hong kong mandarin oriental impressed cream crop, normally stay ritz carlton imminent closing jan 31 opted stay refurbished mandarin, rooms particularly outstanding service attention detail/customer satisfaction reproach, returning hong kong months vacation just canceled reservation seasons re-booked instead mandarin, impressive venue,  ","[2, 1, 0]",0
+10,163,"n't convenient visited no time year group friends possible best week life, hotel best location possible right middle bourbon street, clean staff friendly, looking quiet maybe look ideal booked return considering hotel,  ","[2, 1, 0]",0
+10,176,"perfectly acceptable paid roughly 30 euros night just cheapest got required good location bed private bathroom perfectly acceptable standard cleanliness.there wasnt cares,  ","[2, 1, 0]",0
+10,25,"nice expensive great location short walk main attractions shops, casa fuster beautifully decorated furnished natural tones, room quality better expect major city hotels, nearly 300 euros night bit pricey,  ","[2, 1, 0]",0
+10,161,"ok decided stay city function december not having heard decided try amora introductory package cheaper, thought fine stay business location good beds comfortable, no real view nothing particularly interesting service adequate attentive.like reviewer did strange restaurants bars closed particularly room saying great, food manager met excellent welcoming, nothing wrong experience tourist looking romantic weekend think nearby hotels excitement, guess depends looking price comparisons,  ","[2, 1, 0]",0
+10,137,"noisy wife booked nights hotel did not enjoy experience, clean friendly noise level resulted no sleep, rooms floor right hand building avoided, recycling trash bins outside windows collected early hours morning, windows did not lock properly provided no barrier outside noises, plus location excellent,  ","[2, 1, 0]",0
+10,54,"great location spent 6 nights pool access room, room size bigger rooom normal 3 star hotel, pool access rooms way, breakfast little average, choice dishes changes day, staff friendly tell cheap dvd hire bemo, did not eat resteraunt night nice cheap resteraunt accross road, want nice meal good price try international cafe nearby, fall did pool cool,  ","[2, 1, 0]",1
+10,129,"great room service boyfriend spent week clift not fault single thing, staff friendly helpful room service good hardly bothered going eat bed huge comfortable slept, room overlooking street no problems noise, like try different hotels returned san francisco not hesitate staying clift,  ","[2, 1, 0]",0
+10,178,"good hotel spent nights stylish hotel, room whilst small equipped high quality fittings furnishings toiletries.the staff attentive public areas hotel comfortable.only complaint bar prices high side.very comfortable hotel no hesitation recommending,  ","[2, 1, 0]",1
+10,166,"b ramada inn, stayed nights december impressed ramada inn, good rating room bathroom clean, cable television complimentary breakfast morning, hotel bit way downtown boston courtesy shuttle travels hotel closest t station,  ","[2, 1, 0]",1
+10,89,"run over-priced recently stayed days hotel, cheaper hotels saw disappointed standards considering paid, stayed star hotel france week cheaper higher quality, walls room filthy bath problems shower hose, walls paper hotel generally bit clean, quite near harbour la rambla immediate vicinity quite dirty rough noisy, staff fair friendly helpful, ok short stay n't expect,  ","[2, 1, 0]",1
+11,35,"This Giant Eagle maybe the worst supermarket I've ever been to. There are thugs hanging out by the entrance and in the parking lot. The interior is dark and dank and has an outdated \""made in the 70s\"" feel. With options like this I don't have a problem taking the extra time to drive to Trader Joe's.","[2, 1, 0]",2
+11,125,"Convenient and easier to find items then big box stores, although you do pay for that convenience. Most staff are extremely knowledgeable and helpful, others in dire need of customer service training (mocking and eye rolling at customers is not cool).  Returns can be a hassle including items sold that are defective or missing parts.","[2, 1, 0]",0
+11,189,"I'm maybe I'm missing something here because I found the place to be really underwhelming. The service was excellent friendly and fast but the food was . . . eh. I kept getting a 'chemical taste' off of the food and I'm not normally someone who is sensitive to that kind of thing, I got the brisket tacos and they ended up being 1) kind of chemical artificial tasting and 2) watery from the salsa. Not really a good combination. Maybe I chose poorly but I wasn't impressed at all.","[2, 1, 0]",1
+11,145,"I do admit the clothes here are not exactly at the quality that I want, but if you do stop by frequently you can spot some really nice items. And the guy who works there is super nice so make sure you get to know him! He can help you a lot.","[2, 1, 0]",1
+11,80,"Ewww, the food here is terrible.  Nothing I had tasted good.  It tasted like it had been sitting under the food warmers for hours.  The service is luke warm at best.  Just skip it.  There's so many other places out there for good italian food.","[2, 1, 0]",1
+11,224,Solid sake menu and the staff was helpful in deciding which one to go with. Sushi rolls had an interesting spin but nothing out of the ordinary.,"[2, 1, 0]",2
+11,278,"Delicious Chinese food!  I had the Trio of shrimp, scallops & chicken and all food was very fresh and wasn't salty like other Chinese restaurants.  The servers were very  polite and this was a wonderful experience and will definitely go back!","[2, 1, 0]",2
+11,154,"The food here is over the top excessively greasy. So greasy that it made me sick to my stomach before I was done eating my meal. My husband and I split the chocolate chip pancakes and a ham and cheese omelette with potatoes and toast on the side. Not only was everything in a pool of grease, but it seemed to be margarine...not even real butter. I will never eat here again. I am gagging even thinking about this meal let aloe eating it again.","[2, 1, 0]",2
+11,270,"I gave up on Monterrey several yrs ago but was in the neighborhood today. I felt like Mexican for lunch. Clean, great service and the food was very good. One of the best quesadillas I've had. And the Dos Equis draft wasn't bad either!","[2, 1, 0]",0
+11,4,"Wast there last Friday. Seats right in front if the stage. The show was good. The headliner, while a bit long, was good. Fantastic service from our waitresses. Will definitely go back.","[2, 1, 0]",1
+11,283,"I always come here after playing a round of Par 3 golf next door.  How can you go wrong with hundreds of beers, pretty girls and descent bar food?  You can't!  Cool spot - check it out!","[2, 1, 0]",2
+11,153,"Great hotcakes. No so great wait.  The hotcakes are worth trying, but there are other places in Pittsburgh that have much shorter waits that I prefer.","[2, 1, 0]",1
+11,53,Spent the weekend and Pittsburgh and started out Friday night at Mad Mex for Happy Hour and some dinner. Happy Hour was a pretty good deal with half price wings and cheap drafts. The wings were good and the beer selection is above average.\n\nFor dinner I had the carnitas enchiladas (i think). It didn't taste bad but I definitely had better Mexican elsewhere even elsewhere in Pittsburgh.,"[2, 1, 0]",1
+11,68,"Tiny little place and very popular...highly suggest going early if you're a newbie in town and never had their sammiches before. They get pretty busy after 12.\n\nI couldn't decide what to get, and was told their number 2 popular choice is  not that great and I should try salami or black angus. Tough! So, I ended going with roast beef. I really enjoyed it, not greasy at all, and I actually ate the whole thing. Ha unbelievable, it was that good! \n\nOverall service was great.","[2, 1, 0]",1
+11,135,Best sushi in Pittsburgh. Small restaurant so definitely make reservations and try the omakase. Like the tatami mat seating as well.,"[2, 1, 0]",2
+11,59,"We are new to the area. We bought a 100 year old home in the Dormont suburb of Pittsburgh and set about to do a serious renovation. The moment we walked into Ceramiche we knew we were in good hands. Tina, Bob, Melissa, Suzy and Nicky all know their stuff and treat us like long lost friends. The selection of tile is the best we have found in this area and the prices are very good. The service is what really makes this place special.","[2, 1, 0]",1
+11,54,"This location has such a different feel than the others around Pittsburgh. Perhaps it's the well-lit bar, or maybe it's that there's a new bartender every time I make it over here. In any case, it doesn't quite have the \""feel\"" that North Hills and Robinson have.","[2, 1, 0]",0
+11,79,"No, nope, uh uh, no way, please don't call this an Italian restaurant. Overcooked, mushy noodles, watery tomato gravy, and meatballs that are too garlicky and over spiced. Can't give this place anything lower than 1 star. Seriously, Olive Garden is a joke and I rate it higher than this place. \n\nAgain, my advice to any Italian food lover, find a good neighborhood, family owned restaurant and support a family and not a conglomerate.","[2, 1, 0]",2
+11,139,"I just got my hair done at Dean of Shadyside Salon with Valerie. My cut was amazing. She listened to what I wanted out of my hair cut and gave me advice on what I should do to achieve the look I wanted as well. \nI was so excited about my cut, I re-booked for cut and color.","[2, 1, 0]",1
+11,144,"Platinum Blonde Perfection.  Jay works wonders and he has given me the best platinum blonde 'do ever.  It was gorgeous.  My hair looked like corn silk.  If I had boat-loads of money, I'd fly him out to LA every 6 weeks for a touch up.   Go to see Jay...tell him Laura from LA sent you.","[2, 1, 0]",2
+11,107,"Ritters is a Pittsburgh treasure. Old school diner, complete with at-table mini jukeboxes that sometimes work. Great people watching here.  This is the place you come for late night munchies or possibly morning after recovery.  Breakfast food is on point, as is the Greek fare. Cash only like most of the coolest spots in The Burgh!","[2, 1, 0]",2
+11,175,"We stayed at a hampton inn in concord one night, then this hampton the next night. This one was so much better, except for the room we were in. 602 made us both sick, it had a mold or something. The front desk was very courteous in moving us when this was mentioned and the 2nd room was very nice. Breakfast was delish. And the hotel is located in a very nice area, right next to southpark mall and right down the road from carowinds :)","[2, 1, 0]",1
+11,104,"Pho is good but its not best pho or egg rolls (they don't even serve it with the lettuce and herbs) you can get in Pittsburgh. On the flip side though, their owner is super friendly","[2, 1, 0]",1
+11,258,"Decent airport, but it is always a mass of humanity.  Be sure to stay in your seat if you get one, because you will lose it.","[2, 1, 0]",2
+11,250,Pretty efficient as far as airports go. Usually an hour preflight is good depending on where you're going. I generally fly us airways and have never encountered a problem with anything. Smooth lines for security and I recommend going through the d/e checkpoint as it almost always seems to be less congested and quicker than it's counterparts!  Happy flying :),"[2, 1, 0]",2
+11,128,"This is a fantastic small hair salon. I have been going here for years and they are experts. You always feel valued and always have great service (and a GREAT cut too!).\nThe ambiance is superb- small, quaint, and not full of egos that you would normally find at a salon of this caliber.\n\nI highly recommend!!!","[2, 1, 0]",1
+11,26,"Our favorite place to go for chocolate peanut butter soy milkshakes. We've been for breakfast, lunch, and dinner and everything we've gotten has been incredibly delicious. Love this place!","[2, 1, 0]",1
+11,47,"The pizza is great. Other food items might disappoint. They do deliver! Service is hit and miss. There is one rude,  smile-less bartender... I have actually seen him through the window and decided to go somewhere else because I was in the mood for good service.","[2, 1, 0]",1
+11,216,"Small park, over priced food, we paid $55 for 3 slices of pizza , 2 orders of chicken wings that were the smallest flavorless wings we have ever had, and 2 beers.....never again....pack food","[2, 1, 0]",2
+11,141,I'd give this joint zero stars if it was possible.  This is the worst spot on Walnut St!  I'm not even sure where to start. The bar is small and overpriced. I had a steak fajita wrap that tasted microwaved.  The vegetables weren't even cooked. This is a place no one wants to--or should ever want to go.,"[2, 1, 0]",0
+11,22,"Maybe I am just the most jaded vegan in town; Quiet Storm's food menu bores me to tears, that which I will use to salt my own mediocre cooking at home! Their coffee isn't all that great either, as given the choice, local La Prima is in my favor. Tears. This is the only vegetarian restaurant on the East side of town, and oh so close to me, but I cannot stand to go there. Desperate times now call for toast and tea served by the sad server that resides within my depressed little dining room.","[2, 1, 0]",2
+11,1,"Typical Starbucks coffee chain. 2 things I dont like about this Starbucks: \n\n1. Ive been there twice and both times the place has been dirty, compared to the other Starbucks I have been in.\n\n2. If you have to use the bathroom, they give you a key thats attached to this nasty bottle. Im pretty sure they dont clean that bottle after every use or even nightly.\n\nAside from that, good coffee and fast/friendly service.","[2, 1, 0]",2
+11,170,"Lobby, restaurant, bar and internet area all look great and new! Room Service was great, fast and efficient. Check in was good, not great! They charge for internet service in the room, that's so 2008!\n\nThis is a typical 80 style building that was retrofitted and remodeled. So The main structure, bathroom and HVAC systems all pose a ongoing problem, no matter the extensive renovation.\n\nFrom a cleanliness perspective the room had spider webs around every corner of the ceiling.","[2, 1, 0]",2
+11,66,Awful!!!\nNever EVER follows schedule! Lets you wait for literally over an hour on a bus that is supposed to be running every 15 min.,"[2, 1, 0]",0
+11,134,"Consistently outstanding and creative food served professionally in a great and even varied ambiance. What more could you ask for? Oh yes, excellent wine list and drinks.","[2, 1, 0]",0
+11,82,"It's just not that good. We initially told the waitress that we only going to order appetizers and desert. My code for \""we read on Yelp this place sucks, but we wanted to give it a try\"" to which she replied they don't alow that but I will let it slide. The food could have come from a buffet and been better. I hate to be super negative, but in this case I am just being real.","[2, 1, 0]",0
+11,226,"For the first time ever I ate at mama ricotta's tonight with my family, I went because my cousin told me it was good.  We ate family style and it was pretty good, I wasn't a fan of the caesar salad because the dressing taste like a tangy mayo.  Other than that it was pretty tasty food.  The service was excellent, our waitress was really nice and very promp.  We were in and out really fast, the longest wait we had was to be seated and that was about 10 minutes or so.","[2, 1, 0]",1
+11,282,"Great beer selection, great atmosphere, great bartenders. What more can I say? Perfect for someone wanting to enjoy a beer with good friends. Monday night is the night for great specials but I prefer to go the other nights of the week when The Saucer is a bit quieter. I would definitely recommend this to anyone who is has nothing good to say about Charlotte night life, this will certainly change your mind. Give the fresh pretzels with queso a try!","[2, 1, 0]",0
+11,218,"If you have been to Disney or even Chi-fil-a this place will disappoint you with their horrible customer service. Perhaps when 80% of your staff are 18 yrs and younger you need to instill respect, courtesy and the customer is always right b/c they just dropped a freakin mini fortune on this crappy amusement park that post hours of operations for stores and restaurants as suggested times. And you only get 1 star because I couldn't leave it blank","[2, 1, 0]",0
+11,287,"Friendliest employees ever, and those hamburgers are fantastic!  Food quality is what I'd expect at a good sit-down restaurant.","[2, 1, 0]",1
+11,57,"The close-to-my-childhood-home Starbucks: it's A. Not Peet's, and B. An accidental high school reunion when I dare to venture in. On the other hand, there are usually couches--or chairs and tables--available, inside or outside, depending on the season.\n\nThis is the option when I don't want to try to park on Beverly for a caffeine fix at the Coffee Tree.","[2, 1, 0]",1
+11,38,"Nick's used to be good with the previous owner, that all changed. Which is pretty sad.","[2, 1, 0]",0
+11,76,"So Many coffees to choose from, so little time. Really awesome coffee shoppe, which happens to be the oldest in the city and the most delicious smelling! They staff here is super friendly and enthusiastic about the precious beans. Its quaint and charming with a old rustic touch. Prices are reasonable and what you'd expect. Definitely a good place to stop if your around market square","[2, 1, 0]",1
+11,279,"Wish it had been better when I made my one and only trip.  The menu was smallish and nothing quite appealed to me.  But I know others have enjoyed it very much, maybe I am an exception.  I like the wine suggestion it was top notch.  Staff was efficient and friendly.","[2, 1, 0]",0
+11,18,"So I went back to Casbah for dinner and was totally underwhelmed. The granola I had for brunch (in my previous review) was better than my entire dinner put together. The service was better at dinner then at brunch, but the food made my rating drop from five stars (probably a little generous) to three stars. Definitely go for brunch! But it's not worth the money for dinner. Mediocre food in a nice atmosphere with good service is still mediocre food...","[2, 1, 0]",1
+11,298,"Sigh...to be honest, there is just no good food option in this shopping center. This Mccalister falls short just like many mccalisters. The lighting in here is kind of dark. The food...it lacks flavor. Don't come here if you want a good sandwich, which is funny because it is a deli. The typical scene you can expect is you come in, order with one of the high schooler staff up front and retrieve your food when it's ready at the counter. So-so food...ok price here for what you get.","[2, 1, 0]",1
+11,75,"WARNING ,,,,, this place is for SUCKERS ONLY ..... funky smelling ,worse tasting seafood ... overpriced ..... raunchy,un-clean restrooms .... only reason anyone goes here is because this is a ''tourist trap '' type neighborhood with some fun shopping spots nearby and this restaurant is positioned in the center of everything. As P.T. Barnum once said  '' There's a sucker born every minute '' ...... stay away ... any other restaurant will be better .","[2, 1, 0]",0
+11,220,This ymca is very large.  It has 4 floors to exercise.  Like 10 racket ball rooms.  Towel and rags are ease of access to shower and etc.  The downside is that most hours of the day it is crowded because it is located downtown.,"[2, 1, 0]",2
+11,65,"If you like filthy buses, super high fares and about 50% rude operators then you will love Port Authority service.  Now if you like clean buses, reasonable fares and friendly service you will need to go somewhere else.  And no place for children as the language on the buses would make a sailor blush.  And in 14 years of riding Port Authority I have never seen a uniformed Port Authority officer riding a bus.","[2, 1, 0]",0
+11,21,"Stopped here for drinks before we went on to dinner elsewhere. In hindsight, we wish we had stayed here. :-)\n\nWe had a couple of great beers and just enjoyed the excellent music soundtrack before we moved on to our next designation. I hope to come back here sometime in the future and actually have...a meal. I like this funkier part of town.","[2, 1, 0]",1
+12,157,"we prove that both unitarity and renormalizability require identical conditions as in the case of conventional relativistic theories .
+ 5em    @xmath0 , takeo inami@xmath1 , keisuke izumi@xmath2 , and tomotaka kitamura@xmath3    3em    @xmath0 _ department of physics , and research and education center for natural sciences , + keio university , hiyoshi 4 - 4 - 1 , kanagawa 223 - 8521 , japan _","[1, 0]",0
+12,186,"these loops may lead to rhythmic changes in gene expression in a cell . in the case of multi - cellular tissue ,
+ collective oscillation is often due to synchronization of these cells , which manifest themselves as autonomous oscillators .","[1, 0]",0
+12,460,we ask the following question : is there a general method for simulating an arbitrary @xmath2-qubit pure state quantum computation by a quantum computation in the @xmath0-qubit model ?,"[1, 0]",0
+12,477,"we propose an approximate problem formulated by a variational inequality , prove an existence and uniqueness result , present an error estimate , and discuss a numerical realization using an iterative uzawa - type method .","[1, 0]",0
+12,407,"we present an introduction to the principles behind atomic energy level calculations with quantum electrodynamics ( qed ) and the two - time green s function method ; this method allows one to calculate an effective hamiltonian that contains all qed effects and that can be used to predict qed lamb shifts of degenerate , quasidegenerate and isolated atomic levels .","[1, 0]",0
+12,497,"k2 _ fields 7 ( epic229228364 ) and 8 ( epic220453225 ) in these proceedings , we presently know of six total members of this class of object .","[1, 0]",0
+12,440,"we point out that the amplitudes begin to become larger when the growth of the sasi enters the nonlinear phase , in which the deformation of the shocks and the neutrino anisotropy become large . from the spectrum analysis of the waveforms","[1, 0]",0
+12,20,"additionaly , we study the expansion of dipolar condensates , and find signatures of the dipole - dipole interaction in terms of structured states and a deviation of the well - known inversion of the aspect ratio of the cloud during a time of flight .","[1, 0]",0
+12,183,"we quantize this system in the covariant gauge and obtain the spectrum of superstring theory . in the dual cft point of view , the penrose limit means concentrating on the subsector of almost bps states with large r - charges .","[1, 0]",0
+12,107,"these studies identify a near - invariant velocity structure function that is independent of local the environment and star formation activity .
+ such universality accounts for the cloud - to - cloud scaling law between the global line - width and size of molecular clouds found by larson ( 1981 ) and constrains the degree to which supersonic turbulence can regulate star formation .","[1, 0]",1
+12,349,"environmental effects ( decoherence ) are generated by a spatial light modulator , which introduces pure dephasing in the transverse spatial plane , perpendicular to the direction of propagation of the light beam . by controlling the characteristics of this dephasing","[1, 0]",0
+12,127,"this is one of the main challenges that we face in computational science . in this report
+ , we will review the recent work done by scientists from several disciplines on probing such energy landscapes . of particular interest","[1, 0]",0
+12,341,", obliquity and eccentricity ; ( ii ) continental geodynamic evolution and orogenic belt ; ( iii ) variations of atmospheric and oceanic currents ; ( iv","[1, 0]",0
+12,52,"current through the powder is then noisy , and the noise has interesting self - similar properties , including intermittency and scale invariance .
+ we show that heat dissipation plays an essential role in the physics of the system .","[1, 0]",0
+12,181,"we have shown that the born rule @xmath0 is inconsistent with lorentz symmetry of the salpeter equation ( square root klein - gordon equation ) .
+ so we find relativistic modification of the born rule as @xmath1 , which is consistent with lorentz symmetry of this equation .","[1, 0]",0
+12,399,"this paper describes a monte carlo simulation for a detection of @xmath1 events by the crtnt experiment .
+ ultra - high - energy cosmic ray events are also simulated to estimate the potential contamination . with the crtnt experiment composed of four detector stations , each covering @xmath2 field of view , the expected event rates are 28.6 , 21.9 and 4.7 per year assuming agn neutrino flux according to semikoz et .","[1, 0]",0
+12,286,"the traffic profile will change drastically towards higher data volumes and higher rates per device . in this paper
+ , we characterize the current traffic generated by smart electricity meters and supplement it with the potential traffic requirements brought by introducing enhanced smart meters , i.e. , meters with pmu - like capabilities .","[1, 0]",0
+12,452,"it is already known that , without energy exchange , all three problems are np - complete even if the network is a line .
+ surprisingly , if we allow the agents to exchange energy , we show that all three problems are polynomially solvable on trees and have linear time algorithms on the line . on the other hand for general undirected and","[1, 0]",1
+12,447,"m@xmath1 , with @xmath2 the co - moving field strength . in this letter ,
+ the implications of these effects are consistently incorporated in a simplified model for reionization , and the uncertainties due to the cosmological parameters , the reionization parameters and the observed uv luminosity function are addressed .","[1, 0]",0
+12,208,the same lower bound holds for the satisfiability problem for a two - variable first - order logic on trees in which unbounded data may label only leaf nodes .,"[1, 0]",1
+12,498,"we found that evolution discovered two mechanisms for short - term memory .
+ the first mechanism is integration of sensory signals and ongoing internal neural activity , resulting in emergence of cell groups specialized on alternative actions . and","[1, 0]",0
+12,317,"they apply to open fermion lines , including flavor changing currents , to closed fermion loops , including those which contain true anomalous currents , and to anomalous loops connected to open fermion lines , to all orders in qcd .","[1, 0]",0
+12,383,"instabilities are one of the sources for the turbulence .
+ we study a differentially rotating compressive flow in the presence of non vanishing radial and azimuthal magnetic field and demonstrate the occurrence of a high growth rate instability .","[1, 0]",0
+12,79,"the improved definitions of qpswfs are studied which gave reasonable properties .
+ the purpose of this paper is to understand the measurements of energy concentration in the 2d spatial and quaternionic linear canonical frequency domains .","[1, 0]",0
+12,473,"is calculated to all orders in @xmath2 using exact propagators .
+ previous calculations of the first - order binding correction are confirmed both analytically and by fitting the exact function at low @xmath3 .","[1, 0]",0
+12,476,", we construct a simple but powerful 3 component parameterization of these stresses that exposes the new phenomena produced by gdm .
+ limiting cases include : a particle component ( e.g.  wimps , radiation or massive neutrinos ) , a cosmological constant , and a scalar field component .","[1, 0]",0
+12,121,"optical observations reveal a @xmath2 magnitude galaxy at the position of the radio core .
+ although the association with the egret source is not confirmed at the present stage , because there is a competing , alternative @xmath0-ray candidate within the location error contours which is also studied here , the case deserves further attention .","[1, 0]",0
+12,442,"and inactive galaxies , _ without _ making any correction for luminosity evolution . using a set of conservative assumptions about the host galaxy stellar","[1, 0]",1
+12,83,"we show that the rational equivariant cobordism of a @xmath1-variety can be expressed as the weyl group invariants of the equivariant cobordism for the action of a maximal torus of @xmath1 . as applications ,","[1, 0]",0
+12,499,", we obtain the dependence of the two - qubit gate fidelity on the system parameters in the case of direct and indirect qubit - qubit coupling .
+ our numerical results can be used to identify the `` safe '' parameter regime for experimentally implementing two - qubit gates with high fidelity in these systems .","[1, 0]",0
+12,409,", the tpc is foreseen to be operated in an ungated mode with continuous readout .
+ the existing mwpc readout will be replaced by a micro - pattern gaseous detector ( mpgd ) based readout , which provides intrinsic ion capture capability without gating .","[1, 0]",0
+12,415,the carina dsph has a mean metallicity of [ fe / h]@xmath0 and an intrinsic metallicity dispersion 0.25 dex ( 1@xmath1 ) . by directly determining the chemical abundances of carina stars through spectroscopy,"[1, 0]",0
+12,90,"is represented by three real parameters . in the parameter space
+ all ghz@xmath0-symmetric states reside inside a tetrahedron .
+ we also explore a question where the given slocc class of the ghz@xmath0-symmetric states resides in the tetrahedron . among nine slocc classes we have examined five slocc classes , which results in three linear hierarchies @xmath1 , @xmath2 , and @xmath3 which hold , at least , in the whole set of the ghz@xmath0-symmetric states .","[1, 0]",0
+12,451,"are likely forthcoming . in quiescence ,
+ the fuv spectra reveal contributions from the wd and the disk .
+ quantitative analyses have lead to solid measurements of the temperatures and abundances of a number of wds in cvs , and of a determination of the response of the wd to an outburst .","[1, 0]",0
+12,211,generated datasets were shown to yield excellent results comparable to highly accurate all - electron full - potential linearized augmented plane - wave plus local orbital ( flapw+lo ) calculations .,"[1, 0]",0
+12,12,"we study the geometry of billiard orbits on rectangular billiards .
+ a truncated billiard orbit induces a partition of the rectangle into polygons .
+ we prove that thirteen is a sharp upper bound for the number of different areas of these polygons .","[1, 0]",1
+12,91,"no evidence for radio pulsations with an upper limit of @xmath0mjy for any of the four targets has been found .
+ the blind search led to the serendipitous discovery of two new pulsars , rotating with a spin period of about 0.7s and of 92ms respectively , and to the further detection of 18 known pulsars , two of which were also detected in the single - pulse search .","[1, 0]",1
+12,377,"the observed central gas velocity dispersion often exceeds the stellar velocity dispersion .
+ this could be due to either the gravitational potential of a black hole or turbulent shocks in the gas .","[1, 0]",1
+12,170,"paradoxes in the impact dynamics of rigid bodies are known to arise in the presence of friction .
+ we show here that , on specific occasions , in the absence of friction , the conservation laws of classical mechanics can also be incompatible with the collisions of smooth , strictly convex rigid bodies .","[1, 0]",0
+12,400,this talk presented an overview of the microboone experiment with an emphasis on the light collection system and recent technical advances .,"[1, 0]",0
+12,210,the aim of this program is to test the theories of formation / evolution of planetary systems . for 19(8 ) stars we can exclude planets with @xmath0 @xmath1 1 @xmath2 ( 5 @xmath2 ) and @xmath3 @xmath4 10 days ; we find 1 short period binary and 5 stars with long period rv - trend .,"[1, 0]",1
+12,410,", we propose a centralized d2d discovery scheme by employing a signaling algorithm to exchange d2d discovery messages between network entities . in this system ,","[1, 0]",0
+12,342,"the spectra were decomposed using pahfit ( smith et al .
+ 2007 ) , which we find to yield pah equivalent widths ( ew ) up to @xmath1 times larger than the commonly used spline methods . based on correlations between pah , continuum and emission line properties and","[1, 0]",0
+12,376,"this non - minimal embedding of the seesaw leads to observable lfv effects in the right - handed sleptons sector , contrary to minimal models where these are found to be totally negligible .","[1, 0]",1
+12,136,"the time evolution of the wave packet , corresponding to the scattering problem setup , leads to the appearance of the localized state at large time .","[1, 0]",0
+12,81,"criteria for the principality of these curves are obtained .
+ new formulas for their multiplicity , intersection numbers and order of singularity at the singularities of @xmath6 are given .","[1, 0]",0
+12,403,"are strongly suppressed . as a result of quantum statistical effects , in particular at lower temperatures , magnitude of density fluctuations grows larger than those calculated in semi - classical approximation .","[1, 0]",0
+12,359,"a more complete theoretical description including charge correlations is developed here by an extension of the hypernetted chain approximation , developed for bulk fluids , to the confined charges .","[1, 0]",0
+12,55,"a similar result is found for the husimi lattice , which may explain the difference between the collapse transition for isat s and for interacting self - avoiding walks on the square lattice . for @xmath6 and @xmath7 (","[1, 0]",0
+12,195,"the dynamics of the field depends on the value of @xmath5 near the extremum , which describes the potential curvature . for quintessence models , when @xmath6 at the potential minimum , the equation of state parameter @xmath7 evolves monotonically , while for @xmath8 , @xmath7 has oscillatory behavior . for phantom fields ,","[1, 0]",0
+13,446,"This hot cereal is pretty delicious - the consistency is very similar to regular oatmeal. I added sliced banana and blueberries to it. However, I am giving this product 4 stars because it is quite expensive, and even using a measuring cup was unable to produce the number of servings stated on the bag. I was able to create my own paleo hot cereal with very similar results for half the cost. For my purposes, this product was great for taking along on a road trip for a quick breakfast.","[1, 0]",1
+13,19,"This product is cheaply made, some of the parts are missing, and the directions do not help at all. The product is not as represented both in the description and what I received is nothing like what i see in many of the customer photos. It would cost me more to return this than I paid for it, so in the trash it's going.","[1, 0]",0
+13,439,Excellent!  The best!  I use it with my beef and broccoli and to throw in chicken and rice soup. It's also great by itself. Yum!,"[1, 0]",1
+13,240,I gave this is product months of testing before deciding this was an absolute waste of my money. I wouldn't mind the time it takes to complete if it lastest more than a couple days. The product is thick and peels up easily then they just pull off after that.,"[1, 0]",0
+13,113,needed a new cable  new phone =  new cable usb type C  drives me crazy !!  but i needed it for my power bank to work with my new phone,"[1, 0]",1
+13,102,I like the plain look and ability to have my iWatch near me in the bedroom where I can get to it. the feet are sticky so be prepared once you take the plastic off the feet to have it stay there. I'm hoping these don't leave marks. The cable management piece is a bit in the open but I'm working on finding a better solution.,"[1, 0]",1
+13,418,For the price of these I couldn't believe the quality sound that they produced.,"[1, 0]",0
+13,470,"I needed the cord and pieces for the Bluetooth headset we ordered.  Both of these pieces, arrived on time and as I ordered.  However, the licorice is hard as a rock and tasteless!  My husband is a big fan of soft licorice.  The WILEY WALLABY is not what he wanted.  The bag says soft and the product is anything but soft. calling the customer line did help.","[1, 0]",1
+13,235,"My old thinning shears only cut about one out of 100 hairs so I assumed this one would too but I was wrong. They cut a huge chunk of my hair  right on the front side where it is very noticeable. I'll be more careful now, but the damage is done until my hair grows out again...watch out, the shears are more like regular shears. Other than that, both shears are of good quality and I'm happy to have them.","[1, 0]",1
+13,179,Aveeno really knows how to  Moisturize! Their was not one thing in the Sam box I did not love. I believe the prices are right on point and so worth it! I get dry skin in winter and this makes your skin so so smooth the body yogurt love. The sheer hydration lotion on hands not greasy so so soft. I am going to be buying all of these. Totally recommend to anyone with dry skin.,"[1, 0]",1
+13,156,great product.  doesn't get to funky.  I dig it.  can sleep in it for a day or 2 no problem,"[1, 0]",0
+13,420,This was a pretty good case for the money. Buy it's quite a bit louder than I expected.,"[1, 0]",0
+13,407,"This is much higher quality than expected. Doesn't sag like other long extension mounts I've used.<br />It's a bit difficult to extend and retract, but I think that's a good thing so it's not flopping all over.<br />Highly Recommended!","[1, 0]",1
+13,116,UPDATE:  purchased  6/20/18  .....  it only charged a few times fully and now its pretty dead ... what a waste  ive yet to find one that's worth it and will charge for more than a few times !!!<br /><br />(so much for my first review)  so far so good .. so far i have returned 3 of these type  ..im hoping this one will be OK  and will recharge when i need it to really nice looking too and i love that it has a power switch,"[1, 0]",0
+13,114,"im looking for a heavier case and this said purple its more like a ""pink"" color  not happy with it but it'll do for now","[1, 0]",1
+13,12,"Putting it on a night stand drawer or top of headboard.  Just don't try to tighten it up to where it doesn't slip off.  When the husband tightened his up it popped off and cracked the head on the base.  Hope they stand behind the product, we will see?","[1, 0]",1
+13,337,"I needed this for work and it was easy to install, I use it daily.  Have only had it a few weeks but so far, so good.  It comes with a long cord too which is a good feature.","[1, 0]",1
+13,98,"The case does its job. The small lanyard is super handy along with where the hook is located. The only downfall was that the pooh that came with it, fell of randomly at some point.","[1, 0]",1
+13,204,Works great.  No issues with it at all.  Bought one for a friend of mine.,"[1, 0]",0
+13,168,"delivery, not good. But the product is very nice. I would buy again!","[1, 0]",0
+13,142,"I love my leather iPhone case. With room for cards and money, I no longer need to carry a handbag. It's great protection for the phone, and is made of quality leather. U<br />I got it for my iPhone 6, then upgraded to the iPhone 7. The new phone fits, but the camera lens doesn't match up with the case, so I bought the same wallet for the new phone.","[1, 0]",1
+13,442,This is my #1 favorite tea by my #1 favorite tea maker. It is just delicious and the smell is heavenly.,"[1, 0]",1
+13,35,Fell apart right away.  Clamps get in the way of the buttons on iPhone 5,"[1, 0]",1
+13,495,Kraft sure does know there Mac& cheese! I thought I was fix and in love with another brand of preportioned Mac. Until I tried the Kraft. I have had the box before and like but these are delicious kudos. I very much and highly recommend these for all ages. So so scrumptious!,"[1, 0]",1
+13,395,"CIYUPE Tablet Pillow Stand, Tablet Holder Dock for Bed with 6 Viewing Angles, Compatible with iPad Pro 9.7, 10.5,12.9 Air Mini 4 3, Kindle, Galaxy Tab, E-Reader and Books (Grey). It is great at holding tablets and phones at whatever angle of its 6 possible positions is most appropriate. Comfortable to use, takes pressure off hands/wrists when using","[1, 0]",1
+13,328,"To me, this was a waste of money. Not useful on a plane or really anywhere. Too short, once bent, leaving no surface space so phone wants to fall off. Don't buy it. Save your money.","[1, 0]",0
+13,260,Stays on well and the color is perfect. No tugging to put it on.,"[1, 0]",0
+13,347,perfect fit in 3.5 slot. . .the dual holder allows to install extra SSD any time. . . or you can go with a HDD for more storage space,"[1, 0]",1
+13,431,"It works as promised.  I bought mine as a combined item with Echo.  As a stand alone plug, it seems expensive.","[1, 0]",0
+13,274,"My age really shows on my neck and chest area, 60.  not expecting much , but hoping for the best, I purchased the product.  I am slowly seeing a difference and I'm happy with 'slowly'.  I will certainly be getting more and plan to use this neck cream for a long time.  Good stuff!","[1, 0]",1
+13,169,"Great deodorant, but leaves an oily stain on your clothing overtime.","[1, 0]",1
+13,480,"Ever since I discovered salted caramel ice cream, I was in love.  Now I have a second love in Tara's sea salt caramels--wow!!!","[1, 0]",1
+13,14,"Went on perfect. Clean phone with wet wipe, then dry wipe. then microfiber and dust pickup stickers. Pull the tab off and lay the glass screen on the phone. It should go on with the bubbles escaping by itself. Took ten minutes and I have no bubbles or dust under the screen from what I can see.","[1, 0]",1
+13,59,Works well with fingerprint reader and touch screen. But it breaks super easy. Also the first set I got didn't stick to the screen and just popped off like the glue was old.,"[1, 0]",1
+13,449,"A natural ayurvedic remedy for allergies is between 3000-5000mg vitamin C. I take 2-3 of these packets a day with my water and it helps tremendously with allergies. It also helps my iron absorption but do not take with medications since there are small amounts of other vitamins that can interact with meds. Be sure to check with your doctor, first.","[1, 0]",1
+13,496,"The Hormel chicken Alfredo actually surprised me . I thought ""this really isn't to bad. The noodles aren't too soggy which I do not like tastes like Alfredo add your pepper of course. I recommend cheap fast little meal.","[1, 0]",1
+13,133,"I HAVE HAD MY CASE FOR ALMOST A YEAR AND IT LOOKS BRAND NEW . THE CRYSTALS ARE REAL LOOKING AND VERY BRILLIANT CUT , FOR THE GIRLS THAT LIKE FLASHY THIS IS FOR YOU . I AM VERY PLEASED WITH MY PURCHASE","[1, 0]",1
+13,91,"I have a iPhone 6s with the Mophie Reserve case.  This belt clip holster doesn't fit, it is too big and my phone was loose.  The belt clip does look like it is well made, but if you have the same set up as I do it will not fit.","[1, 0]",1
+13,297,Love Otterbox cases. These have protected my 7 & 9 year old's IPods with lots of drops & wear & tear.,"[1, 0]",1
+13,492,"The taste was fine,not any different than what I buy in the grocery store and considering each piece of fruit breaks down to about $4 it wasn't worth it.","[1, 0]",0
+13,135,Soft plastic let's too much moisture get under the cover. Always needing to remove it to dry my watch.,"[1, 0]",1
+13,55,"This product did not fit my smart watch, returned, no problems returned money fast.","[1, 0]",1
+13,305,Don't know why I didn't get one of these years ago..it's saving me $9 a month rental fee i was paying Comcast,"[1, 0]",0
+13,222,When in construction in South Florida ClubMan helps alleviate the inevitable chafing.  My husband has tried others but ALWAYS goes back to Pinaud.  Also the 3 pack is a great price.  shipping was faster than projected.  GREAT DEAL ALL THE WAY AROUND.,"[1, 0]",0
+13,176,The magnetic eyeliner and eyelashes kit was actually a great choice for me first time using magnetic. These lashes were very easy to apply. I gave adhesion 4 stars but that might have been the way I applied eyeliner?? They did stay put except for a little on end so probably me. I love the fact you have choices and easy to remove makeup remover or baby oil. I highly recommend especially if never tried great price.,"[1, 0]",1
+13,373,These batteries during use have a good life. Standby life is poor. They discharge in 7/10 days of standby. For a recreational photographer this limiting.,"[1, 0]",1
+13,402,can change for any holiday or time of year. holding up and fit nice. sime issues with them coming undone but not with all of them.,"[1, 0]",0
+13,160,I love this brand of sugar scrub but this is the first time I tried the lemon and its weird. it also was shipped and left out in the heat causing the package to leak so maybe that was the issue.,"[1, 0]",1
+13,223,I like the easy way I can use these. And because they are in a case they are easy to find.,"[1, 0]",0
+13,310,"Stick great to my desk and provide ample spaces for all of my cords. The color coding is more useful than I thought originally. Since each one has two spots, I had enough for my desk and bed night stand.","[1, 0]",1

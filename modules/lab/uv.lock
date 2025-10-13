@@ -303,20 +303,12 @@ wheels = [
 [[package]]
 name = "booknlp"
 version = "1.0.7"
-source = { editable = "src/booknlp_local" }
+source = { git = "https://github.com/itzTerra/booknlp#7df3b95724f9234ede6c5cda0efd08e886c98cf1" }
 dependencies = [
     { name = "spacy" },
     { name = "tensorflow" },
     { name = "torch" },
     { name = "transformers" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "spacy", specifier = ">=3" },
-    { name = "tensorflow", specifier = ">=1.15" },
-    { name = "torch", specifier = ">=1.7.1" },
-    { name = "transformers", specifier = ">=4.11.3" },
 ]
 
 [[package]]
@@ -5227,7 +5219,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "booknlp", editable = "src/booknlp_local" },
+    { name = "booknlp", git = "https://github.com/itzTerra/booknlp" },
     { name = "colorama", specifier = ">=0.4.6" },
     { name = "datasets", specifier = ">=3.3.2" },
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },

@@ -212,4 +212,11 @@ data/**/*
 !data/to-annotate/**/*
 !data/datasets
 !data/datasets/**/*
+!data/features
+!data/features/**/*
 src/experiments
+data/datasets/concreteness/raw
+data/datasets/concreteness/raw/**/*
+data/datasets/small/backup
+data/datasets/small/backup/**/*
+data/datasets/large/*.parquet

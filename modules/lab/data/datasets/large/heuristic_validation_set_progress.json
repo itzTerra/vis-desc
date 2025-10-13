@@ -1,0 +1,1985 @@
+{
+  "samples": [
+    {
+      "dataset_idx": 2,
+      "example_idx": 1354,
+      "text": "A person is soaring through the air with the help of a parachute.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 240,
+      "text": "A man, a woman and a little girl stand on the beach by the water 's edge dressed in formal attire suitable for a wedding.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 4
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 53,
+      "text": "A lady laid her bicycle on the green lawn as she lies in a red blanket.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 4
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 588,
+      "text": "A man with a pug on a leash bending down to examine merchandise.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 523,
+      "text": "People are working on computers in an office with gray carpet and white walls.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 4
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 478,
+      "text": "A brown dog is bending down trying to drink from a jet of water.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 298,
+      "text": "There are two older ladies in straw hats covered in flowers.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 220,
+      "text": "A lady in a gray shirt sits calmly by her friend at the table.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 1432,
+      "text": "A man flies through the air as a young girl standing on a couch appears to bunch him in the stomach.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 1155,
+      "text": "A group of employees dressed in blue are gathered in front of a building.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 185,
+      "text": "A man is making a \" rock \" gesture while standing on a stool in a crowded bar.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 1252,
+      "text": "Young children and parents splashing around a public fountain.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 897,
+      "text": "A lone man stands on a rocky outcropping and looks out over the wilderness.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 70,
+      "text": "A man with a badge is standing on a wood floor next to a structure.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 2,
+      "example_idx": 66,
+      "text": "A man in a bandanna and a dirty t-shirt, and a woman in a graphic t-shirt, are standing next to a oblong hole with smoke coming out.",
+      "possible_scores": [
+        4,
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 52,
+      "text": "Two young woman walking by a fire hydrant, one talking on cell.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 123,
+      "text": "Two large refrigerators and long workstation indicate a commercial kitchen.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 132,
+      "text": "A beautiful blonde woman rides a skateboard across a busy street.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 286,
+      "text": "\na bathroom stall with a toilet and handicapped bar next to it",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 344,
+      "text": "A baby sitting on a kitchen counter above a dish washing machine.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 13,
+      "text": "An individual covers himself under an umbrella on a rainy day.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 318,
+      "text": "A young man is waiting on a table of people at an asian restaurant.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 111,
+      "text": "A restaurant kitchen stocked with stainless steel appliances.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 407,
+      "text": "Two children playing in the grass, with animals grazing in the background.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 371,
+      "text": "Black and white public bathroom stall with toilet facilities",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 400,
+      "text": "Large group of people standing in a crowd while some of them take pictures. ",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 308,
+      "text": "a bathroom with a white trash can, toilet, and a white sink.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 240,
+      "text": "A man brushing his teeth with a dinosaur head in front of a bathroom mirror.",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 124,
+      "text": "A bathroom with wooden wall panelling and white sink and toilet. ",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 3,
+      "example_idx": 255,
+      "text": "A collection of pictures showing the before and after of a bathroom remodel",
+      "possible_scores": [
+        3,
+        2
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 333,
+      "text": "todd stepped in some dog poo at the dudes' house thanksgiving 2006",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 155,
+      "text": "After a 30 minute soak in 1/2 and 1/2 bleach/ water solution, the once green trees were a yellowy, white.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 460,
+      "text": "2007. Rustic barn along mountain road near Wytheville Va. Shot with Canon F-1. and nFD 35-105mm f/3.5 lens handheld.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 495,
+      "text": "My son cross over the hanging rope stage. He was holding onto the safety line... Forest Adventure, Singapore",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 3,
+      "text": "It was taken when the season was running out and only this lonely flower was left in the field.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 430,
+      "text": "A beach house in P.M. Note the trunk of the palm tree in the center.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 457,
+      "text": "Ocean Shores Sand castle building festival 2008. Happens in Late July",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 87,
+      "text": "This is actually in Buffalo, not Orlando, but I spotted it out my bus window on the way through.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 396,
+      "text": "A ship aground. Somewhere in the SouthEast Pelopponese, Greece. (Quick shot through a moving bus window.)",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 237,
+      "text": "That's the Masons monument under construction in the background and definitely a stake for the wrought iron fence in the foreground",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 190,
+      "text": "View of the surrounding area from a lounge space in the classroom building. Beijing, China; 11 Jun 2009.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 85,
+      "text": "Called The Eye, this bridge 'opens' like an eyelid by tilting up to let river traffic through..",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 119,
+      "text": "This dog and his owner were having fun on the beach by the Thames at London's South Bank.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 433,
+      "text": "oldest bar in nyc! there's even sawdust on the floor for authenticity.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 4,
+      "example_idx": 188,
+      "text": "The tree goes right through the cafe, right through the table in fact.",
+      "possible_scores": [
+        4,
+        3,
+        2,
+        1
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 61,
+      "text": "Rachel immediately goes to an AIDS clinic to get a rapid swab test, which comes back positive. Devastated by the fact that she may actually be infected with the virus, Rachel then confides in her substitute teacher, Sarah , who has secretly been living with the disease for years.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 52,
+      "text": "Dodge takes Oliver under his wing and instructs him in the unforgiving arts of drug abuse and prostitution. Oliver develops a crush on Dodge and views him as his boyfriend, complicating their friendship.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 214,
+      "text": "It is revealed that she has no underwear on. The gentleman caller then copulates the \"lady\" anally . After a minute or so, the gentleman withdraws and sits back on the sofa.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 55,
+      "text": "All the while Miranda's metaphysical presence is with him. He goes from needing her, to blaming her, being angry at her. But for a long, long time he won't let her go away.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 203,
+      "text": "Things take a turn when Johnny comes to the reluctant realization that supernatural forces are at work on the land and the folklore that haunted his childhood are real.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 480,
+      "text": "There he meets the fairies who inhabit this fantasy land and encounters love and hate.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 194,
+      "text": "Appearances are deceptive as this idyllic vision is spoiled by the traumas his teenage son endures. Elsewhere in the community, Paul Marteau , arrives with a troubled past and uncertain future.Parc, by Arnaud des Palli\u00e8res France in London.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 342,
+      "text": "A horse trainer, who is having temporary troubles, is hired by his former boss to travel to Mexico to kidnap his former boss' young son from his ex-wife.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 152,
+      "text": "--&#62;  *Peter Haber as Martin Beck *Mikael Persbrandt as Gunvald Larsson *Stina Rautelin as Lena Klingstr\u00f6m *Per Morberg as Joakim Wers\u00e9n *Rebecka Hemse as Inger  *Michael Nyqvist as John Banck *Anna Ulrica Ericsson as Yvonne J\u00e4der *Peter H\u00fcttner as Oljelund *Lennart Hjulstr\u00f6m as Gavling *Lasse Lindroth as Peter",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 459,
+      "text": "Christopher will concentrate on Process 97. Briggs is alarmed because he is aware that Process 97 is America's most closely guarded secret. When the Japanese attack Pearl Harbor in December 1941, the United States enters the war.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 25,
+      "text": "Before they arrive, the unmarried set show up, followed by the fiancees of their brothers. The ladies start hugging and kissing the unsuspecting brothers.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 415,
+      "text": "Greatly disturbed by this development,Timoteo leaves and goes home to his pregnant wife. Some months later, Timoteo, shopping with his wife who is about to deliver, spots Italia in a crowd and rushes after her in the rain.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 3
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 261,
+      "text": "Further studies reveals Andromeda is actually a sulfur-based compound. A set of tests with phages reveals that one phage has the ability to kill Andromeda.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 303,
+      "text": "Eddie rapidly integrates in the parisian Jewish community and rises as a sales manager. He continues his masquerade of pretending to be Ashkenazi Jew in order to woo his boss's daughter .",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 5,
+      "example_idx": 72,
+      "text": "It seems that the capsule returned to Earth and landed in Chile, and that Kharlamov journeyed to the Soviet Far East by way of Polynesia and China, yet feared capture on his return.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 214,
+      "text": "They next journey to the enigmatic charted system, which turns out to be Alpha Centauri. They find a remnant of the inhabitants of Earth, who many millennia ago were resettled there.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 46,
+      "text": "En route, the party is captured by de Bracy and his companions and taken to Torquilstone, the castle of Front-de-Boeuf. However, the swineherd Gurth, who had run away from Rotherwood to serve Ivanhoe as squire at the tournament and who was recaptured by Cedric when Ivanhoe was identified, manages to escape.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 315,
+      "text": "Pregnant, she lost her job and had to give birth in a refuge for the indigent. Resolved that their child should have a good life, she spent nights with or became mistress of various rich men but would never marry because her heart belonged always to the writer.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 169,
+      "text": "With the help of the patchwork girl Scraps, Bungle the Glass Cat (another of Dr. Pipt's creations), the Woozy, Dorothy, the Shaggy Man, the Scarecrow, and the Tin Woodman, Ojo gathers all of these supplies but the left wing &mdash; the Tin Woodman will not allow any living thing to be killed, even to save another's life.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 469,
+      "text": "They make for the French coast and land on a beach near Calais. They explore along the beach and find a cave boobytrapped with some devices intended to scare off intruders.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 356,
+      "text": "All the people involved know that Nichole is lying but cannot do anything about it. Only her father knows why, but he is unable to publicly reveal his daughter's motives.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 351,
+      "text": "When he learns of Hannay's experience of South Africa, he invites him to address an election meeting that afternoon. Hannay's speech impresses Sir Harry, and Hannay feels able to trust him with his story.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 491,
+      "text": "Kwei-lan's brother and his wife Mary go to China to see if they can convince his family to accept her. The family will not accept her, and tell him to give her money and send her back to America.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 206,
+      "text": "The novel is set in a complex, Balkanized world, and Friday is caught up in several civil disturbances during the course of her travels. She reaches her employer's home base safely but is soon displaced.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 329,
+      "text": "It is only when they reach Paris that they encounter vampires like themselves - specifically, the 400-year-old vampire Armand and his coven, the Th\u00e9\u00e2tre des Vampires.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 111,
+      "text": "A Commentary on the Unix Operating System starts with notes on Unix and other useful documentation (the Unix manual pages, DEC hardware manuals and so on), a section on the architecture of the PDP-11 and a chapter on how to read C programs.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 400,
+      "text": "In contrast with upper-class officers like Sassoon, with whom Rivers has been able to form warm friendships, he has always found Prior to be a thorn in his side.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 39,
+      "text": "Unbeknownst to Siona, Nayla &mdash; her close friend and de facto bodyguard &mdash; worships Leto, and is under orders to protect and obey Siona in all things while reporting on her rebellious activities.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 25,
+      "text": "He is still able to have sexual intercourse but is sterile due to an infection received in Burma. They lie to the family about Angel's parentage, claiming that Homer decided to adopt him.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 6,
+      "example_idx": 373,
+      "text": "The main concern for a prince should be war, or the preparation thereof, not books. Through war a hereditary prince maintains his power or a private citizen rises to power.",
+      "possible_scores": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 133,
+      "text": "\"I beg your pardon, Dr. Lanyon, What you say is very well founded; and my impatience has shown its heels to my politeness. I come here at the instance of your colleague, Dr. Henry Jekyll, on a piece of business of some moment; and I understood\u2026 I understood, a drawer\u2026\"\n\"There it is, sir,\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 438,
+      "text": "\"Thy way thyself must find, Thou misdirecting churl! Il balen No comprehend.\"\n\"Sevastopol! \u03a4\u03c5\u03c0\u03c4\u03c9, \u03c4\u03c5\u03c0\u03c4\u03bf\u03bc\u03b1\u03b9, \u03a4\u03c5\u03c0\u03c4\u03c9, \u03c4\u03c5\u03c0\u03c4\u03b5\u03b9\u03bd, \u03c4\u03c5\u03c0\u03c4\u03c9\u03bd.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 167,
+      "text": "\"Mother, you're not eating a thing! You really must eat a little.\"\n\"I guess I'm tireder than I thought I was, dear. I think I've got a cold coming on, too. I'll lie down again after dinner, and by to-morrow I'll be as chipper as a sparrow. The turkey's wonderful, isn't it? I'll have some, cold, for supper.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 47,
+      "text": "\"Yes, he shall have his opportunity. If he attacks me I will respond.\"\n\"The Judge is still a little used up by his campaign work, and will not get out for a day or so; but when he does get out, you want to be on the alert.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 486,
+      "text": "\"I bought a new milk pail the other night. I know I did, Mary was kicking for one a month ago, and I went after it the night I met Ruben O'Khayam. Now what the nation did I do with that pail?\"\n\"I have wondered mysel', This is what ye brought home, Jimmy.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 136,
+      "text": "\"We'll have something for lunch, that we never have at home, shall we?\"\n\"Oh, yes! Something--something queer, and different, and not so very healthy!\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 492,
+      "text": "\"I want to talk with ye,\"\n\"I am almost dead for sleep, There has been no rest for anyone here. What do you think?\"\n\"I think she will live, In spite of your neglect, and my cowardice, I think she will live to suffer more frae us.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 58,
+      "text": "\"It's quite the nastiest country I ever saw, It looks as though an earthquake had shaken it open and had forgotten to close it again. Believe me, it is most unsafe and dangerous. Your pony might stumble--\"\n\"It's no more dangerous than riding across our prairie at dusk when you can't see the barbed wire. You are the last person in the world to find fault because a thing is dangerous,\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 218,
+      "text": "\"Whew!\"\n\"Gott im Himmel! I had forgotten that America was like that.\"\n\"But America IS like that. And Teddy, we're going to make it sit up and take notice.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 161,
+      "text": "\"I thought like I'd get her a chamber set,\"\n\"Is this for Minnie Mahler, of Centerville?\"\n\"Yes; she gets married Sunday.\"\n\"I sold a chamber set for that wedding yesterday. And a set of dishes. But I don't think she's got a parlor lamp. At least I haven't sold one. Why don't you get her that? If she doesn't like it she can change it. Now there's that blue one with the pink roses.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 259,
+      "text": "\"Miss 'Bell needn't strut so big; she got short nappy har's well's I,\"\n\"She tink she white when she cum here, wid dat long har ob hers,\"\n\"Yes, missus make her take down her wool, so she no put it up to-day.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 364,
+      "text": "\"Luck's with us at last! Shall I help you, dad?\"\n\"No; I think I'm all right. Go ahead.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 474,
+      "text": "\"I wonder if ye have na found a glib tongue and light feet the least part o' matrimony, Why in God's name couldna ye have married me? I'd like to know why.\"\n\"Dannie, donsh forget the milk pail. All 'niciate good now.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 209,
+      "text": "\"I guess Fenger's pleased, all right, if telegrams mean anything. Not that I know they're from him. But he said--\"\n\"He's here. Fenger's here.\"\n\"In New York?\"\n\"Yes.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 7,
+      "example_idx": 92,
+      "text": "\"I want to go home, I'm worried about my wife\u2014I can't wait any longer.\"\n\"Why the hell didn't you say so before? I thought you didn't have any home to go to.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 397,
+      "text": "The Mint felt it improper to suspend coinage of a coin authorized by Congress , and issued proof coins ( generally a few dozen to the tiny numismatic community ) from specially @-@ polished dies , also producing enough circulation strikes so that the proof coins would not be unduly rare .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 381,
+      "text": "The officers at the Philadelphia Mint , including Chief Coiner Franklin Peale , were mostly the friends and relations of Director Patterson . The outsider in their midst was Chief Engraver James B. Longacre , successor to Gobrecht ( who had died in 1844 ) . A former copper @-@ plate engraver , Longacre had been appointed through the political influence of South Carolina Senator John C. Calhoun .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 226,
+      "text": "The most common of these signs is a flag flying from a pole . Similar objects were placed at the entrances of temples , representing the presence of a deity , throughout ancient Egyptian history .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 724,
+      "text": "Jordan also starred in the 1996 feature film Space Jam as himself . In 2006 , he became part @-@ owner and head of basketball operations for the then @-@ Charlotte Bobcats , buying a controlling interest in 2010 . In 2015 , as a result of the increase in value of NBA franchises , Jordan became the first billionaire NBA player in history and the world 's second @-@ richest African @-@ American .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 289,
+      "text": "\" Guitarist Jeff Hanneman has since said that South of Heaven was the only album the band members discussed before writing the music . Aware that they \" couldn 't top Reign in Blood \" , and that whatever they recorded would be \" compared to that album \" , he believed they \" had to slow down \" , something Slayer had never done on albums before , or since .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 758,
+      "text": "He also shot 45 % from the field , and 82 % from the free throw line . Even though he turned 40 during the season , he scored 20 or more points 42 times , 30 or more points nine times , and 40 or more points three times .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 737,
+      "text": "The Bulls defeated the New York Knicks and the Philadelphia 76ers in the opening two rounds of the playoffs . They advanced to the Eastern Conference Finals where their rival , the Detroit Pistons , awaited them .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 701,
+      "text": "The Metropolitan Police told The Guardian that it was necessary to deploy plain @-@ clothed officers to \" gather information to provide us with a relevant and up @-@ to @-@ date intelligence picture of what to expect \" . It was the first time that FITs are known to have been deployed in plain clothes .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 76,
+      "text": "Barker 's mother died in 1960 , and , in 1961 , Barker moved from 23 The Waldrons to 6 Duppas Avenue in Croydon . She restored a maisonette in Storrington , Sussex , England , bequeathed by her friend Edith Major , and named it St. Andrew 's . After taking up residence , her health began to deteriorate . She was in and out of nursing and convalescent homes , and tended by relatives and friends .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 656,
+      "text": "As of April 2016 , Devin is in the middle of recording the seventh DTP album , entitled Transcendence at Armoury Studios in Vancouver .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 687,
+      "text": "There was a general agreement that the new building should also have a cultural as well as commercial purpose . While the Jewish Community of Zagreb envisioned a modern design reminiscent of the original synagogue , the Bet Israel advocated building a replica of the original synagogue 's facade , perceiving it as having a powerful symbolism . Opinions of architects , urban planners , and art historians were also divided along similar lines .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 184,
+      "text": "Fernandez has also signed on to appear in three other projects \u2014 Rohit Dhawan 's Dishoom opposite Varun Dhawan and John Abraham as a part of three @-@ film deal with Nadiadwala Grandson Entertainment , Remo D 'Souza 's Flying Jat opposite Tiger Shroff , and in an Indo @-@ Chinese film starring opposite Abhay Deol , Amitabh Bachchan , and Jackie Chan titled Gold Struck .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 577,
+      "text": "The island covers about 10 km2 ( 3 @.@ 9 sq mi ) at high tide and about 16 km2 ( 6 @.@ 2 sq mi ) at low tide . Gharapuri is small village on the south side of the island . The Elephanta Caves can be reached by a ferry from the Gateway of India , Mumbai , which has the nearest airport and train station . The cave is closed on Monday .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 786,
+      "text": "Jordan is one of the most marketed sports figures in history . He has been a major spokesman for such brands as Nike , Coca @-@ Cola , Chevrolet , Gatorade , McDonald 's , Ball Park Franks , Rayovac , Wheaties , Hanes , and MCI . Jordan has had a long relationship with Gatorade , appearing in over 20 commercials for the company since 1991 , including the \" Be Like Mike \" commercials in which a song was sung by children wishing to be like Jordan .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 8,
+      "example_idx": 265,
+      "text": "In a hybrid image , the head represents the original form of the being depicted , so that , as the Egyptologist Henry Fischer put it , \" a lion @-@ headed goddess is a lion @-@ goddess in human form , while a royal sphinx , conversely , is a man who has assumed the form of a lion .",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 93,
+      "text": "Attacking Labour's pledge, he added: \"I think it tells us everything we need to know about the Opposition - that three-and-a-half years out they're willing to spray around commitments without any idea of what it's going to cost them.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 265,
+      "text": "Ecommerce firm Alibaba tumbled 6.5% after its largest investor announced a plan to sell its shares. Japan's SoftBank said it would sell $7.9bn worth of Alibaba shares to pay off some of its own debt.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 217,
+      "text": "Newport have also re-signed former club captain David Pipe.\nDefenders Mark O'Brien and Sid Nelson have also arrived at Rodney Parade.\n\"I am delighted to confirm I have signed a contract back at Newport County, the club I enjoyed so much success with,\" Reid wrote on Facebook.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 155,
+      "text": "It was the first major televised debate following the announcement of David Cameron's draft EU reform proposals.\nQuestion Time producers tweeted: \"We were making plans for @Nigel_Farage - but travel problems mean he'll be replaced by @paulnuttallukip. #bbcqt.\"",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 363,
+      "text": "In US terms that would equate to the loss of federal revenue of between $340bn and $690bn every year.\nPointedly, Mr Obama says that 2.2 million Americans now work in jobs connected to energy efficiency - double the 1.1 million that work in fossil fuel production and electricity generation.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 393,
+      "text": "The Arthur Smith Show, on WBTV, was syndicated across the US and ran for 32 years.\nHe was nicknamed Arthur \"Guitar Boogie\" Smith after the title of his breakthrough tune, which became a hit around the world.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 319,
+      "text": "It is believed to be one of the first of its kind in the North East and set the standard for following ones.\nThe dig, by archaeologists from Durham University and volunteers from the Auckland Castle Trust, was in advance of a \u00c2\u00a310m scheme to grow fruit and vegetables under glass domes in the walled garden to supply a new on-site restaurant.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 126,
+      "text": "Ali Fazeli, head of the Iranian chamber of commerce, confirmed that the Iranian KFC has no connection with KFC in the US, according to ILNA press agency.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 391,
+      "text": "Prosecutor Julius Capon said: \"She in essence persecuted a number of passengers on the tram, subjecting them to some disgusting racial abuse.\"\nThe things she said included \"you're not English\", \"none of you are English\" and \"get back to your own countries\".",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 184,
+      "text": "Graeme Reid, Project Manager for the M8 M73 M74 Motorway Improvements Project, said: \"Transport Scotland is working with the contractor to ensure these works are completed as quickly as possible.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 478,
+      "text": "It is thought he may have squeezed through the pipework in the block of flats.\nFiona Thorburn, of the Scottish SPCA, said: \"The lady was just about to have her dinner and got a real fright when she reached into the drawer to grab cutlery and found Zak curled up on the knives and forks.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 437,
+      "text": "Mr Davutoglu said their main objective was to \"protect the innocent civilians of Syria\".\nIn Rome on Thursday, Mr Kerry promised direct aid to Syrian rebels in the form of food and medical supplies, but not the weapons they say they need to win.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 441,
+      "text": "Mandy Haeburn-Little, director of summit organiser the Scottish Business Resilience Centre, said: \"Everyone loves a bargain. But people need to stop to think about the true cost of fake goods. Can you be confident that those cheap cigarettes, perfumes and alcohol are actually safe?",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 34,
+      "text": "A letter lodged with the council states that RWE's new plans for the site take into account the Scottish government's concerns about the Rowantree development.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 9,
+      "example_idx": 131,
+      "text": "The French daily Le Parisien reports that Laachraoui kept watch over the four Frenchmen with Mehdi Nemmouche, the jihadist accused of killing four people at the Brussels Jewish Museum in May 2014. Nemmouche is now in Belgian custody.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 9,
+      "text": "service snarl date november 14 2008i stayed mandarin oriental new york previously pleasant stay, time typified attitude maitre d cocktail lounge, asked seats told arrogant superior demeanor twenty-five minute wait, despite tables obviously vacant, told wait bar did, thirty minutes later maitre d having come approached told wait, tables open, finally hour later having heard maitre d left, noted tables lounge vacant, attitude staff lucky, prices economy continue attitude lucky,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 102,
+      "text": "classy indulgence awesome experience, staff n't chocolates left day complimentary bottles water, travelling south america just little bit pampering needed perfectly located close, nice end town midtown believe used lingo, food really great, really exceptional cheeses husband said wine pretty great, perfect snacks lunch dinner, just loved place, bought mug remember time, thank staff making ny trip remember, just aware prices upper end ny hotels expensive not classy,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 127,
+      "text": "loved huntington recently stayed huntington hotel trip girlfriends, happily surprised quaint decor elegant atmosphere hungtington historic location, staff friendly accomodating accomodations just pleasant,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 88,
+      "text": "awesome hotel stayed night banks mansion treat, clean close major attractions, room small room n't europe, bathroom room clean comfortable mattered, free mini bar breakfast morning awesome, definitely stay banks mansion,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 22,
+      "text": "wonderful experience mayfair trip england friends warned small rooms high cost, true london expensive excellent value chesterfield mayfair hotel, room appointed average size 2 twin accomodation, bathroom luxurious turn service english breakfast included 300.00 day, staff n't nicer mayfair beautiful neighborhood adjacent hyde park walking distance buckingham palace picadilly public transportation, n't miss national gallery nearby restaurant cafe crypt,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 72,
+      "text": "hit high notes ease super clean super stylish super service, great location walking city, not big touristy plaza quiets night, upgraded no extra charge 6th floor suite loved, great subdude color scheme flat scree tv room good sized bathroom need seperate tub shower modern showerheads stay,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 194,
+      "text": "madrid july just arrived staying ateneo, location excellent said previous reviews puerto del sol, asked quiet room given hotel, weather red hot 3* hotel air conditioning great, area does lot prostitutes strange seeing 10am did n't particularly bother, rooms large bathroom beds really comfortable absolutely no complaints dead fussy, breakfast day n't bad 6 euros, sure use hop bus round main sights,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 167,
+      "text": "shame really lovely hotel location not better air conditioning does n't work properly, problem just revealed hotel opened october spring/summer, complained told german way air conditioning utter nonsense course, hot sleep properly god know like midsummer, told people complained n't just problem room,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 126,
+      "text": "noisy pretentious stayed nights tour italy/france, say favourite hotels stayed, firstly room road main train station woken times hours numerous trains leaving/arriving despite having set earplugs, walls wafer clearly hear neighbours conversations using bathroom, laughed hotel brochure boasted rooms,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 151,
+      "text": "nothing memorable no complaints close train station basic room nothing fancy, hotels area, lots places grab bite mcdonalds wanting, easy walk places florence, easy bus free map tourist info train station, place clean comfortable, good reasonably priced place,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 46,
+      "text": "old fashion okay just came pr stayed esj tower location great hotel self old fashion needs renovation rooms okay bathroom fixtures 1980's.the good thing valentine weekend fiance did n't really care busy, second time pr time not esj tower belive,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 87,
+      "text": "kind regencia doubt inspiring hotel experiences, property beautiful maintained staff really does need, absolutely recommend amazing place,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 45,
+      "text": "unique expensive hotel best feature opinion location, really center, furthermore trendy hotel lounge, room view dom, fabulous ask room, clean trendy hip centrally expensive,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 83,
+      "text": "perfect perfect consistent 5 star experience, particularly staff performed glitches, like classical ambiente,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 10,
+      "example_idx": 190,
+      "text": "great hotel, hotel mayflower run establishment friendly helpfull staff, room rates reasonable equipped fridge air en suite bathroom shower bath, arrival guests bottle wine, undergroung parking available approx 10 cars provided free charge, tight space suv struggle no problem average saloon car, free internet access computers available use guests, literatue advice freely available hotel, bush street 10 mins walking heart city trams buses taxi closer, great hotel budget,  ",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 171,
+      "text": "I am a fan of the beer selection, and beer selection only- they have a great mix of really good German beer and seem to rotate it seasonally. As for the food, it's not fair for me to comment- I just don't care for German cuisine.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 88,
+      "text": "this is a great place for those who enjoy looking at art and an alright place for a student like me to learn about art as a requirement for class. \\n\\nThis gallery was by far... the most attention grabbing because of its electric show... although I didn't understand the concept of it all... I really enjoyed my time there... I got some great photos from the trip... so it was a worth that much :)",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 232,
+      "text": "They serve THE BEST roti canai!! MUST EAT!! Highly recommendeddddddddddddddddddddddddd!!!!!!!!!!!!!!!!!!!!!!!!!",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 184,
+      "text": "The only really great thing I can say about Rock Bottom is their location, it was perfect right before going out on a Friday night, but that's it.  Their menu is WAY overpriced, with nothing really great on it.  I just got the nachos (found as an appetizer) and my friend got the burger.  The nachos were overcooked and semi-stale.  The beer was decent, it's just draft beer here.  Service was good and the atmosphere was fine.  But I don't think I'll be going back anytime soon.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 136,
+      "text": "Two Words: Frozen Cosmos\\n\\nYou need no other motivation to go to Harris' (although, the food and service is good too)",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 273,
+      "text": "The worst apartment I've ever lived in! I've only been here 2 months and I'm miserable. If you are thinking of renting here DON'T! The apartment staff has been rude and have harasses us 5 times in 2 months! They have also entered out apartment on two separate occasions without our consent. If you are considering living here I highly encourage you to look elsewhere.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 126,
+      "text": "This is a great local place for the neighborhood. There aren't many general shops or convenience stores within walking distance, so Rolliers is my go-to store. Their employees (beyond the local teens at the registers) are very friendly and knowledgeable. I've never had any problems finding plumbing, storage, or cleaning supplies.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 2
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 115,
+      "text": "Yes the pizza is the best in the burgh.  But don't don't forget the wings.  They also have the best wings in the burgh.  They don't deliver.  They don't have to.  I'd drive for miles.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 72,
+      "text": "This spot was the light of my life for about 3 solid weeks. From the first bite I could tell that parting ways with Pittsburgh would be heartbreaking. After driving out of pittsburgh and paying my friend for his leftover half a sandwich, I knew that id made a special connection. To that bacon egg and cheese waiting for me, I miss xou and cant wait to hold xou again.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 43,
+      "text": "Had lunch with my wife. The quality of the sushi was quite good. My wife had some tempura that was fabulous. Service was friendly and quick. We really enjoyed our lunch. We will be back.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 163,
+      "text": "Love their coffee.\\nThey need to add help in the morning.\\nWith all the moms and high school kids ordering double latte whatever's there is a line to the door from 7:45 to 9:00.\\nI'm not going to wait for ten minutes for a cup of plain coffee.\\nUsually buy beans there and make at home. But now when I want to stop in to grab a cup to go, I go elsewherel\\nThey should have someone who only takes straight coffe orders. They would get more business.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 159,
+      "text": "Its americanized, but pretty tasty! I love the fried rice and usually just get that. We were getting takeout once and waited at the bar, and the bartender gave us free tastes of the lychee cocktail while we waited! And that was tasty too!\\n\\nIts also never crowded, its quiet and the service is consistently not bad. \\n\\nAll that being said though, there isn't really anything special about this place. Its just kind of...eh... Best as take out.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 29,
+      "text": "Worst climbing gym I have ever been to. Customer service was a joke. Wall appears as if a boy scout went ham with a few sheets of plywood back in the 80s and then did nothing since then. Holds are prehistoric and grimy. Setting is subpar. Insurance doesn't allow for people who can't belay to be belayed? Better off climbing the outside of the building for a good pump..",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 234,
+      "text": "My man does it again.  Have taken 5 jackets to him now to tailor.  He has advised me on brands to buy that fit my build, told me to pass on tailoring pieces that will never fit me correctly, and repeatedly deliver quality work.  Highly recommend.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 11,
+      "example_idx": 14,
+      "text": "Pass on this place, there are better restaurants mere feet away.\\n\\nThe menu here is too large, which is a sure sign none of the food is going to be good.  And, its not good.  Some of the salads are alright, but its just not good food.\\n\\nThe service is friendly and prompt, but the beer is over priced.  They do have a good selection though.\\n\\nThis place is open late if you need a bite to eat, but there are so much better options out there.",
+      "possible_scores": [
+        2,
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 487,
+      "text": "the model allows the exact solution in the framework of the kinetic equation . the static current response in the second order of electric field \n is obtained .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 60,
+      "text": "the accretion histories may differ dramatically . \n high - mass stars build up in the central parts of dense , cluster - forming cloud regions . \n they begin to form in the early phases of cluster evolution , and continue to grow at a high rate until the available gas is exhausted or expelled by feedback .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 85,
+      "text": "this allows us to obtain simple analytic expressions for the pulse propagation properties using a generalization of the binary collision approximation introduced in our earlier work [ phys .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 347,
+      "text": "the solution is asymptotically rn - ads in the uv and ads@xmath1 in the ir . \n we discuss the thermodynamical aspects of the solution . \n the fermionic susceptibilities are shown to deviate from the free fermionic limits at asymptotic temperatures despite the asymptotically free nature of the gauge coupling at the boundary .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 88,
+      "text": "we show that this possibility is severely constrained by primordial nucleosynthesis , stellar evolution and the thermalization of the cosmic microwave background .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 445,
+      "text": "there is no need for an additional contribution from hard processes usually considered in the models based on the number of the nucleon participants .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 378,
+      "text": "the structural parameters of our simulated disks settle down quickly , and after redshift @xmath0 the galaxies evolve to become only slightly flatter .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 238,
+      "text": "the lamb shift hamiltonian is diagonal in the singlet - triplet basis , and results in a singlet - triplet energy splitting physically indistinguishable from an exchange interaction .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 329,
+      "text": "the aim is for proof engineers to reason about the full semantics of real - world systems code productively and equationally , while retaining the interoperability",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 34,
+      "text": ", produced by the adiabatic growth of dm around pregalactic imbhs , would be bright sources of gamma - rays , which could be easily detected with large field - of - view gamma - ray experiments such as glast , and further studied with smaller field - of - view , larger - area experiments like air cherenkov telescopes cangaroo , hess , magic and veritas .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 219,
+      "text": "a number of statistical algorithms are investigated for computing secondary uncertainty . \n numerous challenges such as loading large data onto hardware with limited memory and organising it are addressed .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 217,
+      "text": "then we move in section 2 to a presentation of cancellation diagrams and show how they can be used computationally . in section 3 we give a formal algebraic presentation of the concept of _ group computation structure _ , which is based on the standard notions of free group and conjugacy .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 261,
+      "text": "the object allows us to study accretion and disk physics at the extreme and can be seen as free - floating analog of accreting planets that orbit stars .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 293,
+      "text": "the difference between the bohmian velocity of the unperturbed state and the measured one is predicted to be much smaller than @xmath0 in a large range of parameters .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 12,
+      "example_idx": 141,
+      "text": "we find an explicit solution of the bfkl equation for the octet channel for arbitrary momentum transfers and investigate the intercepts of the regge singularities in this channel . as an important result we find that the universal collinear and infrared singularities of the bds formula are not affected by this regge - cut contribution .",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 314,
+      "text": "Everything works great on the hub with my Samsung Galaxy Pro S5e.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 487,
+      "text": "I'm buying more because they are so darn good!  They also have a mocha caramel that is delicious.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 5,
+      "text": "My son loves his camo case! It is a great value & protects the phone from the normal wear & tear of a pre teen!",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 383,
+      "text": "This is the second one of these I have purchased over the years.  I workout a lot and my Ipod goes with me every time.  This case stands up well to a lot of use.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 406,
+      "text": "If your kids throw things this will not save the remote.<br />We have dropped it a few times and its fine. But when it was thrown at the stairs it still cracked.<br />Basic protection, but not enough to save from angry children!",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 64,
+      "text": "Was difficult to get on my iPhone 14 plus.  Once it was on the phone, the touch screen didn't work properly.  It would take multiple \".touches \" to get the screen to recognize the \"touch\".<br /><br />It appears that this case would be protective.  It isn't flimsy.  It looked nice.<br /><br />Very difficult to remove.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 384,
+      "text": "The ear buds take a little getting used to  -  but the music quality is OUT OF THIS WORLD!!  Awesome!",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 303,
+      "text": "Awesome product, fits well on my mac. Would definitely recommend.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 424,
+      "text": "It's exactly what is says it is. You connect it to your phone via Bluetooth and it'll play your phone sound over the radio. It automatically connects when in range. The sound quality is good and it's more or less initally easy to figure out how to use",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 151,
+      "text": "I returned this item because it had terrible coverage, similar to using a skin tone primer. The consistency is high in dimethicone/silicone ingredients and very low on pigment.<br /><br />Save your money and buy Kryolan brand makeup instead. Their heaviest coverage covers tattoos and bruises which is exactly what I was looking for.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 434,
+      "text": "It will transfer TV programming to an iMac.  But it requires an app to send the TV programming on the iMac to an iPad on the same WiFi system.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 362,
+      "text": "I use this in conjuction with the HDE VGA RAC/S-Video Adapter: did not have to re-arange any furnishings in my bedroom: this cable allowed me to connect my pc to the tv: good clear picture",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 195,
+      "text": "This product is great for the skin.  I have dryness on my legs and within a day or two my legs were smooth as can be.  I use it right after a shower.  I also really like that it comes with a pump so it's not messy to use.  It smells good too, very light scent.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 1
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 63,
+      "text": "Beautiful paint and stays on very well. Seems durable and protective.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    },
+    {
+      "dataset_idx": 13,
+      "example_idx": 167,
+      "text": "This sunscreen is fantastic. A lot of zinc oxide sunscreens are greasy or chalky but this has a great consistency - it's thick and rubs in well. I prefer not to use chemical sunscreens because they don't block the full UV spectrum.",
+      "possible_scores": [
+        1,
+        0
+      ],
+      "score": 0
+    }
+  ],
+  "current_idx": 179
+}

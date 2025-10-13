@@ -84,7 +84,7 @@ class BookCollector:
         return slug
 
     def google_search(self, title, authors):
-        query = f'"{title}" "{authors}" publication publish date genre'
+        query = f'"{title}" "{authors}" original publish date'
         search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
         webbrowser.open(search_url)
         return f"Opened Google search for: {query}"

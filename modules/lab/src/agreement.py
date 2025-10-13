@@ -59,7 +59,19 @@ def _extract_rating_from_annotation(
     all_choices = ann.choices_by_from_name()
     rating_choices = all_choices.get(label_name)
     if not rating_choices:
-        return None
+        # Fallback for flattened format: rating may be stored directly at top level
+        # inside ann.raw or ann.extras['flat_source'].
+        raw_rating = None
+        for container in (
+            ann.raw,
+            ann.extras.get("flat_source") if isinstance(ann.extras, dict) else None,
+        ):
+            if isinstance(container, dict) and label_name in container:
+                raw_rating = container.get(label_name)
+                break
+        if raw_rating is None:
+            return None
+        rating_choices = [str(raw_rating)]
     # take first rating value, ignore extras
     choice = rating_choices[0]
     try:

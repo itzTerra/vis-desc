@@ -7,46 +7,77 @@ from typing import Any, Iterable, Sequence
 import json
 
 """Dataclasses & loaders for Label Studio JSON export files.
-
-Label Studio (task export) produces a JSON array of Task objects. Example element:
-
-{
-  "id": 10,
-  "annotations": [
+1. JSON array of Task objects, example element:
     {
-      "id": 12,
-      "completed_by": 1,
-      "result": [
-        {"id": "BSUQwmhPb1", "type": "choices", "value": {"choices": ["0"]}, "origin": "manual", "to_name": "text", "from_name": "rating"},
-        {"id": "9Zkmdi01OC", "type": "choices", "value": {"choices": ["Other"]}, "origin": "manual", "to_name": "text", "from_name": "type"},
-        {"id": "R78cQXkJwM", "type": "choices", "value": {"choices": ["No"]}, "origin": "manual", "to_name": "text", "from_name": "illsuitable"}
-      ],
-      "was_cancelled": false,
-      "ground_truth": false,
-      "created_at": "2025-09-09T07:17:33.241355Z",
-      "updated_at": "2025-09-09T07:17:33.241370Z",
-      "draft_created_at": "2025-09-09T07:16:37.026663Z",
-      "lead_time": 43.107,
-      "prediction": {},
-      "result_count": 3,
-      "unique_id": "91ed19be-a230-4443-a0d8-077aca41c866",
-      "bulk_created": false,
-      "task": 10,
-      "project": 1,
-      "updated_by": 1
+    "id": 10,
+    "annotations": [
+        {
+        "id": 12,
+        "completed_by": 1,
+        "result": [
+            {"id": "BSUQwmhPb1", "type": "choices", "value": {"choices": ["0"]}, "origin": "manual", "to_name": "text", "from_name": "rating"},
+            {"id": "9Zkmdi01OC", "type": "choices", "value": {"choices": ["Other"]}, "origin": "manual", "to_name": "text", "from_name": "type"},
+            {"id": "R78cQXkJwM", "type": "choices", "value": {"choices": ["No"]}, "origin": "manual", "to_name": "text", "from_name": "illsuitable"}
+        ],
+        "was_cancelled": false,
+        "ground_truth": false,
+        "created_at": "2025-09-09T07:17:33.241355Z",
+        "updated_at": "2025-09-09T07:17:33.241370Z",
+        "draft_created_at": "2025-09-09T07:16:37.026663Z",
+        "lead_time": 43.107,
+        "prediction": {},
+        "result_count": 3,
+        "unique_id": "91ed19be-a230-4443-a0d8-077aca41c866",
+        "bulk_created": false,
+        "task": 10,
+        "project": 1,
+        "updated_by": 1
+        }
+    ],
+    "file_upload": "...",
+    "data": {"text": "...", "genre": "Fantasy", "length": 108, "book_id": 546, "segment_id": "546_81"},
+    "created_at": "2025-09-08T06:57:48.712518Z",
+    "updated_at": "2025-09-09T07:17:33.457843Z",
+    "inner_id": 10,
+    "total_annotations": 1,
+    ...
     }
-  ],
-  "file_upload": "...",
-  "data": {"text": "...", "genre": "Fantasy", "length": 108, "book_id": 546, "segment_id": "546_81"},
-  "created_at": "2025-09-08T06:57:48.712518Z",
-  "updated_at": "2025-09-09T07:17:33.457843Z",
-  "inner_id": 10,
-  "total_annotations": 1,
-  ...
-}
 
-We only model the common stable fields explicitly; all unknown/extra keys are preserved
-in an ``extras`` dict for forward compatibility.
+2. JSON-MIN
+    {
+        "text": "...segment text...",
+        "genre": "Western",
+        "length": 291,
+        "book_id": 2066,
+        "segment_id": "2066_1177",
+        "id": 9,                    # task id
+        "label": [ {"start": 0, "end": 81, "text": "...", "labels": ["VDL"]}, ...],
+        "rating": "3",
+        "type": "Character",
+        "illsuitable": "Yes",
+        "annotator": 1,             # annotator (completed_by)
+        "annotation_id": 11,        # annotation id
+        "created_at": "2025-09-09T07:16:02.375850Z",
+        "updated_at": "2025-09-09T07:16:02.375866Z",
+        "lead_time": 105.145
+    }
+
+    Multiple elements with the same ``id`` (task id) but different ``annotator`` values
+    represent multiple annotations of the same underlying task. We reconstruct the
+    canonical Task/Annotation/ResultItem hierarchy from these flat rows.
+
+    The following flat keys are converted into synthetic ``choices`` ResultItems so the
+    rest of the code (e.g., agreement metrics) can continue to rely on
+    ``Annotation.choices_by_from_name()``:
+
+    * rating -> from_name="rating"
+    * type -> from_name="type" (if present and scalar)
+    * illsuitable -> from_name="illsuitable" (if present)
+    * Any boolean-like visual_action -> from_name="visual_action" (if present)
+    * label -> treated as span labels; each unique label in nested objects becomes a
+      synthetic multi-choice under from_name="label" (mainly for completeness).
+
+    The raw flat object is preserved in ``Annotation.extras['flat_source']`` as a copy.
 """
 
 
@@ -322,7 +353,161 @@ def load_tasks_from_file(path: str | Path) -> list[Task]:
                     break
         if not isinstance(data, list):
             raise ValueError("Expected a list of tasks at top-level export")
+    # Detect flattened format: presence of annotator/rating/annotation_id fields and
+    # absence of an 'annotations' list in most objects.
+    if data and all(isinstance(obj, dict) for obj in data):
+        sample = data[0]
+        flat_like = (
+            "annotator" in sample or "annotation_id" in sample
+        ) and "annotations" not in sample
+        if flat_like:
+            return _tasks_from_flat_records(
+                [obj for obj in data if isinstance(obj, dict)]
+            )
     return [Task.from_dict(obj) for obj in data if isinstance(obj, dict)]
+
+
+def _tasks_from_flat_records(records: list[JSONDict]) -> list[Task]:
+    """Reconstruct Task objects from flattened per-annotation records.
+
+    Group by task id (``id`` field). Each record becomes one Annotation.
+    """
+    by_task: dict[int, list[JSONDict]] = {}
+    for rec in records:
+        try:
+            tid = int(rec.get("id"))
+        except Exception:
+            continue
+        by_task.setdefault(tid, []).append(rec)
+
+    tasks: list[Task] = []
+    for tid, recs in by_task.items():
+        # Use first record for task-level fields
+        first = recs[0]
+        task_data = TaskData.from_dict(first)
+        annotations: list[Annotation] = []
+        for r in recs:
+            ann_id = r.get("annotation_id") or r.get("id")
+            try:
+                ann_id_int = int(ann_id) if ann_id is not None else tid
+            except Exception:
+                ann_id_int = tid
+            completed_by = r.get("annotator")
+            try:
+                completed_by_int = (
+                    int(completed_by) if completed_by is not None else None
+                )
+            except Exception:
+                completed_by_int = None
+
+            result_items: list[ResultItem] = []
+
+            def _add_choice(from_name: str, raw_value: Any):
+                if raw_value is None:
+                    return
+                # Support lists or scalars; always stored as list[str]
+                if isinstance(raw_value, list):
+                    choices_list = [str(v) for v in raw_value]
+                else:
+                    choices_list = [str(raw_value)]
+                cv = ChoiceValue(choices=choices_list)
+                result_items.append(
+                    ResultItem(
+                        id=f"{ann_id_int}-{from_name}",
+                        type="choices",
+                        origin="flat",
+                        to_name="text",
+                        from_name=from_name,
+                        value=cv,
+                        raw={"value": {"choices": choices_list}},
+                    )
+                )
+
+            # Known scalar -> choices
+            _add_choice("rating", r.get("rating"))
+            _add_choice("type", r.get("type"))
+            _add_choice("illsuitable", r.get("illsuitable"))
+            # Visual action / boolean style fields (flexible naming)
+            if "visual_action" in r:
+                _add_choice("visual_action", r.get("visual_action"))
+
+            # Span labels: flatten list of objects each with 'labels'
+            lbl = r.get("label")
+            if isinstance(lbl, list):
+                collected: list[str] = []
+                for span in lbl:
+                    if isinstance(span, dict):
+                        labs = span.get("labels")
+                        if isinstance(labs, list):
+                            collected.extend(str(x) for x in labs)
+                if collected:
+                    _add_choice("label", sorted(set(collected)))
+
+            created_at = _parse_dt(r.get("created_at"))
+            updated_at = _parse_dt(r.get("updated_at"))
+            lead_time = None
+            try:
+                if r.get("lead_time") is not None:
+                    lead_time = float(r["lead_time"])
+            except Exception:
+                pass
+
+            ann_extras = {
+                k: v
+                for k, v in r.items()
+                if k not in {"rating", "type", "illsuitable", "visual_action", "label"}
+            }
+            ann_extras["flat_source"] = dict(r)
+
+            annotations.append(
+                Annotation(
+                    id=ann_id_int,
+                    completed_by=completed_by_int,
+                    result=result_items,
+                    was_cancelled=None,
+                    ground_truth=None,
+                    created_at=created_at,
+                    updated_at=updated_at,
+                    draft_created_at=None,
+                    lead_time=lead_time,
+                    prediction={},
+                    result_count=len(result_items),
+                    unique_id=None,
+                    bulk_created=None,
+                    task=tid,
+                    project=None,
+                    updated_by=None,
+                    extras=ann_extras,
+                    raw=r,
+                )
+            )
+
+        tasks.append(
+            Task(
+                id=tid,
+                annotations=annotations,
+                file_upload=None,
+                drafts=[],
+                predictions=[],
+                data=task_data,
+                meta={},
+                created_at=_parse_dt(first.get("created_at")),
+                updated_at=_parse_dt(first.get("updated_at")),
+                inner_id=None,
+                total_annotations=len(annotations),
+                cancelled_annotations=None,
+                total_predictions=None,
+                comment_count=None,
+                unresolved_comment_count=None,
+                last_comment_updated_at=None,
+                project=None,
+                updated_by=None,
+                comment_authors=[],
+                extras={"flat_group_size": len(recs)},
+                raw={"flat_records": recs},
+            )
+        )
+    return sorted(tasks, key=lambda t: t.id)
 
 
 def load_tasks(path_or_paths: Iterable[str | Path]) -> list[Task]:

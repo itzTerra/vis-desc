@@ -3,11 +3,13 @@ import logging
 import asyncio
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from pydantic_core import ValidationError
-from core.schemas import RedisToProcessCtx
-from core.tasks import process_segments
+from core.schemas import Evaluator, RedisToProcessCtx
 from dramatiq_abort import abort
 from redis.asyncio import from_url as redis_from_url
 from django.conf import settings
+
+from core.tools.evaluate import evaluate_segments
+from core.tools.evaluators.random_eval import RandomEvaluator
 
 
 class SegmentConsumer(AsyncJsonWebsocketConsumer):
@@ -96,20 +98,26 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         self._finished_worker_count = 0
 
         # Distribute segments to process across workers
-        segments_per_batch = max(1, len(data.segments) // settings.WORKER_COUNT)
-        worker_batches = [
-            data.segments[i : i + segments_per_batch]
-            for i in range(0, len(data.segments), segments_per_batch)
-        ]
-        for batch in worker_batches:
-            msg = process_segments.send(batch, data.model, self.channel_name)
-            self.processing_msg_ids.add(msg.message_id)
+        # segments_per_batch = max(1, len(data.segments) // settings.WORKER_COUNT)
+        # worker_batches = [
+        #     data.segments[i : i + segments_per_batch]
+        #     for i in range(0, len(data.segments), segments_per_batch)
+        # ]
+        # for batch in worker_batches:
+        #     msg = process_segments.send(batch, data.model, self.channel_name)
+        #     self.processing_msg_ids.add(msg.message_id)
         await self.send_json(
             {
                 "type": "info",
                 "content": "WebSocket authenticated and started scoring segments",
             }
         )
+        # Avoid using dramatiq workers for random eval preview
+        if data.model == Evaluator.random:
+            evaluator = RandomEvaluator()
+            for res in evaluate_segments(evaluator, data.segments):
+                self._pending_messages.append(res)
+            self._finished_worker_count = 1
 
     async def worker_response(self, payload):
         # Accumulate worker responses for periodic batching

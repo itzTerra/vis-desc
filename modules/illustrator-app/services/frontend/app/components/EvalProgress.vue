@@ -16,7 +16,7 @@
         </template>
       </div>
     </div>
-    <button v-if="!isCancelled" class="btn btn-error btn-sm mx-2" @click="$emit('cancel')">
+    <button v-if="!isCancelled" class="btn btn-error btn-sm ms-2" @click="$emit('cancel')">
       Stop
     </button>
   </div>

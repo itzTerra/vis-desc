@@ -2,8 +2,8 @@
   <label class="btn btn-sm btn-circle items-center">
     <div class="swap swap-rotate">
       <input :value="colorMode" type="checkbox" class="theme-controller" checked @click="onToggle">
-      <Icon name="lucide:moon" size="16" class="swap-on" />
-      <Icon name="lucide:sun" size="16" class="swap-off" />
+      <Icon name="lucide:moon" size="20" class="swap-on" />
+      <Icon name="lucide:sun" size="20" class="swap-off" />
     </div>
   </label>
 </template>

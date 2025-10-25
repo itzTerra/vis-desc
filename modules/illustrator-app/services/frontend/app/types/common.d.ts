@@ -18,4 +18,3 @@ export type Highlight = {
   imageLoading?: boolean;
   imageUrl?: string;
 };
-

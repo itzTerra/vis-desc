@@ -1,7 +1,7 @@
 <template>
   <div class="flex bg-base-100">
     <ClientOnly>
-      <div ref="pdfEmbedWrapper" class="flex-grow pdf-wrapper bg-base-200" :style="{ width: `${pdfWidth}px`}">
+      <div ref="pdfEmbedWrapper" class="flex-grow pdf-wrapper bg-base-200" :style="{ width: `${pdfWidth}px`}" data-help-target="viewer">
         <div
           v-for="pageNum in pageNums"
           :key="pageNum"
@@ -54,6 +54,7 @@
       :page-refs="pageRefs"
       :page-height="pdfPageHeight"
       :style="{ width: IMAGES_WIDTH + 'px' }"
+      data-help-target="images"
     />
     <div class="fixed bottom-0 left-0 flex justify-center z-200">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">

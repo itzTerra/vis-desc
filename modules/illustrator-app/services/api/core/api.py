@@ -12,7 +12,10 @@ import json
 
 api = NinjaAPI()
 redis_client = get_redis_client()
-pdf_preprocessor = PdfBookPreprocessor()
+pdf_preprocessor = PdfBookPreprocessor(
+    polygon_x_smooth_max_gap_px=settings.POLYGON_X_SMOOTH_MAX_GAP_PX,
+    polygon_padding_px=settings.POLYGON_PADDING_PX,
+)
 text_segmenter = TextSegmenter((settings.SEGMENT_CHARS_MIN, settings.SEGMENT_CHARS_MAX))
 
 

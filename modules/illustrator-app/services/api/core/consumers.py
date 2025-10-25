@@ -4,10 +4,12 @@ import asyncio
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from pydantic_core import ValidationError
 from core.schemas import RedisToProcessCtx
-from core.tasks import process_segments
+from core.tasks import process_segment_batch
 from dramatiq_abort import abort
 from redis.asyncio import from_url as redis_from_url
 from django.conf import settings
+
+from core.tools.evaluate import EVALUATOR_TO_BATCH_SIZE
 
 
 class SegmentConsumer(AsyncJsonWebsocketConsumer):
@@ -18,7 +20,7 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         # Batching related attributes
         self._pending_messages: list[dict] = []
         self._flush_task: asyncio.Task | None = None
-        self._finished_worker_count = 0
+        self._finished_batches = 0
 
     async def connect(self):
         self.logger.info(f"WebSocket connected with channel name: {self.channel_name}")
@@ -93,16 +95,18 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
             return
 
         self.authenticated = True
-        self._finished_worker_count = 0
 
         # Distribute segments to process across workers
-        segments_per_batch = max(1, len(data.segments) // settings.WORKER_COUNT)
+        batch_size = EVALUATOR_TO_BATCH_SIZE.get(data.model, 32)
         worker_batches = [
-            data.segments[i : i + segments_per_batch]
-            for i in range(0, len(data.segments), segments_per_batch)
+            data.segments[i : i + batch_size]
+            for i in range(0, len(data.segments), batch_size)
         ]
-        for batch in worker_batches:
-            msg = process_segments.send(batch, data.model, self.channel_name)
+        self._finished_batches = 0
+        self._batches_to_process = len(worker_batches)
+
+        for i, batch in enumerate(worker_batches):
+            msg = process_segment_batch.send(batch, i, data.model, self.channel_name)
             self.processing_msg_ids.add(msg.message_id)
         await self.send_json(
             {
@@ -114,18 +118,28 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
     async def worker_response(self, payload):
         # Accumulate worker responses for periodic batching
         content = payload["content"]
-        if content.get("type") == "segment":
-            self._pending_messages.append(content["content"])
-
-        if content.get("type") == "success":
-            self._finished_worker_count += 1
+        match content.get("type"):
+            case "segment":
+                self._pending_messages.append(content["content"])
+            case "batch":
+                try:
+                    await self.send_json(
+                        {
+                            "type": "batch",
+                            "content": content["content"],
+                        }
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to send batch: {e}")
+            case "success":
+                self._finished_batches += 1
 
     async def _flush_loop(self):
         try:
             while True:
                 await asyncio.sleep(settings.WS_RESPONSE_INTERVAL_SEC)
                 if not self._pending_messages:
-                    if self._finished_worker_count == settings.WORKER_COUNT:
+                    if self._finished_batches == self._batches_to_process:
                         # No pending messages but closure requested (edge case)
                         await self.close()
                         return
@@ -143,7 +157,7 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
                 except Exception as e:
                     self.logger.error(f"Failed to send batched messages: {e}")
 
-                if self._finished_worker_count == settings.WORKER_COUNT:
+                if self._finished_batches == self._batches_to_process:
                     try:
                         await self.send_json(
                             {

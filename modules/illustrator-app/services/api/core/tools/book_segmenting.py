@@ -1,4 +1,3 @@
-from __future__ import annotations
 from semantic_text_splitter import TextSplitter
 
 

@@ -17,10 +17,10 @@
           <span class="label">{{ currentSearchSet.length === 0 ? 0 : currentIndex + 1 }}/{{ currentSearchSet.length }}</span>
         </label>
         <div class="join-item flex flex-row">
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Previous Segment" @click="onPrev">
+          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Previous Segment" @click.stop="onPrev">
             <Icon name="lucide:chevron-up" size="20px" />
           </button>
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Next Segment" @click="onNext">
+          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Next Segment" @click.stop="onNext">
             <Icon name="lucide:chevron-down" size="20px" />
           </button>
         </div>
@@ -136,13 +136,13 @@ const isExpanded = ref(false);
 const currentIndex = ref<number>(0);
 const searchInput = ref("");
 const filterSelectedOnly = ref(false);
-const scoreFilter = ref<{ min: number | null; max: number | null }>({ min: 95, max: 100 });
+const scoreFilter = ref<{ min: number | null; max: number | null }>({ min: null, max: null });
 const ordering = ref<{
   id: "asc" | "desc" | null;
   score: "asc" | "desc" | null;
 }>({
-  id: "asc",
-  score: null,
+  id: null,
+  score: "desc",
 });
 
 function onPrev() {

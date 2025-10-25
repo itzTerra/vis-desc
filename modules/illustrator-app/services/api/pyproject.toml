@@ -3,8 +3,10 @@ name = "api"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
+    "booknlp",
     "channels-redis>=4.3.0",
     "channels[daphne]>=4.3.1",
+    "en-core-web-sm",
     "debugpy>=1.8.16",
     "django>=5.2.5",
     "django-cors-headers>=4.7.0",
@@ -13,16 +15,34 @@ dependencies = [
     "django-ninja>=1.4.3",
     "dramatiq-abort[redis]>=1.2.1",
     "dramatiq[redis,watch]>=1.18.0",
+    "light-embed>=0.1.2",
+    "onnxruntime>=1.23.2",
+    "optimum-onnx[onnxruntime]>=0.0.3",
+    "pandas>=2.3.3",
     "pymupdf>=1.26.4",
     "redis>=5.3.1",
     "regex>=2025.8.29",
     "requests>=2.32.5",
     "semantic-text-splitter>=0.27.0",
-    "torch>=2.8.0",
-    "transformers>=4.56.0",
+    "syllables>=1.1.1",
+    "torch>=2.9.0",
+    "wn>=0.13.0",
+    "sentence-transformers>=5.1.2",
 ]
 
 [dependency-groups]
 dev = [
     "debugpy>=1.8.16",
 ]
+
+[tool.uv.sources]
+booknlp = { git = "https://github.com/itzTerra/booknlp" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+torch = [
+  { index = "pytorch-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -226,9 +226,9 @@ function onMouseLeave(eventTarget: any, id: number) {
 function spawnMarker(highlightId: number) {
   const els = highlightRefs.value.filter(el => Number(el.dataset.segmentId) === highlightId);
   for (const el of els) {
-    el.classList.add("highlight-marker");
+    el.parentElement!.classList.add("highlight-marker");
     setTimeout(() => {
-      el.classList.remove("highlight-marker");
+      el.parentElement!.classList.remove("highlight-marker");
     }, 2000);
   }
 }

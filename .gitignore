@@ -9,3 +9,5 @@
 *.vsix
 
 .directory
+
+.env

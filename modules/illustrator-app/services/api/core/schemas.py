@@ -7,8 +7,8 @@ class TextBody(Schema):
 
 
 class Evaluator(str, Enum):
-    deberta_mnli = "deberta_mnli"
-    all_minilm_l6_v2 = "all_minilm_l6_v2"
+    minilm_svm = "minilm_svm"
+    nli_roberta = "nli_roberta"
     random = "random"
 
 

@@ -1,9 +1,10 @@
 from pathlib import Path
 import numpy as np
-import onnxruntime as rt
+
+# import onnxruntime as rt
+# from transformers import AutoTokenizer
 from typing import Literal
 from light_embed import TextEmbedding
-from transformers import AutoTokenizer
 from dataclasses import dataclass
 from typing import Any
 from booknlp.booknlp import BookNLP, EnglishBookNLPConfig, Token
@@ -13,6 +14,7 @@ from numpy.typing import NDArray
 import syllables
 import wn
 import regex
+from sentence_transformers import SentenceTransformer
 
 
 @dataclass
@@ -1360,14 +1362,17 @@ class FeatureService:
         modernbert_onnx_path: Path,
     ):
         self.embed_minilm = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
-
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "lightonai/modernbert-embed-large"
+        self.embed_modernbert = SentenceTransformer(
+            "lightonai/modernbert-embed-large", truncate_dim=256
         )
-        # Load ModernBERT model from onnx file
-        self.sess = rt.InferenceSession(modernbert_onnx_path)
-        self.input_name = self.sess.get_inputs()[0].name
-        self.output_name = self.sess.get_outputs()[0].name
+
+        # self.tokenizer = AutoTokenizer.from_pretrained(
+        #     "lightonai/modernbert-embed-large"
+        # )
+        # # Load ModernBERT model from onnx file
+        # self.sess = rt.InferenceSession(modernbert_onnx_path)
+        # self.input_name = self.sess.get_inputs()[0].name
+        # self.output_name = self.sess.get_outputs()[0].name
 
         self.feature_extractor = FeatureExtractorPipeline(
             resources=feature_pipeline_resources
@@ -1379,31 +1384,32 @@ class FeatureService:
         """
         # Transform into nomic-embed format (https://huggingface.co/nomic-ai/nomic-embed-text-v1.5#task-instruction-prefixes)
         texts = [f"classification: {text}" for text in texts]
+        return self.embed_modernbert.encode(texts)
 
-        # Tokenize the input texts
-        inputs = self.tokenizer(
-            texts, padding=True, truncation=True, return_tensors="np"
-        )
+        # # Tokenize the input texts
+        # inputs = self.tokenizer(
+        #     texts, padding=True, truncation=True, return_tensors="np"
+        # )
 
-        # Prepare inputs for ONNX runtime
-        # The model expects a dictionary of its inputs, here we use 'input_ids'
-        # Your model might have other inputs like 'attention_mask'.
-        # You can check sess.get_inputs() to be sure.
-        onnx_inputs = {name.name: inputs[name.name] for name in self.sess.get_inputs()}
+        # # Prepare inputs for ONNX runtime
+        # # The model expects a dictionary of its inputs, here we use 'input_ids'
+        # # Your model might have other inputs like 'attention_mask'.
+        # # You can check sess.get_inputs() to be sure.
+        # onnx_inputs = {name.name: inputs[name.name] for name in self.sess.get_inputs()}
 
-        # Run inference
-        last_hidden_state = self.sess.run([self.output_name], onnx_inputs)[0]
+        # # Run inference
+        # last_hidden_state = self.sess.run([self.output_name], onnx_inputs)[0]
 
-        # Perform mean pooling to get the sentence embedding
-        attention_mask = inputs["attention_mask"]
-        mask_expanded = np.expand_dims(attention_mask, -1)
-        sum_embeddings = np.sum(last_hidden_state * mask_expanded, 1)
-        sum_mask = np.sum(mask_expanded, 1)
-        # Clamp sum_mask to avoid division by zero
-        sum_mask = np.maximum(sum_mask, 1e-9)
-        mean_pooled_embeddings = sum_embeddings / sum_mask
+        # # Perform mean pooling to get the sentence embedding
+        # attention_mask = inputs["attention_mask"]
+        # mask_expanded = np.expand_dims(attention_mask, -1)
+        # sum_embeddings = np.sum(last_hidden_state * mask_expanded, 1)
+        # sum_mask = np.sum(mask_expanded, 1)
+        # # Clamp sum_mask to avoid division by zero
+        # sum_mask = np.maximum(sum_mask, 1e-9)
+        # mean_pooled_embeddings = sum_embeddings / sum_mask
 
-        return mean_pooled_embeddings
+        # return mean_pooled_embeddings
 
     def get_features(
         self,

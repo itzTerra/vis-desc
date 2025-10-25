@@ -13,6 +13,14 @@ repos:
       - id: ruff-format
         exclude: .*api\/.*migrations\/.*
 
+  - repo: local
+    hooks:
+      - id: check-sync
+        name: Check file sync
+        entry: python3 modules/lab/src/check_sync.py
+        language: system
+        pass_filenames: false
+
   # - repo: local
   #   hooks:
   #     - id: eslint-deps

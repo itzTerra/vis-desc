@@ -44,8 +44,9 @@ COPY ./services/api/pyproject.toml ./services/api/uv.lock /app/
 
 # Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,target=${UV_CACHE_DIR} \
-    --mount=type=bind,source=./services/api/uv.lock,target=./services/api/uv.lock \
-    --mount=type=bind,source=./services/api/pyproject.toml,target=./services/api/pyproject.toml \
+    --mount=type=bind,source=./services/api/uv.lock,target=/app/uv.lock \
+    --mount=type=bind,source=./services/api/pyproject.toml,target=/app/pyproject.toml \
+    cd /app \
     uv sync --frozen --no-install-project \
     $(if [ "$TARGET" = "release" ]; then echo "--no-dev"; else echo "--compile-bytecode"; fi)
 

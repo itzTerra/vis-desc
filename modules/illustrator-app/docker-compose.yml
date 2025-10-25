@@ -12,7 +12,8 @@ services:
     image: api
     volumes:
       - ./services/api/:/app
-      - ${API_DATA:-./data}:/app/data:cached
+      - ~/.cache/wn/:/root/.cache/wn
+      - ~/.wn_data/:/root/.wn_data
     ports:
       - ${API_PORT:-8000}:8000
     stop_grace_period: 3s
@@ -20,6 +21,9 @@ services:
       - default
     depends_on:
       - redis
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
   frontend:
     build:

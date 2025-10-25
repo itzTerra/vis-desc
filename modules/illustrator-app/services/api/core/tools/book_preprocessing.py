@@ -1,14 +1,9 @@
 from __future__ import annotations
 import re
 import logging
-from django.conf import settings
 import pymupdf
 from dataclasses import dataclass
 import regex
-
-
-POLYGON_X_SMOOTH_MAX_GAP_PX = settings.POLYGON_X_SMOOTH_MAX_GAP_PX
-POLYGON_PADDING_PX = settings.POLYGON_PADDING_PX
 
 
 class BookPreprocessor:
@@ -265,8 +260,12 @@ class PdfExtractionConfig:
 
 
 class PdfBookPreprocessor(BookPreprocessor):
-    def __init__(self):
+    def __init__(
+        self, polygon_x_smooth_max_gap_px: int = 12, polygon_padding_px: int = 1
+    ):
         super().__init__()
+        self.polygon_x_smooth_max_gap_px = polygon_x_smooth_max_gap_px
+        self.polygon_padding_px = polygon_padding_px
         self.logger = logging.getLogger("django")
         self._normalized_full_text = ""
         self._removed_ranges: list[tuple[int, int]] = []
@@ -557,8 +556,8 @@ class PdfBookPreprocessor(BookPreprocessor):
                 max_y = max(p[1] for p in polygon)
                 cur_w_px = (max_x - min_x) * width
                 cur_h_px = (max_y - min_y) * height
-                sx = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_w_px, 1e-6)
-                sy = 1.0 + (POLYGON_PADDING_PX * 2) / max(cur_h_px, 1e-6)
+                sx = 1.0 + (self.polygon_padding_px * 2) / max(cur_w_px, 1e-6)
+                sy = 1.0 + (self.polygon_padding_px * 2) / max(cur_h_px, 1e-6)
                 scaled = []
                 for x, y in polygon:
                     x2 = cx + (x - cx) * sx
@@ -596,12 +595,13 @@ class PdfBookPreprocessor(BookPreprocessor):
 
         return False
 
-    @staticmethod
-    def _normalize(s: str) -> str:
-        return re.sub(r"[\s\-‐‑‒–—]+", "", s)
+    def _normalize(self, s: str) -> str:
+        return re.sub(
+            r"[\s\-‐‑‒–—]+", "", s.translate(self.before_clean_translation_table)
+        )
 
-    @staticmethod
     def _smooth_boundary(
+        self,
         boundary: list[tuple[float, float]],
         is_left: bool,
     ):
@@ -626,7 +626,7 @@ class PdfBookPreprocessor(BookPreprocessor):
                         min_idx = i
                 prev_x = cur_x
 
-            if min_idx == -1 or min_diff > POLYGON_X_SMOOTH_MAX_GAP_PX:
+            if min_idx == -1 or min_diff > self.polygon_x_smooth_max_gap_px:
                 break
 
             last_x, last_y = boundary[min_idx - 1]
@@ -676,3 +676,12 @@ class PdfBookPreprocessor(BookPreprocessor):
             avg_y = (boundary[i - 1][1] + boundary[i][1]) / 2
             boundary[i - 1] = (boundary[i - 1][0], avg_y)
             boundary[i] = (boundary[i][0], avg_y)
+
+
+class TxtBookPreprocessor(BookPreprocessor):
+    """Most txt books from Gutenberg dataset have extra newlines for readability, which are undesirable for segmenting"""
+
+    def _before_clean(self, text):
+        """Remove extra newlines"""
+        text = super()._before_clean(text)
+        return re.sub(r"\S\n\n[ \t]*", lambda m: m.group(0).rstrip() + " ", text)

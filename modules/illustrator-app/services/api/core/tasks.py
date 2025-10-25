@@ -64,3 +64,55 @@ def process_segments(segments: list[str], model: Evaluator, channel_name: str):
             },
         },
     )
+
+
+@dramatiq.actor(
+    time_limit=10 * 60 * 1000,
+    max_retries=0,
+    max_age=10 * 60 * 1000,
+    throws=(TimeLimitExceeded,),
+)
+def process_segment_batch(
+    segments: list[str], batch_index: int, model: Evaluator, channel_name: str
+):
+    logger = process_segment_batch.logger  # type: ignore
+    actor_name = process_segment_batch.actor_name
+    if not check_consumer_status(worker_resources["redis"], channel_name):
+        logger.info(f"Worker {actor_name} aborted")
+        return
+
+    channel_layer = get_channel_layer()
+    assert channel_layer is not None, "Channel layer is not configured"
+
+    segment_count = len(segments)
+    evaluator = worker_resources["evaluators"].get(model)
+
+    res = [s for s in evaluate_segments(evaluator, segments)]
+
+    if not check_consumer_status(worker_resources["redis"], channel_name):
+        logger.info(f"Worker {actor_name} aborted")
+        return
+
+    async_to_sync(channel_layer.send)(
+        channel_name,
+        {
+            "type": "worker.response",
+            "content": {
+                "type": "batch",
+                "content": res,
+            },
+        },
+    )
+    logger.info(
+        f"Worker {actor_name} sent {segment_count} segments of batch {batch_index}"
+    )
+    async_to_sync(channel_layer.send)(
+        channel_name,
+        {
+            "type": "worker.response",
+            "content": {
+                "type": "success",
+                "content": f"Worker {actor_name} finished",
+            },
+        },
+    )

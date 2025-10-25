@@ -189,7 +189,6 @@ DRAMATIQ_BROKER = {
 # AdminMiddleware is enabled.  The default value is "default".
 DRAMATIQ_TASKS_DATABASE = "default"
 
-WORKER_COUNT = env.int("WORKER_COUNT", default=1)
 WS_RESPONSE_INTERVAL_SEC = 1
 WS_KEY_EXPIRY_SEC = 3600
 SEGMENT_CHARS_MIN = 150

@@ -4,7 +4,11 @@
 		{
 			"label": "IAA Details Comparison",
 			"type": "shell",
-			"command": "python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details --old ${input:oldAnnotationFiles}",
+			"command": "bash",
+			"args": [
+				"-c",
+				"if [ -n \"${input:oldAnnotationFiles}\" ]; then python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details --old ${input:oldAnnotationFiles}; else python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details; fi"
+			],
 			"group": "build",
 			"presentation": {
 				"echo": true,
@@ -25,6 +29,23 @@
 				"${input:outputCsvFile}",
 				"--from-csv",
 				"${input:inputCsvFile}"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Delete Optuna Study",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-c",
+				"cd modules/lab && uv run python3 data/optuna/delete_study.py ${input:studyName}"
 			],
 			"group": "build",
 			"presentation": {
@@ -65,6 +86,11 @@
 			"id": "inputCsvFile",
 			"description": "Path to the input CSV file",
 			"default": "modules/lab/data/datasets/small/agreed.csv",
+			"type": "promptString"
+		},
+		{
+			"id": "studyName",
+			"description": "Name of the Optuna study to delete",
 			"type": "promptString"
 		}
 	]

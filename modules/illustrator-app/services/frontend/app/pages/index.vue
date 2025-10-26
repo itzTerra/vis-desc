@@ -113,8 +113,8 @@ function toggleHelp(toValue?: boolean) {
   }
 }
 
-const helpPdfUrl = "/sample.pdf";
-const helpImageUrl = "/sample.jpg";
+const helpPdfUrl = `${runtimeConfig.app.baseURL}/sample.pdf`;
+const helpImageUrl = `${runtimeConfig.app.baseURL}/sample.jpg`;
 const helpSteps: Step[] = [
   // > Open model menu
   {

@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 import syllables
 import wn
 import regex
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer
 
 
 @dataclass
@@ -1365,13 +1365,14 @@ class FeatureService:
             "sentence-transformers/all-MiniLM-L6-v2",
             cache_folder=cache_dir,
         )
-        self.embed_modernbert = SentenceTransformer(
-            "lightonai/modernbert-embed-large",
-            truncate_dim=256,
-            backend="onnx",
-            cache_folder=cache_dir,
-            model_kwargs={"file_name": "model_quantized.onnx"},
-        )
+        # Not needed yet
+        # self.embed_modernbert = SentenceTransformer(
+        #     "lightonai/modernbert-embed-large",
+        #     truncate_dim=256,
+        #     backend="onnx",
+        #     cache_folder=cache_dir,
+        #     model_kwargs={"file_name": "model_quantized.onnx"},
+        # )
 
         # self.tokenizer = AutoTokenizer.from_pretrained(
         #     "lightonai/modernbert-embed-large"

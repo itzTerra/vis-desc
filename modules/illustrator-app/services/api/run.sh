@@ -1,6 +1,6 @@
 #!/bin/bash
 
-uv run manage.py rundramatiq -p 4 -t 1 &
+uv run manage.py rundramatiq -p 1 -t 1 &
 DRAMATIQ_PID=$!
 
 # uv run daphne -b 0.0.0.0 -p "$PORT" api.asgi:application &

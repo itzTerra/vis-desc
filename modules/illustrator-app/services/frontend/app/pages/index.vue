@@ -102,8 +102,8 @@ function toggleHelp(toValue?: boolean) {
   if (showHelp.value) {
     highlightsHelpBackup.splice(0, highlightsHelpBackup.length, ...highlights);
     highlights.splice(0, highlights.length,
-      { id: 1, text: "This is a sample highlighted segment.", score: 0.98, score_received_at: Date.now(), polygons: [ [ [0.1, 0.20], [0.3, 0.20], [0.3, 0.25], [0.1, 0.25] ] ] },
-      { id: 2, text: "Another example of a highlighted segment.", score: 0.85, score_received_at: Date.now(), polygons: [ [ [0.1, 0.30], [0.35, 0.30], [0.35, 0.35], [0.1, 0.35] ] ] }
+      { id: 1, text: "This is a scored segment.", score: 0.98, score_received_at: Date.now(), polygons: [ [ [0.1, 0.20], [0.3, 0.20], [0.3, 0.25], [0.1, 0.25] ] ] },
+      { id: 2, text: "This is an unscored segment.", score: undefined, score_received_at: Date.now(), polygons: [ [ [0.1, 0.30], [0.35, 0.30], [0.35, 0.35], [0.1, 0.35] ] ] }
     );
     if (!seenHelpOnce.value) {
       seenHelpOnce.value = true;

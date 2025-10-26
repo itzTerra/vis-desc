@@ -1,7 +1,7 @@
 from django.conf import settings
 from core.schemas import Evaluator
 
-from core.tools.evaluators.nli_roberta import NLIRoberta
+# from core.tools.evaluators.nli_roberta import NLIRoberta
 from dramatiq.middleware import Middleware
 import dramatiq
 from core.tools.evaluators.minilm_svm import MiniLMSVMEvaluator
@@ -27,7 +27,7 @@ class WorkerInitializationMiddleware(Middleware):
             Evaluator.minilm_svm: MiniLMSVMEvaluator(
                 feature_service=worker_resources["feature_service"]
             ),
-            Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
+            # Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
             Evaluator.random: RandomEvaluator(),
         }
 

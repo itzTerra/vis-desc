@@ -146,3 +146,5 @@ vite.config.ts.timestamp-*
 !.envs/.local/*.template
 .envs/.production/*
 !.envs/.production/*.template
+
+model_cache

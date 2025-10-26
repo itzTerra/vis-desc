@@ -1359,11 +1359,18 @@ class FeatureService:
     def __init__(
         self,
         feature_pipeline_resources: FeatureExtractorPipelineResources,
-        modernbert_onnx_path: Path,
+        cache_dir: str | None = None,
     ):
-        self.embed_minilm = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2")
+        self.embed_minilm = TextEmbedding(
+            "sentence-transformers/all-MiniLM-L6-v2",
+            cache_folder=cache_dir,
+        )
         self.embed_modernbert = SentenceTransformer(
-            "lightonai/modernbert-embed-large", truncate_dim=256
+            "lightonai/modernbert-embed-large",
+            truncate_dim=256,
+            backend="onnx",
+            cache_folder=cache_dir,
+            model_kwargs={"file_name": "model_quantized.onnx"},
         )
 
         # self.tokenizer = AutoTokenizer.from_pretrained(

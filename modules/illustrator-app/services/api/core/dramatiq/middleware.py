@@ -1,3 +1,4 @@
+from django.conf import settings
 from core.schemas import Evaluator
 
 from core.tools.evaluators.nli_roberta import NLIRoberta
@@ -9,7 +10,6 @@ from core.tools.redis import get_redis_client
 from core.tools.text2features import FeatureService
 from core.tools.text2features_paths import (
     FEATURE_PIPELINE_RESOURCES,
-    FEATURE_SERVICE_MODERNBERT_ONNX_PATH,
 )
 
 worker_resources = {}
@@ -20,14 +20,14 @@ class WorkerInitializationMiddleware(Middleware):
         worker_resources["redis"] = get_redis_client()
         worker_resources["feature_service"] = FeatureService(
             feature_pipeline_resources=FEATURE_PIPELINE_RESOURCES,
-            modernbert_onnx_path=FEATURE_SERVICE_MODERNBERT_ONNX_PATH,
+            cache_dir=settings.MODEL_CACHE_DIR,
         )
 
         worker_resources["evaluators"] = {
             Evaluator.minilm_svm: MiniLMSVMEvaluator(
                 feature_service=worker_resources["feature_service"]
             ),
-            Evaluator.nli_roberta: NLIRoberta(),
+            Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
             Evaluator.random: RandomEvaluator(),
         }
 

@@ -5,6 +5,9 @@ uv run daphne -b 0.0.0.0 -p $PORT api.asgi:application &
 RUNSERVER_PID=$!
 echo "API server started with PID $RUNSERVER_PID"
 
+# Delay dramatiq start by 5 minutes (300 seconds)
+sleep 300
+
 uv run manage.py rundramatiq -p 1 -t 1 &
 DRAMATIQ_PID=$!
 echo "Dramatiq worker started with PID $DRAMATIQ_PID"

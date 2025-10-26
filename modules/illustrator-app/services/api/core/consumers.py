@@ -14,7 +14,8 @@ from core.tools.evaluate import EVALUATOR_TO_BATCH_SIZE, evaluate_segments
 consumer_resources = {}
 if not settings.ENABLE_DRAMATIQ:
     from core.schemas import Evaluator
-    from core.tools.evaluators.nli_roberta import NLIRoberta
+
+    # from core.tools.evaluators.nli_roberta import NLIRoberta
     from core.tools.evaluators.minilm_svm import MiniLMSVMEvaluator
     from core.tools.evaluators.random_eval import RandomEvaluator
     from core.tools.text2features import FeatureService
@@ -31,7 +32,7 @@ if not settings.ENABLE_DRAMATIQ:
         Evaluator.minilm_svm: MiniLMSVMEvaluator(
             feature_service=consumer_resources["feature_service"]
         ),
-        Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
+        # Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
         Evaluator.random: RandomEvaluator(),
     }
 

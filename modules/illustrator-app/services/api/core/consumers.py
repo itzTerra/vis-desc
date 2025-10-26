@@ -8,8 +8,32 @@ from core.tasks import process_segment_batch
 from dramatiq_abort import abort
 from redis.asyncio import from_url as redis_from_url
 from django.conf import settings
+from core.tools.evaluate import EVALUATOR_TO_BATCH_SIZE, evaluate_segments
 
-from core.tools.evaluate import EVALUATOR_TO_BATCH_SIZE
+
+consumer_resources = {}
+if not settings.ENABLE_DRAMATIQ:
+    from core.schemas import Evaluator
+    from core.tools.evaluators.nli_roberta import NLIRoberta
+    from core.tools.evaluators.minilm_svm import MiniLMSVMEvaluator
+    from core.tools.evaluators.random_eval import RandomEvaluator
+    from core.tools.text2features import FeatureService
+    from core.tools.text2features_paths import (
+        FEATURE_PIPELINE_RESOURCES,
+    )
+
+    consumer_resources["feature_service"] = FeatureService(
+        feature_pipeline_resources=FEATURE_PIPELINE_RESOURCES,
+        cache_dir=settings.MODEL_CACHE_DIR,
+    )
+
+    consumer_resources["evaluators"] = {
+        Evaluator.minilm_svm: MiniLMSVMEvaluator(
+            feature_service=consumer_resources["feature_service"]
+        ),
+        Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
+        Evaluator.random: RandomEvaluator(),
+    }
 
 
 class SegmentConsumer(AsyncJsonWebsocketConsumer):
@@ -105,15 +129,31 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         self._finished_batches = 0
         self._batches_to_process = len(worker_batches)
 
-        for i, batch in enumerate(worker_batches):
-            msg = process_segment_batch.send(batch, i, data.model, self.channel_name)
-            self.processing_msg_ids.add(msg.message_id)
+        if settings.ENABLE_DRAMATIQ:
+            for i, batch in enumerate(worker_batches):
+                msg = process_segment_batch.send(
+                    batch, i, data.model, self.channel_name
+                )
+                self.processing_msg_ids.add(msg.message_id)
         await self.send_json(
             {
                 "type": "info",
                 "content": "WebSocket authenticated and started scoring segments",
             }
         )
+        if not settings.ENABLE_DRAMATIQ:
+            for i, batch in enumerate(worker_batches):
+                evaluator = consumer_resources["evaluators"].get(data.model)
+
+                res = [s for s in evaluate_segments(evaluator, batch)]
+
+                await self.send_json(
+                    {
+                        "type": "batch",
+                        "content": res,
+                    }
+                )
+                self._finished_batches += 1
 
     async def worker_response(self, payload):
         # Accumulate worker responses for periodic batching

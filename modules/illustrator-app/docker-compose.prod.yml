@@ -13,7 +13,7 @@ services:
     entrypoint: []
     environment:
       - PORT=8000
-    command: ./setup_and_run.sh
+    command: ./run.sh
 
   redis:
     image: redis:7-alpine

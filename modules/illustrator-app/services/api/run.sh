@@ -3,8 +3,8 @@
 uv run manage.py rundramatiq -p 1 -t 1 &
 DRAMATIQ_PID=$!
 
-# uv run daphne -b 0.0.0.0 -p "$PORT" api.asgi:application &
-uv run manage.py runserver 0.0.0.0:$PORT &
+uv run daphne -b 0.0.0.0 -p $PORT api.asgi:application &
+# uv run manage.py runserver 0.0.0.0:$PORT &
 RUNSERVER_PID=$!
 
 cleanup() {

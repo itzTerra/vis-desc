@@ -1,7 +1,5 @@
 #!/bin/bash
 
-uv run setup.py
-
 uv run manage.py rundramatiq -p 4 -t 1 &
 DRAMATIQ_PID=$!
 

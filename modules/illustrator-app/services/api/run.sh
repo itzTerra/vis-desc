@@ -1,12 +1,15 @@
 #!/bin/bash
 
+if [ "$ENABLE_DRAMATIQ" == "off" ]; then
+    echo "Dramatiq is disabled. Running only the API server."
+    uv run daphne -b 0.0.0.0 -p $PORT api.asgi:application
+    exit 0
+fi
+
 uv run daphne -b 0.0.0.0 -p $PORT api.asgi:application &
 # uv run manage.py runserver 0.0.0.0:$PORT &
 RUNSERVER_PID=$!
 echo "API server started with PID $RUNSERVER_PID"
-
-# Delay dramatiq start
-sleep 120
 
 uv run manage.py rundramatiq -p 1 -t 1 &
 DRAMATIQ_PID=$!

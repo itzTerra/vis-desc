@@ -196,3 +196,4 @@ SEGMENT_CHARS_MAX = 500
 # Max horizontal gap to consider for smoothing
 POLYGON_X_SMOOTH_MAX_GAP_PX = 12
 POLYGON_PADDING_PX = 1
+MODEL_CACHE_DIR = env.str("MODEL_CACHE_DIR", default="/app/model_cache")

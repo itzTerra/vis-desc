@@ -1,9 +1,12 @@
 from .base import *  # noqa: F403
+from ..env import env
 
 PRODUCTION_SERVER = True
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])  # noqa: F405
+ALLOWED_HOSTS = env.list(
+    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "0.0.0.0"]
+)  # noqa: F405
 
 # SECURITY
 # ------------------------------------------------------------------------------

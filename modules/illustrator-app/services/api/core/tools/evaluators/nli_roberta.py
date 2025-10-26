@@ -1,3 +1,4 @@
+from pathlib import Path
 from .nli_base import NLIZeroshotClassifier
 from transformers import pipeline, AutoTokenizer
 from optimum.onnxruntime import ORTModelForSequenceClassification
@@ -7,7 +8,8 @@ from typing import Iterable
 class NLIRoberta(NLIZeroshotClassifier):
     """https://huggingface.co/richardr1126/roberta-base-zeroshot-v2.0-c-ONNX"""
 
-    def __init__(self):
+    def __init__(self, cache_dir: str | Path = None):
+        self.cache_dir = cache_dir
         super().__init__(
             candidate_labels=["detailed", "not detailed"],
             hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
@@ -19,10 +21,12 @@ class NLIRoberta(NLIZeroshotClassifier):
             model = ORTModelForSequenceClassification.from_pretrained(
                 "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
                 file_name="model_quantized.onnx",
+                cache_dir=self.cache_dir,
             )
 
             tokenizer = AutoTokenizer.from_pretrained(
-                "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX"
+                "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
+                cache_dir=self.cache_dir,
             )
 
             # Patch the model's forward method to handle token_type_ids

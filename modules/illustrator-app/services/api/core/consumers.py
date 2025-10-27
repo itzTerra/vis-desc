@@ -16,22 +16,17 @@ if not settings.ENABLE_DRAMATIQ:
     from core.schemas import Evaluator
 
     # from core.tools.evaluators.nli_roberta import NLIRoberta
-    from core.tools.evaluators.minilm_svm import MiniLMSVMEvaluator
     from core.tools.evaluators.random_eval import RandomEvaluator
-    from core.tools.text2features import FeatureService
-    from core.tools.text2features_paths import (
-        FEATURE_PIPELINE_RESOURCES,
-    )
 
-    consumer_resources["feature_service"] = FeatureService(
-        feature_pipeline_resources=FEATURE_PIPELINE_RESOURCES,
-        cache_dir=settings.MODEL_CACHE_DIR,
-    )
+    # consumer_resources["feature_service"] = FeatureService(
+    #     feature_pipeline_resources=FEATURE_PIPELINE_RESOURCES,
+    #     cache_dir=settings.MODEL_CACHE_DIR,
+    # )
 
     consumer_resources["evaluators"] = {
-        Evaluator.minilm_svm: MiniLMSVMEvaluator(
-            feature_service=consumer_resources["feature_service"]
-        ),
+        # Evaluator.minilm_svm: MiniLMSVMEvaluator(
+        #     feature_service=consumer_resources["feature_service"]
+        # ),
         # Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
         Evaluator.random: RandomEvaluator(),
     }

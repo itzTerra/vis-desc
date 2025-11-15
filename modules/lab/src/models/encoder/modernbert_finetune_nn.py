@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 import torch
 from sklearn.preprocessing import MinMaxScaler
 from text2features import FeatureExtractorPipeline
-from modules.lab.src.models.encoder.common import (
+from models.encoder.common import (
     device,
     CustomDataset,
 )

@@ -112,6 +112,17 @@ class SentenceData:
         SentenceData.dfs_build_tree(sent.root, root)
         return sent_data
 
+    def get_tokens(self) -> list[SentenceToken]:
+        tokens = []
+
+        def dfs(token: SentenceToken):
+            tokens.append(token)
+            for child in token.children:
+                dfs(child)
+
+        dfs(self.root)
+        return tokens
+
 
 @dataclass
 class ExtCtx:

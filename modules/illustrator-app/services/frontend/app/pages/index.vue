@@ -85,7 +85,7 @@ const { $api: call, callHook, $config } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
-const modelSelect = ref<ModelValue>(MODELS[0].value);
+const modelSelect = ref<ModelValue>(MODELS.filter(model => !model.disabled)[0].value);
 // Holds start timestamp (ms) when loading begins; null when idle
 const isLoading = ref<number | null>(null);
 const isCancelled = ref(false);

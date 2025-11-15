@@ -41,10 +41,10 @@ class ObjectiveProvider:
 class RidgeObjectiveProvider(ObjectiveProvider):
     def get_objective_fn(self) -> callable:
         def objective(trial):
-            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 10.0, log=True)
+            ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
             small_dataset_weight_multiplier = (
                 trial.suggest_float(
-                    "small_dataset_weight_multiplier", 500.0, 1500.0, log=True
+                    "small_dataset_weight_multiplier", 10.0, 10000.0, log=True
                 )
                 if self.include_large
                 else None
@@ -104,7 +104,7 @@ class SVMObjectiveProvider(ObjectiveProvider):
             epsilon = trial.suggest_float("svr_epsilon", 0.0, 1.0)
             small_dataset_weight_multiplier = (
                 trial.suggest_float(
-                    "small_dataset_weight_multiplier", 500.0, 1500.0, log=True
+                    "small_dataset_weight_multiplier", 10.0, 10000.0, log=True
                 )
                 if self.include_large
                 else None
@@ -290,15 +290,15 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
-        "num_epochs": [3],
+        "num_epochs": [20],
         "lr_bert": [5e-5, 1e-6],
-        "lr_custom": [3e-6],
+        "lr_custom": [1e-4, 1e-5, 1e-6, 1e-7],
         "dropout_rate": [0.1, 0.25],
         "weight_decay": [1e-2],
         "optimizer_warmup": [0.1],
         "feature_hidden_size": [512, 768, 1024],
     }
-    BATCH_SIZE = 8
+    BATCH_SIZE = 16
 
     def get_objective_fn(self) -> callable:
         import torch
@@ -416,6 +416,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             input_ids=batch["input_ids"].to(device),
                             attention_mask=batch["attention_mask"].to(device),
                             features=batch["features"].to(device),
+                            labels=batch["labels"].to(device),
                         )
                         predictions = outputs.logits.squeeze()
 
@@ -431,7 +432,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 include_minilm_embeddings=False,
                 include_modernbert_embeddings=False,
                 include_large=self.include_large,
-                n_splits=3,
+                n_splits=5,
             )
 
         return objective
@@ -473,6 +474,12 @@ if __name__ == "__main__":
         help="Include large dataset in training",
     )
     parser.add_argument(
+        "--max-n-trials",
+        type=int,
+        default=None,
+        help="Maximum number of trials to run (caps the provider's default n_trials)",
+    )
+    parser.add_argument(
         "providers",
         nargs="*",
         choices=["ridge", "svm", "rf", "catboost", "finetuned-mbert"],
@@ -498,6 +505,9 @@ if __name__ == "__main__":
             objective_fn = provider.get_objective_fn()
             study_name = provider.get_study_name()
             n_trials = provider.get_n_trials()
+
+            if args.max_n_trials is not None:
+                n_trials = min(n_trials, args.max_n_trials)
 
             run_study(
                 objective_func=objective_fn,

@@ -88,23 +88,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             f"CLS stats: min={cls_embedding.min():.4f}, max={cls_embedding.max():.4f}"
         )
 
-        # Check feature processing step by step
-        for i, layer in enumerate(self.feature_ff):
-            if i == 0:
-                x = layer(features)
-                print(
-                    f"After Linear: has NaN: {torch.isnan(x).any()}, min={x.min():.4f}, max={x.max():.4f}"
-                )
-            elif isinstance(layer, nn.LayerNorm):
-                x = layer(x)
-                print(f"After LayerNorm: has NaN: {torch.isnan(x).any()}")
-            elif isinstance(layer, nn.ReLU):
-                x = layer(x)
-                print(f"After ReLU: has NaN: {torch.isnan(x).any()}")
-            elif isinstance(layer, nn.Dropout):
-                x = layer(x)
-                print(f"After Dropout: has NaN: {torch.isnan(x).any()}")
-
         feature_embedding = self.feature_ff(features)
         # if torch.isnan(feature_embedding).any():
         #     print("NaN found in feature_embedding")

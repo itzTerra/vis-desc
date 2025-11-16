@@ -389,19 +389,15 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 )
                 val_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
 
-                # Create datasets and loaders
                 val_dataset = CustomDataset(val_df, tokenizer)
                 val_loader = DataLoader(val_dataset, batch_size=self.BATCH_SIZE)
 
-                # Initialize model
                 model = ModernBertWithFeaturesTrainable.from_pretrained(
                     "answerdotai/ModernBERT-base",
                     feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
                     dropout_rate=dropout_rate,
                     feature_hidden_size=feature_hidden_size,
                 )
-                model.feature_ff.apply(model._init_custom_weights)
-                model.regressor.apply(model._init_custom_weights)
                 model.to(device)
 
                 # Stage 1: Train on large noisy dataset (if available)

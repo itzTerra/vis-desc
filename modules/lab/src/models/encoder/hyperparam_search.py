@@ -16,6 +16,7 @@ from models.encoder.common import (
     SEED,
     run_cross_validation,
 )
+from models.encoder.modernbert_finetune_nn import check_gradient_flow
 
 
 class ObjectiveProvider:
@@ -52,7 +53,7 @@ class RidgeObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer
+                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
             ):
                 train_features = np.hstack(
                     (
@@ -112,7 +113,7 @@ class SVMObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer
+                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
             ):
                 train_features = np.hstack(
                     (
@@ -173,7 +174,7 @@ class RandomForestObjectiveProvider(ObjectiveProvider):
             }
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer
+                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
             ):
                 train_features = np.hstack(
                     (
@@ -240,7 +241,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
             }
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer
+                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
             ):
                 train_features = np.hstack(
                     (
@@ -292,13 +293,15 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
-        "num_epochs": [20],
-        "lr_bert": [5e-5, 1e-6],
-        "lr_custom": [1e-4, 1e-5, 1e-6, 1e-7],
-        "dropout_rate": [0.1, 0.25],
+        "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
+        "stage2_epochs": [2, 5, 10],  # Epochs for small dataset finetuning
+        "lr_bert": [5e-4, 1e-5],
+        "lr_custom": [1e-4, 1e-5],
+        "dropout_rate": [0.1],
         "weight_decay": [1e-2],
         "optimizer_warmup": [0.1],
-        "feature_hidden_size": [512, 768, 1024],
+        "feature_hidden_size": [512],
+        # "feature_hidden_size": [512, 768, 1024],
     }
     BATCH_SIZE = 32
 
@@ -315,8 +318,15 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         )
 
         def objective(trial):
-            num_epochs = trial.suggest_categorical(
-                "num_epochs", self.SEARCH_SPACE["num_epochs"]
+            stage1_epochs = (
+                trial.suggest_categorical(
+                    "stage1_epochs", self.SEARCH_SPACE["stage1_epochs"]
+                )
+                if self.include_large
+                else 0
+            )
+            stage2_epochs = trial.suggest_categorical(
+                "stage2_epochs", self.SEARCH_SPACE["stage2_epochs"]
             )
             lr_bert = trial.suggest_categorical("lr_bert", self.SEARCH_SPACE["lr_bert"])
             lr_custom = trial.suggest_categorical(
@@ -336,23 +346,54 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer
+                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
             ):
+                # Separate small and large datasets if large is included
+                if self.include_large and lg_size is not None:
+                    # The train_df contains both large and small datasets concatenated
+                    # Large dataset comes first, small dataset at the end (see run_cross_validation)
+                    lg_train_df = train_df.iloc[:lg_size].copy()
+                    sm_train_df = train_df.iloc[lg_size:].copy()
+                else:
+                    lg_train_df = None
+                    sm_train_df = train_df.copy()
+
+                # Scale features for all datasets
                 scaler = MinMaxScaler()
-                train_features_scaled = scaler.fit_transform(
-                    np.vstack(train_df["features"].values)
-                )
+
+                if lg_train_df is not None and not lg_train_df.empty:
+                    lg_features_scaled = scaler.fit_transform(
+                        np.vstack(lg_train_df["features"].values)
+                    )
+                    lg_train_df["features"] = [
+                        f for f in np.nan_to_num(lg_features_scaled)
+                    ]
+
+                    if not sm_train_df.empty:
+                        sm_features_scaled = scaler.transform(
+                            np.vstack(sm_train_df["features"].values)
+                        )
+                        sm_train_df["features"] = [
+                            f for f in np.nan_to_num(sm_features_scaled)
+                        ]
+                else:
+                    sm_features_scaled = scaler.fit_transform(
+                        np.vstack(sm_train_df["features"].values)
+                    )
+                    sm_train_df["features"] = [
+                        f for f in np.nan_to_num(sm_features_scaled)
+                    ]
+
                 val_features_scaled = scaler.transform(
                     np.vstack(val_df["features"].values)
                 )
-                train_df["features"] = [f for f in np.nan_to_num(train_features_scaled)]
                 val_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
 
-                train_dataset = CustomDataset(train_df, tokenizer)
+                # Create datasets and loaders
                 val_dataset = CustomDataset(val_df, tokenizer)
-                train_loader = DataLoader(train_dataset, batch_size=self.BATCH_SIZE)
                 val_loader = DataLoader(val_dataset, batch_size=self.BATCH_SIZE)
 
+                # Initialize model
                 model = ModernBertWithFeaturesTrainable.from_pretrained(
                     "answerdotai/ModernBERT-base",
                     feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
@@ -363,51 +404,130 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 model.regressor.apply(model._init_custom_weights)
                 model.to(device)
 
-                optimizer = AdamW(
-                    [
-                        {"params": model.model.parameters(), "lr": lr_bert},
-                        {"params": model.feature_ff.parameters(), "lr": lr_custom},
-                        {"params": model.regressor.parameters(), "lr": lr_custom},
-                    ],
-                    weight_decay=weight_decay,
-                )
+                # Stage 1: Train on large noisy dataset (if available)
+                if (
+                    self.include_large
+                    and lg_train_df is not None
+                    and not lg_train_df.empty
+                ):
+                    print(
+                        f"Stage 1: Training on large dataset ({len(lg_train_df)} samples) for {stage1_epochs} epochs"
+                    )
+                    lg_train_dataset = CustomDataset(lg_train_df, tokenizer)
+                    lg_train_loader = DataLoader(
+                        lg_train_dataset, batch_size=self.BATCH_SIZE, shuffle=True
+                    )
 
-                total_steps = len(train_loader) * num_epochs
-                warmup_steps = int(total_steps * optimizer_warmup)
-                scheduler = get_linear_schedule_with_warmup(
-                    optimizer,
-                    num_warmup_steps=warmup_steps,
-                    num_training_steps=total_steps,
-                )
+                    optimizer = AdamW(
+                        [
+                            {"params": model.model.parameters(), "lr": lr_bert},
+                            {"params": model.feature_ff.parameters(), "lr": lr_custom},
+                            {"params": model.regressor.parameters(), "lr": lr_custom},
+                        ],
+                        weight_decay=weight_decay,
+                    )
 
-                # Train
-                model.train()
-                for epoch in range(num_epochs):
-                    progress_bar = tqdm(train_loader, desc=f"Epoch {epoch + 1}")
-                    for batch in progress_bar:
-                        optimizer.zero_grad()
+                    total_steps = len(lg_train_loader) * stage1_epochs
+                    warmup_steps = int(total_steps * optimizer_warmup)
+                    scheduler = get_linear_schedule_with_warmup(
+                        optimizer,
+                        num_warmup_steps=warmup_steps,
+                        num_training_steps=total_steps,
+                    )
 
-                        outputs = model(
-                            input_ids=batch["input_ids"].to(device),
-                            attention_mask=batch["attention_mask"].to(device),
-                            features=batch["features"].to(device),
-                            labels=batch["labels"].to(device),
+                    model.train()
+                    for epoch in range(stage1_epochs):
+                        progress_bar = tqdm(
+                            lg_train_loader,
+                            desc=f"Stage 1 - Epoch {epoch + 1}/{stage1_epochs}",
                         )
+                        for batch in progress_bar:
+                            optimizer.zero_grad()
 
-                        loss = outputs.loss
-                        if torch.isnan(loss):
-                            print("Loss is NaN, skipping backward pass.")
-                            continue
+                            outputs = model(
+                                input_ids=batch["input_ids"].to(device),
+                                attention_mask=batch["attention_mask"].to(device),
+                                features=batch["features"].to(device),
+                                labels=batch["labels"].to(device),
+                            )
 
-                        loss.backward()
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                        optimizer.step()
-                        scheduler.step()
-                        progress_bar.set_postfix({"loss": loss.item()})
+                            loss = outputs.loss
+                            if torch.isnan(loss):
+                                print("Loss is NaN, skipping backward pass.")
+                                continue
 
-                        del loss, outputs
-                        if device.type == "cuda":
-                            torch.cuda.empty_cache()
+                            loss.backward()
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                            optimizer.step()
+                            scheduler.step()
+                            progress_bar.set_postfix({"loss": loss.item()})
+
+                            del loss, outputs
+                            if device.type == "cuda":
+                                torch.cuda.empty_cache()
+
+                # Stage 2: Fine-tune on small clean dataset
+                if not sm_train_df.empty:
+                    print(
+                        f"Stage 2: Fine-tuning on small dataset ({len(sm_train_df)} samples) for {stage2_epochs} epochs"
+                    )
+                    sm_train_dataset = CustomDataset(sm_train_df, tokenizer)
+                    sm_train_loader = DataLoader(
+                        sm_train_dataset, batch_size=self.BATCH_SIZE, shuffle=True
+                    )
+
+                    # Create new optimizer for stage 2
+                    optimizer = AdamW(
+                        [
+                            {"params": model.model.parameters(), "lr": lr_bert},
+                            {"params": model.feature_ff.parameters(), "lr": lr_custom},
+                            {"params": model.regressor.parameters(), "lr": lr_custom},
+                        ],
+                        weight_decay=weight_decay,
+                    )
+
+                    total_steps = len(sm_train_loader) * stage2_epochs
+                    warmup_steps = int(total_steps * optimizer_warmup)
+                    scheduler = get_linear_schedule_with_warmup(
+                        optimizer,
+                        num_warmup_steps=warmup_steps,
+                        num_training_steps=total_steps,
+                    )
+
+                    model.train()
+                    for epoch in range(stage2_epochs):
+                        progress_bar = tqdm(
+                            sm_train_loader,
+                            desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
+                        )
+                        for step, batch in enumerate(progress_bar):
+                            optimizer.zero_grad()
+
+                            outputs = model(
+                                input_ids=batch["input_ids"].to(device),
+                                attention_mask=batch["attention_mask"].to(device),
+                                features=batch["features"].to(device),
+                                labels=batch["labels"].to(device),
+                            )
+
+                            loss = outputs.loss
+                            if torch.isnan(loss):
+                                print("Loss is NaN, skipping backward pass.")
+                                continue
+
+                            loss.backward()
+
+                            if step == 0 or (step + 1) % 10 == 0:
+                                check_gradient_flow(model, step + 1, epoch + 1)
+
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                            optimizer.step()
+                            scheduler.step()
+                            progress_bar.set_postfix({"loss": loss.item()})
+
+                            del loss, outputs
+                            if device.type == "cuda":
+                                torch.cuda.empty_cache()
 
                 # Validate
                 model.eval()
@@ -435,6 +555,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 include_modernbert_embeddings=False,
                 include_large=self.include_large,
                 n_splits=5,
+                two_stage_training=True,
             )
 
         return objective

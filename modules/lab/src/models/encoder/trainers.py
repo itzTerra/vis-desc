@@ -13,6 +13,7 @@ from sklearn.model_selection import KFold
 from sklearn.linear_model import Ridge
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor
 from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
@@ -36,12 +37,14 @@ class BaseTrainer(ABC):
         params: Dict[str, Any],
         embeddings: Optional[Literal["minilm", "mbert"]] = None,
         include_large: bool = False,
+        enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
     ):
         self.params = params
         self.embeddings = embeddings
         self.include_large = include_large
+        self.enable_train = enable_train
         self.enable_cv = enable_cv
         self.enable_test = enable_test
         self.model = None
@@ -51,6 +54,10 @@ class BaseTrainer(ABC):
     def _get_model_name(self) -> str:
         """Return the model name for file saving."""
         pass
+
+    def _get_model_extension(self) -> str:
+        """Return the model file extension (default: .onnx)."""
+        return ".onnx"
 
     @abstractmethod
     def train(self) -> None:
@@ -89,45 +96,56 @@ class BaseTrainer(ABC):
             json.dump(metrics, f, indent=2)
 
     def run_full_training(self, output_dir: Path) -> Dict[str, Any]:
-        """Execute full training pipeline: train, evaluate, cross-validate, export, and save metrics."""
+        """Execute training pipeline: train, evaluate, cross-validate, export, and save metrics based on enabled flags."""
         print(f"\n{'=' * 60}")
-        print(f"Training {self.model_name}")
+        print(f"Processing {self.model_name}")
         print(f"{'=' * 60}\n")
 
-        # Train
-        self.train()
-
-        # Evaluate on training set
-        train_metrics = self.evaluate_train()
-
-        # Cross-validate (optional)
+        model_path = output_dir / f"{self.model_name}{self._get_model_extension()}"
+        train_metrics = None
         cv_metrics = None
-        if self.enable_cv:
-            cv_metrics = self.cross_validate()
-
-        # Export model
-        model_path = output_dir / f"{self.model_name}.onnx"
-        self.export(model_path)
-
-        # Evaluate on test set (optional)
         test_metrics = None
-        if self.enable_test:
-            test_metrics = self.evaluate_test(model_path)
 
-        # Save metrics
-        extra_data = self._get_extra_metrics_data()
-        self.save_metrics(
-            train_metrics, cv_metrics, test_metrics, output_dir, **extra_data
-        )
+        # Train (optional)
+        if self.enable_train:
+            print("Training model...")
+            self.train()
 
-        print(f"\nTrain MSE: {train_metrics['mse']:.4f}")
-        print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
-        if cv_metrics:
+            # Evaluate on training set
+            train_metrics = self.evaluate_train()
+            print(f"Train MSE: {train_metrics['mse']:.4f}")
+            print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
+
+            # Export model
+            self.export(model_path)
+            print(f"Model exported to {model_path}")
+
+        # Cross-validate (optional, independent)
+        if self.enable_cv:
+            print("\nPerforming cross-validation...")
+            cv_metrics = self.cross_validate()
             print(f"CV MSE: {cv_metrics['mse']:.4f}")
             print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
-        if test_metrics:
-            print(f"Test MSE: {test_metrics['mse']:.4f}")
-            print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+
+        # Evaluate on test set (optional, requires exported model)
+        if self.enable_test:
+            if not model_path.exists():
+                print(
+                    f"\nWarning: Model file {model_path} not found. Skipping test evaluation."
+                )
+                print("Run with --train first to create the model file.")
+            else:
+                print("\nEvaluating on test set...")
+                test_metrics = self.evaluate_test(model_path)
+                print(f"Test MSE: {test_metrics['mse']:.4f}")
+                print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+
+        # Save metrics (only if at least one metric was computed)
+        if train_metrics or cv_metrics or test_metrics:
+            extra_data = self._get_extra_metrics_data()
+            self.save_metrics(
+                train_metrics, cv_metrics, test_metrics, output_dir, **extra_data
+            )
 
         return {
             "train_metrics": train_metrics,
@@ -158,10 +176,13 @@ class BaseSklearnTrainer(BaseTrainer):
         params: Dict[str, Any],
         embeddings: Literal["minilm", "mbert"],
         include_large: bool = False,
+        enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
     ):
-        super().__init__(params, embeddings, include_large, enable_cv, enable_test)
+        super().__init__(
+            params, embeddings, include_large, enable_train, enable_cv, enable_test
+        )
         self.include_minilm = embeddings == "minilm"
         self.include_mbert = embeddings == "mbert"
         self.X_train = None
@@ -303,17 +324,14 @@ class BaseSklearnTrainer(BaseTrainer):
         # Load embeddings
         if self.include_minilm:
             minilm_embeddings = pd.read_parquet(
-                DATA_DIR / "datasets" / "small" / "minilm_embeddings_test.parquet"
+                DATA_DIR / "datasets" / "small" / "minilm_embeddings.parquet"
             )
             test_df = test_df.merge(
                 minilm_embeddings[["cls"]], left_index=True, right_index=True
             )
         elif self.include_mbert:
             modernbert_embeddings = pd.read_parquet(
-                DATA_DIR
-                / "datasets"
-                / "small"
-                / "modernbert_cls_embeddings_test.parquet"
+                DATA_DIR / "datasets" / "small" / "modernbert_cls_embeddings.parquet"
             )
             test_df = test_df.merge(
                 modernbert_embeddings[["cls"]], left_index=True, right_index=True
@@ -458,13 +476,50 @@ class CatBoostTrainer(BaseSklearnTrainer):
         return {"sample_weight": weights}
 
 
-class ModernBertTrainer(BaseTrainer):
-    """Trainer for fine-tuned ModernBERT model."""
+class WeightedRandomSampler(BaseEstimator, RegressorMixin):
+    """
+    A regressor that randomly samples predictions from the training label distribution.
+    Uses sample weights to weight the distribution.
+    """
+
+    def __init__(self, random_state=None):
+        self.random_state = random_state
+
+    def fit(self, X, y, sample_weight=None):
+        """Store the training labels and their weights for sampling."""
+        self.y_train_ = np.asarray(y)
+        if sample_weight is not None:
+            self.weights_ = np.asarray(sample_weight)
+            # Normalize weights to sum to 1
+            self.weights_ = self.weights_ / self.weights_.sum()
+        else:
+            # Uniform weights if not provided
+            self.weights_ = np.ones(len(y)) / len(y)
+
+        self.rng_ = np.random.RandomState(self.random_state)
+        return self
+
+    def predict(self, X):
+        """Randomly sample from the training distribution for each prediction."""
+        n_samples = len(X)
+        # Sample indices from training set according to weights
+        sampled_indices = self.rng_.choice(
+            len(self.y_train_), size=n_samples, p=self.weights_
+        )
+        return self.y_train_[sampled_indices]
+
+
+class WeightedRandomBaselineTrainer(BaseTrainer):
+    """Trainer for weighted random baseline that samples from training distribution.
+
+    This model doesn't use embeddings - it just samples from the training label distribution.
+    """
 
     def __init__(
         self,
         params: Dict[str, Any],
         include_large: bool = False,
+        enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
     ):
@@ -472,6 +527,178 @@ class ModernBertTrainer(BaseTrainer):
             params,
             embeddings=None,
             include_large=include_large,
+            enable_train=enable_train,
+            enable_cv=enable_cv,
+            enable_test=enable_test,
+        )
+        self.y_train = None
+        self.weights = None
+        self.train_df = None
+        self._load_data()
+
+    def _get_model_name(self) -> str:
+        return f"random{'_lg' if self.include_large else ''}"
+
+    def _get_model_extension(self) -> str:
+        """Random baseline uses JSON format instead of ONNX."""
+        return ".json"
+
+    def _load_data(self):
+        """Load training data (only labels needed - no weights used)."""
+        context = CachedOptimizationContext(
+            include_minilm_embeddings=False,
+            include_modernbert_embeddings=False,
+            include_large=self.include_large,
+        )
+        train_df = context.sm_train.copy()
+
+        if self.include_large and context.lg_train is not None:
+            train_df = pd.concat([context.lg_train, train_df], ignore_index=True)
+
+        self.train_df = train_df
+        self.y_train = train_df["label"].values
+
+    def train(self) -> None:
+        """Train the random sampler using uniform distribution over training labels."""
+        self.model = WeightedRandomSampler(random_state=42)
+        # We need dummy X data since the sampler expects it (but doesn't use it)
+        X_dummy = np.zeros((len(self.y_train), 1))
+        # Pass no sample_weight to use uniform distribution
+        self.model.fit(X_dummy, self.y_train, sample_weight=None)
+
+    def evaluate_train(self) -> Dict[str, Any]:
+        """Evaluate model on training set."""
+        X_dummy = np.zeros((len(self.y_train), 1))
+        y_pred_train = self.model.predict(X_dummy)
+        return calculate_metrics(self.y_train, y_pred_train)
+
+    def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
+        """Perform cross-validation on small dataset only."""
+        context = CachedOptimizationContext(
+            include_minilm_embeddings=False,
+            include_modernbert_embeddings=False,
+            include_large=False,
+        )
+        sm_train = context.sm_train
+
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+        fold_metrics = []
+
+        for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
+            train_fold_df = sm_train.loc[train_index].copy()
+            val_fold_df = sm_train.loc[val_index].copy()
+
+            y_train_fold = train_fold_df["label"].values
+            y_val_fold = val_fold_df["label"].values
+
+            # Train fold model with uniform distribution
+            fold_model = WeightedRandomSampler(random_state=42)
+            X_train_dummy = np.zeros((len(y_train_fold), 1))
+            fold_model.fit(X_train_dummy, y_train_fold, sample_weight=None)
+
+            # Evaluate
+            X_val_dummy = np.zeros((len(y_val_fold), 1))
+            y_pred = fold_model.predict(X_val_dummy)
+            metrics = calculate_metrics(y_val_fold, y_pred)
+            fold_metrics.append(metrics)
+
+            print(
+                f"Fold {fold + 1}/{n_splits}: MSE={metrics['mse']:.4f}, Acc={metrics['accuracy']:.4f}"
+            )
+
+        # Average metrics across folds
+        return {
+            "mse": np.mean([m["mse"] for m in fold_metrics]),
+            "accuracy": np.mean([m["accuracy"] for m in fold_metrics]),
+            "precision": np.mean(
+                [m["precision"] for m in fold_metrics], axis=0
+            ).tolist(),
+            "recall": np.mean([m["recall"] for m in fold_metrics], axis=0).tolist(),
+            "f1": np.mean([m["f1"] for m in fold_metrics], axis=0).tolist(),
+            "support": np.sum([m["support"] for m in fold_metrics], axis=0).tolist(),
+            "confusion_matrix": np.sum(
+                [m["confusion_matrix"] for m in fold_metrics], axis=0
+            ).tolist(),
+        }
+
+    def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
+        """Evaluate model on test set using saved distribution."""
+        from utils import DATA_DIR
+
+        # Load test data
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+
+        # model_path already has .json extension from _get_model_extension()
+        if not model_path.exists():
+            raise FileNotFoundError(f"Distribution file not found: {model_path}")
+
+        with open(model_path, "r") as f:
+            dist_data = json.load(f)
+
+        # Recreate the model from saved distribution
+        model = WeightedRandomSampler(random_state=42)
+        model.y_train_ = np.array(dist_data["y_train"])
+        model.weights_ = np.array(dist_data["weights"])
+        model.rng_ = np.random.RandomState(42)
+
+        # Generate predictions
+        X_test_dummy = np.zeros((len(test_df), 1))
+        y_pred_test = model.predict(X_test_dummy)
+
+        y_true_test = test_df["label"].values
+        return calculate_metrics(y_true_test, y_pred_test)
+
+    def export(self, model_path: Path) -> None:
+        """Save model distribution to JSON file instead of ONNX."""
+        # model_path already has .json extension from _get_model_extension()
+        dist_data = {
+            "y_train": self.model.y_train_.tolist(),
+            "weights": self.model.weights_.tolist(),
+            "random_state": 42,
+            "model_type": "WeightedRandomSampler",
+        }
+
+        with open(model_path, "w") as f:
+            json.dump(dist_data, f, indent=2)
+
+        print(f"Distribution saved to {model_path}")
+
+    def _get_extra_metrics_data(self) -> Dict[str, Any]:
+        """Add training distribution statistics to metrics."""
+        # Since we're using uniform weights, just compute simple mean/std
+        train_mean = np.mean(self.model.y_train_)
+        train_std = np.std(self.model.y_train_)
+
+        # Add label distribution
+        unique_labels, label_counts = np.unique(self.model.y_train_, return_counts=True)
+        label_distribution = {
+            int(label): int(count) for label, count in zip(unique_labels, label_counts)
+        }
+
+        return {
+            "train_mean": float(train_mean),
+            "train_std": float(train_std),
+            "train_size": len(self.model.y_train_),
+            "label_distribution": label_distribution,
+        }
+
+
+class ModernBertTrainer(BaseTrainer):
+    """Trainer for fine-tuned ModernBERT model."""
+
+    def __init__(
+        self,
+        params: Dict[str, Any],
+        include_large: bool = False,
+        enable_train: bool = True,
+        enable_cv: bool = False,
+        enable_test: bool = False,
+    ):
+        super().__init__(
+            params,
+            embeddings=None,
+            include_large=include_large,
+            enable_train=enable_train,
             enable_cv=enable_cv,
             enable_test=enable_test,
         )

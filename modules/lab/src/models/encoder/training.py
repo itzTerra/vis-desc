@@ -9,10 +9,15 @@ from models.encoder.trainers import (
     RandomForestTrainer,
     CatBoostTrainer,
     ModernBertTrainer,
+    WeightedRandomBaselineTrainer,
 )
 from utils import DATA_DIR
 
 MODEL_PARAMS = {
+    "random": {
+        "no_lg": {},
+        "lg": {"small_dataset_weight_multiplier": 100.0},
+    },
     "ridge": {
         "minilm": {"ridge_alpha": 0.01},
         "minilm_lg": {"ridge_alpha": 0.01, "small_dataset_weight_multiplier": 100.0},
@@ -130,6 +135,7 @@ MODEL_PARAMS = {
 }
 
 TRAINER_CLASSES = {
+    "random": WeightedRandomBaselineTrainer,
     "ridge": RidgeTrainer,
     "svm": SVMTrainer,
     "rf": RandomForestTrainer,
@@ -145,6 +151,7 @@ if __name__ == "__main__":
         "models",
         nargs="*",
         choices=[
+            "random",
             "ridge",
             "svm",
             "rf",
@@ -161,8 +168,8 @@ if __name__ == "__main__":
         type=str,
         nargs="+",
         choices=["minilm", "mbert"],
-        required=True,
-        help="Embedding types to use for non-finetuned models",
+        default=None,
+        help="Embedding types to use for non-finetuned models (if not provided, only finetuned-mbert will be trained)",
     )
     parser.add_argument(
         "--lg",
@@ -177,7 +184,12 @@ if __name__ == "__main__":
         help="Output directory for models and metrics (default: DATA_DIR/models)",
     )
     parser.add_argument(
-        "--cv",
+        "--train",
+        action="store_true",
+        help="Enable training (disabled by default unless no other mode specified)",
+    )
+    parser.add_argument(
+        "--val",
         action="store_true",
         help="Enable cross-validation (disabled by default)",
     )
@@ -189,6 +201,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # If no mode is specified, default to training only
+    if not args.train and not args.val and not args.test:
+        args.train = True
+
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
@@ -197,11 +213,19 @@ if __name__ == "__main__":
 
     models_to_train = args.models
     if "all" in models_to_train or not models_to_train:
-        models_to_train = ["ridge", "svm", "rf", "catboost", "finetuned-mbert"]
+        models_to_train = [
+            "random",
+            "ridge",
+            "svm",
+            "rf",
+            "catboost",
+            "finetuned-mbert",
+        ]
 
     embeddings_list = args.embeddings
     include_large = args.lg
-    enable_cv = args.cv
+    enable_train = args.train
+    enable_cv = args.val
     enable_test = args.test
 
     for model_name in models_to_train:
@@ -212,11 +236,33 @@ if __name__ == "__main__":
             trainer = ModernBertTrainer(
                 params=params,
                 include_large=include_large,
+                enable_train=enable_train,
+                enable_cv=enable_cv,
+                enable_test=enable_test,
+            )
+            trainer.run_full_training(output_dir)
+        elif model_name == "random":
+            # Weighted random baseline doesn't use embeddings at all
+            key = "lg" if include_large else "no_lg"
+            params = MODEL_PARAMS[model_name].get(key, {})
+
+            trainer_class = TRAINER_CLASSES[model_name]
+            trainer = trainer_class(
+                params=params,
+                include_large=include_large,
+                enable_train=enable_train,
                 enable_cv=enable_cv,
                 enable_test=enable_test,
             )
             trainer.run_full_training(output_dir)
         else:
+            # Skip other models if no embeddings specified
+            if embeddings_list is None:
+                print(
+                    f"Skipping {model_name} (no embeddings specified, only finetuned-mbert and random are valid)"
+                )
+                continue
+
             # Train for each embedding type
             for embeddings in embeddings_list:
                 key = f"{embeddings}{'_lg' if include_large else ''}"
@@ -227,12 +273,21 @@ if __name__ == "__main__":
                     params=params,
                     embeddings=embeddings,
                     include_large=include_large,
+                    enable_train=enable_train,
                     enable_cv=enable_cv,
                     enable_test=enable_test,
                 )
                 trainer.run_full_training(output_dir)
 
     print("\n" + "=" * 60)
-    print("All training completed!")
-    print(f"Models and metrics saved to: {output_dir}")
+    phases = []
+    if enable_train:
+        phases.append("training")
+    if enable_cv:
+        phases.append("cross-validation")
+    if enable_test:
+        phases.append("testing")
+
+    print(f"All {' and '.join(phases)} completed!")
+    print(f"Results saved to: {output_dir}")
     print("=" * 60)

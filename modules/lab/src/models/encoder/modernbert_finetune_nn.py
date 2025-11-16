@@ -56,7 +56,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         for module in [self.feature_ff, self.regressor]:
             for m in module.modules():
                 if isinstance(m, nn.Linear):
-                    nn.init.normal_(m.weight)
+                    nn.init.xavier_normal_(m.weight, gain=0.1)
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
 
@@ -92,7 +92,9 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         print(
             f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
         )
-        print("weight zero ratio:", (self.feature_ff[1].weight == 0).float().mean())
+        print("Sample weights:", self.feature_ff[1].weight[0, :5])
+        print("Weight mean:", self.feature_ff[1].weight.mean())
+        print("Weight std:", self.feature_ff[1].weight.std())
         concatenated_embedding = torch.cat((cls_embedding, feature_embedding), dim=1)
 
         logits = self.regressor(concatenated_embedding)

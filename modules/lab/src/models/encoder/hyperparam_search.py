@@ -294,7 +294,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
-        "stage2_epochs": [10],  # Epochs for small dataset finetuning
+        "stage2_epochs": [20],  # Epochs for small dataset finetuning
         "lr_bert": [1e-5],
         "lr_custom": [1e-4],
         "dropout_rate": [0.01],

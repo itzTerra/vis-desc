@@ -28,36 +28,17 @@ def print_cuda_availability():
 
 def print_device_info():
     """Print detailed information about each GPU device."""
-    if not torch.cuda.is_available():
-        print("\nNo CUDA devices available.")
-        return
-
     print_section("GPU Devices")
-    device_count = torch.cuda.device_count()
+    try:
+        device_count = torch.cuda.device_count()
+    except Exception as e:
+        print(f"Error getting device count: {e}\nNo CUDA devices available.")
     print(f"Number of GPUs: {device_count}\n")
 
     for i in range(device_count):
         print(f"--- Device {i} ---")
         print(f"Name: {torch.cuda.get_device_name(i)}")
         print(f"Compute Capability: {torch.cuda.get_device_capability(i)}")
-
-        # Memory information
-        props = torch.cuda.get_device_properties(i)
-        print(f"Total Memory: {props.total_memory / 1024**3:.2f} GB")
-        print(f"Multi-Processor Count: {props.multi_processor_count}")
-        print(f"Is Multi GPU Board: {props.is_multi_gpu_board}")
-        print(f"Is Integrated: {props.is_integrated}")
-
-        # Memory usage
-        if torch.cuda.is_initialized():
-            print(
-                f"Memory Allocated: {torch.cuda.memory_allocated(i) / 1024**3:.2f} GB"
-            )
-            print(f"Memory Reserved: {torch.cuda.memory_reserved(i) / 1024**3:.2f} GB")
-            print(
-                f"Max Memory Allocated: {torch.cuda.max_memory_allocated(i) / 1024**3:.2f} GB"
-            )
-
         print()
 
 

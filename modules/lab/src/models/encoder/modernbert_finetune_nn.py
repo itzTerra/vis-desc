@@ -25,9 +25,12 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             nn.ReLU(),
         )
 
-        self.feature_scale = nn.Parameter(torch.tensor(0.1))  # Start small
-
         bert_hidden_size = config.hidden_size
+
+        # self.feature_scale = nn.Parameter(torch.tensor(0.1))  # Start small
+        self.fusion_norm = nn.LayerNorm(
+            bert_hidden_size + feature_hidden_size, eps=norm_eps
+        )
 
         self.regressor = nn.Sequential(
             nn.Dropout(dropout_rate),
@@ -108,11 +111,13 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         # )
 
         feature_embedding = self.feature_ff(features)
-        feature_embedding = feature_embedding * self.feature_scale  # Scale down
+        # feature_embedding = feature_embedding * self.feature_scale  # Scale down
         print(
             f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
         )
         concatenated_embedding = torch.cat((cls_embedding, feature_embedding), dim=1)
+
+        concatenated_embedding = self.fusion_norm(concatenated_embedding)
 
         logits = self.regressor(concatenated_embedding)
         print(
@@ -131,29 +136,25 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 def check_gradient_flow(model, step, epoch):
     """Check gradient flow through different parts of the model."""
     grad_stats = {
-        "bert_embeddings": [],
-        "bert_encoder": [],
-        "bert_pooler": [],
+        "embeddings": [],
+        "0.attn.Wi": [],
+        "0.attn.Wo": [],
+        "0.mlp.Wi": [],
+        "0.mlp.Wo": [],
+        "21.attn.Wi": [],
+        "21.attn.Wo": [],
+        "21.mlp.Wi": [],
+        "21.mlp.Wo": [],
         "feature_ff": [],
         "regressor": [],
     }
 
     for name, param in model.named_parameters():
         if param.grad is not None:
-            print(f"{name}: grad_norm={param.grad.norm().item():.6f}")
             grad_norm = param.grad.norm().item()
-            if "embeddings" in name:
-                grad_stats["bert_embeddings"].append(grad_norm)
-            elif "encoder" in name:
-                grad_stats["bert_encoder"].append(grad_norm)
-            elif "pooler" in name:
-                grad_stats["bert_pooler"].append(grad_norm)
-            elif "feature_ff" in name:
-                grad_stats["feature_ff"].append(grad_norm)
-            elif "regressor" in name:
-                grad_stats["regressor"].append(grad_norm)
-        else:
-            print(f"{name}: NO GRADIENT")
+            for key in grad_stats.keys():
+                if key in name:
+                    grad_stats[key].append(grad_norm)
 
     # Print summary statistics
     print(f"\n=== Gradient Flow Check (Epoch {epoch}, Step {step}) ===")

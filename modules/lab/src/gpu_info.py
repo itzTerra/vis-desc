@@ -21,13 +21,9 @@ def print_cuda_availability():
     print_section("CUDA Availability")
     print(f"CUDA Available: {torch.cuda.is_available()}")
     print(f"PyTorch Version: {torch.__version__}")
-    print(
-        f"CUDA Version (PyTorch): {torch.version.cuda if torch.cuda.is_available() else 'N/A'}"
-    )
+    print(f"CUDA Version (PyTorch): {torch.version.cuda}")
     print(f"cuDNN Available: {torch.backends.cudnn.is_available()}")
-    print(
-        f"cuDNN Version: {torch.backends.cudnn.version() if torch.backends.cudnn.is_available() else 'N/A'}"
-    )
+    print(f"cuDNN Version: {torch.backends.cudnn.version()}")
 
 
 def print_device_info():

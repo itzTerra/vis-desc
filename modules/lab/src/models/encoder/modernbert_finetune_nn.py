@@ -58,40 +58,12 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         print(f"Total parameters: {sum(p.numel() for p in self.parameters()):,}")
 
     def _init_custom_weights(self):
-        print("\n=== INITIALIZING CUSTOM WEIGHTS ===")
         for module in [self.feature_ff, self.regressor]:
             for m in module.modules():
                 if isinstance(m, nn.Linear):
-                    print(f"Module: {m}")
-                    print(f"Weight shape: {m.weight.shape}")
-                    print(
-                        f"Before init - mean: {m.weight.mean().item():.6f}, std: {m.weight.std().item():.6f}"
-                    )
-                    print(f"Before init - sample: {m.weight[0, :5]}")
-
                     nn.init.xavier_normal_(m.weight, gain=1)
-
-                    print(
-                        f"After init - mean: {m.weight.mean().item():.6f}, std: {m.weight.std().item():.6f}"
-                    )
-                    print(f"After init - sample: {m.weight[0, :5]}")
-                    print(f"Is weight on GPU? {m.weight.is_cuda}")
-                    print()
-
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
-        print("=== DONE ===\n")
-        print("\n=== VERIFICATION RIGHT AFTER INIT ===")
-        print("feature_ff[1] weight sample:", self.feature_ff[1].weight[0, :5])
-        print("feature_ff[1] weight mean:", self.feature_ff[1].weight.mean().item())
-        print("feature_ff[1] weight std:", self.feature_ff[1].weight.std().item())
-        print(
-            "regressor[1] weight sample:",
-            self.regressor[1].weight[0, :5]
-            if self.regressor[1].weight.shape[0] > 0
-            else "N/A",
-        )
-        print("===\n")
 
     def forward(
         self,
@@ -101,11 +73,11 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         labels=None,
         **kwargs,
     ):
-        print(
-            f"Labels range: [{labels.min():.2f}, {labels.max():.2f}], mean: {labels.mean():.2f}"
-        )
-        print(f"Features range: [{features.min():.2f}, {features.max():.2f}]")
-        print(f"Features std: {features.std():.2f}")
+        # print(
+        #     f"Labels range: [{labels.min():.2f}, {labels.max():.2f}], mean: {labels.mean():.2f}"
+        # )
+        # print(f"Features range: [{features.min():.2f}, {features.max():.2f}]")
+        # print(f"Features std: {features.std():.2f}")
 
         outputs = self.model(
             input_ids=input_ids,
@@ -114,20 +86,17 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         )
         # Use the CLS token's representation (first token)
         cls_embedding = outputs.last_hidden_state[:, 0, :]
-        print(
-            f"CLS embedding: shape={cls_embedding.shape}, has NaN: {torch.isnan(cls_embedding).any()}"
-        )
-        print(
-            f"CLS stats: min={cls_embedding.min():.4f}, max={cls_embedding.max():.4f}"
-        )
+        # print(
+        #     f"CLS embedding: shape={cls_embedding.shape}, has NaN: {torch.isnan(cls_embedding).any()}"
+        # )
+        # print(
+        #     f"CLS stats: min={cls_embedding.min():.4f}, max={cls_embedding.max():.4f}"
+        # )
 
         feature_embedding = self.feature_ff(features)
         print(
             f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
         )
-        print("Sample weights:", self.feature_ff[1].weight[0, :5])
-        print("Weight mean:", self.feature_ff[1].weight.mean())
-        print("Weight std:", self.feature_ff[1].weight.std())
         concatenated_embedding = torch.cat((cls_embedding, feature_embedding), dim=1)
 
         logits = self.regressor(concatenated_embedding)

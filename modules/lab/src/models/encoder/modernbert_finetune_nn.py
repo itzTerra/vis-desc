@@ -28,8 +28,11 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         bert_hidden_size = config.hidden_size
 
         self.regressor = nn.Sequential(
+            nn.Linear(bert_hidden_size + feature_hidden_size, 128),
+            nn.LayerNorm(128, eps=norm_eps),
+            nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(bert_hidden_size + feature_hidden_size, 1),
+            nn.Linear(128, 1),
         )
 
         self.loss_fct = nn.MSELoss()
@@ -37,8 +40,14 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self._init_custom_weights()
         self.post_init()
 
+        # for name, param in self.named_parameters():
+        #     if "encoder" in name:
+        #         param.requires_grad = True
+
         for name, param in self.named_parameters():
-            if "encoder" in name:
+            if "model." in name:  # Freeze the entire ModernBERT
+                param.requires_grad = False
+            else:  # Only train custom layers
                 param.requires_grad = True
 
         print(
@@ -50,7 +59,8 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         for module in [self.feature_ff, self.regressor]:
             for m in module.modules():
                 if isinstance(m, nn.Linear):
-                    nn.init.normal_(m.weight, mean=0.0, std=0.1)
+                    # nn.init.normal_(m.weight, mean=0.0, std=0.1)
+                    nn.init.xavier_uniform_(m.weight, gain=0.01)
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
 

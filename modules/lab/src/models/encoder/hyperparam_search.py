@@ -507,16 +507,24 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             )
 
                             loss = outputs.loss
-                            if torch.isnan(loss):
-                                print("Loss is NaN, skipping backward pass.")
+
+                            if torch.isnan(loss) or torch.isinf(loss):
+                                print(
+                                    f"Invalid loss detected: {loss.item()}, skipping batch"
+                                )
                                 continue
+                            if loss.item() > 1000:
+                                print(
+                                    f"Warning: Very high loss {loss.item():.2f}, clipping"
+                                )
+                                loss = torch.clamp(loss, max=100)
 
                             loss.backward()
 
                             if step == 0 or (step + 1) % 10 == 0:
                                 check_gradient_flow(model, step + 1, epoch + 1)
 
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
                             optimizer.step()
                             scheduler.step()
                             progress_bar.set_postfix({"loss": loss.item()})

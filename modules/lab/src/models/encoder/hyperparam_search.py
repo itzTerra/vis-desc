@@ -227,15 +227,15 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
                 "learning_rate": trial.suggest_float(
                     "learning_rate", 1e-3, 0.1, log=True
                 ),
-                "depth": trial.suggest_int("depth", 2, 6),
+                "depth": trial.suggest_int("depth", 1, 5),
                 "l2_leaf_reg": trial.suggest_float(
-                    "l2_leaf_reg", 1e-8, 100.0, log=True
+                    "l2_leaf_reg", 1e-10, 100.0, log=True
                 ),
                 "bagging_temperature": trial.suggest_float(
-                    "bagging_temperature", 0.0, 20.0
+                    "bagging_temperature", 1.0, 30.0
                 ),
                 "random_strength": trial.suggest_float(
-                    "random_strength", 1e-8, 10.0, log=True
+                    "random_strength", 1e-10, 10.0, log=True
                 ),
                 "border_count": trial.suggest_int("border_count", 32, 255),
             }

@@ -22,7 +22,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             nn.Dropout(dropout_rate),
             nn.Linear(feature_input_size, feature_hidden_size),
             nn.LayerNorm(feature_hidden_size, eps=norm_eps),
-            nn.ReLU(),
+            nn.GELU(),
         )
 
         bert_hidden_size = config.hidden_size
@@ -47,10 +47,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 
         self._init_custom_weights()
 
-        for name, param in self.named_parameters():
-            if "encoder" in name:
-                param.requires_grad = True
-
         # for name, param in self.named_parameters():
         #     if "model." in name:  # Freeze the entire ModernBERT
         #         param.requires_grad = False
@@ -70,13 +66,15 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
                     nn.init.kaiming_normal_(
                         module.weight, mode="fan_in", nonlinearity="relu"
                     )
+                    # Add small positive bias to prevent all-negative inputs to ReLU
+                    if module.bias is not None:
+                        nn.init.constant_(module.bias, 0.01)
                 else:
                     nn.init.xavier_uniform_(
                         module.weight, gain=0.02
                     )  # Smaller gain for final regressor
-
-                if module.bias is not None:
-                    nn.init.constant_(module.bias, 0)
+                    if module.bias is not None:
+                        nn.init.constant_(module.bias, 0)
 
             elif isinstance(module, nn.LayerNorm):
                 nn.init.constant_(module.weight, 1.0)
@@ -137,11 +135,9 @@ def check_gradient_flow(model, step, epoch):
     """Check gradient flow through different parts of the model."""
     grad_stats = {
         "embeddings": [],
-        "0.attn.Wi": [],
         "0.attn.Wo": [],
         "0.mlp.Wi": [],
         "0.mlp.Wo": [],
-        "21.attn.Wi": [],
         "21.attn.Wo": [],
         "21.mlp.Wi": [],
         "21.mlp.Wo": [],

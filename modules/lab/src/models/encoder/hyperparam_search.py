@@ -295,7 +295,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
         "stage2_epochs": [2, 5, 10],  # Epochs for small dataset finetuning
-        "lr_bert": [5e-4, 1e-5],
+        "lr_bert": [1e-5],
         "lr_custom": [1e-4, 1e-5],
         "dropout_rate": [0.1],
         "weight_decay": [1e-2],
@@ -520,7 +520,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             if step == 0 or (step + 1) % 10 == 0:
                                 check_gradient_flow(model, step + 1, epoch + 1)
 
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                             optimizer.step()
                             scheduler.step()
                             progress_bar.set_postfix({"loss": loss.item()})

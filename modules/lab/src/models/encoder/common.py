@@ -143,10 +143,16 @@ def run_cross_validation(
     include_modernbert_embeddings=False,
     include_large=False,
     small_dataset_weight_multiplier=None,
+    two_stage_training=False,
 ):
-    if include_large and small_dataset_weight_multiplier is None:
+    if (
+        include_large
+        and small_dataset_weight_multiplier is None
+        and not two_stage_training
+    ):
         raise ValueError(
-            "small_dataset_weight_multiplier must be set when include_large is True."
+            "small_dataset_weight_multiplier must be set when include_large is True "
+            "unless two_stage_training is enabled."
         )
 
     kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
@@ -164,15 +170,24 @@ def run_cross_validation(
         train_fold_df = sm_train.loc[train_index].copy()
         val_fold_df = sm_train.loc[val_index].copy()
 
+        lg_size = None
         if lg_train is not None:
-            # Upscale small dataset weights to balance with large dataset
-            train_fold_df["weight"] *= small_dataset_weight_multiplier
-            train_fold_df = pd.concat([lg_train, train_fold_df], ignore_index=True)
+            lg_size = len(lg_train)
+            if two_stage_training:
+                # For two-stage training, concatenate without weight adjustment
+                # The training function will handle stages separately
+                # Pass lg_size as metadata so the training function knows where to split
+                train_fold_df = pd.concat([lg_train, train_fold_df], ignore_index=True)
+            else:
+                # Traditional approach: upscale small dataset weights to balance with large dataset
+                train_fold_df["weight"] *= small_dataset_weight_multiplier
+                train_fold_df = pd.concat([lg_train, train_fold_df], ignore_index=True)
 
         score = train_and_eval_func(
             train_fold_df.reset_index(drop=True),
             val_fold_df.reset_index(drop=True),
             tokenizer,
+            lg_size,
         )
 
         fold_scores.append(score)

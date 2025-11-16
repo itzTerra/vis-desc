@@ -34,8 +34,8 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 
         self.loss_fct = nn.MSELoss()
 
-        self._init_custom_weights()
         self.post_init()
+        self._init_custom_weights()
 
         # for name, param in self.named_parameters():
         #     if "encoder" in name:

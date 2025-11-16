@@ -33,19 +33,26 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         )
 
         self.loss_fct = nn.MSELoss()
+
+        self._init_custom_weights()
         self.post_init()
+
+        for name, param in self.named_parameters():
+            if "encoder" in name:
+                param.requires_grad = True
 
         print(
             f"Trainable parameters: {sum(p.numel() for p in self.parameters() if p.requires_grad):,}"
         )
         print(f"Total parameters: {sum(p.numel() for p in self.parameters()):,}")
 
-    def _init_custom_weights(self, module):
-        """Initializes the weights of the custom layers."""
-        if isinstance(module, nn.Linear):
-            nn.init.normal_(module.weight)
-            if module.bias is not None:
-                nn.init.constant_(module.bias, 0)
+    def _init_custom_weights(self):
+        for module in [self.feature_ff, self.regressor]:
+            for m in module.modules():
+                if isinstance(m, nn.Linear):
+                    nn.init.normal_(m.weight, mean=0.0, std=0.1)
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
 
     def forward(
         self,

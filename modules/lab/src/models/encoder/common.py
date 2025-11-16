@@ -205,16 +205,33 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
     """
     Creates and runs an Optuna study.
     """
+    from datetime import datetime
+
     TEST_RUN = os.environ.get("TEST_RUN", "false").lower() in ("true", "1", "t")
 
-    study = optuna.create_study(
-        study_name=study_name,
-        storage=f"sqlite:///{(DATA_DIR / 'optuna' / 'optuna_db.sqlite3').as_posix()}",
-        direction="minimize",
-        # pruner=optuna.pruners.MedianPruner(),
-        sampler=optuna.samplers.GridSampler(search_space) if search_space else None,
-        load_if_exists=True,
-    )
+    try:
+        study = optuna.create_study(
+            study_name=study_name,
+            storage=f"sqlite:///{(DATA_DIR / 'optuna' / 'optuna_db.sqlite3').as_posix()}",
+            direction="minimize",
+            # pruner=optuna.pruners.MedianPruner(),
+            sampler=optuna.samplers.GridSampler(search_space) if search_space else None,
+            load_if_exists=True,
+        )
+    except Exception as e:
+        print(f"Failed to create study '{study_name}': {e}")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        study_name_with_timestamp = f"{study_name}_{timestamp}"
+        print(f"Retrying with timestamped name: {study_name_with_timestamp}")
+        study = optuna.create_study(
+            study_name=study_name_with_timestamp,
+            storage=f"sqlite:///{(DATA_DIR / 'optuna' / 'optuna_db.sqlite3').as_posix()}",
+            direction="minimize",
+            # pruner=optuna.pruners.MedianPruner(),
+            sampler=optuna.samplers.GridSampler(search_space) if search_space else None,
+            load_if_exists=True,
+        )
+
     study.optimize(objective_func, n_trials=n_trials if not TEST_RUN else 1)
 
     print("\n--- Optuna Study Summary ---")

@@ -25,6 +25,8 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             nn.ReLU(),
         )
 
+        self.feature_scale = nn.Parameter(torch.tensor(0.1))  # Start small
+
         bert_hidden_size = config.hidden_size
 
         self.regressor = nn.Sequential(
@@ -58,12 +60,24 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         print(f"Total parameters: {sum(p.numel() for p in self.parameters()):,}")
 
     def _init_custom_weights(self):
-        for module in [self.feature_ff, self.regressor]:
-            for m in module.modules():
-                if isinstance(m, nn.Linear):
-                    nn.init.xavier_normal_(m.weight, gain=1)
-                    if m.bias is not None:
-                        nn.init.constant_(m.bias, 0)
+        for name, module in self.named_modules():
+            if isinstance(module, nn.Linear):
+                # Use He initialization for layers followed by ReLU
+                if "feature_ff" in name:
+                    nn.init.kaiming_normal_(
+                        module.weight, mode="fan_in", nonlinearity="relu"
+                    )
+                else:
+                    nn.init.xavier_uniform_(
+                        module.weight, gain=0.02
+                    )  # Smaller gain for final regressor
+
+                if module.bias is not None:
+                    nn.init.constant_(module.bias, 0)
+
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.constant_(module.weight, 1.0)
+                nn.init.constant_(module.bias, 0)
 
     def forward(
         self,
@@ -94,6 +108,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         # )
 
         feature_embedding = self.feature_ff(features)
+        feature_embedding = feature_embedding * self.feature_scale  # Scale down
         print(
             f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
         )
@@ -125,6 +140,7 @@ def check_gradient_flow(model, step, epoch):
 
     for name, param in model.named_parameters():
         if param.grad is not None:
+            print(f"{name}: grad_norm={param.grad.norm().item():.6f}")
             grad_norm = param.grad.norm().item()
             if "embeddings" in name:
                 grad_stats["bert_embeddings"].append(grad_norm)
@@ -136,6 +152,8 @@ def check_gradient_flow(model, step, epoch):
                 grad_stats["feature_ff"].append(grad_norm)
             elif "regressor" in name:
                 grad_stats["regressor"].append(grad_norm)
+        else:
+            print(f"{name}: NO GRADIENT")
 
     # Print summary statistics
     print(f"\n=== Gradient Flow Check (Epoch {epoch}, Step {step}) ===")

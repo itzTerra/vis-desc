@@ -19,10 +19,11 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self.model = ModernBertModel(config)
 
         self.feature_ff = nn.Sequential(
-            nn.Dropout(dropout_rate),
+            nn.BatchNorm1d(feature_input_size),
             nn.Linear(feature_input_size, feature_hidden_size),
             nn.LayerNorm(feature_hidden_size, eps=norm_eps),
-            nn.ReLU(),
+            nn.GELU(),
+            nn.Dropout(dropout_rate),
         )
 
         bert_hidden_size = config.hidden_size
@@ -30,7 +31,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self.regressor = nn.Sequential(
             nn.Linear(bert_hidden_size + feature_hidden_size, 128),
             nn.LayerNorm(128, eps=norm_eps),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Dropout(dropout_rate),
             nn.Linear(128, 1),
         )
@@ -60,7 +61,9 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             for m in module.modules():
                 if isinstance(m, nn.Linear):
                     # nn.init.normal_(m.weight, mean=0.0, std=0.1)
-                    nn.init.xavier_uniform_(m.weight, gain=0.01)
+                    nn.init.kaiming_normal_(
+                        m.weight, mode="fan_in", nonlinearity="relu"
+                    )
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
 

@@ -35,6 +35,11 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self.loss_fct = nn.MSELoss()
 
         self.post_init()
+
+        if next(self.parameters()).is_meta:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.to_empty(device=device)
+
         self._init_custom_weights()
 
         # for name, param in self.named_parameters():

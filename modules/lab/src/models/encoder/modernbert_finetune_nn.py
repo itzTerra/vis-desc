@@ -28,11 +28,8 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         bert_hidden_size = config.hidden_size
 
         self.regressor = nn.Sequential(
-            nn.Linear(bert_hidden_size + feature_hidden_size, 128),
-            nn.LayerNorm(128, eps=norm_eps),
-            nn.ReLU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(128, 1),
+            nn.Linear(bert_hidden_size + feature_hidden_size, 1),
         )
 
         self.loss_fct = nn.MSELoss()

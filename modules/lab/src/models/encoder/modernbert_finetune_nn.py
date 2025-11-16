@@ -89,9 +89,10 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         )
 
         feature_embedding = self.feature_ff(features)
-        # if torch.isnan(feature_embedding).any():
-        #     print("NaN found in feature_embedding")
-        #     print("weight zero ratio:", (self.feature_ff[1].weight == 0).float().mean())
+        print(
+            f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
+        )
+        print("weight zero ratio:", (self.feature_ff[1].weight == 0).float().mean())
         concatenated_embedding = torch.cat((cls_embedding, feature_embedding), dim=1)
 
         logits = self.regressor(concatenated_embedding)

@@ -14,10 +14,8 @@ import numpy as np
 from models.encoder.common import (
     run_study,
     SEED,
-    device,
     run_cross_validation,
 )
-import torch
 
 
 class ObjectiveProvider:
@@ -43,7 +41,7 @@ class ObjectiveProvider:
 class RidgeObjectiveProvider(ObjectiveProvider):
     def get_objective_fn(self) -> callable:
         def objective(trial):
-            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 10.0, log=True)
+            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 50.0, log=True)
             # ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
             small_dataset_weight_multiplier = (
                 trial.suggest_float(
@@ -260,24 +258,13 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
                 train_labels = train_df["label"].values
                 y_true_fold = val_df["label"].values
 
-                if device.type == "cuda":
-                    task_type = "GPU"
-                    gpu_id = str(torch.cuda.current_device())
-                    regressor = CatBoostRegressor(
-                        **params,
-                        random_seed=SEED,
-                        verbose=0,
-                        early_stopping_rounds=50,
-                        task_type=task_type,
-                        devices=gpu_id,
-                    )
-                else:
-                    regressor = CatBoostRegressor(
-                        **params,
-                        random_seed=SEED,
-                        verbose=0,
-                        early_stopping_rounds=50,
-                    )
+                regressor = CatBoostRegressor(
+                    **params,
+                    random_seed=SEED,
+                    verbose=0,
+                    early_stopping_rounds=50,
+                    thread_count=-1,
+                )
                 regressor.fit(
                     train_features,
                     train_labels,
@@ -313,7 +300,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         "optimizer_warmup": [0.1],
         "feature_hidden_size": [512, 768, 1024],
     }
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
 
     def get_objective_fn(self) -> callable:
         import torch

@@ -447,18 +447,9 @@ class CatBoostTrainer(BaseSklearnTrainer):
             for k, v in self.params.items()
             if k not in ["small_dataset_weight_multiplier"]  # Exclude non-CB params
         }
-        if device.type == "cuda":
-            task_type = "GPU"
-            gpu_id = str(torch.cuda.current_device())
-            return CatBoostRegressor(
-                **cb_params,
-                random_seed=SEED,
-                verbose=100,
-                task_type=task_type,
-                devices=gpu_id,
-            )
-        else:
-            return CatBoostRegressor(**cb_params, random_seed=SEED, verbose=100)
+        return CatBoostRegressor(
+            **cb_params, random_seed=SEED, verbose=100, thread_count=-1
+        )
 
     def _get_fit_params(self) -> Dict[str, Any]:
         return {"sample_weight": self.weights}

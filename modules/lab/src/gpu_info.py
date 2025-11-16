@@ -33,6 +33,7 @@ def print_device_info():
         device_count = torch.cuda.device_count()
     except Exception as e:
         print(f"Error getting device count: {e}\nNo CUDA devices available.")
+        return
     print(f"Number of GPUs: {device_count}\n")
 
     for i in range(device_count):

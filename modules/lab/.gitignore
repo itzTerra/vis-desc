@@ -222,3 +222,5 @@ data/datasets/small/backup
 data/datasets/small/backup/**/*
 data/datasets/large/*.parquet
 data/datasets/large/split
+!data/optuna
+!data/optuna/*.py

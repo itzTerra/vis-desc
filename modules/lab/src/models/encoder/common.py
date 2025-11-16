@@ -218,6 +218,7 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
             sampler=optuna.samplers.GridSampler(search_space) if search_space else None,
             load_if_exists=True,
         )
+        study.optimize(objective_func, n_trials=n_trials if not TEST_RUN else 1)
     except Exception as e:
         print(f"Failed to create study '{study_name}': {e}")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -231,8 +232,7 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
             sampler=optuna.samplers.GridSampler(search_space) if search_space else None,
             load_if_exists=True,
         )
-
-    study.optimize(objective_func, n_trials=n_trials if not TEST_RUN else 1)
+        study.optimize(objective_func, n_trials=n_trials if not TEST_RUN else 1)
 
     print("\n--- Optuna Study Summary ---")
     print(f"Study: {study_name}")

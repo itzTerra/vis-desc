@@ -8,6 +8,12 @@ import optuna
 from transformers import AutoTokenizer
 from utils import DATA_DIR
 from sklearn.utils.class_weight import compute_sample_weight
+from sklearn.metrics import (
+    mean_squared_error,
+    accuracy_score,
+    precision_recall_fscore_support,
+    confusion_matrix,
+)
 
 BERT_TOKENIZER_MAX_LENGTH = 160
 SEED = 42
@@ -204,3 +210,38 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
         print(f"  {key}: {value}")
 
     return study
+
+
+def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
+    """
+    Calculate comprehensive metrics for predictions.
+
+    Returns:
+        dict with keys:
+        - mse: Mean squared error
+        - accuracy: Accuracy of rounded scores
+        - precision: Precision for each class (1-5)
+        - recall: Recall for each class (1-5)
+        - f1: F1-score for each class (1-5)
+        - confusion_matrix: Confusion matrix for rounded scores
+    """
+    # Round predictions and true values to nearest integer (1-5)
+    y_true_rounded = np.clip(np.round(y_true), 1, 5).astype(int)
+    y_pred_rounded = np.clip(np.round(y_pred), 1, 5).astype(int)
+
+    mse = mean_squared_error(y_true, y_pred)
+    accuracy = accuracy_score(y_true_rounded, y_pred_rounded)
+    precision, recall, f1, support = precision_recall_fscore_support(
+        y_true_rounded, y_pred_rounded, labels=[1, 2, 3, 4, 5], zero_division=0
+    )
+    cm = confusion_matrix(y_true_rounded, y_pred_rounded, labels=[1, 2, 3, 4, 5])
+
+    return {
+        "mse": float(mse),
+        "accuracy": float(accuracy),
+        "precision": precision.tolist(),
+        "recall": recall.tolist(),
+        "f1": f1.tolist(),
+        "support": support.tolist(),
+        "confusion_matrix": cm.tolist(),
+    }

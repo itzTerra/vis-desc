@@ -14,8 +14,10 @@ import numpy as np
 from models.encoder.common import (
     run_study,
     SEED,
+    device,
     run_cross_validation,
 )
+import torch
 
 
 class ObjectiveProvider:
@@ -41,7 +43,8 @@ class ObjectiveProvider:
 class RidgeObjectiveProvider(ObjectiveProvider):
     def get_objective_fn(self) -> callable:
         def objective(trial):
-            ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
+            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 10.0, log=True)
+            # ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
             small_dataset_weight_multiplier = (
                 trial.suggest_float(
                     "small_dataset_weight_multiplier", 10.0, 10000.0, log=True
@@ -257,12 +260,24 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
                 train_labels = train_df["label"].values
                 y_true_fold = val_df["label"].values
 
-                regressor = CatBoostRegressor(
-                    **params,
-                    random_seed=SEED,
-                    verbose=0,
-                    early_stopping_rounds=50,
-                )
+                if device.type == "cuda":
+                    task_type = "GPU"
+                    gpu_id = str(torch.cuda.current_device())
+                    regressor = CatBoostRegressor(
+                        **params,
+                        random_seed=SEED,
+                        verbose=0,
+                        early_stopping_rounds=50,
+                        task_type=task_type,
+                        devices=gpu_id,
+                    )
+                else:
+                    regressor = CatBoostRegressor(
+                        **params,
+                        random_seed=SEED,
+                        verbose=0,
+                        early_stopping_rounds=50,
+                    )
                 regressor.fit(
                     train_features,
                     train_labels,

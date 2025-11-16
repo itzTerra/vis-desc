@@ -56,7 +56,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         for module in [self.feature_ff, self.regressor]:
             for m in module.modules():
                 if isinstance(m, nn.Linear):
-                    nn.init.xavier_normal_(m.weight, gain=0.1)
+                    nn.init.xavier_normal_(m.weight, gain=1)
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
 

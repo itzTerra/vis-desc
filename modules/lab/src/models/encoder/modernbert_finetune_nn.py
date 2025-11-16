@@ -42,15 +42,15 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 
         self._init_custom_weights()
 
-        # for name, param in self.named_parameters():
-        #     if "encoder" in name:
-        #         param.requires_grad = True
-
         for name, param in self.named_parameters():
-            if "model." in name:  # Freeze the entire ModernBERT
-                param.requires_grad = False
-            else:  # Only train custom layers
+            if "encoder" in name:
                 param.requires_grad = True
+
+        # for name, param in self.named_parameters():
+        #     if "model." in name:  # Freeze the entire ModernBERT
+        #         param.requires_grad = False
+        #     else:  # Only train custom layers
+        #         param.requires_grad = True
 
         print(
             f"Trainable parameters: {sum(p.numel() for p in self.parameters() if p.requires_grad):,}"

@@ -30,7 +30,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self.regressor = nn.Sequential(
             nn.Linear(bert_hidden_size + feature_hidden_size, 128),
             nn.LayerNorm(128, eps=norm_eps),
-            nn.RELU(),
+            nn.ReLU(),
             nn.Dropout(dropout_rate),
             nn.Linear(128, 1),
         )
@@ -84,6 +84,29 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         )
         # Use the CLS token's representation (first token)
         cls_embedding = outputs.last_hidden_state[:, 0, :]
+        print(
+            f"CLS embedding: shape={cls_embedding.shape}, has NaN: {torch.isnan(cls_embedding).any()}"
+        )
+        print(
+            f"CLS stats: min={cls_embedding.min():.4f}, max={cls_embedding.max():.4f}"
+        )
+
+        # Check feature processing step by step
+        for i, layer in enumerate(self.feature_ff):
+            if i == 0:
+                x = layer(features)
+                print(
+                    f"After Linear: has NaN: {torch.isnan(x).any()}, min={x.min():.4f}, max={x.max():.4f}"
+                )
+            elif isinstance(layer, nn.LayerNorm):
+                x = layer(x)
+                print(f"After LayerNorm: has NaN: {torch.isnan(x).any()}")
+            elif isinstance(layer, nn.ReLU):
+                x = layer(x)
+                print(f"After ReLU: has NaN: {torch.isnan(x).any()}")
+            elif isinstance(layer, nn.Dropout):
+                x = layer(x)
+                print(f"After Dropout: has NaN: {torch.isnan(x).any()}")
 
         feature_embedding = self.feature_ff(features)
         # if torch.isnan(feature_embedding).any():

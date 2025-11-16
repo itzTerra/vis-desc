@@ -19,7 +19,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self.model = ModernBertModel(config)
 
         self.feature_ff = nn.Sequential(
-            nn.BatchNorm1d(feature_input_size),
             nn.Linear(feature_input_size, feature_hidden_size),
             nn.LayerNorm(feature_hidden_size, eps=norm_eps),
             nn.GELU(),
@@ -60,10 +59,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         for module in [self.feature_ff, self.regressor]:
             for m in module.modules():
                 if isinstance(m, nn.Linear):
-                    # nn.init.normal_(m.weight, mean=0.0, std=0.1)
-                    nn.init.kaiming_normal_(
-                        m.weight, mode="fan_in", nonlinearity="relu"
-                    )
+                    nn.init.normal_(m.weight, mean=0.0, std=0.02)
                     if m.bias is not None:
                         nn.init.constant_(m.bias, 0)
 

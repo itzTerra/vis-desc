@@ -42,6 +42,9 @@ class ObjectiveProvider:
 
 
 class RidgeObjectiveProvider(ObjectiveProvider):
+    def get_n_trials(self):
+        return 200
+
     def get_objective_fn(self) -> callable:
         def objective(trial):
             ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 50.0, log=True)
@@ -106,6 +109,9 @@ class RidgeObjectiveProvider(ObjectiveProvider):
 
 
 class SVMObjectiveProvider(ObjectiveProvider):
+    def get_n_trials(self):
+        return 100
+
     def get_objective_fn(self) -> callable:
         def objective(trial):
             c = trial.suggest_float("svr_c", 0.0001, 10.0, log=True)
@@ -170,6 +176,9 @@ class SVMObjectiveProvider(ObjectiveProvider):
 
 
 class RandomForestObjectiveProvider(ObjectiveProvider):
+    def get_n_trials(self):
+        return 150
+
     def get_objective_fn(self) -> callable:
         def objective(trial):
             params = {
@@ -234,6 +243,9 @@ class RandomForestObjectiveProvider(ObjectiveProvider):
 
 
 class CatBoostObjectiveProvider(ObjectiveProvider):
+    def get_n_trials(self):
+        return 200
+
     def get_objective_fn(self) -> callable:
         def objective(trial):
             params = {
@@ -327,6 +339,12 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     EARLY_STOPPING_PATIENCE = (
         3  # Stop if validation loss doesn't improve for this many epochs
     )
+
+    def get_n_trials(self) -> int:
+        return 20
+
+    def get_search_space(self) -> dict | None:
+        return self.SEARCH_SPACE
 
     def get_objective_fn(self) -> callable:
         import torch
@@ -680,12 +698,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
 
     def get_study_name(self) -> str:
         return f"finetuned-mbert{'_lg' if self.include_large else ''}"
-
-    def get_n_trials(self) -> int:
-        return 50
-
-    def get_search_space(self) -> dict | None:
-        return self.SEARCH_SPACE
 
 
 PROVIDER_MAPPING = {

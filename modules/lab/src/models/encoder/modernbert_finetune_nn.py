@@ -58,10 +58,10 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         #     else:  # Only train custom layers
         #         param.requires_grad = True
 
-        print(
-            f"Trainable parameters: {sum(p.numel() for p in self.parameters() if p.requires_grad):,}"
-        )
-        print(f"Total parameters: {sum(p.numel() for p in self.parameters()):,}")
+        # print(
+        #     f"Trainable parameters: {sum(p.numel() for p in self.parameters() if p.requires_grad):,}"
+        # )
+        # print(f"Total parameters: {sum(p.numel() for p in self.parameters()):,}")
 
     def _init_custom_weights(self):
         for name, module in self.named_modules():
@@ -115,17 +115,17 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 
         feature_embedding = self.feature_ff(features)
         # feature_embedding = feature_embedding * self.feature_scale  # Scale down
-        print(
-            f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
-        )
+        # print(
+        #     f"Feature embeddings range: [{feature_embedding.min():.2f}, {feature_embedding.max():.2f}]"
+        # )
         concatenated_embedding = torch.cat((cls_embedding, feature_embedding), dim=1)
 
         concatenated_embedding = self.fusion_norm(concatenated_embedding)
 
         logits = self.regressor(concatenated_embedding)
-        print(
-            f"Logits range: [{logits.min():.2f}, {logits.max():.2f}], mean: {logits.mean():.2f}"
-        )
+        # print(
+        #     f"Logits range: [{logits.min():.2f}, {logits.max():.2f}], mean: {logits.mean():.2f}"
+        # )
 
         loss = self.loss_fct(logits.squeeze(), labels)
         return SequenceClassifierOutput(

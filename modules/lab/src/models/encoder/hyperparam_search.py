@@ -17,6 +17,8 @@ from models.encoder.common import (
     run_cross_validation,
 )
 from models.encoder.modernbert_finetune_nn import check_gradient_flow
+from utils import DATA_DIR
+import json
 
 
 class ObjectiveProvider:
@@ -53,7 +55,11 @@ class RidgeObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
+                train_df: pd.DataFrame,
+                val_df: pd.DataFrame,
+                tokenizer,
+                lg_size=None,
+                fold_num=0,
             ):
                 train_features = np.hstack(
                     (
@@ -113,7 +119,11 @@ class SVMObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
+                train_df: pd.DataFrame,
+                val_df: pd.DataFrame,
+                tokenizer,
+                lg_size=None,
+                fold_num=0,
             ):
                 train_features = np.hstack(
                     (
@@ -174,7 +184,11 @@ class RandomForestObjectiveProvider(ObjectiveProvider):
             }
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
+                train_df: pd.DataFrame,
+                val_df: pd.DataFrame,
+                tokenizer,
+                lg_size=None,
+                fold_num=0,
             ):
                 train_features = np.hstack(
                     (
@@ -241,7 +255,11 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
             }
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
+                train_df: pd.DataFrame,
+                val_df: pd.DataFrame,
+                tokenizer,
+                lg_size=None,
+                fold_num=0,
             ):
                 train_features = np.hstack(
                     (
@@ -294,16 +312,21 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
-        "stage2_epochs": [2, 5, 10],  # Epochs for small dataset finetuning
         "lr_bert": [1e-5],
         "lr_custom": [1e-4],
         "dropout_rate": [0.05, 0.1, 0.25],
-        "weight_decay": [1e-2],
+        "weight_decay": [0.01, 0.05],
         "optimizer_warmup": [0.1],
-        "feature_hidden_size": [512],
-        # "feature_hidden_size": [512, 768, 1024],
+        "feature_hidden_size": [512, 768],
+        "regressor_hidden_size": [256, 512],
     }
     BATCH_SIZE = 32
+    STAGE2_MAX_EPOCHS = (
+        20  # Maximum epochs for stage 2, early stopping will determine actual count
+    )
+    EARLY_STOPPING_PATIENCE = (
+        3  # Stop if validation loss doesn't improve for this many epochs
+    )
 
     def get_objective_fn(self) -> callable:
         import torch
@@ -325,9 +348,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 if self.include_large
                 else 0
             )
-            stage2_epochs = trial.suggest_categorical(
-                "stage2_epochs", self.SEARCH_SPACE["stage2_epochs"]
-            )
             lr_bert = trial.suggest_categorical("lr_bert", self.SEARCH_SPACE["lr_bert"])
             lr_custom = trial.suggest_categorical(
                 "lr_custom", self.SEARCH_SPACE["lr_custom"]
@@ -346,7 +366,11 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
             )
 
             def train_and_evaluate_fold(
-                train_df: pd.DataFrame, val_df: pd.DataFrame, tokenizer, lg_size=None
+                train_df: pd.DataFrame,
+                val_df: pd.DataFrame,
+                tokenizer,
+                lg_size=None,
+                fold_num=0,
             ):
                 # Separate small and large datasets if large is included
                 if self.include_large and lg_size is not None:
@@ -462,10 +486,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             if device.type == "cuda":
                                 torch.cuda.empty_cache()
 
-                # Stage 2: Fine-tune on small clean dataset
+                # Stage 2: Fine-tune on small clean dataset with early stopping
                 if not sm_train_df.empty:
                     print(
-                        f"Stage 2: Fine-tuning on small dataset ({len(sm_train_df)} samples) for {stage2_epochs} epochs"
+                        f"Stage 2: Fine-tuning on small dataset ({len(sm_train_df)} samples) with early stopping (max {self.STAGE2_MAX_EPOCHS} epochs)"
                     )
                     sm_train_dataset = CustomDataset(sm_train_df, tokenizer)
                     sm_train_loader = DataLoader(
@@ -482,7 +506,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         weight_decay=weight_decay,
                     )
 
-                    total_steps = len(sm_train_loader) * stage2_epochs
+                    # Use max epochs for scheduler calculation
+                    total_steps = len(sm_train_loader) * self.STAGE2_MAX_EPOCHS
                     warmup_steps = int(total_steps * optimizer_warmup)
                     scheduler = get_linear_schedule_with_warmup(
                         optimizer,
@@ -490,11 +515,28 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         num_training_steps=total_steps,
                     )
 
+                    # Early stopping variables
+                    best_val_loss = float("inf")
+                    patience_counter = 0
+                    train_loss_history = []  # [(batch_number, loss), ...]
+                    val_loss_history = []  # [(batch_number, loss), ...]
+                    total_batches = 0
+                    batches_per_epoch = len(sm_train_loader)
+
+                    # Setup data directory for saving training history
+                    data_dir = DATA_DIR / "training_history"
+                    data_dir.mkdir(parents=True, exist_ok=True)
+                    history_path = (
+                        data_dir / f"trial_{trial.number}_fold_{fold_num}.json"
+                    )
+
                     model.train()
-                    for epoch in range(stage2_epochs):
+                    for epoch in range(self.STAGE2_MAX_EPOCHS):
+                        # Training phase
+                        epoch_train_losses = []
                         progress_bar = tqdm(
                             sm_train_loader,
-                            desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
+                            desc=f"Stage 2 - Epoch {epoch + 1}/{self.STAGE2_MAX_EPOCHS}",
                         )
                         for step, batch in enumerate(progress_bar):
                             optimizer.zero_grad()
@@ -519,6 +561,11 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                                 )
                                 loss = torch.clamp(loss, max=100)
 
+                            # Track loss at batch level
+                            current_batch = total_batches + step
+                            train_loss_history.append((current_batch, loss.item()))
+                            epoch_train_losses.append(loss.item())
+
                             loss.backward()
 
                             if step == 0 or (step + 1) % 10 == 0:
@@ -532,6 +579,73 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             del loss, outputs
                             if device.type == "cuda":
                                 torch.cuda.empty_cache()
+
+                        total_batches += batches_per_epoch
+
+                        # Calculate average training loss for this epoch
+                        avg_train_loss = np.mean(epoch_train_losses)
+
+                        # Validation phase
+                        model.eval()
+                        epoch_val_losses = []
+                        with torch.no_grad():
+                            for batch in tqdm(
+                                val_loader, desc="Validating", leave=False
+                            ):
+                                outputs = model(
+                                    input_ids=batch["input_ids"].to(device),
+                                    attention_mask=batch["attention_mask"].to(device),
+                                    features=batch["features"].to(device),
+                                    labels=batch["labels"].to(device),
+                                )
+                                epoch_val_losses.append(outputs.loss.item())
+
+                        avg_val_loss = np.mean(epoch_val_losses)
+                        # Store validation loss at the end of the epoch (use total_batches as x position)
+                        val_loss_history.append((total_batches - 1, avg_val_loss))
+
+                        print(
+                            f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
+                        )
+
+                        history_data = {
+                            "trial_number": trial.number,
+                            "fold_num": fold_num,
+                            "batches_per_epoch": batches_per_epoch,
+                            "current_epoch": epoch + 1,
+                            "train_loss_history": train_loss_history,  # [(batch, loss), ...]
+                            "val_loss_history": val_loss_history,  # [(batch, loss), ...]
+                            "hyperparameters": {
+                                "stage1_epochs": stage1_epochs
+                                if self.include_large
+                                else 0,
+                                "lr_bert": lr_bert,
+                                "lr_custom": lr_custom,
+                                "dropout_rate": dropout_rate,
+                                "weight_decay": weight_decay,
+                                "optimizer_warmup": optimizer_warmup,
+                                "feature_hidden_size": feature_hidden_size,
+                            },
+                        }
+                        with open(history_path, "w") as f:
+                            json.dump(history_data, f, indent=2)
+
+                        # Early stopping check
+                        if avg_val_loss < best_val_loss:
+                            best_val_loss = avg_val_loss
+                            patience_counter = 0
+                            print(f"✓ New best validation loss: {best_val_loss:.4f}")
+                        else:
+                            patience_counter += 1
+                            print(
+                                f"✗ No improvement. Patience: {patience_counter}/{self.EARLY_STOPPING_PATIENCE}"
+                            )
+
+                            if patience_counter >= self.EARLY_STOPPING_PATIENCE:
+                                print(f"Early stopping triggered at epoch {epoch + 1}")
+                                break
+
+                        model.train()
 
                 # Validate
                 model.eval()

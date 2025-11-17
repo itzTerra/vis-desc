@@ -12,6 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from models.encoder.common import (
+    TRAINING_HISTORY_DIR,
     run_study,
     SEED,
     run_cross_validation,
@@ -19,7 +20,6 @@ from models.encoder.common import (
 from models.encoder.modernbert_finetune_nn import (
     check_gradient_flow,
 )
-from utils import DATA_DIR
 import json
 
 
@@ -49,7 +49,7 @@ class RidgeObjectiveProvider(ObjectiveProvider):
 
     def get_objective_fn(self) -> callable:
         def objective(trial):
-            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 50.0, log=True)
+            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 1000.0, log=True)
             # ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
             small_dataset_weight_multiplier = (
                 trial.suggest_float(
@@ -328,19 +328,15 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
         "lr_bert": [1e-5],
         "lr_custom": [1e-4],
-        "dropout_rate": [0.05, 0.1, 0.25],
-        "weight_decay": [0.01, 0.05],
+        "dropout_rate": [0.1],
+        "weight_decay": [0.01],
         "optimizer_warmup": [0.1],
-        "feature_hidden_size": [512, 768],
-        "regressor_hidden_size": [256, 512],
+        "feature_hidden_size": [512],
+        # "regressor_hidden_size": [256, 512],
     }
     BATCH_SIZE = 32
-    STAGE2_MAX_EPOCHS = (
-        20  # Maximum epochs for stage 2, early stopping will determine actual count
-    )
-    EARLY_STOPPING_PATIENCE = (
-        3  # Stop if validation loss doesn't improve for this many epochs
-    )
+    STAGE2_MAX_EPOCHS = 20
+    EARLY_STOPPING_PATIENCE = 3
 
     def get_n_trials(self) -> int:
         return 20
@@ -433,6 +429,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 )
                 val_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
 
+                g = torch.Generator()
+                g.manual_seed(SEED)
+
                 val_dataset = CustomDataset(val_df, tokenizer)
                 val_loader = DataLoader(val_dataset, batch_size=self.BATCH_SIZE)
 
@@ -455,7 +454,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     )
                     lg_train_dataset = CustomDataset(lg_train_df, tokenizer)
                     lg_train_loader = DataLoader(
-                        lg_train_dataset, batch_size=self.BATCH_SIZE, shuffle=True
+                        lg_train_dataset,
+                        batch_size=self.BATCH_SIZE,
+                        shuffle=True,
+                        generator=g,
                     )
 
                     optimizer = AdamW(
@@ -513,10 +515,12 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     )
                     sm_train_dataset = CustomDataset(sm_train_df, tokenizer)
                     sm_train_loader = DataLoader(
-                        sm_train_dataset, batch_size=self.BATCH_SIZE, shuffle=True
+                        sm_train_dataset,
+                        batch_size=self.BATCH_SIZE,
+                        shuffle=True,
+                        generator=g,
                     )
 
-                    # Create new optimizer for stage 2
                     optimizer = AdamW(
                         [
                             {"params": model.model.parameters(), "lr": lr_bert},
@@ -526,7 +530,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         weight_decay=weight_decay,
                     )
 
-                    # Use max epochs for scheduler calculation
                     total_steps = len(sm_train_loader) * self.STAGE2_MAX_EPOCHS
                     warmup_steps = int(total_steps * optimizer_warmup)
                     scheduler = get_linear_schedule_with_warmup(
@@ -535,7 +538,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         num_training_steps=total_steps,
                     )
 
-                    # Early stopping variables
                     best_val_loss = float("inf")
                     patience_counter = 0
                     train_loss_history = []  # [(batch_number, loss), ...]
@@ -543,11 +545,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     total_batches = 0
                     batches_per_epoch = len(sm_train_loader)
 
-                    # Setup data directory for saving training history
-                    data_dir = DATA_DIR / "training_history"
-                    data_dir.mkdir(parents=True, exist_ok=True)
                     history_path = (
-                        data_dir / f"trial_{trial.number}_fold_{fold_num}.json"
+                        TRAINING_HISTORY_DIR
+                        / f"finetuned-mbert_trial_{trial.number}_fold_{fold_num}.json"
                     )
 
                     model.train()
@@ -604,9 +604,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
 
                         total_batches += batches_per_epoch
 
-                        # Calculate average training loss for this epoch
-                        avg_train_loss = np.mean(epoch_train_losses)
-
                         # Validation phase
                         model.eval()
                         epoch_val_losses = []
@@ -622,10 +619,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                                 )
                                 epoch_val_losses.append(outputs.loss.item())
 
+                        avg_train_loss = np.mean(epoch_train_losses)
                         avg_val_loss = np.mean(epoch_val_losses)
-                        # Store validation loss at the end of the epoch (use total_batches as x position)
                         val_loss_history.append((total_batches - 1, avg_val_loss))
-
                         print(
                             f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
                         )

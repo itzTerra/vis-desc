@@ -1,4 +1,5 @@
 import os
+import random
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -17,7 +18,24 @@ from sklearn.metrics import (
 
 BERT_TOKENIZER_MAX_LENGTH = 160
 SEED = 42
+
+
+def set_seed(seed=SEED):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+METRICS_DIR = DATA_DIR / "metrics" / "encoder"
+MODEL_DIR = DATA_DIR / "models" / "encoder"
+TRAINING_HISTORY_DIR = METRICS_DIR / "training_history"
+
+for d in [METRICS_DIR, MODEL_DIR, TRAINING_HISTORY_DIR]:
+    os.makedirs(d, exist_ok=True)
 
 
 class CustomDataset(Dataset):
@@ -211,6 +229,8 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
     from datetime import datetime
 
     TEST_RUN = os.environ.get("TEST_RUN", "false").lower() in ("true", "1", "t")
+
+    set_seed()
 
     try:
         study = optuna.create_study(

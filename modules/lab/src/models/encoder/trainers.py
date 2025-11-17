@@ -17,6 +17,8 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor
 from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
+import onnxruntime as rt
+from utils import DATA_DIR
 
 from models.encoder.common import (
     SEED,
@@ -25,6 +27,7 @@ from models.encoder.common import (
     CustomDataset,
     CachedOptimizationContext,
 )
+from models.encoder.common import TRAINING_HISTORY_DIR
 from models.encoder.modernbert_finetune_nn import ModernBertWithFeaturesTrainable
 from text2features import FeatureExtractorPipeline
 
@@ -560,7 +563,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
 
     def train(self) -> None:
         """Train the random sampler using uniform distribution over training labels."""
-        self.model = WeightedRandomSampler(random_state=42)
+        self.model = WeightedRandomSampler(random_state=SEED)
         # We need dummy X data since the sampler expects it (but doesn't use it)
         X_dummy = np.zeros((len(self.y_train), 1))
         # Pass no sample_weight to use uniform distribution
@@ -592,7 +595,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             y_val_fold = val_fold_df["label"].values
 
             # Train fold model with uniform distribution
-            fold_model = WeightedRandomSampler(random_state=42)
+            fold_model = WeightedRandomSampler(random_state=SEED)
             X_train_dummy = np.zeros((len(y_train_fold), 1))
             fold_model.fit(X_train_dummy, y_train_fold, sample_weight=None)
 
@@ -636,10 +639,10 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             dist_data = json.load(f)
 
         # Recreate the model from saved distribution
-        model = WeightedRandomSampler(random_state=42)
+        model = WeightedRandomSampler(random_state=SEED)
         model.y_train_ = np.array(dist_data["y_train"])
         model.weights_ = np.array(dist_data["weights"])
-        model.rng_ = np.random.RandomState(42)
+        model.rng_ = np.random.RandomState(SEED)
 
         # Generate predictions
         X_test_dummy = np.zeros((len(test_df), 1))
@@ -654,7 +657,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         dist_data = {
             "y_train": self.model.y_train_.tolist(),
             "weights": self.model.weights_.tolist(),
-            "random_state": 42,
+            "random_state": SEED,
             "model_type": "WeightedRandomSampler",
         }
 
@@ -733,8 +736,15 @@ class ModernBertTrainer(BaseTrainer):
 
     def train(self) -> None:
         """Train the ModernBERT model."""
+        g = torch.Generator()
+        g.manual_seed(SEED)
         train_dataset = CustomDataset(self.train_df, self.tokenizer)
-        train_loader = DataLoader(train_dataset, batch_size=self.params["batch_size"])
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.params["batch_size"],
+            shuffle=True,
+            generator=g,
+        )
 
         self.model = ModernBertWithFeaturesTrainable.from_pretrained(
             "answerdotai/ModernBERT-base",
@@ -836,14 +846,16 @@ class ModernBertTrainer(BaseTrainer):
 
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
         fold_metrics = []
-        fold_batch_losses = []
+        fold_histories = []
+
+        # Early stopping params (can be overridden via self.params)
+        early_stopping_patience = int(self.params.get("early_stopping_patience", 3))
 
         for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
             print(f"\nFold {fold + 1}/{n_splits}")
             train_fold_df = sm_train.loc[train_index].copy().reset_index(drop=True)
             val_fold_df = sm_train.loc[val_index].copy().reset_index(drop=True)
 
-            # Scale features
             scaler = MinMaxScaler()
             train_features_scaled = scaler.fit_transform(
                 np.vstack(train_fold_df["features"].values)
@@ -856,15 +868,19 @@ class ModernBertTrainer(BaseTrainer):
             ]
             val_fold_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
 
-            # Create datasets
+            g = torch.Generator()
+            g.manual_seed(SEED)
+
             train_dataset = CustomDataset(train_fold_df, self.tokenizer)
             val_dataset = CustomDataset(val_fold_df, self.tokenizer)
             train_loader = DataLoader(
-                train_dataset, batch_size=self.params["batch_size"]
+                train_dataset,
+                batch_size=self.params["batch_size"],
+                shuffle=True,
+                generator=g,
             )
             val_loader = DataLoader(val_dataset, batch_size=self.params["batch_size"])
 
-            # Initialize model
             fold_model = ModernBertWithFeaturesTrainable.from_pretrained(
                 "answerdotai/ModernBERT-base",
                 feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
@@ -875,7 +891,6 @@ class ModernBertTrainer(BaseTrainer):
             fold_model.regressor.apply(fold_model._init_custom_weights)
             fold_model.to(device)
 
-            # Setup optimizer and scheduler
             optimizer = AdamW(
                 [
                     {
@@ -900,8 +915,12 @@ class ModernBertTrainer(BaseTrainer):
                 optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
             )
 
-            # Train
-            batch_losses = []
+            # Train with per-epoch validation and early stopping
+            train_losses_per_epoch = []
+            val_losses_per_epoch = []
+            best_val_loss = float("inf")
+            epochs_without_improve = 0
+
             fold_model.train()
             for epoch in range(self.params["num_epochs"]):
                 epoch_losses = []
@@ -929,9 +948,55 @@ class ModernBertTrainer(BaseTrainer):
                     if device.type == "cuda":
                         torch.cuda.empty_cache()
 
-                batch_losses.append(epoch_losses)
+                # End of epoch training
+                avg_train_loss = (
+                    float(np.mean(epoch_losses)) if epoch_losses else float("nan")
+                )
+                train_losses_per_epoch.append(avg_train_loss)
 
-            # Evaluate
+                # Compute validation loss for this epoch
+                fold_model.eval()
+                val_epoch_losses = []
+                with torch.no_grad():
+                    for batch in val_loader:
+                        outputs = fold_model(
+                            input_ids=batch["input_ids"].to(device),
+                            attention_mask=batch["attention_mask"].to(device),
+                            features=batch["features"].to(device),
+                            labels=batch["labels"].to(device),
+                        )
+                        loss = outputs.loss
+                        if not torch.isnan(loss):
+                            val_epoch_losses.append(loss.item())
+
+                avg_val_loss = (
+                    float(np.mean(val_epoch_losses))
+                    if val_epoch_losses
+                    else float("nan")
+                )
+                val_losses_per_epoch.append(avg_val_loss)
+
+                # Early stopping check
+                if not np.isnan(avg_val_loss) and avg_val_loss < best_val_loss:
+                    best_val_loss = avg_val_loss
+                    epochs_without_improve = 0
+                else:
+                    epochs_without_improve += 1
+
+                print(
+                    f"Fold {fold + 1} Epoch {epoch + 1}: train_loss={avg_train_loss:.4f}, val_loss={avg_val_loss:.4f}"
+                )
+
+                # Resume training mode for next epoch
+                fold_model.train()
+
+                if epochs_without_improve >= early_stopping_patience:
+                    print(
+                        f"Early stopping triggered for fold {fold + 1} at epoch {epoch + 1} (patience={early_stopping_patience})."
+                    )
+                    break
+
+            # Final evaluation on validation set using the current model
             fold_model.eval()
             y_true, y_pred = [], []
             with torch.no_grad():
@@ -948,7 +1013,20 @@ class ModernBertTrainer(BaseTrainer):
 
             metrics = calculate_metrics(np.array(y_true), np.array(y_pred))
             fold_metrics.append(metrics)
-            fold_batch_losses.append(batch_losses)
+
+            # Record per-fold history
+            fold_history = {
+                "train_losses": train_losses_per_epoch,
+                "val_losses": val_losses_per_epoch,
+                "best_val_loss": float(best_val_loss)
+                if best_val_loss != float("inf")
+                else None,
+                "best_epoch": int(np.argmin(val_losses_per_epoch)) + 1
+                if len(val_losses_per_epoch) > 0
+                else None,
+                "final_metrics": metrics,
+            }
+            fold_histories.append(fold_history)
 
             print(
                 f"Fold {fold + 1} MSE: {metrics['mse']:.4f}, Acc: {metrics['accuracy']:.4f}"
@@ -967,37 +1045,46 @@ class ModernBertTrainer(BaseTrainer):
             "confusion_matrix": np.sum(
                 [m["confusion_matrix"] for m in fold_metrics], axis=0
             ).tolist(),
-            "batch_losses": fold_batch_losses,
+            "training_history_saved": str(save_path)
+            if (save_path := (TRAINING_HISTORY_DIR / f"{self.model_name}_cv.json"))
+            else None,
+            "fold_histories": fold_histories,
         }
+
+        # Save training history to file
+        training_history = {
+            "model": self.model_name,
+            "n_splits": n_splits,
+            "folds": fold_histories,
+        }
+        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_cv.json"
+        try:
+            with open(save_path, "w") as f:
+                json.dump(training_history, f, indent=2)
+            print(f"Saved training history to {save_path}")
+            avg_metrics["training_history_path"] = str(save_path)
+        except Exception as e:
+            print(f"Failed to save training history: {e}")
 
         return avg_metrics
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
         """Evaluate model on test set using saved ONNX model."""
-        import onnxruntime as rt
-        from utils import DATA_DIR
 
-        # Load test data
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
-        # Scale features
         scaler = MinMaxScaler()
-        # Fit scaler on training data features
         train_features = np.vstack(self.train_df["features"].values)
         scaler.fit(train_features)
 
-        # Transform test features
         test_features_scaled = scaler.transform(np.vstack(test_df["features"].values))
         test_df["features"] = [f for f in np.nan_to_num(test_features_scaled)]
 
-        # Create test dataset
         test_dataset = CustomDataset(test_df, self.tokenizer)
         test_loader = DataLoader(test_dataset, batch_size=self.params["batch_size"])
 
-        # Load ONNX model
         sess = rt.InferenceSession(str(model_path))
 
-        # Run inference
         y_true_test, y_pred_test = [], []
         for batch in tqdm(test_loader, desc="Evaluating test set"):
             input_ids = batch["input_ids"].numpy()
@@ -1005,7 +1092,6 @@ class ModernBertTrainer(BaseTrainer):
             features = batch["features"].numpy()
             labels = batch["labels"].numpy()
 
-            # Run ONNX inference
             onnx_inputs = {
                 "input_ids": input_ids,
                 "attention_mask": attention_mask,

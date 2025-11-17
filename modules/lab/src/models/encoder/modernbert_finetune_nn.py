@@ -157,15 +157,9 @@ def detect_numerics(tensor, name):
 def diagnose_forward_outputs(logits, labels, features=None, cls_embedding=None):
     """Call right after forward to catch NaNs/Infs and extreme ranges."""
     ok = True
-    print(
-        f"[DIAG] labels: mean={labels.mean().item():.6e}, std={labels.std().item():.6e}, min={labels.min().item():.6e}, max={labels.max().item():.6e}"
-    )
     ok &= detect_numerics(logits, "logits")
     ok &= detect_numerics(labels, "labels")
     if features is not None:
-        print(
-            f"[DIAG] features: mean={features.mean().item():.6e}, std={features.std().item():.6e}, min={features.min().item():.6e}, max={features.max().item():.6e}"
-        )
         ok &= detect_numerics(features, "features")
     if cls_embedding is not None:
         ok &= detect_numerics(cls_embedding, "cls_embedding")

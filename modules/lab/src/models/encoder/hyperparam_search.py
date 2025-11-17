@@ -733,6 +733,12 @@ if __name__ == "__main__":
         help="Maximum number of trials to run (caps the provider's default n_trials)",
     )
     parser.add_argument(
+        "--study-name",
+        type=str,
+        default=None,
+        help="Custom study name to use instead of the default generated name",
+    )
+    parser.add_argument(
         "providers",
         nargs="*",
         choices=["ridge", "svm", "rf", "catboost", "finetuned-mbert"],
@@ -756,7 +762,9 @@ if __name__ == "__main__":
 
         try:
             objective_fn = provider.get_objective_fn()
-            study_name = provider.get_study_name()
+            study_name = (
+                args.study_name if args.study_name else provider.get_study_name()
+            )
             n_trials = provider.get_n_trials()
 
             if args.max_n_trials is not None:

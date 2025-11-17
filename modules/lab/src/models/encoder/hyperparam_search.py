@@ -327,7 +327,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
-        "lr_bert": [5e-6],
+        "lr_bert": [3e-5],
         "lr_custom": [1e-5],
         "dropout_rate": [0.1],
         "weight_decay": [0.01],
@@ -594,7 +594,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             if step == 0 or (step + 1) % 10 == 0:
                                 check_gradient_flow(model, step + 1, epoch + 1)
 
-                            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+                            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                             optimizer.step()
                             optimizer.zero_grad()
                             torch.autograd.set_detect_anomaly(False)

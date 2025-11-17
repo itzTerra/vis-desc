@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import optuna
 from transformers import AutoTokenizer
@@ -155,7 +155,7 @@ def run_cross_validation(
             "unless two_stage_training is enabled."
         )
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+    kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=SEED)
     fold_scores = []
     optimization_context = CachedOptimizationContext(
         include_minilm_embeddings=include_minilm_embeddings,
@@ -166,7 +166,9 @@ def run_cross_validation(
     sm_train = optimization_context.sm_train
     lg_train = optimization_context.lg_train
 
-    for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
+    for fold, (train_index, val_index) in enumerate(
+        kf.split(sm_train, sm_train["label"])
+    ):
         train_fold_df = sm_train.loc[train_index].copy()
         val_fold_df = sm_train.loc[val_index].copy()
 

@@ -328,7 +328,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
         "lr_bert": [1e-5],
-        "lr_custom": [1e-5],
+        "lr_custom": [1e-6],
         "dropout_rate": [0.1],
         "weight_decay": [0.01],
         "optimizer_warmup": [0.1],

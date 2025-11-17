@@ -190,6 +190,7 @@ def run_cross_validation(
             val_fold_df.reset_index(drop=True),
             tokenizer,
             lg_size,
+            fold,
         )
 
         fold_scores.append(score)

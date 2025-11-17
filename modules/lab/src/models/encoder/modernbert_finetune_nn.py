@@ -128,6 +128,11 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         #     f"Logits range: [{logits.min():.2f}, {logits.max():.2f}], mean: {logits.mean():.2f}"
         # )
 
+        if not diagnose_forward_outputs(
+            logits.detach(), labels, features, cls_embedding=cls_embedding
+        ):
+            raise RuntimeError("Numerics failure in forward - aborting to inspect")
+
         loss = self.loss_fct(logits.squeeze(), labels)
         return SequenceClassifierOutput(
             loss=loss,
@@ -135,6 +140,36 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+
+
+def detect_numerics(tensor, name):
+    if tensor is None:
+        print(f"[NUMERIC CHECK] {name}: NONE")
+        return False
+    if not torch.isfinite(tensor).all().item():
+        print(
+            f"[NUMERIC CHECK] {name}: contains NaN/Inf; stats: min={tensor.min().item():.6e}, max={tensor.max().item():.6e}"
+        )
+        return False
+    return True
+
+
+def diagnose_forward_outputs(logits, labels, features=None, cls_embedding=None):
+    """Call right after forward to catch NaNs/Infs and extreme ranges."""
+    ok = True
+    print(
+        f"[DIAG] labels: mean={labels.mean().item():.6e}, std={labels.std().item():.6e}, min={labels.min().item():.6e}, max={labels.max().item():.6e}"
+    )
+    ok &= detect_numerics(logits, "logits")
+    ok &= detect_numerics(labels, "labels")
+    if features is not None:
+        print(
+            f"[DIAG] features: mean={features.mean().item():.6e}, std={features.std().item():.6e}, min={features.min().item():.6e}, max={features.max().item():.6e}"
+        )
+        ok &= detect_numerics(features, "features")
+    if cls_embedding is not None:
+        ok &= detect_numerics(cls_embedding, "cls_embedding")
+    return ok
 
 
 def check_gradient_flow(model, step, epoch):

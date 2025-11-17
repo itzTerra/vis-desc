@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-from pathlib import Path
 
+from models.encoder.common import set_seed
 from models.encoder.trainers import (
     RidgeTrainer,
     SVMTrainer,
@@ -11,7 +11,6 @@ from models.encoder.trainers import (
     ModernBertTrainer,
     WeightedRandomBaselineTrainer,
 )
-from utils import DATA_DIR
 
 MODEL_PARAMS = {
     "random": {
@@ -25,7 +24,7 @@ MODEL_PARAMS = {
         "mbert_lg": {"ridge_alpha": 0.01, "small_dataset_weight_multiplier": 100.0},
     },
     "svm": {
-        "minilm": {"svr_c": 1.0, "svr_epsilon": 0.1},
+        "minilm": {"svr_c": 2.5276, "svr_epsilon": 0.0018},
         "minilm_lg": {
             "svr_c": 1.0,
             "svr_epsilon": 0.1,
@@ -40,12 +39,12 @@ MODEL_PARAMS = {
     },
     "rf": {
         "minilm": {
-            "n_estimators": 500,
-            "max_depth": 16,
-            "min_samples_split": 5,
+            "n_estimators": 507,
+            "max_depth": 30,
+            "min_samples_split": 7,
             "min_samples_leaf": 2,
             "max_features": "sqrt",
-            "bootstrap": True,
+            "bootstrap": False,
         },
         "minilm_lg": {
             "n_estimators": 500,
@@ -177,13 +176,6 @@ if __name__ == "__main__":
         help="Include large dataset in training",
     )
     parser.add_argument(
-        "-o",
-        "--output-dir",
-        type=str,
-        default=None,
-        help="Output directory for models and metrics (default: DATA_DIR/models)",
-    )
-    parser.add_argument(
         "--train",
         action="store_true",
         help="Enable training (disabled by default unless no other mode specified)",
@@ -205,12 +197,6 @@ if __name__ == "__main__":
     if not args.train and not args.val and not args.test:
         args.train = True
 
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-    else:
-        output_dir = DATA_DIR / "models"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     models_to_train = args.models
     if "all" in models_to_train or not models_to_train:
         models_to_train = [
@@ -228,6 +214,8 @@ if __name__ == "__main__":
     enable_cv = args.val
     enable_test = args.test
 
+    set_seed()
+
     for model_name in models_to_train:
         if model_name == "finetuned-mbert":
             # Fine-tuned ModernBERT doesn't use pre-computed embeddings
@@ -240,7 +228,7 @@ if __name__ == "__main__":
                 enable_cv=enable_cv,
                 enable_test=enable_test,
             )
-            trainer.run_full_training(output_dir)
+            trainer.run_full_training()
         elif model_name == "random":
             # Weighted random baseline doesn't use embeddings at all
             key = "lg" if include_large else "no_lg"
@@ -254,7 +242,7 @@ if __name__ == "__main__":
                 enable_cv=enable_cv,
                 enable_test=enable_test,
             )
-            trainer.run_full_training(output_dir)
+            trainer.run_full_training()
         else:
             # Skip other models if no embeddings specified
             if embeddings_list is None:
@@ -277,7 +265,7 @@ if __name__ == "__main__":
                     enable_cv=enable_cv,
                     enable_test=enable_test,
                 )
-                trainer.run_full_training(output_dir)
+                trainer.run_full_training()
 
     print("\n" + "=" * 60)
     phases = []
@@ -289,5 +277,4 @@ if __name__ == "__main__":
         phases.append("testing")
 
     print(f"All {' and '.join(phases)} completed!")
-    print(f"Results saved to: {output_dir}")
     print("=" * 60)

@@ -74,13 +74,13 @@ MODEL_PARAMS = {
     },
     "catboost": {
         "minilm": {
-            "iterations": 1000,
-            "learning_rate": 0.01,
-            "depth": 6,
-            "l2_leaf_reg": 3.0,
-            "bagging_temperature": 1.0,
-            "random_strength": 1.0,
-            "border_count": 128,
+            "iterations": 1233,
+            "learning_rate": 0.0671,
+            "depth": 2,
+            "l2_leaf_reg": 3.3785e-07,
+            "bagging_temperature": 15.6715,
+            "random_strength": 9.8879e-08,
+            "border_count": 63,
         },
         "minilm_lg": {
             "iterations": 1000,

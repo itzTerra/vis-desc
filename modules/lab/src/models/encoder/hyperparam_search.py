@@ -16,7 +16,9 @@ from models.encoder.common import (
     SEED,
     run_cross_validation,
 )
-from models.encoder.modernbert_finetune_nn import check_gradient_flow
+from models.encoder.modernbert_finetune_nn import (
+    check_gradient_flow,
+)
 from utils import DATA_DIR
 import json
 
@@ -579,11 +581,11 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                                 )
                                 loss = torch.clamp(loss, max=100)
 
-                            # Track loss at batch level
                             current_batch = total_batches + step
                             train_loss_history.append((current_batch, loss.item()))
                             epoch_train_losses.append(loss.item())
 
+                            torch.autograd.set_detect_anomaly(True)
                             loss.backward()
 
                             if step == 0 or (step + 1) % 10 == 0:
@@ -591,6 +593,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
 
                             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
                             optimizer.step()
+                            optimizer.zero_grad()
+                            torch.autograd.set_detect_anomaly(False)
                             scheduler.step()
                             progress_bar.set_postfix({"loss": loss.item()})
 

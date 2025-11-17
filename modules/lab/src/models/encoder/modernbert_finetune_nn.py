@@ -77,7 +77,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
                         nn.init.constant_(module.bias, 0.01)
                 else:
                     nn.init.xavier_uniform_(
-                        module.weight, gain=0.02
+                        module.weight, gain=0.01
                     )  # Smaller gain for final regressor
                     if module.bias is not None:
                         nn.init.constant_(module.bias, 0)

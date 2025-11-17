@@ -16,6 +16,7 @@ from models.encoder.common import (
     run_study,
     SEED,
     run_cross_validation,
+    set_seed,
 )
 from models.encoder.modernbert_finetune_nn import (
     check_gradient_flow,
@@ -434,6 +435,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
 
                 val_dataset = CustomDataset(val_df, tokenizer)
                 val_loader = DataLoader(val_dataset, batch_size=self.BATCH_SIZE)
+
+                set_seed()
 
                 model = ModernBertWithFeaturesTrainable.from_pretrained(
                     "answerdotai/ModernBERT-base",

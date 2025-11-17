@@ -328,16 +328,16 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
         "lr_bert": [1e-5],
-        "lr_custom": [1e-4],
+        "lr_custom": [1e-5],
         "dropout_rate": [0.1],
         "weight_decay": [0.01],
         "optimizer_warmup": [0.1],
         "feature_hidden_size": [512],
         # "regressor_hidden_size": [256, 512],
     }
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     STAGE2_MAX_EPOCHS = 20
-    EARLY_STOPPING_PATIENCE = 3
+    EARLY_STOPPING_PATIENCE = 5
 
     def get_n_trials(self) -> int:
         return 20
@@ -629,28 +629,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
                         )
 
-                        history_data = {
-                            "trial_number": trial.number,
-                            "fold_num": fold_num,
-                            "batches_per_epoch": batches_per_epoch,
-                            "current_epoch": epoch + 1,
-                            "train_loss_history": train_loss_history,  # [(batch, loss), ...]
-                            "val_loss_history": val_loss_history,  # [(batch, loss), ...]
-                            "hyperparameters": {
-                                "stage1_epochs": stage1_epochs
-                                if self.include_large
-                                else 0,
-                                "lr_bert": lr_bert,
-                                "lr_custom": lr_custom,
-                                "dropout_rate": dropout_rate,
-                                "weight_decay": weight_decay,
-                                "optimizer_warmup": optimizer_warmup,
-                                "feature_hidden_size": feature_hidden_size,
-                            },
-                        }
-                        with open(history_path, "w") as f:
-                            json.dump(history_data, f, indent=2)
-
                         # Early stopping check
                         if avg_val_loss < best_val_loss:
                             best_val_loss = avg_val_loss
@@ -667,6 +645,27 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                                 break
 
                         model.train()
+
+                    # Save training history after all epochs
+                    history_data = {
+                        "trial_number": trial.number,
+                        "fold_num": fold_num,
+                        "batches_per_epoch": batches_per_epoch,
+                        "current_epoch": epoch + 1,
+                        "train_loss_history": train_loss_history,  # [(batch, loss), ...]
+                        "val_loss_history": val_loss_history,  # [(batch, loss), ...]
+                        "hyperparameters": {
+                            "stage1_epochs": stage1_epochs if self.include_large else 0,
+                            "lr_bert": lr_bert,
+                            "lr_custom": lr_custom,
+                            "dropout_rate": dropout_rate,
+                            "weight_decay": weight_decay,
+                            "optimizer_warmup": optimizer_warmup,
+                            "feature_hidden_size": feature_hidden_size,
+                        },
+                    }
+                    with open(history_path, "w") as f:
+                        json.dump(history_data, f, indent=2)
 
                 # Validate
                 model.eval()

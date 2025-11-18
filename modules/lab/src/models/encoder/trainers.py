@@ -738,6 +738,7 @@ class ModernBertTrainer(BaseTrainer):
         """Train the ModernBERT model."""
         g = torch.Generator()
         g.manual_seed(SEED)
+
         train_dataset = CustomDataset(self.train_df, self.tokenizer)
         train_loader = DataLoader(
             train_dataset,
@@ -752,8 +753,6 @@ class ModernBertTrainer(BaseTrainer):
             dropout_rate=self.params["dropout_rate"],
             feature_hidden_size=self.params["feature_hidden_size"],
         )
-        self.model.feature_ff.apply(self.model._init_custom_weights)
-        self.model.regressor.apply(self.model._init_custom_weights)
         self.model.to(device)
 
         optimizer = AdamW(
@@ -776,7 +775,13 @@ class ModernBertTrainer(BaseTrainer):
             optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
         )
 
+        early_stopping_patience = int(self.params.get("early_stopping_patience", 3))
+
         self.batch_losses = []
+        train_losses_per_epoch = []
+        best_train_loss = float("inf")
+        epochs_without_improve = 0
+
         self.model.train()
         for epoch in range(self.params["num_epochs"]):
             epoch_losses = []
@@ -794,9 +799,12 @@ class ModernBertTrainer(BaseTrainer):
                 )
 
                 loss = outputs.loss
-                if torch.isnan(loss):
-                    print("Loss is NaN, skipping backward pass.")
+                if torch.isnan(loss) or torch.isinf(loss):
+                    print(f"Invalid loss detected: {loss.item()}, skipping batch")
                     continue
+                if loss.item() > 1000:
+                    print(f"Warning: Very high loss {loss.item():.2f}, clipping")
+                    loss = torch.clamp(loss, max=100)
 
                 loss_value = loss.item()
                 epoch_losses.append(loss_value)
@@ -807,12 +815,48 @@ class ModernBertTrainer(BaseTrainer):
                 scheduler.step()
                 progress_bar.set_postfix({"loss": loss_value})
 
-                del loss, outputs
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
+                # del loss, outputs
+                # if device.type == "cuda":
+                #     torch.cuda.empty_cache()
 
+            avg_train_loss = (
+                float(np.mean(epoch_losses)) if epoch_losses else float("nan")
+            )
             self.batch_losses.append(epoch_losses)
-            print(f"Epoch {epoch + 1} avg loss: {np.mean(epoch_losses):.4f}")
+            train_losses_per_epoch.append(avg_train_loss)
+
+            if not np.isnan(avg_train_loss) and avg_train_loss < best_train_loss:
+                best_train_loss = avg_train_loss
+                epochs_without_improve = 0
+            else:
+                epochs_without_improve += 1
+
+            print(f"Epoch {epoch + 1} avg loss: {avg_train_loss:.4f}")
+
+            if epochs_without_improve >= early_stopping_patience:
+                print(
+                    f"Early stopping triggered at epoch {epoch + 1} (patience={early_stopping_patience})."
+                )
+                break
+
+        training_history = {
+            "model": self.model_name,
+            "train_losses": train_losses_per_epoch,
+            "best_train_loss": float(best_train_loss)
+            if best_train_loss != float("inf")
+            else None,
+            "best_epoch": int(np.argmin(train_losses_per_epoch)) + 1
+            if len(train_losses_per_epoch) > 0
+            else None,
+            "batch_losses": self.batch_losses,
+        }
+        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_train.json"
+        try:
+            with open(save_path, "w") as f:
+                json.dump(training_history, f, indent=2)
+            print(f"Saved training history to {save_path}")
+        except Exception as e:
+            print(f"Failed to save training history: {e}")
 
     def evaluate_train(self) -> Dict[str, Any]:
         """Evaluate model on training set."""

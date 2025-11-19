@@ -753,12 +753,7 @@ class ModernBertTrainer(BaseTrainer):
         g = torch.Generator()
         g.manual_seed(SEED)
 
-        # Limit training set to 300 samples
-        train_df_limited = (
-            self.train_df.head(300) if len(self.train_df) > 300 else self.train_df
-        )
-
-        train_dataset = CustomDataset(train_df_limited, self.tokenizer)
+        train_dataset = CustomDataset(self.train_df, self.tokenizer)
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.params["batch_size"],
@@ -952,8 +947,6 @@ class ModernBertTrainer(BaseTrainer):
                 dropout_rate=self.params["dropout_rate"],
                 feature_hidden_size=self.params["feature_hidden_size"],
             )
-            fold_model.feature_ff.apply(fold_model._init_custom_weights)
-            fold_model.regressor.apply(fold_model._init_custom_weights)
             fold_model.to(device)
 
             optimizer = AdamW(

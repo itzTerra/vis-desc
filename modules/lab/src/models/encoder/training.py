@@ -191,6 +191,12 @@ if __name__ == "__main__":
         help="Enable test set evaluation (disabled by default)",
     )
 
+    parser.add_argument(
+        "--no-save-model",
+        action="store_true",
+        help="Do not save/export the trained model(s)",
+    )
+
     args = parser.parse_args()
 
     # If no mode is specified, default to training only
@@ -216,6 +222,8 @@ if __name__ == "__main__":
 
     set_seed()
 
+    save_model = not args.no_save_model
+
     for model_name in models_to_train:
         if model_name == "finetuned-mbert":
             # Fine-tuned ModernBERT doesn't use pre-computed embeddings
@@ -227,6 +235,7 @@ if __name__ == "__main__":
                 enable_train=enable_train,
                 enable_cv=enable_cv,
                 enable_test=enable_test,
+                save_model=save_model,
             )
             trainer.run_full_training()
         elif model_name == "random":
@@ -241,6 +250,7 @@ if __name__ == "__main__":
                 enable_train=enable_train,
                 enable_cv=enable_cv,
                 enable_test=enable_test,
+                save_model=save_model,
             )
             trainer.run_full_training()
         else:
@@ -264,6 +274,7 @@ if __name__ == "__main__":
                     enable_train=enable_train,
                     enable_cv=enable_cv,
                     enable_test=enable_test,
+                    save_model=save_model,
                 )
                 trainer.run_full_training()
 

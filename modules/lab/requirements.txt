@@ -9,6 +9,7 @@ light-embed>=0.1.2
 matplotlib>=3.10.1
 nltk>=3.9.1
 onnx==1.18
+onnxscript>=0.5.0
 openpyxl>=3.1.5
 optimum-onnx[onnxruntime]>=0.0.3
 optuna>=4.5.0

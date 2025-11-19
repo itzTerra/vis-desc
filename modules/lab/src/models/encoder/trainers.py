@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Literal, Dict, Any, Optional
 from pathlib import Path
+from datetime import datetime
 import json
 import numpy as np
 import pandas as pd
@@ -45,6 +46,7 @@ class BaseTrainer(ABC):
         enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
+        save_model: bool = True,
     ):
         self.params = params
         self.embeddings = embeddings
@@ -52,8 +54,10 @@ class BaseTrainer(ABC):
         self.enable_train = enable_train
         self.enable_cv = enable_cv
         self.enable_test = enable_test
+        self.save_model = save_model
         self.model = None
         self.model_name = self._get_model_name()
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     @abstractmethod
     def _get_model_name(self) -> str:
@@ -95,7 +99,7 @@ class BaseTrainer(ABC):
             "test_metrics": test_metrics,
             **extra_data,
         }
-        metrics_path = METRICS_DIR / f"{self.model_name}.json"
+        metrics_path = METRICS_DIR / f"{self.model_name}_{self.timestamp}.json"
         with open(metrics_path, "w") as f:
             json.dump(metrics, f, indent=2)
 
@@ -105,7 +109,10 @@ class BaseTrainer(ABC):
         print(f"Processing {self.model_name}")
         print(f"{'=' * 60}\n")
 
-        model_path = MODEL_DIR / f"{self.model_name}{self._get_model_extension()}"
+        model_path = (
+            MODEL_DIR
+            / f"{self.model_name}_{self.timestamp}{self._get_model_extension()}"
+        )
         train_metrics = None
         cv_metrics = None
         test_metrics = None
@@ -120,9 +127,12 @@ class BaseTrainer(ABC):
             print(f"Train MSE: {train_metrics['mse']:.4f}")
             print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
 
-            # Export model
-            self.export(model_path)
-            print(f"Model exported to {model_path}")
+            # Export model (optional)
+            if self.save_model:
+                self.export(model_path)
+                print(f"Model exported to {model_path}")
+            else:
+                print("Model export skipped (save_model is False)")
 
         # Cross-validate (optional, independent)
         if self.enable_cv:
@@ -133,16 +143,10 @@ class BaseTrainer(ABC):
 
         # Evaluate on test set (optional, requires exported model)
         if self.enable_test:
-            if not model_path.exists():
-                print(
-                    f"\nWarning: Model file {model_path} not found. Skipping test evaluation."
-                )
-                print("Run with --train first to create the model file.")
-            else:
-                print("\nEvaluating on test set...")
-                test_metrics = self.evaluate_test(model_path)
-                print(f"Test MSE: {test_metrics['mse']:.4f}")
-                print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+            print("\nEvaluating on test set...")
+            test_metrics = self.evaluate_test(model_path)
+            print(f"Test MSE: {test_metrics['mse']:.4f}")
+            print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 
         # Save metrics (only if at least one metric was computed)
         if train_metrics or cv_metrics or test_metrics:
@@ -181,9 +185,16 @@ class BaseSklearnTrainer(BaseTrainer):
         enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
+        save_model: bool = True,
     ):
         super().__init__(
-            params, embeddings, include_large, enable_train, enable_cv, enable_test
+            params,
+            embeddings,
+            include_large,
+            enable_train,
+            enable_cv,
+            enable_test,
+            save_model,
         )
         self.include_minilm = embeddings == "minilm"
         self.include_mbert = embeddings == "mbert"
@@ -524,6 +535,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
+        save_model: bool = True,
     ):
         super().__init__(
             params,
@@ -532,6 +544,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             enable_train=enable_train,
             enable_cv=enable_cv,
             enable_test=enable_test,
+            save_model=save_model,
         )
         self.y_train = None
         self.weights = None
@@ -695,6 +708,7 @@ class ModernBertTrainer(BaseTrainer):
         enable_train: bool = True,
         enable_cv: bool = False,
         enable_test: bool = False,
+        save_model: bool = True,
     ):
         super().__init__(
             params,
@@ -703,6 +717,7 @@ class ModernBertTrainer(BaseTrainer):
             enable_train=enable_train,
             enable_cv=enable_cv,
             enable_test=enable_test,
+            save_model=save_model,
         )
         self.tokenizer = None
         self.train_df = None
@@ -849,7 +864,9 @@ class ModernBertTrainer(BaseTrainer):
             else None,
             "batch_losses": self.batch_losses,
         }
-        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_train.json"
+        save_path = (
+            TRAINING_HISTORY_DIR / f"{self.model_name}_train_{self.timestamp}.json"
+        )
         try:
             with open(save_path, "w") as f:
                 json.dump(training_history, f, indent=2)
@@ -1088,9 +1105,9 @@ class ModernBertTrainer(BaseTrainer):
             "confusion_matrix": np.sum(
                 [m["confusion_matrix"] for m in fold_metrics], axis=0
             ).tolist(),
-            "training_history_saved": str(save_path)
-            if (save_path := (TRAINING_HISTORY_DIR / f"{self.model_name}_cv.json"))
-            else None,
+            "training_history_saved": str(
+                TRAINING_HISTORY_DIR / f"{self.model_name}_cv_{self.timestamp}.json"
+            ),
             "fold_histories": fold_histories,
         }
 
@@ -1100,7 +1117,7 @@ class ModernBertTrainer(BaseTrainer):
             "n_splits": n_splits,
             "folds": fold_histories,
         }
-        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_cv.json"
+        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_cv_{self.timestamp}.json"
         try:
             with open(save_path, "w") as f:
                 json.dump(training_history, f, indent=2)

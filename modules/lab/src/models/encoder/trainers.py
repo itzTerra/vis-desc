@@ -753,7 +753,12 @@ class ModernBertTrainer(BaseTrainer):
         g = torch.Generator()
         g.manual_seed(SEED)
 
-        train_dataset = CustomDataset(self.train_df, self.tokenizer)
+        # Limit training set to 300 samples
+        train_df_limited = (
+            self.train_df.head(300) if len(self.train_df) > 300 else self.train_df
+        )
+
+        train_dataset = CustomDataset(train_df_limited, self.tokenizer)
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.params["batch_size"],

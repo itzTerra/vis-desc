@@ -21,6 +21,8 @@ import onnxruntime as rt
 from utils import DATA_DIR
 
 from models.encoder.common import (
+    METRICS_DIR,
+    MODEL_DIR,
     SEED,
     calculate_metrics,
     device,
@@ -82,7 +84,6 @@ class BaseTrainer(ABC):
         train_metrics: Dict,
         cv_metrics: Optional[Dict],
         test_metrics: Optional[Dict],
-        output_dir: Path,
         **extra_data,
     ):
         """Save training, CV, and test metrics to JSON."""
@@ -94,17 +95,17 @@ class BaseTrainer(ABC):
             "test_metrics": test_metrics,
             **extra_data,
         }
-        metrics_path = output_dir / f"{self.model_name}_metrics.json"
+        metrics_path = METRICS_DIR / f"{self.model_name}.json"
         with open(metrics_path, "w") as f:
             json.dump(metrics, f, indent=2)
 
-    def run_full_training(self, output_dir: Path) -> Dict[str, Any]:
+    def run_full_training(self) -> Dict[str, Any]:
         """Execute training pipeline: train, evaluate, cross-validate, export, and save metrics based on enabled flags."""
         print(f"\n{'=' * 60}")
         print(f"Processing {self.model_name}")
         print(f"{'=' * 60}\n")
 
-        model_path = output_dir / f"{self.model_name}{self._get_model_extension()}"
+        model_path = MODEL_DIR / f"{self.model_name}{self._get_model_extension()}"
         train_metrics = None
         cv_metrics = None
         test_metrics = None
@@ -146,9 +147,7 @@ class BaseTrainer(ABC):
         # Save metrics (only if at least one metric was computed)
         if train_metrics or cv_metrics or test_metrics:
             extra_data = self._get_extra_metrics_data()
-            self.save_metrics(
-                train_metrics, cv_metrics, test_metrics, output_dir, **extra_data
-            )
+            self.save_metrics(train_metrics, cv_metrics, test_metrics, **extra_data)
 
         return {
             "train_metrics": train_metrics,

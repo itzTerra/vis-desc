@@ -79,8 +79,8 @@ class CustomDataset(Dataset):
 
 class CachedOptimizationContext:
     tokenizer = None
-    sm_train = None
-    lg_train = None
+    sm_train_cache = {}
+    lg_train_cache = {}
 
     def __init__(
         self,
@@ -94,7 +94,10 @@ class CachedOptimizationContext:
             )
         self.tokenizer = CachedOptimizationContext.tokenizer
 
-        if CachedOptimizationContext.sm_train is None:
+        # Create cache key from parameters
+        sm_cache_key = (include_minilm_embeddings, include_modernbert_embeddings)
+
+        if sm_cache_key not in CachedOptimizationContext.sm_train_cache:
             sm_train = pd.read_parquet(
                 DATA_DIR / "datasets" / "small" / "train.parquet"
             )
@@ -118,39 +121,48 @@ class CachedOptimizationContext:
                 sm_train = sm_train.merge(
                     modernbert_embeddings[["cls"]], left_index=True, right_index=True
                 )
-            CachedOptimizationContext.sm_train = sm_train.reset_index(drop=True)
-        self.sm_train = CachedOptimizationContext.sm_train
+            CachedOptimizationContext.sm_train_cache[sm_cache_key] = (
+                sm_train.reset_index(drop=True)
+            )
+        self.sm_train = CachedOptimizationContext.sm_train_cache[sm_cache_key]
 
-        if include_large and CachedOptimizationContext.lg_train is None:
-            lg_train = pd.read_parquet(
-                DATA_DIR / "datasets" / "large" / "combined.parquet"
-            )
-            lg_train["weight"] = compute_sample_weight(
-                class_weight="balanced", y=lg_train["label"]
-            )
-            if include_minilm_embeddings:
-                minilm_embeddings_large = pd.read_parquet(
-                    DATA_DIR / "datasets" / "large" / "minilm_embeddings.parquet"
+        if include_large:
+            lg_cache_key = (include_minilm_embeddings, include_modernbert_embeddings)
+
+            if lg_cache_key not in CachedOptimizationContext.lg_train_cache:
+                lg_train = pd.read_parquet(
+                    DATA_DIR / "datasets" / "large" / "combined.parquet"
                 )
-                lg_train = lg_train.merge(
-                    minilm_embeddings_large[["cls"]],
-                    left_index=True,
-                    right_index=True,
+                lg_train["weight"] = compute_sample_weight(
+                    class_weight="balanced", y=lg_train["label"]
                 )
-            if include_modernbert_embeddings:
-                modernbert_embeddings_large = pd.read_parquet(
-                    DATA_DIR
-                    / "datasets"
-                    / "large"
-                    / "modernbert_cls_embeddings.parquet"
+                if include_minilm_embeddings:
+                    minilm_embeddings_large = pd.read_parquet(
+                        DATA_DIR / "datasets" / "large" / "minilm_embeddings.parquet"
+                    )
+                    lg_train = lg_train.merge(
+                        minilm_embeddings_large[["cls"]],
+                        left_index=True,
+                        right_index=True,
+                    )
+                if include_modernbert_embeddings:
+                    modernbert_embeddings_large = pd.read_parquet(
+                        DATA_DIR
+                        / "datasets"
+                        / "large"
+                        / "modernbert_cls_embeddings.parquet"
+                    )
+                    lg_train = lg_train.merge(
+                        modernbert_embeddings_large[["cls"]],
+                        left_index=True,
+                        right_index=True,
+                    )
+                CachedOptimizationContext.lg_train_cache[lg_cache_key] = (
+                    lg_train.reset_index(drop=True)
                 )
-                lg_train = lg_train.merge(
-                    modernbert_embeddings_large[["cls"]],
-                    left_index=True,
-                    right_index=True,
-                )
-            CachedOptimizationContext.lg_train = lg_train.reset_index(drop=True)
-        self.lg_train = CachedOptimizationContext.lg_train
+            self.lg_train = CachedOptimizationContext.lg_train_cache[lg_cache_key]
+        else:
+            self.lg_train = None
 
 
 def run_cross_validation(
@@ -275,21 +287,21 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         dict with keys:
         - mse: Mean squared error
         - accuracy: Accuracy of rounded scores
-        - precision: Precision for each class (1-5)
-        - recall: Recall for each class (1-5)
-        - f1: F1-score for each class (1-5)
+        - precision: Precision for each class (0-5)
+        - recall: Recall for each class (0-5)
+        - f1: F1-score for each class (0-5)
         - confusion_matrix: Confusion matrix for rounded scores
     """
-    # Round predictions and true values to nearest integer (1-5)
-    y_true_rounded = np.clip(np.round(y_true), 1, 5).astype(int)
-    y_pred_rounded = np.clip(np.round(y_pred), 1, 5).astype(int)
+    # Round predictions and true values to nearest integer (0-5)
+    y_true_rounded = np.clip(np.round(y_true), 0, 5).astype(int)
+    y_pred_rounded = np.clip(np.round(y_pred), 0, 5).astype(int)
 
     mse = mean_squared_error(y_true, y_pred)
     accuracy = accuracy_score(y_true_rounded, y_pred_rounded)
     precision, recall, f1, support = precision_recall_fscore_support(
-        y_true_rounded, y_pred_rounded, labels=[1, 2, 3, 4, 5], zero_division=0
+        y_true_rounded, y_pred_rounded, labels=[0, 1, 2, 3, 4, 5], zero_division=0
     )
-    cm = confusion_matrix(y_true_rounded, y_pred_rounded, labels=[1, 2, 3, 4, 5])
+    cm = confusion_matrix(y_true_rounded, y_pred_rounded, labels=[0, 1, 2, 3, 4, 5])
 
     return {
         "mse": float(mse),

@@ -358,6 +358,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         )
 
         def objective(trial):
+            set_seed()
+
             stage1_epochs = (
                 trial.suggest_categorical(
                     "stage1_epochs", self.SEARCH_SPACE["stage1_epochs"]
@@ -435,8 +437,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
 
                 val_dataset = CustomDataset(val_df, tokenizer)
                 val_loader = DataLoader(val_dataset, batch_size=self.BATCH_SIZE)
-
-                set_seed()
 
                 model = ModernBertWithFeaturesTrainable.from_pretrained(
                     "answerdotai/ModernBERT-base",

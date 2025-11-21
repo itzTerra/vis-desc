@@ -383,8 +383,6 @@ class BaseSklearnTrainer(BaseTrainer):
         with open(model_path, "wb") as f:
             f.write(onx.SerializeToString())
 
-        print(f"ONNX model saved to {model_path}")
-
         sess = rt.InferenceSession(str(model_path))
         input_name = sess.get_inputs()[0].name
         label_name = sess.get_outputs()[0].name
@@ -487,6 +485,36 @@ class CatBoostTrainer(BaseSklearnTrainer):
 
     def _get_fit_params_for_weights(self, weights: np.ndarray) -> Dict[str, Any]:
         return {"sample_weight": weights}
+
+    def export(self, model_path: Path) -> None:
+        """Export CatBoost model to ONNX format using CatBoost's built-in converter."""
+        from catboost.utils import convert_to_onnx_object
+        import onnxruntime as rt
+
+        # Use CatBoost's native ONNX conversion
+        onx = convert_to_onnx_object(self.model)
+
+        # Save the ONNX model
+        with open(model_path, "wb") as f:
+            f.write(onx.SerializeToString())
+
+        # Verify the conversion
+        sess = rt.InferenceSession(str(model_path))
+        input_name = sess.get_inputs()[0].name
+        output_name = sess.get_outputs()[0].name
+
+        sample_X = self.X_train.astype(np.float32)
+        pred_onx = sess.run([output_name], {input_name: sample_X})[0]
+        pred_catboost = self.model.predict(sample_X)
+
+        diff = np.abs(pred_catboost - pred_onx.flatten())
+        if not np.all(diff < 1e-5):
+            print(
+                "Warning: Insufficient accuracy between CatBoost and ONNX predictions."
+            )
+            print(f"Max difference: {np.max(diff)}")
+        else:
+            print(f"ONNX export verified successfully (max diff: {np.max(diff):.2e})")
 
 
 class WeightedRandomSampler(BaseEstimator, RegressorMixin):
@@ -816,9 +844,6 @@ class ModernBertTrainer(BaseTrainer):
                 if torch.isnan(loss) or torch.isinf(loss):
                     print(f"Invalid loss detected: {loss.item()}, skipping batch")
                     continue
-                if loss.item() > 1000:
-                    print(f"Warning: Very high loss {loss.item():.2f}, clipping")
-                    loss = torch.clamp(loss, max=100)
 
                 loss_value = loss.item()
                 epoch_losses.append(loss_value)
@@ -993,7 +1018,8 @@ class ModernBertTrainer(BaseTrainer):
                     )
 
                     loss = outputs.loss
-                    if torch.isnan(loss):
+                    if torch.isnan(loss) or torch.isinf(loss):
+                        print(f"Invalid loss detected: {loss.item()}, skipping batch")
                         continue
 
                     epoch_losses.append(loss.item())

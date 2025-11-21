@@ -497,8 +497,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             )
 
                             loss = outputs.loss
-                            if torch.isnan(loss):
-                                print("Loss is NaN, skipping backward pass.")
+                            if torch.isnan(loss) or torch.isinf(loss):
+                                print(
+                                    f"Invalid loss detected: {loss.item()}, skipping batch"
+                                )
                                 continue
 
                             loss.backward()
@@ -578,11 +580,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                                     f"Invalid loss detected: {loss.item()}, skipping batch"
                                 )
                                 continue
-                            if loss.item() > 1000:
-                                print(
-                                    f"Warning: Very high loss {loss.item():.2f}, clipping"
-                                )
-                                loss = torch.clamp(loss, max=100)
 
                             current_batch = total_batches + step
                             train_loss_history.append((current_batch, loss.item()))

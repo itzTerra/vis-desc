@@ -1,5 +1,6 @@
 import os
 import random
+import hashlib
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -202,6 +203,16 @@ def run_cross_validation(
         train_fold_df = sm_train.loc[train_index].copy()
         val_fold_df = sm_train.loc[val_index].copy()
 
+        if diagnostics_enabled():
+            train_summary = summarize_dataframe(train_fold_df, "train")
+            val_summary = summarize_dataframe(val_fold_df, "val")
+            print(
+                f"[DIAG] Trial {getattr(trial, 'number', '?')} Fold {fold} | Train size={train_summary['size']} Val size={val_summary['size']}"
+            )
+            print(
+                f"[DIAG] Train label dist: {train_summary['label_distribution']} | Val label dist: {val_summary['label_distribution']}"
+            )
+
         lg_size = None
         if lg_train is not None:
             lg_size = len(lg_train)
@@ -232,6 +243,31 @@ def run_cross_validation(
         #     raise optuna.exceptions.TrialPruned()
 
     return np.mean(fold_scores)
+
+
+# ---------------------- Diagnostics Utilities ----------------------
+
+
+def diagnostics_enabled():
+    return os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True")
+
+
+def hash_model_parameters(model):
+    sha = hashlib.sha256()
+    for p in model.parameters():
+        sha.update(p.detach().cpu().numpy().tobytes())
+    return sha.hexdigest()
+
+
+def summarize_dataframe(df: pd.DataFrame, name: str):
+    labels = df["label"].values
+    unique, counts = np.unique(labels, return_counts=True)
+    dist_map = {int(k): int(v) for k, v in zip(unique, counts)}
+    return {
+        "name": name,
+        "size": len(df),
+        "label_distribution": dist_map,
+    }
 
 
 def run_study(objective_func, study_name, search_space=None, n_trials=None):

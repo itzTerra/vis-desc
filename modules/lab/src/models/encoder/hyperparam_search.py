@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from typing import Literal
+import os
 import argparse
 import pandas as pd
 from sklearn.svm import SVR
@@ -447,6 +448,16 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 for param in model.model.parameters():
                     param.requires_grad = False
                 model.to(device)
+                if os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True"):
+                    from models.encoder.common import hash_model_parameters
+
+                    param_hash = hash_model_parameters(model)
+                    print(
+                        f"[DIAG] Trial {trial.number} Fold {fold_num} Initial model param hash: {param_hash}"
+                    )
+                    print(
+                        f"[DIAG] Hyperparams: stage1_epochs={stage1_epochs} lr_bert={lr_bert} lr_custom={lr_custom} dropout={dropout_rate} wd={weight_decay} warmup={optimizer_warmup} feature_hidden_size={feature_hidden_size}"
+                    )
                 # if device.type == "cuda":
                 #     torch.cuda.empty_cache()
 
@@ -475,6 +486,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         ],
                         weight_decay=weight_decay,
                     )
+                    if os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True"):
+                        print(
+                            f"[DIAG] Stage1 optimizer state size: {len(optimizer.state)} (should be 0 before first step)"
+                        )
 
                     total_steps = len(lg_train_loader) * stage1_epochs
                     warmup_steps = int(total_steps * optimizer_warmup)
@@ -538,6 +553,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         ],
                         weight_decay=weight_decay,
                     )
+                    if os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True"):
+                        print(
+                            f"[DIAG] Stage2 optimizer initial state size: {len(optimizer.state)} (should be 0)"
+                        )
                     total_steps = len(sm_train_loader) * self.STAGE2_MAX_EPOCHS
                     scheduler = get_linear_schedule_with_warmup(
                         optimizer,
@@ -551,6 +570,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     val_loss_history = []  # [(batch_number, loss), ...]
                     total_batches = 0
                     batches_per_epoch = len(sm_train_loader)
+                    if os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True"):
+                        print(
+                            f"[DIAG] Trial {trial.number} Fold {fold_num} train_loss_history initialized empty: {len(train_loss_history)} entries"
+                        )
 
                     history_path = (
                         TRAINING_HISTORY_DIR
@@ -612,6 +635,16 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             current_batch = total_batches + step
                             train_loss_history.append((current_batch, loss.item()))
                             epoch_train_losses.append(loss.item())
+
+                            if (
+                                os.environ.get("ENCODER_DIAG", "0")
+                                in ("1", "true", "True")
+                                and epoch == 0
+                                and step == 0
+                            ):
+                                print(
+                                    f"[DIAG] Trial {trial.number} Fold {fold_num} First batch loss: {loss.item():.6f}"
+                                )
 
                             torch.autograd.set_detect_anomaly(True)
                             loss.backward()

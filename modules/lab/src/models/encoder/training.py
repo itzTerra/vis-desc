@@ -15,26 +15,26 @@ from models.encoder.trainers import (
 MODEL_PARAMS = {
     "random": {
         "no_lg": {},
-        "lg": {"small_dataset_weight_multiplier": 100.0},
+        "lg": {"small_dataset_weight_multiplier": 200.0},
     },
     "ridge": {
-        "minilm": {"ridge_alpha": 0.01},
-        "minilm_lg": {"ridge_alpha": 0.01, "small_dataset_weight_multiplier": 100.0},
+        "minilm": {"ridge_alpha": 67.8330},
+        "minilm_lg": {"ridge_alpha": 67.8330, "small_dataset_weight_multiplier": 200.0},
         "mbert": {"ridge_alpha": 64.4018},
-        "mbert_lg": {"ridge_alpha": 0.01, "small_dataset_weight_multiplier": 100.0},
+        "mbert_lg": {"ridge_alpha": 64.4018, "small_dataset_weight_multiplier": 200.0},
     },
     "svm": {
         "minilm": {"svr_c": 2.5276, "svr_epsilon": 0.0018},
         "minilm_lg": {
-            "svr_c": 1.0,
-            "svr_epsilon": 0.1,
-            "small_dataset_weight_multiplier": 100.0,
+            "svr_c": 2.5276,
+            "svr_epsilon": 0.0018,
+            "small_dataset_weight_multiplier": 200.0,
         },
         "mbert": {"svr_c": 2.4737, "svr_epsilon": 0.0032},
         "mbert_lg": {
-            "svr_c": 1.0,
-            "svr_epsilon": 0.1,
-            "small_dataset_weight_multiplier": 100.0,
+            "svr_c": 2.4737,
+            "svr_epsilon": 0.0032,
+            "small_dataset_weight_multiplier": 200.0,
         },
     },
     "rf": {

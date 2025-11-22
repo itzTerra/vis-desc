@@ -444,6 +444,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     dropout_rate=dropout_rate,
                     feature_hidden_size=feature_hidden_size,
                 )
+                for param in model.model.parameters():
+                    param.requires_grad = False
                 model.to(device)
                 if device.type == "cuda":
                     torch.cuda.empty_cache()
@@ -565,6 +567,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             sm_train_loader,
                             desc=f"Stage 2 - Epoch {epoch + 1}/{self.STAGE2_MAX_EPOCHS}",
                         )
+                        if epoch == 5:
+                            for param in model.model.parameters():
+                                param.requires_grad = True
                         for step, batch in enumerate(progress_bar):
                             optimizer.zero_grad()
 

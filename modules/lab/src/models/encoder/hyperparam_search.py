@@ -445,6 +445,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     feature_hidden_size=feature_hidden_size,
                 )
                 model.to(device)
+                if device.type == "cuda":
+                    torch.cuda.empty_cache()
 
                 # Stage 1: Train on large noisy dataset (if available)
                 if (

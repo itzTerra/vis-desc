@@ -23,6 +23,7 @@ from models.encoder.modernbert_finetune_nn import (
     check_gradient_flow,
 )
 import json
+import gc
 
 
 class ObjectiveProvider:
@@ -361,6 +362,11 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         def objective(trial):
             set_seed()
 
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                torch.cuda.synchronize()
+                gc.collect()
+
             stage1_epochs = (
                 trial.suggest_categorical(
                     "stage1_epochs", self.SEARCH_SPACE["stage1_epochs"]
@@ -458,8 +464,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                     print(
                         f"[DIAG] Hyperparams: stage1_epochs={stage1_epochs} lr_bert={lr_bert} lr_custom={lr_custom} dropout={dropout_rate} wd={weight_decay} warmup={optimizer_warmup} feature_hidden_size={feature_hidden_size}"
                     )
-                # if device.type == "cuda":
-                #     torch.cuda.empty_cache()
 
                 # Stage 1: Train on large noisy dataset (if available)
                 if (
@@ -742,6 +746,14 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         y_pred_fold.extend(predictions.cpu().numpy())
 
                 mse = mean_squared_error(y_true_fold, y_pred_fold)
+
+                if "model" in locals():
+                    del model
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
+                    gc.collect()
+
                 return mse
 
             return run_cross_validation(

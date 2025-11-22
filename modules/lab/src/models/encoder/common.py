@@ -16,6 +16,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     confusion_matrix,
 )
+from pathlib import Path
 
 BERT_TOKENIZER_MAX_LENGTH = 160
 SEED = 42
@@ -166,6 +167,22 @@ class CachedOptimizationContext:
             self.lg_train = None
 
 
+def hash_tokenizer(tokenizer):
+    """
+    Return (sha256_hash, vocab_size, added_tokens_count) for diagnostics.
+    """
+    import json
+
+    vocab = tokenizer.get_vocab()  # dict: token -> id
+    items = sorted(vocab.items())
+    sha = hashlib.sha256()
+    for k, v in items:
+        sha.update(f"{k}:{v}".encode())
+    added = getattr(tokenizer, "added_tokens_encoder", {})
+    sha.update(json.dumps(sorted(added.items())).encode())
+    return sha.hexdigest(), len(vocab), len(added)
+
+
 def run_cross_validation(
     trial,
     train_and_eval_func,
@@ -194,6 +211,11 @@ def run_cross_validation(
         include_large=include_large,
     )
     tokenizer = optimization_context.tokenizer
+    if diagnostics_enabled():
+        tok_hash, vocab_size, added_size = hash_tokenizer(tokenizer)
+        print(
+            f"[DIAG] Tokenizer hash={tok_hash} vocab_size={vocab_size} added_tokens={added_size}"
+        )
     sm_train = optimization_context.sm_train
     lg_train = optimization_context.lg_train
 
@@ -212,6 +234,9 @@ def run_cross_validation(
             print(
                 f"[DIAG] Train label dist: {train_summary['label_distribution']} | Val label dist: {val_summary['label_distribution']}"
             )
+            cache_files = list(Path(os.environ.get("HF_HOME")).glob("**/*"))
+            cache_sizes = sum(f.stat().st_size for f in cache_files if f.is_file())
+            print(f"[DIAG] Cache size before fold {fold}: {cache_sizes / 1e9:.2f} GB")
 
         lg_size = None
         if lg_train is not None:
@@ -241,6 +266,15 @@ def run_cross_validation(
         # trial.report(score, fold)
         # if trial.should_prune():
         #     raise optuna.exceptions.TrialPruned()
+        if diagnostics_enabled():
+            tok_hash_after, vocab_size_after, added_size_after = hash_tokenizer(
+                tokenizer
+            )
+            print(
+                f"[DIAG] Tokenizer post-fold hash={tok_hash_after} "
+                f"vocab_size={vocab_size_after} added_tokens={added_size_after} "
+                f"(unchanged={tok_hash_after == tok_hash})"
+            )
 
     return np.mean(fold_scores)
 

@@ -447,8 +447,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 for param in model.model.parameters():
                     param.requires_grad = False
                 model.to(device)
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
+                # if device.type == "cuda":
+                #     torch.cuda.empty_cache()
 
                 # Stage 1: Train on large noisy dataset (if available)
                 if (
@@ -538,12 +538,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         ],
                         weight_decay=weight_decay,
                     )
-
                     total_steps = len(sm_train_loader) * self.STAGE2_MAX_EPOCHS
-                    warmup_steps = int(total_steps * optimizer_warmup)
                     scheduler = get_linear_schedule_with_warmup(
                         optimizer,
-                        num_warmup_steps=warmup_steps,
+                        num_warmup_steps=int(total_steps * optimizer_warmup),
                         num_training_steps=total_steps,
                     )
 
@@ -570,6 +568,29 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         if epoch == 5:
                             for param in model.model.parameters():
                                 param.requires_grad = True
+                            # reinitialize optimizer and scheduler to account for unfrozen layers
+                            optimizer = AdamW(
+                                [
+                                    {"params": model.model.parameters(), "lr": lr_bert},
+                                    {
+                                        "params": model.feature_ff.parameters(),
+                                        "lr": lr_custom,
+                                    },
+                                    {
+                                        "params": model.regressor.parameters(),
+                                        "lr": lr_custom,
+                                    },
+                                ],
+                                weight_decay=weight_decay,
+                            )
+                            total_steps = len(
+                                sm_train_loader
+                            ) * self.STAGE2_MAX_EPOCHS - epoch * len(sm_train_loader)
+                            scheduler = get_linear_schedule_with_warmup(
+                                optimizer,
+                                num_warmup_steps=int(total_steps * optimizer_warmup),
+                                num_training_steps=total_steps,
+                            )
                         for step, batch in enumerate(progress_bar):
                             optimizer.zero_grad()
 
@@ -605,9 +626,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             scheduler.step()
                             progress_bar.set_postfix({"loss": loss.item()})
 
-                            del loss, outputs
-                            if device.type == "cuda":
-                                torch.cuda.empty_cache()
+                            # del loss, outputs
+                            # if device.type == "cuda":
+                            #     torch.cuda.empty_cache()
 
                         total_batches += batches_per_epoch
 

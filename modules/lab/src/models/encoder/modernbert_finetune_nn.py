@@ -236,7 +236,7 @@ def train_finetuned_mbert(
         - scaler: fitted MinMaxScaler
     """
     BATCH_SIZE = 64
-    NUM_EPOCHS = 20
+    NUM_EPOCHS = 40
     EARLY_STOPPING_PATIENCE = 5
 
     stage1_epochs = params.get("stage1_epochs", 0)

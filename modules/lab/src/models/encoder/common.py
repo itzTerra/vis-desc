@@ -1,6 +1,8 @@
 import os
 import random
 import hashlib
+import json
+from datetime import datetime
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -382,3 +384,56 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         "support": support.tolist(),
         "confusion_matrix": cm.tolist(),
     }
+
+
+def save_metrics_separate(
+    model_name: str,
+    params: dict,
+    train: dict | None,
+    val: dict | None,
+    test: dict | None,
+    extra_train: dict | None = None,
+    timestamp: str | None = None,
+) -> None:
+    """Persist metrics for train/val/test splits into separate JSON files.
+
+    This is a standalone utility extracted from the trainer class so it can also
+    be reused by scripts that compute aggregated or ensemble metrics (e.g.
+    feature importance / ablation studies).
+
+    Each JSON contains:
+      - model: the model name (includes any run label suffixes)
+      - params: parameter dict used for the run
+      - dataset: one of train | val | test
+      - metric keys (mse, accuracy, precision, recall, f1, support, confusion_matrix, ...)
+      - any optional extra_train data only in the train file
+    """
+
+    if timestamp is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    def _write(split_name: str, data: dict | None, extra: dict | None = None):
+        payload = {
+            "model": model_name,
+            "params": params,
+            "dataset": split_name,
+        }
+        if data is not None:
+            payload.update(data)
+        if extra and split_name == "train":
+            for k, v in extra.items():
+                payload[k] = v
+        out_path = METRICS_DIR / f"{model_name}_{split_name}_{timestamp}.json"
+        try:
+            with open(out_path, "w") as f:
+                json.dump(payload, f, indent=2)
+            print(f"Saved {split_name} metrics to {out_path}")
+        except Exception as e:
+            print(f"Failed to save {split_name} metrics: {e}")
+
+    if train is not None:
+        _write("train", train, extra_train)
+    if val is not None:
+        _write("val", val)
+    if test is not None:
+        _write("test", test)

@@ -6,32 +6,36 @@ import json
 import numpy as np
 import pandas as pd
 import torch
-from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import Ridge
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor
-from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
 import onnxruntime as rt
 from utils import DATA_DIR
+from sklearn.kernel_approximation import Nystroem
+from sklearn.linear_model import SGDRegressor
+from skl2onnx import convert_sklearn
+from skl2onnx.common.data_types import FloatTensorType
+from catboost.utils import convert_to_onnx_object
+
 
 from models.encoder.common import (
-    METRICS_DIR,
     MODEL_DIR,
     SEED,
     calculate_metrics,
     device,
     CustomDataset,
     CachedOptimizationContext,
+    set_seed,
+    save_metrics_separate as save_metrics_separate_fn,
 )
 from models.encoder.common import TRAINING_HISTORY_DIR
-from models.encoder.modernbert_finetune_nn import ModernBertWithFeaturesTrainable
 from text2features import FeatureExtractorPipeline
 
 
@@ -47,6 +51,8 @@ class BaseTrainer(ABC):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
+        label: Optional[str] = None,
+        seed: Optional[int] = None,
     ):
         self.params = params
         self.embeddings = embeddings
@@ -55,9 +61,12 @@ class BaseTrainer(ABC):
         self.enable_cv = enable_cv
         self.enable_test = enable_test
         self.save_model = save_model
+        # Optional user-provided label to distinguish runs (e.g., feature group ablations)
+        self.label = label
         self.model = None
         self.model_name = self._get_model_name()
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.seed = seed if seed is not None else SEED
 
     @abstractmethod
     def _get_model_name(self) -> str:
@@ -83,25 +92,23 @@ class BaseTrainer(ABC):
         """Export the trained model to disk."""
         pass
 
-    def save_metrics(
+    def save_metrics_separate(
         self,
-        train_metrics: Dict,
-        cv_metrics: Optional[Dict],
-        test_metrics: Optional[Dict],
-        **extra_data,
-    ):
-        """Save training, CV, and test metrics to JSON."""
-        metrics = {
-            "model": self.model_name,
-            "params": self.params,
-            "train_metrics": train_metrics,
-            "cv_metrics": cv_metrics,
-            "test_metrics": test_metrics,
-            **extra_data,
-        }
-        metrics_path = METRICS_DIR / f"{self.model_name}_{self.timestamp}.json"
-        with open(metrics_path, "w") as f:
-            json.dump(metrics, f, indent=2)
+        train: Optional[Dict],
+        val: Optional[Dict],
+        test: Optional[Dict],
+        extra_train: Optional[Dict] = None,
+    ) -> None:
+        """Delegate metrics saving to shared utility (see common.save_metrics_separate)."""
+        save_metrics_separate_fn(
+            model_name=self.model_name,
+            params=self.params,
+            train=train,
+            val=val,
+            test=test,
+            extra_train=extra_train,
+            timestamp=self.timestamp,
+        )
 
     def run_full_training(self) -> Dict[str, Any]:
         """Execute training pipeline: train, evaluate, cross-validate, export, and save metrics based on enabled flags."""
@@ -120,6 +127,8 @@ class BaseTrainer(ABC):
         # Train (optional)
         if self.enable_train:
             print("Training model...")
+            # Ensure reproducibility per run
+            set_seed(self.seed)
             self.train()
 
             # Evaluate on training set
@@ -150,8 +159,10 @@ class BaseTrainer(ABC):
 
         # Save metrics (only if at least one metric was computed)
         if train_metrics or cv_metrics or test_metrics:
-            extra_data = self._get_extra_metrics_data()
-            self.save_metrics(train_metrics, cv_metrics, test_metrics, **extra_data)
+            extra_train = self._get_extra_metrics_data()
+            self.save_metrics_separate(
+                train_metrics, cv_metrics, test_metrics, extra_train=extra_train
+            )
 
         return {
             "train_metrics": train_metrics,
@@ -186,6 +197,10 @@ class BaseSklearnTrainer(BaseTrainer):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
+        feature_mask: Optional[np.ndarray] = None,
+        minilm_mask: Optional[np.ndarray] = None,
+        label: Optional[str] = None,
+        seed: Optional[int] = None,
     ):
         super().__init__(
             params,
@@ -195,17 +210,22 @@ class BaseSklearnTrainer(BaseTrainer):
             enable_cv,
             enable_test,
             save_model,
+            label=label,
+            seed=seed,
         )
         self.include_minilm = embeddings == "minilm"
         self.include_mbert = embeddings == "mbert"
         self.X_train = None
         self.y_train = None
         self.weights = None
+        self.feature_mask = feature_mask
+        self.minilm_mask = minilm_mask
         self._load_data()
 
     def _get_model_name(self) -> str:
         base_name = self._get_base_model_name()
-        return f"{base_name}_{self.embeddings}{'_lg' if self.include_large else ''}"
+        label_str = f"_{self.label}" if self.label else ""
+        return f"{base_name}_{self.embeddings}{'_lg' if self.include_large else ''}{label_str}"
 
     @abstractmethod
     def _get_base_model_name(self) -> str:
@@ -218,7 +238,7 @@ class BaseSklearnTrainer(BaseTrainer):
         pass
 
     def _load_data(self):
-        """Load and prepare training data."""
+        """Load and prepare training data, applying feature/minilm masks if provided."""
         context = CachedOptimizationContext(
             include_minilm_embeddings=self.include_minilm,
             include_modernbert_embeddings=self.include_mbert,
@@ -227,16 +247,18 @@ class BaseSklearnTrainer(BaseTrainer):
         train_df = context.sm_train.copy()
 
         if self.include_large and context.lg_train is not None:
-            weight_mult = self.params.get("small_dataset_weight_multiplier", 1.0)
+            weight_mult = self.params["small_dataset_weight_multiplier"]
             train_df["weight"] *= weight_mult
             train_df = pd.concat([context.lg_train, train_df], ignore_index=True)
 
-        self.X_train = np.hstack(
-            (
-                np.vstack(train_df["cls"].values),
-                np.vstack(train_df["features"].values),
-            )
-        )
+        # Apply masks
+        cls_arr = np.vstack(train_df["cls"].values)
+        features_arr = np.vstack(train_df["features"].values)
+        if self.minilm_mask is not None and self.include_minilm:
+            cls_arr = cls_arr[:, self.minilm_mask]
+        if self.feature_mask is not None:
+            features_arr = features_arr[:, self.feature_mask]
+        self.X_train = np.hstack((cls_arr, features_arr))
         self.y_train = train_df["label"].values
         self.weights = train_df["weight"].values
 
@@ -257,20 +279,37 @@ class BaseSklearnTrainer(BaseTrainer):
         return calculate_metrics(self.y_train, y_pred_train)
 
     def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
-        """Perform cross-validation on small dataset only."""
+        """Perform cross-validation.
+
+        Always stratifies and validates on the small dataset folds. If
+        ``self.include_large`` is True, the full large dataset is appended to
+        every training fold (never to the validation fold) and the small fold
+        weights are optionally upscaled using ``small_dataset_weight_multiplier``.
+        This mirrors the logic in ``run_cross_validation`` from ``common.py``.
+        """
         context = CachedOptimizationContext(
             include_minilm_embeddings=self.include_minilm,
             include_modernbert_embeddings=self.include_mbert,
-            include_large=False,
+            include_large=self.include_large,
         )
         sm_train = context.sm_train
+        lg_train = context.lg_train  # may be None
 
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
         fold_metrics = []
 
-        for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
+        for fold, (train_index, val_index) in enumerate(
+            kf.split(sm_train, sm_train["label"])
+        ):
             train_fold_df = sm_train.loc[train_index].copy()
             val_fold_df = sm_train.loc[val_index].copy()
+
+            # If large dataset is used, concatenate it to the training fold and
+            # upscale the small dataset weights to balance influence.
+            if self.include_large and lg_train is not None:
+                weight_mult = self.params["small_dataset_weight_multiplier"]
+                train_fold_df["weight"] *= weight_mult
+                train_fold_df = pd.concat([lg_train, train_fold_df], ignore_index=True)
 
             X_train_fold = np.hstack(
                 (
@@ -321,16 +360,10 @@ class BaseSklearnTrainer(BaseTrainer):
             "recall": np.mean([m["recall"] for m in fold_metrics], axis=0).tolist(),
             "f1": np.mean([m["f1"] for m in fold_metrics], axis=0).tolist(),
             "support": np.sum([m["support"] for m in fold_metrics], axis=0).tolist(),
-            "confusion_matrix": np.sum(
-                [m["confusion_matrix"] for m in fold_metrics], axis=0
-            ).tolist(),
         }
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
-        """Evaluate model on test set using saved ONNX model."""
-        import onnxruntime as rt
-        from utils import DATA_DIR
-
+        """Evaluate model on test set using saved ONNX model, applying feature/minilm masks."""
         # Load test data
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
@@ -351,12 +384,13 @@ class BaseSklearnTrainer(BaseTrainer):
             )
 
         # Prepare test features
-        X_test = np.hstack(
-            (
-                np.vstack(test_df["cls"].values),
-                np.vstack(test_df["features"].values),
-            )
-        )
+        cls_arr = np.vstack(test_df["cls"].values)
+        features_arr = np.vstack(test_df["features"].values)
+        if self.minilm_mask is not None and self.include_minilm:
+            cls_arr = cls_arr[:, self.minilm_mask]
+        if self.feature_mask is not None:
+            features_arr = features_arr[:, self.feature_mask]
+        X_test = np.hstack((cls_arr, features_arr))
         y_test = test_df["label"].values
 
         # Load ONNX model and predict
@@ -372,9 +406,6 @@ class BaseSklearnTrainer(BaseTrainer):
 
     def export(self, model_path: Path) -> None:
         """Export sklearn model to ONNX format."""
-        from skl2onnx import convert_sklearn
-        from skl2onnx.common.data_types import FloatTensorType
-        import onnxruntime as rt
 
         n_features = self.X_train.shape[1]
         initial_type = [("float_input", FloatTensorType([None, n_features]))]
@@ -408,7 +439,7 @@ class RidgeTrainer(BaseSklearnTrainer):
     def _create_model(self):
         return make_pipeline(
             MinMaxScaler(),
-            Ridge(alpha=self.params["ridge_alpha"], random_state=SEED),
+            Ridge(alpha=self.params["ridge_alpha"], random_state=self.seed),
         )
 
     def _get_fit_params(self) -> Dict[str, Any]:
@@ -425,20 +456,36 @@ class SVMTrainer(BaseSklearnTrainer):
         return "svm"
 
     def _create_model(self):
-        return make_pipeline(
-            MinMaxScaler(),
-            SVR(
-                kernel="rbf",
-                C=self.params["svr_c"],
-                epsilon=self.params["svr_epsilon"],
-            ),
-        )
+        if self.include_large:
+            return make_pipeline(
+                MinMaxScaler(),
+                Nystroem(
+                    kernel="rbf",
+                    n_components=500,
+                    random_state=self.seed,
+                ),
+                SGDRegressor(
+                    loss="squared_error",
+                    alpha=1.0 / self.params["svr_c"],
+                    max_iter=100000,
+                    random_state=self.seed,
+                ),
+            )
+        else:
+            return make_pipeline(
+                MinMaxScaler(),
+                SVR(
+                    kernel="rbf",
+                    C=self.params["svr_c"],
+                    epsilon=self.params["svr_epsilon"],
+                ),
+            )
 
     def _get_fit_params(self) -> Dict[str, Any]:
-        return {"svr__sample_weight": self.weights}
-
-    def _get_fit_params_for_weights(self, weights: np.ndarray) -> Dict[str, Any]:
-        return {"svr__sample_weight": weights}
+        if self.include_large:
+            return {"sgdregressor__sample_weight": self.weights}
+        else:
+            return {"svr__sample_weight": self.weights}
 
 
 class RandomForestTrainer(BaseSklearnTrainer):
@@ -454,7 +501,7 @@ class RandomForestTrainer(BaseSklearnTrainer):
             for k, v in self.params.items()
             if k not in ["small_dataset_weight_multiplier"]  # Exclude non-RF params
         }
-        return RandomForestRegressor(**rf_params, random_state=SEED, n_jobs=-1)
+        return RandomForestRegressor(**rf_params, random_state=self.seed, n_jobs=-1)
 
     def _get_fit_params(self) -> Dict[str, Any]:
         return {"sample_weight": self.weights}
@@ -477,7 +524,7 @@ class CatBoostTrainer(BaseSklearnTrainer):
             if k not in ["small_dataset_weight_multiplier"]  # Exclude non-CB params
         }
         return CatBoostRegressor(
-            **cb_params, random_seed=SEED, verbose=100, thread_count=-1
+            **cb_params, random_seed=self.seed, verbose=100, thread_count=-1
         )
 
     def _get_fit_params(self) -> Dict[str, Any]:
@@ -488,8 +535,6 @@ class CatBoostTrainer(BaseSklearnTrainer):
 
     def export(self, model_path: Path) -> None:
         """Export CatBoost model to ONNX format using CatBoost's built-in converter."""
-        from catboost.utils import convert_to_onnx_object
-        import onnxruntime as rt
 
         # Use CatBoost's native ONNX conversion
         onx = convert_to_onnx_object(self.model)
@@ -564,6 +609,8 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
+        label: Optional[str] = None,
+        seed: Optional[int] = None,
     ):
         super().__init__(
             params,
@@ -573,6 +620,8 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             enable_cv=enable_cv,
             enable_test=enable_test,
             save_model=save_model,
+            label=label,
+            seed=seed,
         )
         self.y_train = None
         self.weights = None
@@ -580,7 +629,8 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         self._load_data()
 
     def _get_model_name(self) -> str:
-        return f"random{'_lg' if self.include_large else ''}"
+        label_str = f"_{self.label}" if self.label else ""
+        return f"random{'_lg' if self.include_large else ''}{label_str}"
 
     def _get_model_extension(self) -> str:
         """Random baseline uses JSON format instead of ONNX."""
@@ -603,7 +653,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
 
     def train(self) -> None:
         """Train the random sampler using uniform distribution over training labels."""
-        self.model = WeightedRandomSampler(random_state=SEED)
+        self.model = WeightedRandomSampler(random_state=self.seed)
         # We need dummy X data since the sampler expects it (but doesn't use it)
         X_dummy = np.zeros((len(self.y_train), 1))
         # Pass no sample_weight to use uniform distribution
@@ -624,10 +674,12 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         )
         sm_train = context.sm_train
 
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
         fold_metrics = []
 
-        for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
+        for fold, (train_index, val_index) in enumerate(
+            kf.split(sm_train, sm_train["label"])
+        ):
             train_fold_df = sm_train.loc[train_index].copy()
             val_fold_df = sm_train.loc[val_index].copy()
 
@@ -635,7 +687,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             y_val_fold = val_fold_df["label"].values
 
             # Train fold model with uniform distribution
-            fold_model = WeightedRandomSampler(random_state=SEED)
+            fold_model = WeightedRandomSampler(random_state=self.seed)
             X_train_dummy = np.zeros((len(y_train_fold), 1))
             fold_model.fit(X_train_dummy, y_train_fold, sample_weight=None)
 
@@ -666,8 +718,6 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
         """Evaluate model on test set using saved distribution."""
-        from utils import DATA_DIR
-
         # Load test data
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
@@ -679,10 +729,10 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             dist_data = json.load(f)
 
         # Recreate the model from saved distribution
-        model = WeightedRandomSampler(random_state=SEED)
+        model = WeightedRandomSampler(random_state=self.seed)
         model.y_train_ = np.array(dist_data["y_train"])
         model.weights_ = np.array(dist_data["weights"])
-        model.rng_ = np.random.RandomState(SEED)
+        model.rng_ = np.random.RandomState(self.seed)
 
         # Generate predictions
         X_test_dummy = np.zeros((len(test_df), 1))
@@ -697,7 +747,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         dist_data = {
             "y_train": self.model.y_train_.tolist(),
             "weights": self.model.weights_.tolist(),
-            "random_state": SEED,
+            "random_state": self.seed,
             "model_type": "WeightedRandomSampler",
         }
 
@@ -707,23 +757,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         print(f"Distribution saved to {model_path}")
 
     def _get_extra_metrics_data(self) -> Dict[str, Any]:
-        """Add training distribution statistics to metrics."""
-        # Since we're using uniform weights, just compute simple mean/std
-        train_mean = np.mean(self.model.y_train_)
-        train_std = np.std(self.model.y_train_)
-
-        # Add label distribution
-        unique_labels, label_counts = np.unique(self.model.y_train_, return_counts=True)
-        label_distribution = {
-            int(label): int(count) for label, count in zip(unique_labels, label_counts)
-        }
-
-        return {
-            "train_mean": float(train_mean),
-            "train_std": float(train_std),
-            "train_size": len(self.model.y_train_),
-            "label_distribution": label_distribution,
-        }
+        return {}
 
 
 class ModernBertTrainer(BaseTrainer):
@@ -737,6 +771,8 @@ class ModernBertTrainer(BaseTrainer):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
+        label: Optional[str] = None,
+        seed: Optional[int] = None,
     ):
         super().__init__(
             params,
@@ -746,6 +782,8 @@ class ModernBertTrainer(BaseTrainer):
             enable_cv=enable_cv,
             enable_test=enable_test,
             save_model=save_model,
+            label=label,
+            seed=seed,
         )
         self.tokenizer = None
         self.train_df = None
@@ -753,7 +791,8 @@ class ModernBertTrainer(BaseTrainer):
         self._load_data()
 
     def _get_model_name(self) -> str:
-        return f"finetuned_mbert{'_lg' if self.include_large else ''}"
+        label_str = f"_{self.label}" if self.label else ""
+        return f"finetuned_mbert{'_lg' if self.include_large else ''}{label_str}"
 
     def _load_data(self):
         """Load and prepare training data."""
@@ -778,126 +817,23 @@ class ModernBertTrainer(BaseTrainer):
 
     def train(self) -> None:
         """Train the ModernBERT model."""
-        g = torch.Generator()
-        g.manual_seed(SEED)
+        from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
-        train_dataset = CustomDataset(self.train_df, self.tokenizer)
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=self.params["batch_size"],
-            shuffle=True,
-            generator=g,
-        )
-
-        self.model = ModernBertWithFeaturesTrainable.from_pretrained(
-            "answerdotai/ModernBERT-base",
-            feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
-            dropout_rate=self.params["dropout_rate"],
-            feature_hidden_size=self.params["feature_hidden_size"],
-        )
-        self.model.to(device)
-
-        optimizer = AdamW(
-            [
-                {"params": self.model.model.parameters(), "lr": self.params["lr_bert"]},
-                {
-                    "params": self.model.feature_ff.parameters(),
-                    "lr": self.params["lr_custom"],
-                },
-                {
-                    "params": self.model.regressor.parameters(),
-                    "lr": self.params["lr_custom"],
-                },
-            ],
-            weight_decay=self.params["weight_decay"],
-        )
-        total_steps = len(train_loader) * self.params["num_epochs"]
-        warmup_steps = int(total_steps * self.params["optimizer_warmup"])
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
-        )
-
-        early_stopping_patience = int(self.params.get("early_stopping_patience", 3))
-
-        self.batch_losses = []
-        train_losses_per_epoch = []
-        best_train_loss = float("inf")
-        epochs_without_improve = 0
-
-        self.model.train()
-        for epoch in range(self.params["num_epochs"]):
-            epoch_losses = []
-            progress_bar = tqdm(
-                train_loader, desc=f"Epoch {epoch + 1}/{self.params['num_epochs']}"
-            )
-            for batch in progress_bar:
-                optimizer.zero_grad()
-
-                outputs = self.model(
-                    input_ids=batch["input_ids"].to(device),
-                    attention_mask=batch["attention_mask"].to(device),
-                    features=batch["features"].to(device),
-                    labels=batch["labels"].to(device),
-                )
-
-                loss = outputs.loss
-                if torch.isnan(loss) or torch.isinf(loss):
-                    print(f"Invalid loss detected: {loss.item()}, skipping batch")
-                    continue
-
-                loss_value = loss.item()
-                epoch_losses.append(loss_value)
-
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
-                optimizer.step()
-                scheduler.step()
-                progress_bar.set_postfix({"loss": loss_value})
-
-                # del loss, outputs
-                # if device.type == "cuda":
-                #     torch.cuda.empty_cache()
-
-            avg_train_loss = (
-                float(np.mean(epoch_losses)) if epoch_losses else float("nan")
-            )
-            self.batch_losses.append(epoch_losses)
-            train_losses_per_epoch.append(avg_train_loss)
-
-            if not np.isnan(avg_train_loss) and avg_train_loss < best_train_loss:
-                best_train_loss = avg_train_loss
-                epochs_without_improve = 0
-            else:
-                epochs_without_improve += 1
-
-            print(f"Epoch {epoch + 1} avg loss: {avg_train_loss:.4f}")
-
-            if epochs_without_improve >= early_stopping_patience:
-                print(
-                    f"Early stopping triggered at epoch {epoch + 1} (patience={early_stopping_patience})."
-                )
-                break
-
-        training_history = {
-            "model": self.model_name,
-            "train_losses": train_losses_per_epoch,
-            "best_train_loss": float(best_train_loss)
-            if best_train_loss != float("inf")
-            else None,
-            "best_epoch": int(np.argmin(train_losses_per_epoch)) + 1
-            if len(train_losses_per_epoch) > 0
-            else None,
-            "batch_losses": self.batch_losses,
-        }
-        save_path = (
+        history_path = (
             TRAINING_HISTORY_DIR / f"{self.model_name}_train_{self.timestamp}.json"
         )
-        try:
-            with open(save_path, "w") as f:
-                json.dump(training_history, f, indent=2)
-            print(f"Saved training history to {save_path}")
-        except Exception as e:
-            print(f"Failed to save training history: {e}")
+
+        result = train_finetuned_mbert(
+            train_df=self.train_df,
+            val_df=None,
+            tokenizer=self.tokenizer,
+            params=self.params,
+            seed=self.seed,
+            train_lg_df=None,
+            save_history=True,
+            history_path=history_path,
+        )
+        self.model = result["model"]
 
     def evaluate_train(self) -> Dict[str, Any]:
         """Evaluate model on training set."""
@@ -929,184 +865,50 @@ class ModernBertTrainer(BaseTrainer):
         )
         sm_train = context.sm_train
 
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
         fold_metrics = []
         fold_histories = []
 
-        # Early stopping params (can be overridden via self.params)
-        early_stopping_patience = int(self.params.get("early_stopping_patience", 3))
+        for fold, (train_index, val_index) in enumerate(
+            kf.split(sm_train, sm_train["label"])
+        ):
+            from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
-        for fold, (train_index, val_index) in enumerate(kf.split(sm_train)):
             print(f"\nFold {fold + 1}/{n_splits}")
             train_fold_df = sm_train.loc[train_index].copy().reset_index(drop=True)
             val_fold_df = sm_train.loc[val_index].copy().reset_index(drop=True)
 
-            scaler = MinMaxScaler()
-            train_features_scaled = scaler.fit_transform(
-                np.vstack(train_fold_df["features"].values)
-            )
-            val_features_scaled = scaler.transform(
-                np.vstack(val_fold_df["features"].values)
-            )
-            train_fold_df["features"] = [
-                f for f in np.nan_to_num(train_features_scaled)
-            ]
-            val_fold_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
+            training_params = {
+                "lr_bert": self.params["lr_bert"],
+                "lr_custom": self.params["lr_custom"],
+                "dropout_rate": self.params["dropout_rate"],
+                "weight_decay": self.params["weight_decay"],
+                "optimizer_warmup": self.params["optimizer_warmup"],
+                "feature_hidden_size": self.params["feature_hidden_size"],
+                "stage1_epochs": self.params.get("stage1_epochs", 0),
+                "frozen_bert_epochs": self.params.get("frozen_bert_epochs", 0),
+            }
 
-            g = torch.Generator()
-            g.manual_seed(SEED)
-
-            train_dataset = CustomDataset(train_fold_df, self.tokenizer)
-            val_dataset = CustomDataset(val_fold_df, self.tokenizer)
-            train_loader = DataLoader(
-                train_dataset,
-                batch_size=self.params["batch_size"],
-                shuffle=True,
-                generator=g,
-            )
-            val_loader = DataLoader(val_dataset, batch_size=self.params["batch_size"])
-
-            fold_model = ModernBertWithFeaturesTrainable.from_pretrained(
-                "answerdotai/ModernBERT-base",
-                feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
-                dropout_rate=self.params["dropout_rate"],
-                feature_hidden_size=self.params["feature_hidden_size"],
-            )
-            fold_model.to(device)
-
-            optimizer = AdamW(
-                [
-                    {
-                        "params": fold_model.model.parameters(),
-                        "lr": self.params["lr_bert"],
-                    },
-                    {
-                        "params": fold_model.feature_ff.parameters(),
-                        "lr": self.params["lr_custom"],
-                    },
-                    {
-                        "params": fold_model.regressor.parameters(),
-                        "lr": self.params["lr_custom"],
-                    },
-                ],
-                weight_decay=self.params["weight_decay"],
+            result = train_finetuned_mbert(
+                train_df=train_fold_df,
+                val_df=val_fold_df,
+                tokenizer=self.tokenizer,
+                params=training_params,
+                seed=self.seed,
+                train_lg_df=None,
+                save_history=False,
+                history_path=None,
             )
 
-            total_steps = len(train_loader) * self.params["num_epochs"]
-            warmup_steps = int(total_steps * self.params["optimizer_warmup"])
-            scheduler = get_linear_schedule_with_warmup(
-                optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
-            )
-
-            # Train with per-epoch validation and early stopping
-            train_losses_per_epoch = []
-            val_losses_per_epoch = []
-            best_val_loss = float("inf")
-            epochs_without_improve = 0
-
-            fold_model.train()
-            for epoch in range(self.params["num_epochs"]):
-                epoch_losses = []
-                for batch in train_loader:
-                    optimizer.zero_grad()
-
-                    outputs = fold_model(
-                        input_ids=batch["input_ids"].to(device),
-                        attention_mask=batch["attention_mask"].to(device),
-                        features=batch["features"].to(device),
-                        labels=batch["labels"].to(device),
-                    )
-
-                    loss = outputs.loss
-                    if torch.isnan(loss) or torch.isinf(loss):
-                        print(f"Invalid loss detected: {loss.item()}, skipping batch")
-                        continue
-
-                    epoch_losses.append(loss.item())
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(fold_model.parameters(), 1.0)
-                    optimizer.step()
-                    scheduler.step()
-
-                    del loss, outputs
-                    if device.type == "cuda":
-                        torch.cuda.empty_cache()
-
-                # End of epoch training
-                avg_train_loss = (
-                    float(np.mean(epoch_losses)) if epoch_losses else float("nan")
-                )
-                train_losses_per_epoch.append(avg_train_loss)
-
-                # Compute validation loss for this epoch
-                fold_model.eval()
-                val_epoch_losses = []
-                with torch.no_grad():
-                    for batch in val_loader:
-                        outputs = fold_model(
-                            input_ids=batch["input_ids"].to(device),
-                            attention_mask=batch["attention_mask"].to(device),
-                            features=batch["features"].to(device),
-                            labels=batch["labels"].to(device),
-                        )
-                        loss = outputs.loss
-                        if not torch.isnan(loss):
-                            val_epoch_losses.append(loss.item())
-
-                avg_val_loss = (
-                    float(np.mean(val_epoch_losses))
-                    if val_epoch_losses
-                    else float("nan")
-                )
-                val_losses_per_epoch.append(avg_val_loss)
-
-                # Early stopping check
-                if not np.isnan(avg_val_loss) and avg_val_loss < best_val_loss:
-                    best_val_loss = avg_val_loss
-                    epochs_without_improve = 0
-                else:
-                    epochs_without_improve += 1
-
-                print(
-                    f"Fold {fold + 1} Epoch {epoch + 1}: train_loss={avg_train_loss:.4f}, val_loss={avg_val_loss:.4f}"
-                )
-
-                # Resume training mode for next epoch
-                fold_model.train()
-
-                if epochs_without_improve >= early_stopping_patience:
-                    print(
-                        f"Early stopping triggered for fold {fold + 1} at epoch {epoch + 1} (patience={early_stopping_patience})."
-                    )
-                    break
-
-            # Final evaluation on validation set using the current model
-            fold_model.eval()
-            y_true, y_pred = [], []
-            with torch.no_grad():
-                for batch in val_loader:
-                    outputs = fold_model(
-                        input_ids=batch["input_ids"].to(device),
-                        attention_mask=batch["attention_mask"].to(device),
-                        features=batch["features"].to(device),
-                        labels=batch["labels"].to(device),
-                    )
-                    predictions = outputs.logits.squeeze()
-                    y_true.extend(batch["labels"].cpu().numpy())
-                    y_pred.extend(predictions.cpu().numpy())
-
-            metrics = calculate_metrics(np.array(y_true), np.array(y_pred))
+            metrics = result["final_metrics"]
             fold_metrics.append(metrics)
 
-            # Record per-fold history
             fold_history = {
-                "train_losses": train_losses_per_epoch,
-                "val_losses": val_losses_per_epoch,
-                "best_val_loss": float(best_val_loss)
-                if best_val_loss != float("inf")
-                else None,
-                "best_epoch": int(np.argmin(val_losses_per_epoch)) + 1
-                if len(val_losses_per_epoch) > 0
+                "train_losses": result["train_losses"],
+                "val_losses": result["val_losses"],
+                "best_val_loss": result["best_val_loss"],
+                "best_epoch": int(np.argmin(result["val_losses"])) + 1
+                if result["val_losses"]
                 else None,
                 "final_metrics": metrics,
             }

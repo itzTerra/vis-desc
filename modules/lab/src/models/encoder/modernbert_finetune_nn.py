@@ -3,6 +3,21 @@ from transformers.modeling_outputs import SequenceClassifierOutput
 import torch.nn as nn
 import torch
 import numpy as np
+import gc
+import json
+from pathlib import Path
+from torch.optim import AdamW
+from torch.utils.data import DataLoader
+from sklearn.preprocessing import MinMaxScaler
+from transformers import get_linear_schedule_with_warmup
+from tqdm.auto import tqdm
+from text2features import FeatureExtractorPipeline
+from models.encoder.common import (
+    device,
+    CustomDataset,
+    calculate_metrics,
+    SEED,
+)
 
 
 class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
@@ -10,10 +25,9 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         self,
         config,
         feature_input_size,
-        dropout_rate=0.25,
-        feature_hidden_size=1024,
-        regressor_hidden_size=512,
-        norm_eps=1e-4,
+        dropout_rate,
+        feature_hidden_size,
+        norm_eps,
     ):
         super().__init__(config)
         self.config = config
@@ -128,11 +142,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         #     f"Logits range: [{logits.min():.2f}, {logits.max():.2f}], mean: {logits.mean():.2f}"
         # )
 
-        if not diagnose_forward_outputs(
-            logits.detach(), labels, features, cls_embedding=cls_embedding
-        ):
-            raise RuntimeError("Numerics failure in forward - aborting to inspect")
-
         loss = self.loss_fct(logits.squeeze(), labels)
         return SequenceClassifierOutput(
             loss=loss,
@@ -140,30 +149,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
-
-
-def detect_numerics(tensor, name):
-    if tensor is None:
-        print(f"[NUMERIC CHECK] {name}: NONE")
-        return False
-    if not torch.isfinite(tensor).all().item():
-        print(
-            f"[NUMERIC CHECK] {name}: contains NaN/Inf; stats: min={tensor.min().item():.6e}, max={tensor.max().item():.6e}"
-        )
-        return False
-    return True
-
-
-def diagnose_forward_outputs(logits, labels, features=None, cls_embedding=None):
-    """Call right after forward to catch NaNs/Infs and extreme ranges."""
-    ok = True
-    ok &= detect_numerics(logits, "logits")
-    ok &= detect_numerics(labels, "labels")
-    if features is not None:
-        ok &= detect_numerics(features, "features")
-    if cls_embedding is not None:
-        ok &= detect_numerics(cls_embedding, "cls_embedding")
-    return ok
 
 
 def check_gradient_flow(model, step, epoch):
@@ -200,3 +185,378 @@ def check_gradient_flow(model, step, epoch):
         else:
             print(f"{layer_name:20s}: NO GRADIENTS")
     print("=" * 60)
+
+
+def train_finetuned_mbert(
+    train_df,
+    tokenizer,
+    params,
+    seed=SEED,
+    val_df=None,
+    train_lg_df=None,
+    history_path=None,
+    save_history=True,
+):
+    """Unified ModernBERT training function.
+
+    Behavior:
+      - If `train_lg_df` is provided and not empty, perform Stage 1 pre-training on it (epochs = params['stage1_epochs']).
+      - Always perform Stage 2 training on `train_df`.
+      - If `params['frozen_bert_epochs'] > 0`, keep BERT encoder frozen for that many initial epochs of Stage 2 then unfreeze.
+      - Always perform gradient flow checking via `check_gradient_flow` at defined batch intervals.
+      - If `val_df` is provided: compute validation loss each epoch, apply early stopping using constant `EARLY_STOPPING_PATIENCE`.
+      - If `val_df` is None: no early stopping; train for full NUM_EPOCHS.
+      - Uses aggressive CUDA + GC cleanup after Stage 1 and after each epoch.
+
+    Constants internal to function:
+      BATCH_SIZE, NUM_EPOCHS (stage 2), EARLY_STOPPING_PATIENCE.
+
+    Params dict expected keys:
+      - lr_bert, lr_custom, dropout_rate, weight_decay, optimizer_warmup,
+        feature_hidden_size, stage1_epochs, frozen_bert_epochs.
+
+    Args:
+        train_df: DataFrame with training data for stage 2
+        tokenizer: The tokenizer to use
+        params: Dict with hyperparameters
+        seed: Random seed for reproducibility
+        val_df: Optional validation DataFrame (enables early stopping)
+        train_lg_df: Optional large dataset DataFrame for stage 1
+        history_path: Optional path to save training history
+        save_history: Whether to save training history to file
+
+    Returns:
+        Dict containing:
+        - model: trained model instance (only in no-validation mode)
+        - train_losses: list of training losses per epoch
+        - val_losses: list of validation losses per epoch (empty if no validation)
+        - best_val_loss: best validation loss achieved (None if no validation)
+        - final_metrics: metrics dict on val_df or train_df
+        - history: structured history dict
+        - scaler: fitted MinMaxScaler
+    """
+    BATCH_SIZE = 64
+    NUM_EPOCHS = 20
+    EARLY_STOPPING_PATIENCE = 5
+
+    stage1_epochs = params.get("stage1_epochs", 0)
+    lr_bert = params["lr_bert"]
+    lr_custom = params["lr_custom"]
+    dropout_rate = params["dropout_rate"]
+    weight_decay = params["weight_decay"]
+    optimizer_warmup = params["optimizer_warmup"]
+    feature_hidden_size = params["feature_hidden_size"]
+    frozen_bert_epochs = params.get("frozen_bert_epochs", 0)
+
+    # Scale features
+    scaler = MinMaxScaler()
+    if train_lg_df is not None and not train_lg_df.empty:
+        lg_features_scaled = scaler.fit_transform(
+            np.vstack(train_lg_df["features"].values)
+        )
+        train_lg_df = train_lg_df.copy()
+        train_lg_df["features"] = [f for f in np.nan_to_num(lg_features_scaled)]
+
+        if not train_df.empty:
+            sm_features_scaled = scaler.transform(
+                np.vstack(train_df["features"].values)
+            )
+            train_df = train_df.copy()
+            train_df["features"] = [f for f in np.nan_to_num(sm_features_scaled)]
+    else:
+        sm_features_scaled = scaler.fit_transform(
+            np.vstack(train_df["features"].values)
+        )
+        train_df = train_df.copy()
+        train_df["features"] = [f for f in np.nan_to_num(sm_features_scaled)]
+
+    if val_df is not None:
+        val_df = val_df.copy()
+        val_features_scaled = scaler.transform(np.vstack(val_df["features"].values))
+        val_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
+
+    g = torch.Generator()
+    g.manual_seed(seed)
+
+    # Create validation loader if needed
+    val_loader = None
+    if val_df is not None:
+        val_dataset = CustomDataset(val_df, tokenizer)
+        val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
+
+    # Initialize model with frozen BERT
+    model = ModernBertWithFeaturesTrainable.from_pretrained(
+        "answerdotai/ModernBERT-base",
+        feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
+        dropout_rate=dropout_rate,
+        feature_hidden_size=feature_hidden_size,
+    )
+    for param in model.model.parameters():
+        param.requires_grad = False
+    model.to(device)
+
+    # Stage 1: Train on large dataset (optional)
+    if train_lg_df is not None and not train_lg_df.empty and stage1_epochs > 0:
+        print(
+            f"Stage 1: Training on large dataset ({len(train_lg_df)} samples) for {stage1_epochs} epochs"
+        )
+        lg_train_dataset = CustomDataset(train_lg_df, tokenizer)
+        lg_train_loader = DataLoader(
+            lg_train_dataset, batch_size=BATCH_SIZE, shuffle=True, generator=g
+        )
+        optimizer = AdamW(
+            [
+                {"params": model.model.parameters(), "lr": lr_bert},
+                {"params": model.feature_ff.parameters(), "lr": lr_custom},
+                {"params": model.regressor.parameters(), "lr": lr_custom},
+            ],
+            weight_decay=weight_decay,
+        )
+        total_steps = len(lg_train_loader) * stage1_epochs
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=int(total_steps * optimizer_warmup),
+            num_training_steps=total_steps,
+        )
+        model.train()
+        for epoch in range(stage1_epochs):
+            for batch in tqdm(
+                lg_train_loader, desc=f"Stage 1 - Epoch {epoch + 1}/{stage1_epochs}"
+            ):
+                optimizer.zero_grad()
+                outputs = model(
+                    input_ids=batch["input_ids"].to(device),
+                    attention_mask=batch["attention_mask"].to(device),
+                    features=batch["features"].to(device),
+                    labels=batch["labels"].to(device),
+                )
+                loss = outputs.loss
+                if torch.isnan(loss) or torch.isinf(loss):
+                    continue
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                scheduler.step()
+                del loss, outputs
+
+        # Aggressive cleanup after Stage 1
+        del optimizer, scheduler
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        gc.collect()
+
+    # Stage 2: Fine-tuning on small dataset
+    print(
+        f"Stage 2: Fine-tuning on small dataset ({len(train_df)} samples) "
+        f"{'with' if val_df is not None else 'without'} early stopping (max {NUM_EPOCHS} epochs)"
+    )
+    sm_train_dataset = CustomDataset(train_df, tokenizer)
+    sm_train_loader = DataLoader(
+        sm_train_dataset, batch_size=BATCH_SIZE, shuffle=True, generator=g
+    )
+
+    optimizer = AdamW(
+        [
+            {"params": model.model.parameters(), "lr": lr_bert},
+            {"params": model.feature_ff.parameters(), "lr": lr_custom},
+            {"params": model.regressor.parameters(), "lr": lr_custom},
+        ],
+        weight_decay=weight_decay,
+    )
+    total_steps = len(sm_train_loader) * NUM_EPOCHS
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=int(total_steps * optimizer_warmup),
+        num_training_steps=total_steps,
+    )
+
+    best_val_loss = float("inf")
+    patience_counter = 0
+    train_loss_history = []
+    val_loss_history = []
+    train_losses_per_epoch = []
+    val_losses_per_epoch = []
+    total_batches = 0
+    batches_per_epoch = len(sm_train_loader)
+
+    model.train()
+    for epoch in range(NUM_EPOCHS):
+        epoch_train_losses = []
+        progress_bar = tqdm(
+            sm_train_loader,
+            desc=f"Stage 2 - Epoch {epoch + 1}/{NUM_EPOCHS}",
+        )
+
+        # Unfreeze BERT after frozen_bert_epochs
+        if epoch == frozen_bert_epochs and frozen_bert_epochs > 0:
+            print(f"\nUnfreezing BERT encoder at epoch {epoch + 1}")
+            for p in model.model.parameters():
+                p.requires_grad = True
+            optimizer = AdamW(
+                [
+                    {"params": model.model.parameters(), "lr": lr_bert},
+                    {"params": model.feature_ff.parameters(), "lr": lr_custom},
+                    {"params": model.regressor.parameters(), "lr": lr_custom},
+                ],
+                weight_decay=weight_decay,
+            )
+            remaining_steps = len(sm_train_loader) * (NUM_EPOCHS - epoch)
+            scheduler = get_linear_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=int(remaining_steps * optimizer_warmup),
+                num_training_steps=remaining_steps,
+            )
+
+        for step, batch in enumerate(progress_bar):
+            optimizer.zero_grad()
+            outputs = model(
+                input_ids=batch["input_ids"].to(device),
+                attention_mask=batch["attention_mask"].to(device),
+                features=batch["features"].to(device),
+                labels=batch["labels"].to(device),
+            )
+            loss = outputs.loss
+            if torch.isnan(loss) or torch.isinf(loss):
+                continue
+
+            current_batch = total_batches + step
+            loss_value = loss.item()
+            train_loss_history.append((current_batch, loss_value))
+            epoch_train_losses.append(loss_value)
+
+            loss.backward()
+
+            # Gradient flow check at intervals
+            if step == 0 or (step + 1) % 10 == 0:
+                check_gradient_flow(model, step + 1, epoch + 1)
+
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            optimizer.zero_grad()
+            scheduler.step()
+
+            progress_bar.set_postfix({"loss": loss_value})
+            del loss, outputs
+
+        total_batches += batches_per_epoch
+
+        # Calculate average training loss for this epoch
+        avg_train_loss = (
+            float(np.mean(epoch_train_losses)) if epoch_train_losses else float("nan")
+        )
+        train_losses_per_epoch.append(avg_train_loss)
+
+        # Validation if val_df provided
+        if val_loader is not None:
+            model.eval()
+            epoch_val_losses = []
+            with torch.no_grad():
+                for batch in tqdm(val_loader, desc="Validating", leave=False):
+                    outputs = model(
+                        input_ids=batch["input_ids"].to(device),
+                        attention_mask=batch["attention_mask"].to(device),
+                        features=batch["features"].to(device),
+                        labels=batch["labels"].to(device),
+                    )
+                    epoch_val_losses.append(outputs.loss.item())
+                    del outputs
+
+            avg_val_loss = np.mean(epoch_val_losses)
+            val_loss_history.append((total_batches - 1, avg_val_loss))
+            val_losses_per_epoch.append(avg_val_loss)
+
+            print(
+                f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
+            )
+
+            # Early stopping check
+            if avg_val_loss < best_val_loss:
+                best_val_loss = avg_val_loss
+                patience_counter = 0
+                print(f"✓ New best validation loss: {best_val_loss:.4f}")
+            else:
+                patience_counter += 1
+                print(
+                    f"✗ No improvement. Patience: {patience_counter}/{EARLY_STOPPING_PATIENCE}"
+                )
+                if patience_counter >= EARLY_STOPPING_PATIENCE:
+                    print(f"Early stopping triggered at epoch {epoch + 1}")
+                    break
+
+            model.train()
+        else:
+            # No validation - just print training loss
+            print(f"Epoch {epoch + 1} avg loss: {avg_train_loss:.4f}")
+
+        # Aggressive cleanup after each epoch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+        gc.collect()
+
+    # Final evaluation
+    model.eval()
+    eval_df = val_df if val_df is not None else train_df
+    eval_dataset = CustomDataset(eval_df, tokenizer)
+    eval_loader = DataLoader(eval_dataset, batch_size=BATCH_SIZE)
+
+    y_true = []
+    y_pred = []
+    with torch.no_grad():
+        for batch in tqdm(eval_loader, desc="Final evaluation"):
+            outputs = model(
+                input_ids=batch["input_ids"].to(device),
+                attention_mask=batch["attention_mask"].to(device),
+                features=batch["features"].to(device),
+                labels=batch["labels"].to(device),
+            )
+            preds = outputs.logits.squeeze()
+            y_true.extend(batch["labels"].cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+            del outputs
+
+    final_metrics = calculate_metrics(np.array(y_true), np.array(y_pred))
+
+    # Prepare history data
+    history = {
+        "batches_per_epoch": batches_per_epoch,
+        "epochs_trained": epoch + 1,
+        "train_loss_history": train_loss_history,
+        "val_loss_history": val_loss_history,
+        "train_losses": train_losses_per_epoch,
+        "val_losses": val_losses_per_epoch,
+        "best_val_loss": float(best_val_loss)
+        if val_df is not None and best_val_loss != float("inf")
+        else None,
+        "hyperparameters": {
+            "stage1_epochs": stage1_epochs,
+            "lr_bert": lr_bert,
+            "lr_custom": lr_custom,
+            "dropout_rate": dropout_rate,
+            "weight_decay": weight_decay,
+            "optimizer_warmup": optimizer_warmup,
+            "feature_hidden_size": feature_hidden_size,
+            "frozen_bert_epochs": frozen_bert_epochs,
+        },
+    }
+
+    # Save history if requested
+    if save_history and history_path is not None:
+        history_path = Path(history_path)
+        history_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(history_path, "w") as f:
+            json.dump(history, f, indent=2)
+        print(f"Saved training history to {history_path}")
+
+    return {
+        "model": model,
+        "train_losses": train_losses_per_epoch,
+        "val_losses": val_losses_per_epoch,
+        "best_val_loss": float(best_val_loss)
+        if val_df is not None and best_val_loss != float("inf")
+        else None,
+        "final_metrics": final_metrics,
+        "history": history,
+        "scaler": scaler,
+    }

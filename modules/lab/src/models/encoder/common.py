@@ -437,3 +437,34 @@ def save_metrics_separate(
         _write("val", val)
     if test is not None:
         _write("test", test)
+
+
+def _average_metrics(seed_metrics_list):
+    """Average metrics structure returned by trainer.run_full_training across seeds.
+
+    Each metrics dict may contain train_metrics, cv_metrics, test_metrics with sub keys.
+    Arrays (precision, recall, f1, support, confusion_matrix) are averaged element-wise.
+    Scalar entries (mse, accuracy) are averaged directly.
+    """
+
+    def _avg_split(split_key):
+        splits = [
+            m.get(split_key) for m in seed_metrics_list if m.get(split_key) is not None
+        ]
+        if not splits:
+            return None
+        out = {}
+        for k in ["mse", "accuracy"]:
+            if k in splits[0]:
+                out[k] = float(np.mean([s[k] for s in splits]))
+        for k in ["precision", "recall", "f1", "support", "confusion_matrix"]:
+            if k in splits[0]:
+                arr = np.array([s[k] for s in splits], dtype=float)
+                out[k] = arr.mean(axis=0).tolist()
+        return out
+
+    return {
+        "train_metrics": _avg_split("train_metrics"),
+        "cv_metrics": _avg_split("cv_metrics"),
+        "test_metrics": _avg_split("test_metrics"),
+    }

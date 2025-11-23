@@ -149,7 +149,7 @@ TRAINER_CLASSES: dict[str, BaseTrainer] = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Final training of all models with best hyperparameters"
+        description="Final training of all models with best hyperparameters (optionally across multiple seeds)"
     )
     parser.add_argument(
         "models",
@@ -201,6 +201,15 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not save/export the trained model(s)",
     )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        default=None,
+        help=(
+            "Number of different random seeds to run for each model/embedding combo. "
+            "Default: 3 when NOT using --lg, 0 when using --lg. If 0 or 1, runs a single seed."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -225,63 +234,90 @@ if __name__ == "__main__":
     enable_cv = args.val
     enable_test = args.test
 
+    # Determine number of seeds (dynamic default based on large dataset usage)
+    num_seeds = args.seeds if args.seeds is not None else (0 if include_large else 3)
+    # Use a reproducible seed sequence starting at 40 (consistent with feature importance script)
+    seeds = [40 + i for i in range(num_seeds)] if num_seeds > 0 else []
+
+    # Global seed still set for any non-seeded internal randomness
     set_seed()
 
     save_model = not args.no_save_model
 
     for model_name in models_to_train:
         if model_name == "finetuned-mbert":
-            # Fine-tuned ModernBERT doesn't use pre-computed embeddings
             key = "lg" if include_large else "no_lg"
             params = MODEL_PARAMS["finetuned-mbert"][key]
-            trainer = ModernBertTrainer(
-                params=params,
-                include_large=include_large,
-                enable_train=enable_train,
-                enable_cv=enable_cv,
-                enable_test=enable_test,
-                save_model=save_model,
-            )
-            trainer.run_full_training()
-        elif model_name == "random":
-            # Weighted random baseline doesn't use embeddings at all
-            key = "lg" if include_large else "no_lg"
-            params = MODEL_PARAMS[model_name].get(key, {})
-
-            trainer_class = TRAINER_CLASSES[model_name]
-            trainer = trainer_class(
-                params=params,
-                include_large=include_large,
-                enable_train=enable_train,
-                enable_cv=enable_cv,
-                enable_test=enable_test,
-                save_model=save_model,
-            )
-            trainer.run_full_training()
-        else:
-            # Skip other models if no embeddings specified
-            if embeddings_list is None:
-                print(
-                    f"Skipping {model_name} (no embeddings specified, only finetuned-mbert and random are valid)"
+            # Run seeds (or single run if seeds empty)
+            seed_iter = seeds if seeds else [None]
+            for seed in seed_iter:
+                label = (
+                    f"{model_name}{'_lg' if include_large else ''}-s{seed}"
+                    if seed is not None
+                    else None
                 )
-                continue
-
-            # Train for each embedding type
-            for embeddings in embeddings_list:
-                key = f"{embeddings}{'_lg' if include_large else ''}"
-                params = MODEL_PARAMS[model_name][key]
-
-                trainer_class = TRAINER_CLASSES[model_name]
-                trainer = trainer_class(
+                trainer = ModernBertTrainer(
                     params=params,
-                    embeddings=embeddings,
                     include_large=include_large,
                     enable_train=enable_train,
                     enable_cv=enable_cv,
                     enable_test=enable_test,
                     save_model=save_model,
+                    seed=seed if seed is not None else None,
+                    label=label,
                 )
                 trainer.run_full_training()
+        elif model_name == "random":
+            key = "lg" if include_large else "no_lg"
+            params = MODEL_PARAMS[model_name].get(key, {})
+            trainer_class = TRAINER_CLASSES[model_name]
+            seed_iter = seeds if seeds else [None]
+            for seed in seed_iter:
+                label = (
+                    f"{model_name}{'_lg' if include_large else ''}-s{seed}"
+                    if seed is not None
+                    else None
+                )
+                trainer = trainer_class(
+                    params=params,
+                    include_large=include_large,
+                    enable_train=enable_train,
+                    enable_cv=enable_cv,
+                    enable_test=enable_test,
+                    save_model=save_model,
+                    seed=seed if seed is not None else None,
+                    label=label,
+                )
+                trainer.run_full_training()
+        else:
+            if embeddings_list is None:
+                print(
+                    f"Skipping {model_name} (no embeddings specified, only finetuned-mbert and random are valid)"
+                )
+                continue
+            for embeddings in embeddings_list:
+                key = f"{embeddings}{'_lg' if include_large else ''}"
+                params = MODEL_PARAMS[model_name][key]
+                trainer_class = TRAINER_CLASSES[model_name]
+                seed_iter = seeds if seeds else [None]
+                for seed in seed_iter:
+                    label = (
+                        f"{model_name}-{embeddings}{'_lg' if include_large else ''}-s{seed}"
+                        if seed is not None
+                        else None
+                    )
+                    trainer = trainer_class(
+                        params=params,
+                        embeddings=embeddings,
+                        include_large=include_large,
+                        enable_train=enable_train,
+                        enable_cv=enable_cv,
+                        enable_test=enable_test,
+                        save_model=save_model,
+                        seed=seed if seed is not None else None,
+                        label=label,
+                    )
+                    trainer.run_full_training()
 
     print("\n" + "=" * 60)
     phases = []

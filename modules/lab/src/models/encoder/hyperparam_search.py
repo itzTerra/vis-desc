@@ -335,7 +335,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         "weight_decay": [0.01],
         "optimizer_warmup": [0.1],
         "feature_hidden_size": [512],
-        # "regressor_hidden_size": [256, 512],
     }
     BATCH_SIZE = 64
     STAGE2_MAX_EPOCHS = 20
@@ -348,48 +347,21 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
         return self.SEARCH_SPACE
 
     def get_objective_fn(self) -> callable:
-        import torch
-        from torch.optim import AdamW
-        from torch.utils.data import DataLoader
-        from transformers import get_linear_schedule_with_warmup
-        from tqdm.auto import tqdm
-        from text2features import FeatureExtractorPipeline
-        from models.encoder.common import device, CustomDataset
-        from models.encoder.modernbert_finetune_nn import (
-            ModernBertWithFeaturesTrainable,
-        )
+        import multiprocessing as mp
 
-        def objective(trial):
+        def run_trial_isolated(trial, trial_params):
+            import torch
+            from torch.optim import AdamW
+            from torch.utils.data import DataLoader
+            from transformers import get_linear_schedule_with_warmup
+            from tqdm.auto import tqdm
+            from text2features import FeatureExtractorPipeline
+            from models.encoder.common import device, CustomDataset
+            from models.encoder.modernbert_finetune_nn import (
+                ModernBertWithFeaturesTrainable,
+            )
+
             set_seed()
-
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
-                gc.collect()
-
-            stage1_epochs = (
-                trial.suggest_categorical(
-                    "stage1_epochs", self.SEARCH_SPACE["stage1_epochs"]
-                )
-                if self.include_large
-                else 0
-            )
-            lr_bert = trial.suggest_categorical("lr_bert", self.SEARCH_SPACE["lr_bert"])
-            lr_custom = trial.suggest_categorical(
-                "lr_custom", self.SEARCH_SPACE["lr_custom"]
-            )
-            dropout_rate = trial.suggest_categorical(
-                "dropout_rate", self.SEARCH_SPACE["dropout_rate"]
-            )
-            weight_decay = trial.suggest_categorical(
-                "weight_decay", self.SEARCH_SPACE["weight_decay"]
-            )
-            optimizer_warmup = trial.suggest_categorical(
-                "optimizer_warmup", self.SEARCH_SPACE["optimizer_warmup"]
-            )
-            feature_hidden_size = trial.suggest_categorical(
-                "feature_hidden_size", self.SEARCH_SPACE["feature_hidden_size"]
-            )
 
             def train_and_evaluate_fold(
                 train_df: pd.DataFrame,
@@ -398,6 +370,14 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 lg_size=None,
                 fold_num=0,
             ):
+                stage1_epochs = trial_params["stage1_epochs"]
+                lr_bert = trial_params["lr_bert"]
+                lr_custom = trial_params["lr_custom"]
+                dropout_rate = trial_params["dropout_rate"]
+                weight_decay = trial_params["weight_decay"]
+                optimizer_warmup = trial_params["optimizer_warmup"]
+                feature_hidden_size = trial_params["feature_hidden_size"]
+
                 # Separate small and large datasets if large is included
                 if self.include_large and lg_size is not None:
                     # The train_df contains both large and small datasets concatenated
@@ -764,6 +744,40 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 n_splits=5,
                 two_stage_training=True,
             )
+
+        def objective(trial):
+            params = {
+                "stage1_epochs": (
+                    trial.suggest_categorical(
+                        "stage1_epochs", self.SEARCH_SPACE["stage1_epochs"]
+                    )
+                    if self.include_large
+                    else 0
+                ),
+                "lr_bert": trial.suggest_categorical(
+                    "lr_bert", self.SEARCH_SPACE["lr_bert"]
+                ),
+                "lr_custom": trial.suggest_categorical(
+                    "lr_custom", self.SEARCH_SPACE["lr_custom"]
+                ),
+                "dropout_rate": trial.suggest_categorical(
+                    "dropout_rate", self.SEARCH_SPACE["dropout_rate"]
+                ),
+                "weight_decay": trial.suggest_categorical(
+                    "weight_decay", self.SEARCH_SPACE["weight_decay"]
+                ),
+                "optimizer_warmup": trial.suggest_categorical(
+                    "optimizer_warmup", self.SEARCH_SPACE["optimizer_warmup"]
+                ),
+                "feature_hidden_size": trial.suggest_categorical(
+                    "feature_hidden_size", self.SEARCH_SPACE["feature_hidden_size"]
+                ),
+            }
+
+            ctx = mp.get_context("spawn")  # Force fresh interpreter
+            with ctx.Pool(1) as pool:
+                result = pool.apply(run_trial_isolated, (trial, params))
+            return result
 
         return objective
 

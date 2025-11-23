@@ -434,6 +434,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         f for f in np.nan_to_num(sm_features_scaled)
                     ]
 
+                val_df = val_df.copy()
                 val_features_scaled = scaler.transform(
                     np.vstack(val_df["features"].values)
                 )
@@ -663,9 +664,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                             scheduler.step()
                             progress_bar.set_postfix({"loss": loss.item()})
 
-                            # del loss, outputs
-                            # if device.type == "cuda":
-                            #     torch.cuda.empty_cache()
+                            del loss, outputs
 
                         total_batches += batches_per_epoch
 

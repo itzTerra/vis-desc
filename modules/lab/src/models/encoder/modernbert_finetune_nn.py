@@ -27,7 +27,7 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         feature_input_size,
         dropout_rate,
         feature_hidden_size,
-        norm_eps,
+        norm_eps=1e-4,
     ):
         super().__init__(config)
         self.config = config

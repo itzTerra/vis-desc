@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 import syllables
 import wn
 import regex
-# from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer
 
 
 @dataclass
@@ -176,6 +176,41 @@ class FeatureExtractorPipelineResources:
 
 class FeatureExtractorPipeline:
     FEATURE_COUNT = 3671
+    EXTRACTOR_FEATURE_COUNTS = {
+        "extract_quote_ratio": 1,
+        "extract_char_ngrams": 1000,  # char n-gram features from CSV
+        "extract_word_length_by_char": 15,
+        "extract_ngram_word_length_by_char": 15,
+        "extract_sentence_length_by_word": 26,  # bins
+        "extract_sentence_length_by_word_avg": 1,  # average
+        "extract_numeric_word_ratio": 1,
+        "extract_ttr": 1,
+        "extract_lexical_density": 1,
+        "extract_syllable_count_avg": 1,
+        "extract_3+syllable_count_ratio": 1,
+        "extract_stopwords": 1,
+        "extract_articles": 2,
+        "extract_punctuation": 16,  # punctuation symbols
+        "extract_contractions": 1,
+        "extract_casing": 9,  # position × casing
+        "extract_casing_bigrams": 9,  # casing × casing
+        "extract_pos_frequency": 50,  # fine POS tags
+        "extract_pos_ngrams": 995,  # POS n-gram features from CSV
+        "extract_dependency_tree_structure": 92,  # depths + branching + widths
+        "extract_dependency_tree_relations": 1319,  # dep tree node+relation+complete n-grams
+        "extract_noun_phrase_lengths": 14,
+        "extract_entity_categories": 6,
+        "extract_events": 1,
+        "extract_supersense": 41,
+        "extract_tense": 4,
+        "extract_polysemy": 15,
+        "extract_word_concreteness": 20,  # bins
+        "extract_word_concreteness_avg": 1,  # average
+        "extract_preposition_imageability": 10,  # bins
+        "extract_preposition_imageability_avg": 1,  # average
+        "extract_places": 1,
+    }
+    assert sum(EXTRACTOR_FEATURE_COUNTS.values()) == FEATURE_COUNT
     PREPROCESS_TRANSLATION_TABLE = str.maketrans(
         {
             "\r": None,
@@ -1377,13 +1412,13 @@ class FeatureService:
             cache_folder=cache_dir,
         )
         # Not needed yet
-        # self.embed_modernbert = SentenceTransformer(
-        #     "lightonai/modernbert-embed-large",
-        #     truncate_dim=256,
-        #     backend="onnx",
-        #     cache_folder=cache_dir,
-        #     model_kwargs={"file_name": "model_quantized.onnx"},
-        # )
+        self.embed_modernbert = SentenceTransformer(
+            "lightonai/modernbert-embed-large",
+            truncate_dim=256,
+            backend="onnx",
+            cache_folder=cache_dir,
+            model_kwargs={"file_name": "model_quantized.onnx"},
+        )
 
         # self.tokenizer = AutoTokenizer.from_pretrained(
         #     "lightonai/modernbert-embed-large"

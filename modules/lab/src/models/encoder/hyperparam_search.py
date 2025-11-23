@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from typing import Literal
-import os
 import argparse
 import pandas as pd
 from sklearn.svm import SVR
@@ -19,20 +18,14 @@ from models.encoder.common import (
     run_cross_validation,
     set_seed,
 )
-from models.encoder.modernbert_finetune_nn import (
-    check_gradient_flow,
-)
 import json
-import gc
+import multiprocessing as mp
 
 
 def run_modernbert_trial(
     trial,
     trial_params: dict,
     include_large: bool,
-    batch_size: int,
-    stage2_max_epochs: int,
-    early_stopping_patience: int,
 ):
     """Top-level function executed in an isolated subprocess for ModernBERT fine-tuning.
 
@@ -44,23 +37,8 @@ def run_modernbert_trial(
         Hyperparameters for this trial.
     include_large : bool
         Whether to include the large (noisy) dataset in stage 1 pretraining.
-    batch_size : int
-        Batch size for both stages.
-    stage2_max_epochs : int
-        Maximum epochs for stage 2 fine-tuning (with early stopping).
-    early_stopping_patience : int
-        Patience for early stopping on validation loss.
     """
-    import torch
-    from torch.optim import AdamW
-    from torch.utils.data import DataLoader
-    from transformers import get_linear_schedule_with_warmup
-    from tqdm.auto import tqdm
-    from text2features import FeatureExtractorPipeline
-    from models.encoder.common import device, CustomDataset
-    from models.encoder.modernbert_finetune_nn import (
-        ModernBertWithFeaturesTrainable,
-    )
+    from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
     set_seed()
 
@@ -71,15 +49,6 @@ def run_modernbert_trial(
         lg_size=None,
         fold_num=0,
     ):
-        stage1_epochs = trial_params["stage1_epochs"]
-        lr_bert = trial_params["lr_bert"]
-        lr_custom = trial_params["lr_custom"]
-        dropout_rate = trial_params["dropout_rate"]
-        weight_decay = trial_params["weight_decay"]
-        optimizer_warmup = trial_params["optimizer_warmup"]
-        feature_hidden_size = trial_params["feature_hidden_size"]
-
-        # Separate small and large datasets if large is included
         if include_large and lg_size is not None:
             lg_train_df = train_df.iloc[:lg_size].copy()
             sm_train_df = train_df.iloc[lg_size:].copy()
@@ -87,258 +56,32 @@ def run_modernbert_trial(
             lg_train_df = None
             sm_train_df = train_df.copy()
 
-        # Scale features
-        scaler = MinMaxScaler()
-        if lg_train_df is not None and not lg_train_df.empty:
-            lg_features_scaled = scaler.fit_transform(
-                np.vstack(lg_train_df["features"].values)
-            )
-            lg_train_df["features"] = [f for f in np.nan_to_num(lg_features_scaled)]
-            if not sm_train_df.empty:
-                sm_features_scaled = scaler.transform(
-                    np.vstack(sm_train_df["features"].values)
-                )
-                sm_train_df["features"] = [f for f in np.nan_to_num(sm_features_scaled)]
-        else:
-            sm_features_scaled = scaler.fit_transform(
-                np.vstack(sm_train_df["features"].values)
-            )
-            sm_train_df["features"] = [f for f in np.nan_to_num(sm_features_scaled)]
-
-        val_df = val_df.copy()
-        val_features_scaled = scaler.transform(np.vstack(val_df["features"].values))
-        val_df["features"] = [f for f in np.nan_to_num(val_features_scaled)]
-
-        g = torch.Generator()
-        g.manual_seed(SEED)
-
-        val_dataset = CustomDataset(val_df, tokenizer)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size)
-
-        model = ModernBertWithFeaturesTrainable.from_pretrained(
-            "answerdotai/ModernBERT-base",
-            feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
-            dropout_rate=dropout_rate,
-            feature_hidden_size=feature_hidden_size,
+        history_path = (
+            TRAINING_HISTORY_DIR
+            / f"finetuned-mbert_trial_{trial.number}_fold_{fold_num}.json"
         )
-        for param in model.model.parameters():
-            param.requires_grad = False
-        model.to(device)
 
-        if os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True"):
-            from models.encoder.common import hash_model_parameters
+        result = train_finetuned_mbert(
+            train_df=sm_train_df,
+            val_df=val_df,
+            tokenizer=tokenizer,
+            params=trial_params,
+            seed=SEED,
+            train_lg_df=lg_train_df,
+            save_history=True,
+            history_path=history_path,
+        )
 
-            param_hash = hash_model_parameters(model)
-            print(
-                f"[DIAG] Trial {trial.number} Fold {fold_num} Initial model param hash: {param_hash}"
-            )
-            print(
-                f"[DIAG] Hyperparams: stage1_epochs={stage1_epochs} lr_bert={lr_bert} lr_custom={lr_custom} dropout={dropout_rate} wd={weight_decay} warmup={optimizer_warmup} feature_hidden_size={feature_hidden_size}"
-            )
-
-        # Stage 1 (optional)
-        if include_large and lg_train_df is not None and not lg_train_df.empty:
-            print(
-                f"Stage 1: Training on large dataset ({len(lg_train_df)} samples) for {stage1_epochs} epochs"
-            )
-            lg_train_dataset = CustomDataset(lg_train_df, tokenizer)
-            lg_train_loader = DataLoader(
-                lg_train_dataset, batch_size=batch_size, shuffle=True, generator=g
-            )
-            optimizer = AdamW(
-                [
-                    {"params": model.model.parameters(), "lr": lr_bert},
-                    {"params": model.feature_ff.parameters(), "lr": lr_custom},
-                    {"params": model.regressor.parameters(), "lr": lr_custom},
-                ],
-                weight_decay=weight_decay,
-            )
-            total_steps = len(lg_train_loader) * stage1_epochs
-            scheduler = get_linear_schedule_with_warmup(
-                optimizer,
-                num_warmup_steps=int(total_steps * optimizer_warmup),
-                num_training_steps=total_steps,
-            )
-            model.train()
-            for epoch in range(stage1_epochs):
-                for batch in tqdm(
-                    lg_train_loader, desc=f"Stage 1 - Epoch {epoch + 1}/{stage1_epochs}"
-                ):
-                    optimizer.zero_grad()
-                    outputs = model(
-                        input_ids=batch["input_ids"].to(device),
-                        attention_mask=batch["attention_mask"].to(device),
-                        features=batch["features"].to(device),
-                        labels=batch["labels"].to(device),
-                    )
-                    loss = outputs.loss
-                    if torch.isnan(loss) or torch.isinf(loss):
-                        continue
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                    optimizer.step()
-                    scheduler.step()
-                    del loss, outputs
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
-
-        # Stage 2 fine-tuning with early stopping
-        if not sm_train_df.empty:
-            print(
-                f"Stage 2: Fine-tuning on small dataset ({len(sm_train_df)} samples) with early stopping (max {stage2_max_epochs} epochs)"
-            )
-            sm_train_dataset = CustomDataset(sm_train_df, tokenizer)
-            sm_train_loader = DataLoader(
-                sm_train_dataset, batch_size=batch_size, shuffle=True, generator=g
-            )
-            optimizer = AdamW(
-                [
-                    {"params": model.model.parameters(), "lr": lr_bert},
-                    {"params": model.feature_ff.parameters(), "lr": lr_custom},
-                    {"params": model.regressor.parameters(), "lr": lr_custom},
-                ],
-                weight_decay=weight_decay,
-            )
-            total_steps = len(sm_train_loader) * stage2_max_epochs
-            scheduler = get_linear_schedule_with_warmup(
-                optimizer,
-                num_warmup_steps=int(total_steps * optimizer_warmup),
-                num_training_steps=total_steps,
-            )
-            best_val_loss = float("inf")
-            patience_counter = 0
-            train_loss_history = []
-            val_loss_history = []
-            total_batches = 0
-            batches_per_epoch = len(sm_train_loader)
-            history_path = (
-                TRAINING_HISTORY_DIR
-                / f"finetuned-mbert_trial_{trial.number}_fold_{fold_num}.json"
-            )
-            model.train()
-            for epoch in range(stage2_max_epochs):
-                epoch_train_losses = []
-                progress_bar = tqdm(
-                    sm_train_loader,
-                    desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_max_epochs}",
-                )
-                if epoch == 5:
-                    for p in model.model.parameters():
-                        p.requires_grad = True
-                    optimizer = AdamW(
-                        [
-                            {"params": model.model.parameters(), "lr": lr_bert},
-                            {"params": model.feature_ff.parameters(), "lr": lr_custom},
-                            {"params": model.regressor.parameters(), "lr": lr_custom},
-                        ],
-                        weight_decay=weight_decay,
-                    )
-                    remaining_steps = len(sm_train_loader) * (stage2_max_epochs - epoch)
-                    scheduler = get_linear_schedule_with_warmup(
-                        optimizer,
-                        num_warmup_steps=int(remaining_steps * optimizer_warmup),
-                        num_training_steps=remaining_steps,
-                    )
-                for step, batch in enumerate(progress_bar):
-                    optimizer.zero_grad()
-                    outputs = model(
-                        input_ids=batch["input_ids"].to(device),
-                        attention_mask=batch["attention_mask"].to(device),
-                        features=batch["features"].to(device),
-                        labels=batch["labels"].to(device),
-                    )
-                    loss = outputs.loss
-                    if torch.isnan(loss) or torch.isinf(loss):
-                        continue
-                    current_batch = total_batches + step
-                    train_loss_history.append((current_batch, loss.item()))
-                    epoch_train_losses.append(loss.item())
-                    torch.autograd.set_detect_anomaly(True)
-                    loss.backward()
-                    if step == 0 or (step + 1) % 10 == 0:
-                        check_gradient_flow(model, step + 1, epoch + 1)
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                    optimizer.step()
-                    optimizer.zero_grad()
-                    torch.autograd.set_detect_anomaly(False)
-                    scheduler.step()
-                    del loss, outputs
-                total_batches += batches_per_epoch
-                # Validation
-                model.eval()
-                epoch_val_losses = []
-                with torch.no_grad():
-                    for batch in tqdm(val_loader, desc="Validating", leave=False):
-                        outputs = model(
-                            input_ids=batch["input_ids"].to(device),
-                            attention_mask=batch["attention_mask"].to(device),
-                            features=batch["features"].to(device),
-                            labels=batch["labels"].to(device),
-                        )
-                        epoch_val_losses.append(outputs.loss.item())
-                avg_train_loss = np.mean(epoch_train_losses)
-                avg_val_loss = np.mean(epoch_val_losses)
-                val_loss_history.append((total_batches - 1, avg_val_loss))
-                print(
-                    f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
-                )
-                if avg_val_loss < best_val_loss:
-                    best_val_loss = avg_val_loss
-                    patience_counter = 0
-                    print(f"✓ New best validation loss: {best_val_loss:.4f}")
-                else:
-                    patience_counter += 1
-                    print(
-                        f"✗ No improvement. Patience: {patience_counter}/{early_stopping_patience}"
-                    )
-                    if patience_counter >= early_stopping_patience:
-                        print(f"Early stopping triggered at epoch {epoch + 1}")
-                        break
-                model.train()
-            # Save history
-            history_data = {
-                "trial_number": trial.number,
-                "fold_num": fold_num,
-                "batches_per_epoch": batches_per_epoch,
-                "current_epoch": epoch + 1,
-                "train_loss_history": train_loss_history,
-                "val_loss_history": val_loss_history,
-                "hyperparameters": {
-                    "stage1_epochs": stage1_epochs if include_large else 0,
-                    "lr_bert": lr_bert,
-                    "lr_custom": lr_custom,
-                    "dropout_rate": dropout_rate,
-                    "weight_decay": weight_decay,
-                    "optimizer_warmup": optimizer_warmup,
-                    "feature_hidden_size": feature_hidden_size,
-                },
-            }
+        # Add trial and fold metadata to saved history
+        if history_path.exists():
+            with open(history_path, "r") as f:
+                history_data = json.load(f)
+            history_data["trial_number"] = trial.number
+            history_data["fold_num"] = fold_num
             with open(history_path, "w") as f:
                 json.dump(history_data, f, indent=2)
 
-        # Final validation predictions
-        model.eval()
-        y_true_fold = []
-        y_pred_fold = []
-        with torch.no_grad():
-            for batch in tqdm(val_loader, desc="Evaluating"):
-                outputs = model(
-                    input_ids=batch["input_ids"].to(device),
-                    attention_mask=batch["attention_mask"].to(device),
-                    features=batch["features"].to(device),
-                    labels=batch["labels"].to(device),
-                )
-                preds = outputs.logits.squeeze()
-                y_true_fold.extend(batch["labels"].cpu().numpy())
-                y_pred_fold.extend(preds.cpu().numpy())
-        mse = mean_squared_error(y_true_fold, y_pred_fold)
-        if "model" in locals():
-            del model
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
-            gc.collect()
-        return mse
+        return result["final_metrics"]["mse"]
 
     return run_cross_validation(
         trial=trial,
@@ -653,17 +396,15 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
-        "stage1_epochs": [2, 5, 10],  # Epochs for large dataset pretraining
-        "lr_bert": [3e-5],
-        "lr_custom": [5e-5],
-        "dropout_rate": [0.1],
-        "weight_decay": [0.01],
-        "optimizer_warmup": [0.1],
-        "feature_hidden_size": [512],
+        "stage1_epochs": [2, 5, 10],
+        "lr_bert": [1e-5, 3e-5],
+        "lr_custom": [1e-5, 3e-5, 5e-5, 8e-5],
+        "dropout_rate": [0.1, 0.2, 0.3],
+        "weight_decay": [0.01, 0.05],
+        "optimizer_warmup": [0.1, 0.2],
+        "feature_hidden_size": [512, 768, 1024],
+        "frozen_bert_epochs": [1, 2, 3, 4, 5],
     }
-    BATCH_SIZE = 64
-    STAGE2_MAX_EPOCHS = 20
-    EARLY_STOPPING_PATIENCE = 5
 
     def get_n_trials(self) -> int:
         return 20
@@ -699,9 +440,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 "feature_hidden_size": trial.suggest_categorical(
                     "feature_hidden_size", self.SEARCH_SPACE["feature_hidden_size"]
                 ),
+                "frozen_bert_epochs": trial.suggest_categorical(
+                    "frozen_bert_epochs", self.SEARCH_SPACE["frozen_bert_epochs"]
+                ),
             }
-            # Run trial in isolated subprocess to free GPU memory between trials
-            import multiprocessing as mp
 
             ctx = mp.get_context("spawn")
             with ctx.Pool(1) as pool:
@@ -711,9 +453,6 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         trial,
                         params,
                         self.include_large,
-                        self.BATCH_SIZE,
-                        self.STAGE2_MAX_EPOCHS,
-                        self.EARLY_STOPPING_PATIENCE,
                     ),
                 )
             return result

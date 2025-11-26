@@ -19,6 +19,10 @@ from models.encoder.common import (
     SEED,
 )
 
+BATCH_SIZE = 64
+NUM_EPOCHS = 40
+EARLY_STOPPING_PATIENCE = 5
+
 
 class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
     def __init__(
@@ -208,9 +212,6 @@ def train_finetuned_mbert(
       - If `val_df` is None: no early stopping; train for full NUM_EPOCHS.
       - Uses aggressive CUDA + GC cleanup after Stage 1 and after each epoch.
 
-    Constants internal to function:
-      BATCH_SIZE, NUM_EPOCHS (stage 2), EARLY_STOPPING_PATIENCE.
-
     Params dict expected keys:
       - lr_bert, lr_custom, dropout_rate, weight_decay, optimizer_warmup,
         feature_hidden_size, stage1_epochs, frozen_bert_epochs.
@@ -235,10 +236,6 @@ def train_finetuned_mbert(
         - history: structured history dict
         - scaler: fitted MinMaxScaler
     """
-    BATCH_SIZE = 64
-    NUM_EPOCHS = 40
-    EARLY_STOPPING_PATIENCE = 5
-
     stage1_epochs = params.get("stage1_epochs", 0)
     lr_bert = params["lr_bert"]
     lr_custom = params["lr_custom"]

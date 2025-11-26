@@ -17,6 +17,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from catboost import CatBoostRegressor
 from tqdm.auto import tqdm
 import onnxruntime as rt
+from models.encoder.modernbert_finetune_nn import BATCH_SIZE
 from utils import DATA_DIR
 from sklearn.kernel_approximation import Nystroem
 from sklearn.linear_model import SGDRegressor
@@ -838,7 +839,7 @@ class ModernBertTrainer(BaseTrainer):
     def evaluate_train(self) -> Dict[str, Any]:
         """Evaluate model on training set."""
         train_dataset = CustomDataset(self.train_df, self.tokenizer)
-        train_loader = DataLoader(train_dataset, batch_size=self.params["batch_size"])
+        train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
 
         self.model.eval()
         y_true_train, y_pred_train = [], []
@@ -967,7 +968,7 @@ class ModernBertTrainer(BaseTrainer):
         test_df["features"] = [f for f in np.nan_to_num(test_features_scaled)]
 
         test_dataset = CustomDataset(test_df, self.tokenizer)
-        test_loader = DataLoader(test_dataset, batch_size=self.params["batch_size"])
+        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
         sess = rt.InferenceSession(str(model_path))
 

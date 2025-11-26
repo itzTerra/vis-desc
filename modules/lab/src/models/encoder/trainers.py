@@ -959,6 +959,7 @@ class ModernBertTrainer(BaseTrainer):
         """Evaluate model on test set using saved ONNX model."""
 
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+        test_df = test_df.reset_index(drop=True)
 
         scaler = MinMaxScaler()
         train_features = np.vstack(self.train_df["features"].values)

@@ -210,6 +210,12 @@ if __name__ == "__main__":
             "Default: 3 when NOT using --lg, 0 when using --lg. If 0 or 1, runs a single seed."
         ),
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Specific seed to use for a single run. Overrides --seeds if provided.",
+    )
 
     args = parser.parse_args()
 
@@ -234,10 +240,15 @@ if __name__ == "__main__":
     enable_cv = args.val
     enable_test = args.test
 
-    # Determine number of seeds (dynamic default based on large dataset usage)
-    num_seeds = args.seeds if args.seeds is not None else (0 if include_large else 3)
-    # Use a reproducible seed sequence starting at 40 (consistent with feature importance script)
-    seeds = [40 + i for i in range(num_seeds)] if num_seeds > 0 else []
+    # Determine seeds
+    if args.seed is not None:
+        seeds = [args.seed]
+    else:
+        num_seeds = (
+            args.seeds if args.seeds is not None else (0 if include_large else 3)
+        )
+        # Use a reproducible seed sequence starting at 40 (consistent with feature importance script)
+        seeds = [40 + i for i in range(num_seeds)] if num_seeds > 0 else []
 
     # Global seed still set for any non-seeded internal randomness
     set_seed()
@@ -251,11 +262,7 @@ if __name__ == "__main__":
             # Run seeds (or single run if seeds empty)
             seed_iter = seeds if seeds else [None]
             for seed in seed_iter:
-                label = (
-                    f"{model_name}{'_lg' if include_large else ''}-s{seed}"
-                    if seed is not None
-                    else None
-                )
+                label = f"-s{seed}" if seed is not None else None
                 trainer = ModernBertTrainer(
                     params=params,
                     include_large=include_large,
@@ -273,11 +280,7 @@ if __name__ == "__main__":
             trainer_class = TRAINER_CLASSES[model_name]
             seed_iter = seeds if seeds else [None]
             for seed in seed_iter:
-                label = (
-                    f"{model_name}{'_lg' if include_large else ''}-s{seed}"
-                    if seed is not None
-                    else None
-                )
+                label = f"-s{seed}" if seed is not None else None
                 trainer = trainer_class(
                     params=params,
                     include_large=include_large,
@@ -301,11 +304,7 @@ if __name__ == "__main__":
                 trainer_class = TRAINER_CLASSES[model_name]
                 seed_iter = seeds if seeds else [None]
                 for seed in seed_iter:
-                    label = (
-                        f"{model_name}-{embeddings}{'_lg' if include_large else ''}-s{seed}"
-                        if seed is not None
-                        else None
-                    )
+                    label = f"-s{seed}" if seed is not None else None
                     trainer = trainer_class(
                         params=params,
                         embeddings=embeddings,

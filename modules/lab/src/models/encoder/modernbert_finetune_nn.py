@@ -146,7 +146,9 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
         #     f"Logits range: [{logits.min():.2f}, {logits.max():.2f}], mean: {logits.mean():.2f}"
         # )
 
-        loss = self.loss_fct(logits.squeeze(), labels)
+        loss = None
+        if labels is not None:
+            loss = self.loss_fct(logits.squeeze(), labels)
         return SequenceClassifierOutput(
             loss=loss,
             logits=logits,

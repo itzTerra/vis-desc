@@ -1020,7 +1020,8 @@ class ModernBertTrainer(BaseTrainer):
                 "features": {0: "batch_size"},
                 "logits": {0: "batch_size"},
             },
-            opset_version=14,
+            opset_version=18,
+            dynamo=False,
         )
         print(f"ONNX model saved to {model_path}")
 

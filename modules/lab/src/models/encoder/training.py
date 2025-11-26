@@ -202,19 +202,10 @@ if __name__ == "__main__":
         help="Do not save/export the trained model(s)",
     )
     parser.add_argument(
-        "--seeds",
-        type=int,
-        default=None,
-        help=(
-            "Number of different random seeds to run for each model/embedding combo. "
-            "Default: 3 when NOT using --lg, 0 when using --lg. If 0 or 1, runs a single seed."
-        ),
-    )
-    parser.add_argument(
         "--seed",
         type=int,
-        default=None,
-        help="Specific seed to use for a single run. Overrides --seeds if provided.",
+        default=42,
+        help="Specific seed to use for the run.",
     )
 
     args = parser.parse_args()
@@ -240,18 +231,11 @@ if __name__ == "__main__":
     enable_cv = args.val
     enable_test = args.test
 
-    # Determine seeds
-    if args.seed is not None:
-        seeds = [args.seed]
-    else:
-        num_seeds = (
-            args.seeds if args.seeds is not None else (0 if include_large else 3)
-        )
-        # Use a reproducible seed sequence starting at 40 (consistent with feature importance script)
-        seeds = [40 + i for i in range(num_seeds)] if num_seeds > 0 else []
+    # Determine seed
+    seed = args.seed
 
-    # Global seed still set for any non-seeded internal randomness
-    set_seed()
+    # Global seed set for reproducibility
+    set_seed(seed)
 
     save_model = not args.no_save_model
 
@@ -259,39 +243,32 @@ if __name__ == "__main__":
         if model_name == "finetuned-mbert":
             key = "lg" if include_large else "no_lg"
             params = MODEL_PARAMS["finetuned-mbert"][key]
-            # Run seeds (or single run if seeds empty)
-            seed_iter = seeds if seeds else [None]
-            for seed in seed_iter:
-                label = f"-s{seed}" if seed is not None else None
-                trainer = ModernBertTrainer(
-                    params=params,
-                    include_large=include_large,
-                    enable_train=enable_train,
-                    enable_cv=enable_cv,
-                    enable_test=enable_test,
-                    save_model=save_model,
-                    seed=seed if seed is not None else None,
-                    label=label,
-                )
-                trainer.run_full_training()
+            trainer = ModernBertTrainer(
+                params=params,
+                include_large=include_large,
+                enable_train=enable_train,
+                enable_cv=enable_cv,
+                enable_test=enable_test,
+                save_model=save_model,
+                seed=seed,
+                label=None,
+            )
+            trainer.run_full_training()
         elif model_name == "random":
             key = "lg" if include_large else "no_lg"
             params = MODEL_PARAMS[model_name].get(key, {})
             trainer_class = TRAINER_CLASSES[model_name]
-            seed_iter = seeds if seeds else [None]
-            for seed in seed_iter:
-                label = f"-s{seed}" if seed is not None else None
-                trainer = trainer_class(
-                    params=params,
-                    include_large=include_large,
-                    enable_train=enable_train,
-                    enable_cv=enable_cv,
-                    enable_test=enable_test,
-                    save_model=save_model,
-                    seed=seed if seed is not None else None,
-                    label=label,
-                )
-                trainer.run_full_training()
+            trainer = trainer_class(
+                params=params,
+                include_large=include_large,
+                enable_train=enable_train,
+                enable_cv=enable_cv,
+                enable_test=enable_test,
+                save_model=save_model,
+                seed=seed,
+                label=None,
+            )
+            trainer.run_full_training()
         else:
             if embeddings_list is None:
                 print(
@@ -302,21 +279,18 @@ if __name__ == "__main__":
                 key = f"{embeddings}{'_lg' if include_large else ''}"
                 params = MODEL_PARAMS[model_name][key]
                 trainer_class = TRAINER_CLASSES[model_name]
-                seed_iter = seeds if seeds else [None]
-                for seed in seed_iter:
-                    label = f"-s{seed}" if seed is not None else None
-                    trainer = trainer_class(
-                        params=params,
-                        embeddings=embeddings,
-                        include_large=include_large,
-                        enable_train=enable_train,
-                        enable_cv=enable_cv,
-                        enable_test=enable_test,
-                        save_model=save_model,
-                        seed=seed if seed is not None else None,
-                        label=label,
-                    )
-                    trainer.run_full_training()
+                trainer = trainer_class(
+                    params=params,
+                    embeddings=embeddings,
+                    include_large=include_large,
+                    enable_train=enable_train,
+                    enable_cv=enable_cv,
+                    enable_test=enable_test,
+                    save_model=save_model,
+                    seed=seed,
+                    label=None,
+                )
+                trainer.run_full_training()
 
     print("\n" + "=" * 60)
     phases = []

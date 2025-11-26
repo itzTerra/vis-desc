@@ -144,19 +144,19 @@ class BaseTrainer(ABC):
             else:
                 print("Model export skipped (save_model is False)")
 
-        # Cross-validate (optional, independent)
-        if self.enable_cv:
-            print("\nPerforming cross-validation...")
-            cv_metrics = self.cross_validate()
-            print(f"CV MSE: {cv_metrics['mse']:.4f}")
-            print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
-
         # Evaluate on test set (optional, requires exported model)
         if self.enable_test:
             print("\nEvaluating on test set...")
             test_metrics = self.evaluate_test(model_path)
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+
+        # Cross-validate (optional, independent)
+        if self.enable_cv:
+            print("\nPerforming cross-validation...")
+            cv_metrics = self.cross_validate()
+            print(f"CV MSE: {cv_metrics['mse']:.4f}")
+            print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
 
         # Save metrics (only if at least one metric was computed)
         if train_metrics or cv_metrics or test_metrics:

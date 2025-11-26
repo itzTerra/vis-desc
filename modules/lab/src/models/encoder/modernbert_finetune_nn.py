@@ -20,7 +20,7 @@ from models.encoder.common import (
 )
 
 BATCH_SIZE = 64
-NUM_EPOCHS = 40
+NUM_EPOCHS = 2
 EARLY_STOPPING_PATIENCE = 5
 
 

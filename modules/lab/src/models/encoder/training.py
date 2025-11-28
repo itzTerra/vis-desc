@@ -117,7 +117,7 @@ MODEL_PARAMS = {
     "finetuned-mbert": {
         "no_lg": {
             "stage1_epochs": 5,
-            "stage2_epochs": 20,
+            "stage2_epochs": 17,
             "lr_bert": 3e-5,
             "lr_custom": 8e-5,
             "dropout_rate": 0.1,

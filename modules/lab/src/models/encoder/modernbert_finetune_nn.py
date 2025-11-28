@@ -240,7 +240,7 @@ def train_finetuned_mbert(
     """
     stage1_epochs = params.get("stage1_epochs", 0)
     stage2_epochs = (
-        params.get("stage2_epochs", NUM_EPOCHS) if not val_df else NUM_EPOCHS
+        params.get("stage2_epochs", NUM_EPOCHS) if val_df is None else NUM_EPOCHS
     )
     lr_bert = params["lr_bert"]
     lr_custom = params["lr_custom"]

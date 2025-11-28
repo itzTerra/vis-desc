@@ -897,7 +897,7 @@ class ModernBertTrainer(BaseTrainer):
             result = train_finetuned_mbert(
                 train_df=train_fold_df,
                 val_df=val_fold_df,
-                tokenizer=self.tokenizer,
+                tokenizer=context.tokenizer,
                 params=training_params,
                 seed=self.seed,
                 train_lg_df=None,

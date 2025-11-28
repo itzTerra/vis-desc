@@ -80,8 +80,11 @@ def run_modernbert_trial(
             history_data["fold_num"] = fold_num
             with open(history_path, "w") as f:
                 json.dump(history_data, f, indent=2)
+            best_epoch = history_data.get("best_epoch")
+        else:
+            best_epoch = None
 
-        return result["final_metrics"]["mse"]
+        return result["final_metrics"]["mse"], best_epoch
 
     return run_cross_validation(
         trial=trial,
@@ -455,7 +458,14 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         self.include_large,
                     ),
                 )
-            return result
+            if isinstance(result, dict):
+                mse = result["mse"]
+                best_epochs = result["best_epochs"]
+                trial.set_user_attr("mean_best_epoch", float(np.mean(best_epochs)))
+                trial.set_user_attr("median_best_epoch", float(np.median(best_epochs)))
+            else:
+                mse = result
+            return mse
 
         return objective
 

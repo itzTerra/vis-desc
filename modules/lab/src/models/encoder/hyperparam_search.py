@@ -26,6 +26,7 @@ def run_modernbert_trial(
     trial,
     trial_params: dict,
     include_large: bool,
+    seeds: list[int] | None = None,
 ):
     """Top-level function executed in an isolated subprocess for ModernBERT fine-tuning.
 
@@ -37,72 +38,101 @@ def run_modernbert_trial(
         Hyperparameters for this trial.
     include_large : bool
         Whether to include the large (noisy) dataset in stage 1 pretraining.
+    seeds : list[int] | None
+        List of seeds to use for multiple runs. If None, uses [SEED].
     """
     from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
-    set_seed()
+    if seeds is None:
+        seeds = [SEED]
 
-    def train_and_evaluate_fold(
-        train_df: pd.DataFrame,
-        val_df: pd.DataFrame,
-        tokenizer,
-        lg_size=None,
-        fold_num=0,
-    ):
-        if include_large and lg_size is not None:
-            lg_train_df = train_df.iloc[:lg_size].copy()
-            sm_train_df = train_df.iloc[lg_size:].copy()
-        else:
-            lg_train_df = None
-            sm_train_df = train_df.copy()
+    all_seed_results = []
 
-        history_path = (
-            TRAINING_HISTORY_DIR
-            / f"finetuned-mbert_trial_{trial.number}_fold_{fold_num}.json"
+    for seed_idx, seed in enumerate(seeds):
+        set_seed(seed)
+
+        def train_and_evaluate_fold(
+            train_df: pd.DataFrame,
+            val_df: pd.DataFrame,
+            tokenizer,
+            lg_size=None,
+            fold_num=0,
+        ):
+            if include_large and lg_size is not None:
+                lg_train_df = train_df.iloc[:lg_size].copy()
+                sm_train_df = train_df.iloc[lg_size:].copy()
+            else:
+                lg_train_df = None
+                sm_train_df = train_df.copy()
+
+            history_path = (
+                TRAINING_HISTORY_DIR
+                / f"finetuned-mbert_trial_{trial.number}_seed_{seed}_fold_{fold_num}.json"
+            )
+
+            result = train_finetuned_mbert(
+                train_df=sm_train_df,
+                val_df=val_df,
+                tokenizer=tokenizer,
+                params=trial_params,
+                seed=seed,
+                train_lg_df=lg_train_df,
+                save_history=True,
+                history_path=history_path,
+            )
+
+            # Add trial, seed and fold metadata to saved history
+            if history_path.exists():
+                with open(history_path, "r") as f:
+                    history_data = json.load(f)
+                history_data["trial_number"] = trial.number
+                history_data["seed"] = seed
+                history_data["fold_num"] = fold_num
+                with open(history_path, "w") as f:
+                    json.dump(history_data, f, indent=2)
+                best_epoch = history_data.get("best_epoch")
+            else:
+                best_epoch = None
+
+            return result["final_metrics"]["mse"], best_epoch
+
+        seed_result = run_cross_validation(
+            trial=trial,
+            train_and_eval_func=train_and_evaluate_fold,
+            include_minilm_embeddings=False,
+            include_modernbert_embeddings=False,
+            include_large=include_large,
+            n_splits=5,
+            two_stage_training=True,
+        )
+        all_seed_results.append(seed_result)
+        print(
+            f"  Seed {seed} (#{seed_idx + 1}/{len(seeds)}): MSE = {seed_result['mse'] if isinstance(seed_result, dict) else seed_result:.4f}"
         )
 
-        result = train_finetuned_mbert(
-            train_df=sm_train_df,
-            val_df=val_df,
-            tokenizer=tokenizer,
-            params=trial_params,
-            seed=SEED,
-            train_lg_df=lg_train_df,
-            save_history=True,
-            history_path=history_path,
-        )
-
-        # Add trial and fold metadata to saved history
-        if history_path.exists():
-            with open(history_path, "r") as f:
-                history_data = json.load(f)
-            history_data["trial_number"] = trial.number
-            history_data["fold_num"] = fold_num
-            with open(history_path, "w") as f:
-                json.dump(history_data, f, indent=2)
-            best_epoch = history_data.get("best_epoch")
-        else:
-            best_epoch = None
-
-        return result["final_metrics"]["mse"], best_epoch
-
-    return run_cross_validation(
-        trial=trial,
-        train_and_eval_func=train_and_evaluate_fold,
-        include_minilm_embeddings=False,
-        include_modernbert_embeddings=False,
-        include_large=include_large,
-        n_splits=5,
-        two_stage_training=True,
-    )
+    # Average results across seeds
+    if isinstance(all_seed_results[0], dict):
+        avg_mse = np.mean([r["mse"] for r in all_seed_results])
+        all_best_epochs = [
+            epoch for r in all_seed_results for epoch in r["best_epochs"]
+        ]
+        return {"mse": avg_mse, "best_epochs": all_best_epochs}
+    else:
+        return np.mean(all_seed_results)
 
 
 class ObjectiveProvider:
-    def __init__(self, embeddings: Literal["minilm", "mbert"], include_large: bool):
+    def __init__(
+        self,
+        embeddings: Literal["minilm", "mbert"],
+        include_large: bool,
+        seeds: list[int] | None = None,
+    ):
         self.embeddings = embeddings
         self.include_minilm_embeddings = embeddings == "minilm"
         self.include_modernbert_embeddings = embeddings == "mbert"
         self.include_large = include_large
+        self.seeds = seeds
 
     def get_objective_fn(self) -> callable:
         raise NotImplementedError
@@ -401,12 +431,12 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
         "stage1_epochs": [2, 5, 10],
         "lr_bert": [1e-5, 3e-5],
-        "lr_custom": [1e-5, 3e-5, 5e-5, 8e-5],
-        "dropout_rate": [0.1, 0.2, 0.3],
-        "weight_decay": [0.01, 0.05],
-        "optimizer_warmup": [0.1, 0.2],
+        "lr_custom": [5e-5, 8e-5, 1e-4],
+        "dropout_rate": [0.05, 0.1, 0.2],
+        "weight_decay": [0.005, 0.01, 0.03],
+        "optimizer_warmup": [0.1, 0.2, 0.3],
         "feature_hidden_size": [512, 768, 1024],
-        "frozen_bert_epochs": [1, 2, 3, 4, 5],
+        "frozen_bert_epochs": [3, 4, 5],
     }
 
     def get_n_trials(self) -> int:
@@ -456,6 +486,7 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         trial,
                         params,
                         self.include_large,
+                        self.seeds,
                     ),
                 )
             if isinstance(result, dict):
@@ -463,6 +494,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 best_epochs = result["best_epochs"]
                 trial.set_user_attr("mean_best_epoch", float(np.mean(best_epochs)))
                 trial.set_user_attr("median_best_epoch", float(np.median(best_epochs)))
+                if self.seeds and len(self.seeds) > 1:
+                    trial.set_user_attr("num_seeds", len(self.seeds))
+                    trial.set_user_attr("seeds_used", self.seeds)
             else:
                 mse = result
             return mse
@@ -512,6 +546,13 @@ if __name__ == "__main__":
         help="Custom study name to use instead of the default generated name",
     )
     parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=None,
+        help="Seeds to use for finetuned-mbert trials (runs multiple times and averages results). Default uses single seed (42).",
+    )
+    parser.add_argument(
         "providers",
         nargs="*",
         choices=["ridge", "svm", "rf", "catboost", "finetuned-mbert"],
@@ -521,6 +562,7 @@ if __name__ == "__main__":
 
     include_large = args.lg
     embeddings = args.embeddings
+    seeds = args.seeds
     providers_to_run = (
         args.providers if args.providers else list(PROVIDER_MAPPING.keys())
     )
@@ -528,10 +570,20 @@ if __name__ == "__main__":
     for provider_name in providers_to_run:
         print(f"\n{'=' * 60}")
         print(f"Running study for provider: {provider_name}")
+        if seeds and provider_name == "finetuned-mbert":
+            print(f"Using seeds: {seeds}")
         print(f"{'=' * 60}\n")
 
         provider_class = PROVIDER_MAPPING[provider_name]
-        provider = provider_class(embeddings=embeddings, include_large=include_large)
+        # Only pass seeds to finetuned-mbert provider
+        if provider_name == "finetuned-mbert":
+            provider = provider_class(
+                embeddings=embeddings, include_large=include_large, seeds=seeds
+            )
+        else:
+            provider = provider_class(
+                embeddings=embeddings, include_large=include_large
+            )
 
         try:
             objective_fn = provider.get_objective_fn()

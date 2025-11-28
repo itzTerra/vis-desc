@@ -21,14 +21,64 @@ from models.encoder.common import (
 import json
 import multiprocessing as mp
 
+HYPERPARAM_SEARCH_DIR = TRAINING_HISTORY_DIR / "hyperparam_search"
 
-def run_modernbert_trial(
+
+def save_trial_overview(trial_number: int, params: dict, seed_data: list[dict]):
+    """Save an overview JSON with MSEs, accuracies, and best epochs for a trial.
+
+    Parameters
+    ----------
+    trial_number : int
+        The trial number.
+    params : dict
+        Hyperparameters for this trial.
+    seed_data : list[dict]
+        List of dictionaries, one per seed, each containing:
+        - seed: int
+        - mse: float (average across folds)
+        - folds: list of dicts with fold_num, mse, accuracy, best_epoch
+    """
+    overview = {
+        "trial_number": trial_number,
+        "hyperparameters": params,
+        "seeds": seed_data,
+        "summary": {
+            "mean_mse_across_seeds": float(np.mean([s["mse"] for s in seed_data])),
+            "mean_accuracy_across_seeds": float(
+                np.mean(
+                    [np.mean([f["accuracy"] for f in s["folds"]]) for s in seed_data]
+                )
+            ),
+            "mean_best_epoch_across_all": float(
+                np.mean(
+                    [
+                        f["best_epoch"]
+                        for s in seed_data
+                        for f in s["folds"]
+                        if f["best_epoch"] is not None
+                    ]
+                )
+            )
+            if any(f["best_epoch"] is not None for s in seed_data for f in s["folds"])
+            else None,
+        },
+    }
+
+    overview_path = HYPERPARAM_SEARCH_DIR / f"trial_{trial_number}_overview.json"
+    overview_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(overview_path, "w") as f:
+        json.dump(overview, f, indent=2)
+    print(f"Saved trial overview to {overview_path}")
+
+
+def run_modernbert_trial_single_seed(
     trial,
     trial_params: dict,
     include_large: bool,
-    seeds: list[int] | None = None,
+    seed: int,
 ):
-    """Top-level function executed in an isolated subprocess for ModernBERT fine-tuning.
+    """Execute a single ModernBERT fine-tuning trial with one seed in an isolated subprocess.
 
     Parameters
     ----------
@@ -38,79 +88,143 @@ def run_modernbert_trial(
         Hyperparameters for this trial.
     include_large : bool
         Whether to include the large (noisy) dataset in stage 1 pretraining.
-    seeds : list[int] | None
-        List of seeds to use for multiple runs. If None, uses [SEED].
+    seed : int
+        Random seed for this run.
+
+    Returns
+    -------
+    dict
+        Dictionary containing 'mse' and 'best_epochs' for this seed.
     """
     from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
-    if seeds is None:
-        seeds = [SEED]
+    set_seed(seed)
+    fold_details = []
 
+    def train_and_evaluate_fold(
+        train_df: pd.DataFrame,
+        val_df: pd.DataFrame,
+        tokenizer,
+        lg_size=None,
+        fold_num=0,
+    ):
+        if include_large and lg_size is not None:
+            lg_train_df = train_df.iloc[:lg_size].copy()
+            sm_train_df = train_df.iloc[lg_size:].copy()
+        else:
+            lg_train_df = None
+            sm_train_df = train_df.copy()
+
+        history_path = (
+            TRAINING_HISTORY_DIR
+            / f"finetuned-mbert_trial_{trial.number}_seed_{seed}_fold_{fold_num}.json"
+        )
+
+        result = train_finetuned_mbert(
+            train_df=sm_train_df,
+            val_df=val_df,
+            tokenizer=tokenizer,
+            params=trial_params,
+            seed=seed,
+            train_lg_df=lg_train_df,
+            save_history=True,
+            history_path=history_path,
+        )
+
+        if history_path.exists():
+            with open(history_path, "r") as f:
+                history_data = json.load(f)
+            history_data["trial_number"] = trial.number
+            history_data["seed"] = seed
+            history_data["fold_num"] = fold_num
+            with open(history_path, "w") as f:
+                json.dump(history_data, f, indent=2)
+            best_epoch = history_data.get("best_epoch")
+        else:
+            best_epoch = None
+
+        final_metrics = result["final_metrics"]
+        fold_details.append(
+            {
+                "fold_num": fold_num,
+                "mse": float(final_metrics["mse"]),
+                "accuracy": float(final_metrics["accuracy"]),
+                "best_epoch": best_epoch,
+            }
+        )
+
+        return final_metrics["mse"], best_epoch
+
+    seed_result = run_cross_validation(
+        trial=trial,
+        train_and_eval_func=train_and_evaluate_fold,
+        include_minilm_embeddings=False,
+        include_modernbert_embeddings=False,
+        include_large=include_large,
+        n_splits=5,
+        two_stage_training=True,
+    )
+
+    if isinstance(seed_result, dict):
+        seed_result["folds"] = fold_details
+    else:
+        seed_result = {"mse": seed_result, "best_epochs": [], "folds": fold_details}
+
+    return seed_result
+
+
+def run_modernbert_trial_multi_seed(
+    trial,
+    trial_params: dict,
+    include_large: bool,
+    seeds: list[int],
+):
+    """Run ModernBERT trial across multiple seeds using separate subprocesses.
+
+    Parameters
+    ----------
+    trial : optuna.trial.Trial
+        The Optuna trial object.
+    trial_params : dict
+        Hyperparameters for this trial.
+    include_large : bool
+        Whether to include the large (noisy) dataset in stage 1 pretraining.
+    seeds : list[int]
+        List of seeds to run in parallel subprocesses.
+
+    Returns
+    -------
+    dict
+        Dictionary containing averaged 'mse' and collected 'best_epochs'.
+    """
     all_seed_results = []
+    seed_data = []
+    ctx = mp.get_context("spawn")
 
     for seed_idx, seed in enumerate(seeds):
-        set_seed(seed)
-
-        def train_and_evaluate_fold(
-            train_df: pd.DataFrame,
-            val_df: pd.DataFrame,
-            tokenizer,
-            lg_size=None,
-            fold_num=0,
-        ):
-            if include_large and lg_size is not None:
-                lg_train_df = train_df.iloc[:lg_size].copy()
-                sm_train_df = train_df.iloc[lg_size:].copy()
-            else:
-                lg_train_df = None
-                sm_train_df = train_df.copy()
-
-            history_path = (
-                TRAINING_HISTORY_DIR
-                / f"finetuned-mbert_trial_{trial.number}_seed_{seed}_fold_{fold_num}.json"
+        print(f"  Running seed {seed} (#{seed_idx + 1}/{len(seeds)})...")
+        with ctx.Pool(1) as pool:
+            seed_result = pool.apply(
+                run_modernbert_trial_single_seed,
+                (trial, trial_params, include_large, seed),
             )
-
-            result = train_finetuned_mbert(
-                train_df=sm_train_df,
-                val_df=val_df,
-                tokenizer=tokenizer,
-                params=trial_params,
-                seed=seed,
-                train_lg_df=lg_train_df,
-                save_history=True,
-                history_path=history_path,
-            )
-
-            # Add trial, seed and fold metadata to saved history
-            if history_path.exists():
-                with open(history_path, "r") as f:
-                    history_data = json.load(f)
-                history_data["trial_number"] = trial.number
-                history_data["seed"] = seed
-                history_data["fold_num"] = fold_num
-                with open(history_path, "w") as f:
-                    json.dump(history_data, f, indent=2)
-                best_epoch = history_data.get("best_epoch")
-            else:
-                best_epoch = None
-
-            return result["final_metrics"]["mse"], best_epoch
-
-        seed_result = run_cross_validation(
-            trial=trial,
-            train_and_eval_func=train_and_evaluate_fold,
-            include_minilm_embeddings=False,
-            include_modernbert_embeddings=False,
-            include_large=include_large,
-            n_splits=5,
-            two_stage_training=True,
-        )
         all_seed_results.append(seed_result)
         print(
-            f"  Seed {seed} (#{seed_idx + 1}/{len(seeds)}): MSE = {seed_result['mse'] if isinstance(seed_result, dict) else seed_result:.4f}"
+            f"  Seed {seed} completed: MSE = {seed_result['mse'] if isinstance(seed_result, dict) else seed_result:.4f}"
         )
 
-    # Average results across seeds
+        if isinstance(seed_result, dict) and "folds" in seed_result:
+            seed_data.append(
+                {
+                    "seed": seed,
+                    "mse": seed_result["mse"],
+                    "folds": seed_result["folds"],
+                }
+            )
+
+    if seed_data:
+        save_trial_overview(trial.number, trial_params, seed_data)
+
     if isinstance(all_seed_results[0], dict):
         avg_mse = np.mean([r["mse"] for r in all_seed_results])
         all_best_epochs = [
@@ -118,7 +232,7 @@ def run_modernbert_trial(
         ]
         return {"mse": avg_mse, "best_epochs": all_best_epochs}
     else:
-        return np.mean(all_seed_results)
+        return {"mse": np.mean(all_seed_results), "best_epochs": []}
 
 
 class ObjectiveProvider:
@@ -478,25 +592,40 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 ),
             }
 
-            ctx = mp.get_context("spawn")
-            with ctx.Pool(1) as pool:
-                result = pool.apply(
-                    run_modernbert_trial,
-                    (
-                        trial,
-                        params,
-                        self.include_large,
-                        self.seeds,
-                    ),
+            seeds = self.seeds if self.seeds else [SEED]
+
+            if len(seeds) == 1:
+                ctx = mp.get_context("spawn")
+                with ctx.Pool(1) as pool:
+                    result = pool.apply(
+                        run_modernbert_trial_single_seed,
+                        (trial, params, self.include_large, seeds[0]),
+                    )
+                if isinstance(result, dict) and "folds" in result:
+                    seed_data = [
+                        {
+                            "seed": seeds[0],
+                            "mse": result["mse"],
+                            "folds": result["folds"],
+                        }
+                    ]
+                    save_trial_overview(trial.number, params, seed_data)
+            else:
+                result = run_modernbert_trial_multi_seed(
+                    trial, params, self.include_large, seeds
                 )
+
             if isinstance(result, dict):
                 mse = result["mse"]
                 best_epochs = result["best_epochs"]
-                trial.set_user_attr("mean_best_epoch", float(np.mean(best_epochs)))
-                trial.set_user_attr("median_best_epoch", float(np.median(best_epochs)))
-                if self.seeds and len(self.seeds) > 1:
-                    trial.set_user_attr("num_seeds", len(self.seeds))
-                    trial.set_user_attr("seeds_used", self.seeds)
+                if best_epochs:
+                    trial.set_user_attr("mean_best_epoch", float(np.mean(best_epochs)))
+                    trial.set_user_attr(
+                        "median_best_epoch", float(np.median(best_epochs))
+                    )
+                if len(seeds) > 1:
+                    trial.set_user_attr("num_seeds", len(seeds))
+                    trial.set_user_attr("seeds_used", seeds)
             else:
                 mse = result
             return mse
@@ -559,6 +688,8 @@ if __name__ == "__main__":
         help="Objective providers to run. If empty, runs all defined providers. Valid options: ridge, svm, rf, catboost, modernbert",
     )
     args = parser.parse_args()
+
+    HYPERPARAM_SEARCH_DIR.mkdir(parents=True, exist_ok=True)
 
     include_large = args.lg
     embeddings = args.embeddings

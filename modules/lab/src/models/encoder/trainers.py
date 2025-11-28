@@ -125,35 +125,37 @@ class BaseTrainer(ABC):
         cv_metrics = None
         test_metrics = None
 
-        # Train (optional)
         if self.enable_train:
             print("Training model...")
-            # Ensure reproducibility per run
+
             set_seed(self.seed)
+
             self.train()
 
-            # Evaluate on training set
             train_metrics = self.evaluate_train()
             print(f"Train MSE: {train_metrics['mse']:.4f}")
             print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
 
-            # Export model (optional)
             if self.save_model:
                 self.export(model_path)
                 print(f"Model exported to {model_path}")
             else:
                 print("Model export skipped (save_model is False)")
 
-        # Evaluate on test set (optional, requires exported model)
         if self.enable_test:
             print("\nEvaluating on test set...")
+
+            set_seed(self.seed)
+
             test_metrics = self.evaluate_test(model_path)
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 
-        # Cross-validate (optional, independent)
         if self.enable_cv:
             print("\nPerforming cross-validation...")
+
+            set_seed(self.seed)
+
             cv_metrics = self.cross_validate()
             print(f"CV MSE: {cv_metrics['mse']:.4f}")
             print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
@@ -789,7 +791,6 @@ class ModernBertTrainer(BaseTrainer):
         self.tokenizer = None
         self.train_df = None
         self.batch_losses = []
-        self._load_data()
 
     def _get_model_name(self) -> str:
         label_str = f"_{self.label}" if self.label else ""
@@ -819,6 +820,9 @@ class ModernBertTrainer(BaseTrainer):
     def train(self) -> None:
         """Train the ModernBERT model."""
         from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
+
+        if self.tokenizer is None or self.train_df is None:
+            self._load_data()
 
         history_path = (
             TRAINING_HISTORY_DIR / f"{self.model_name}_train_{self.timestamp}.json"
@@ -886,8 +890,8 @@ class ModernBertTrainer(BaseTrainer):
                 "weight_decay": self.params["weight_decay"],
                 "optimizer_warmup": self.params["optimizer_warmup"],
                 "feature_hidden_size": self.params["feature_hidden_size"],
-                "stage1_epochs": self.params.get("stage1_epochs", 0),
-                "frozen_bert_epochs": self.params.get("frozen_bert_epochs", 0),
+                "stage1_epochs": self.params["stage1_epochs"],
+                "frozen_bert_epochs": self.params["frozen_bert_epochs"],
             }
 
             result = train_finetuned_mbert(

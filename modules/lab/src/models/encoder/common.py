@@ -207,6 +207,7 @@ def run_cross_validation(
 
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=SEED)
     fold_scores = []
+    fold_best_epochs = []
     optimization_context = CachedOptimizationContext(
         include_minilm_embeddings=include_minilm_embeddings,
         include_modernbert_embeddings=include_modernbert_embeddings,
@@ -261,8 +262,14 @@ def run_cross_validation(
             fold,
         )
 
-        fold_scores.append(score)
-        print(f"Fold {fold + 1}/{n_splits}: {score:.4f}")
+        if isinstance(score, tuple):
+            mse, best_epoch = score
+            fold_scores.append(mse)
+            fold_best_epochs.append(best_epoch)
+        else:
+            fold_scores.append(score)
+
+        print(f"Fold {fold + 1}/{n_splits}: {fold_scores[-1]:.4f}")
 
         # Optuna pruning
         # trial.report(score, fold)
@@ -278,7 +285,11 @@ def run_cross_validation(
                 f"(unchanged={tok_hash_after == tok_hash})"
             )
 
-    return np.mean(fold_scores)
+    mean_mse = np.mean(fold_scores)
+    if fold_best_epochs:
+        return {"mse": mean_mse, "best_epochs": fold_best_epochs}
+    else:
+        return mean_mse
 
 
 # ---------------------- Diagnostics Utilities ----------------------
@@ -347,6 +358,10 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
     print("Best hyperparameters:")
     for key, value in study.best_params.items():
         print(f"  {key}: {value}")
+    if study.best_trial.user_attrs:
+        print("Best trial user attributes:")
+        for key, value in study.best_trial.user_attrs.items():
+            print(f"  {key}: {value}")
 
     return study
 

@@ -239,6 +239,9 @@ def train_finetuned_mbert(
         - scaler: fitted MinMaxScaler
     """
     stage1_epochs = params.get("stage1_epochs", 0)
+    stage2_epochs = (
+        params.get("stage2_epochs", NUM_EPOCHS) if not val_df else NUM_EPOCHS
+    )
     lr_bert = params["lr_bert"]
     lr_custom = params["lr_custom"]
     dropout_rate = params["dropout_rate"]
@@ -363,7 +366,7 @@ def train_finetuned_mbert(
         ],
         weight_decay=weight_decay,
     )
-    total_steps = len(sm_train_loader) * NUM_EPOCHS
+    total_steps = len(sm_train_loader) * stage2_epochs
     scheduler = get_linear_schedule_with_warmup(
         optimizer,
         num_warmup_steps=int(total_steps * optimizer_warmup),
@@ -378,13 +381,15 @@ def train_finetuned_mbert(
     val_losses_per_epoch = []
     total_batches = 0
     batches_per_epoch = len(sm_train_loader)
+    best_model_state = None
+    best_epoch = None
 
     model.train()
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(stage2_epochs):
         epoch_train_losses = []
         progress_bar = tqdm(
             sm_train_loader,
-            desc=f"Stage 2 - Epoch {epoch + 1}/{NUM_EPOCHS}",
+            desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
         )
 
         # Unfreeze BERT after frozen_bert_epochs
@@ -400,7 +405,7 @@ def train_finetuned_mbert(
                 ],
                 weight_decay=weight_decay,
             )
-            remaining_steps = len(sm_train_loader) * (NUM_EPOCHS - epoch)
+            remaining_steps = len(sm_train_loader) * (stage2_epochs - epoch)
             scheduler = get_linear_schedule_with_warmup(
                 optimizer,
                 num_warmup_steps=int(remaining_steps * optimizer_warmup),
@@ -473,6 +478,8 @@ def train_finetuned_mbert(
             if avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 patience_counter = 0
+                best_model_state = model.state_dict()
+                best_epoch = epoch + 1
                 print(f"✓ New best validation loss: {best_val_loss:.4f}")
             else:
                 patience_counter += 1
@@ -496,6 +503,9 @@ def train_finetuned_mbert(
 
     # Final evaluation
     model.eval()
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+        print("Loaded best model state for final evaluation")
     eval_df = val_df if val_df is not None else train_df
     eval_dataset = CustomDataset(eval_df, tokenizer)
     eval_loader = DataLoader(eval_dataset, batch_size=BATCH_SIZE)
@@ -528,6 +538,7 @@ def train_finetuned_mbert(
         "best_val_loss": float(best_val_loss)
         if val_df is not None and best_val_loss != float("inf")
         else None,
+        "best_epoch": best_epoch,
         "hyperparameters": {
             "stage1_epochs": stage1_epochs,
             "lr_bert": lr_bert,

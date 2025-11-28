@@ -117,6 +117,7 @@ MODEL_PARAMS = {
     "finetuned-mbert": {
         "no_lg": {
             "stage1_epochs": 5,
+            "stage2_epochs": 20,
             "lr_bert": 3e-5,
             "lr_custom": 8e-5,
             "dropout_rate": 0.1,
@@ -127,6 +128,7 @@ MODEL_PARAMS = {
         },
         "lg": {
             "stage1_epochs": 5,
+            "stage2_epochs": 20,
             "lr_bert": 3e-5,
             "lr_custom": 8e-5,
             "dropout_rate": 0.1,
@@ -230,11 +232,8 @@ if __name__ == "__main__":
     enable_train = args.train
     enable_cv = args.val
     enable_test = args.test
-
-    # Determine seed
     seed = args.seed
 
-    # Global seed set for reproducibility
     set_seed(seed)
 
     save_model = not args.no_save_model

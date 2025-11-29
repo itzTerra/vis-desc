@@ -54,6 +54,7 @@ class BaseTrainer(ABC):
         save_model: bool = True,
         label: Optional[str] = None,
         seed: Optional[int] = None,
+        use_direct_test: bool = False,
     ):
         self.params = params
         self.embeddings = embeddings
@@ -68,6 +69,7 @@ class BaseTrainer(ABC):
         self.model_name = self._get_model_name()
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.seed = seed if seed is not None else SEED
+        self.use_direct_test = use_direct_test
 
     @abstractmethod
     def _get_model_name(self) -> str:
@@ -147,7 +149,10 @@ class BaseTrainer(ABC):
 
             set_seed(self.seed)
 
-            test_metrics = self.evaluate_test(model_path)
+            if self.use_direct_test:
+                test_metrics = self.evaluate_test_direct()
+            else:
+                test_metrics = self.evaluate_test(model_path)
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 
@@ -183,6 +188,11 @@ class BaseTrainer(ABC):
         """Evaluate model on test set using saved ONNX model."""
         pass
 
+    @abstractmethod
+    def evaluate_test_direct(self) -> Dict[str, Any]:
+        """Evaluate model on test set using trained model directly (no ONNX export/load)."""
+        pass
+
     def _get_extra_metrics_data(self) -> Dict[str, Any]:
         """Override to add extra data to metrics file."""
         return {}
@@ -204,6 +214,7 @@ class BaseSklearnTrainer(BaseTrainer):
         minilm_mask: Optional[np.ndarray] = None,
         label: Optional[str] = None,
         seed: Optional[int] = None,
+        use_direct_test: bool = False,
     ):
         super().__init__(
             params,
@@ -215,6 +226,7 @@ class BaseSklearnTrainer(BaseTrainer):
             save_model,
             label=label,
             seed=seed,
+            use_direct_test=use_direct_test,
         )
         self.include_minilm = embeddings == "minilm"
         self.include_mbert = embeddings == "mbert"
@@ -404,6 +416,38 @@ class BaseSklearnTrainer(BaseTrainer):
         y_pred = sess.run([label_name], {input_name: X_test.astype(np.float32)})[
             0
         ].flatten()
+
+        return calculate_metrics(y_test, y_pred)
+
+    def evaluate_test_direct(self) -> Dict[str, Any]:
+        """Evaluate model on test set using trained model directly."""
+        # Load test data
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+
+        # Load embeddings
+        if self.include_minilm:
+            minilm_test_embeddings = pd.read_parquet(
+                DATA_DIR / "datasets" / "small" / "test_minilm.parquet"
+            )
+            test_df["cls"] = list(minilm_test_embeddings["cls"].values)
+        elif self.include_mbert:
+            mbert_test_embeddings = pd.read_parquet(
+                DATA_DIR / "datasets" / "small" / "test_mbert.parquet"
+            )
+            test_df["cls"] = list(mbert_test_embeddings["cls"].values)
+
+        # Prepare test features
+        cls_arr = np.vstack(test_df["cls"].values)
+        features_arr = np.vstack(test_df["features"].values)
+        if self.minilm_mask is not None and self.include_minilm:
+            cls_arr = cls_arr[:, self.minilm_mask]
+        if self.feature_mask is not None:
+            features_arr = features_arr[:, self.feature_mask]
+        X_test = np.hstack((cls_arr, features_arr))
+        y_test = test_df["label"].values
+
+        # Use trained model directly
+        y_pred = self.model.predict(X_test)
 
         return calculate_metrics(y_test, y_pred)
 
@@ -614,6 +658,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         save_model: bool = True,
         label: Optional[str] = None,
         seed: Optional[int] = None,
+        use_direct_test: bool = False,
     ):
         super().__init__(
             params,
@@ -625,6 +670,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             save_model=save_model,
             label=label,
             seed=seed,
+            use_direct_test=use_direct_test,
         )
         self.y_train = None
         self.weights = None
@@ -759,6 +805,18 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
 
         print(f"Distribution saved to {model_path}")
 
+    def evaluate_test_direct(self) -> Dict[str, Any]:
+        """Evaluate model on test set using trained model directly."""
+        # Load test data
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+
+        # Generate predictions
+        X_test_dummy = np.zeros((len(test_df), 1))
+        y_pred_test = self.model.predict(X_test_dummy)
+
+        y_true_test = test_df["label"].values
+        return calculate_metrics(y_true_test, y_pred_test)
+
     def _get_extra_metrics_data(self) -> Dict[str, Any]:
         return {}
 
@@ -776,6 +834,7 @@ class ModernBertTrainer(BaseTrainer):
         save_model: bool = True,
         label: Optional[str] = None,
         seed: Optional[int] = None,
+        use_direct_test: bool = False,
     ):
         super().__init__(
             params,
@@ -787,6 +846,7 @@ class ModernBertTrainer(BaseTrainer):
             save_model=save_model,
             label=label,
             seed=seed,
+            use_direct_test=use_direct_test,
         )
         self.tokenizer = None
         self.train_df = None
@@ -1029,6 +1089,64 @@ class ModernBertTrainer(BaseTrainer):
             dynamo=False,
         )
         print(f"ONNX model saved to {model_path}")
+
+        sess = rt.InferenceSession(str(model_path))
+
+        with torch.no_grad():
+            pred_pytorch = (
+                self.model(dummy_input_ids, dummy_attention_mask, dummy_features)
+                .cpu()
+                .numpy()
+                .flatten()
+            )
+
+        onnx_inputs = {
+            "input_ids": dummy_input_ids.numpy(),
+            "attention_mask": dummy_attention_mask.numpy(),
+            "features": dummy_features.numpy(),
+        }
+        pred_onnx = sess.run(None, onnx_inputs)[0].flatten()
+
+        diff = np.abs(pred_pytorch - pred_onnx)
+        if not np.all(diff < 1e-5):
+            print(
+                "Warning: Insufficient accuracy between PyTorch and ONNX predictions."
+            )
+            print(f"Max difference: {np.max(diff)}")
+        else:
+            print(f"ONNX export verified successfully (max diff: {np.max(diff):.2e})")
+
+    def evaluate_test_direct(self) -> Dict[str, Any]:
+        """Evaluate model on test set using trained model directly."""
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+        test_df = test_df.reset_index(drop=True)
+
+        scaler = MinMaxScaler()
+        train_features = np.vstack(self.train_df["features"].values)
+        scaler.fit(train_features)
+
+        test_features_scaled = scaler.transform(np.vstack(test_df["features"].values))
+        test_df["features"] = [f for f in np.nan_to_num(test_features_scaled)]
+
+        test_dataset = CustomDataset(test_df, self.tokenizer)
+        test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
+
+        self.model.eval()
+        y_true_test, y_pred_test = [], []
+        with torch.no_grad():
+            for batch in tqdm(test_loader, desc="Evaluating test set"):
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                features = batch["features"].to(device)
+                labels = batch["label"].cpu().numpy()
+
+                outputs = self.model(input_ids, attention_mask, features)
+                predictions = outputs.cpu().numpy().flatten()
+
+                y_true_test.extend(labels)
+                y_pred_test.extend(predictions)
+
+        return calculate_metrics(np.array(y_true_test), np.array(y_pred_test))
 
     def _get_extra_metrics_data(self) -> Dict[str, Any]:
         """Add batch losses to metrics."""

@@ -116,10 +116,10 @@ MODEL_PARAMS = {
     },
     "finetuned-mbert": {
         "no_lg": {
-            "stage1_epochs": 5,
+            "stage1_epochs": 0,
             "stage2_epochs": 15,
             "lr_bert": 1e-5,
-            "lr_custom": 1e-4,
+            "lr_custom": 8e-5,
             "dropout_rate": 0.3,
             "weight_decay": 0.01,
             "optimizer_warmup": 0.2,
@@ -127,15 +127,15 @@ MODEL_PARAMS = {
             "frozen_bert_epochs": 5,
         },
         "lg": {
-            "stage1_epochs": 5,
-            "stage2_epochs": 20,
-            "lr_bert": 3e-5,
+            "stage1_epochs": 3,
+            "stage2_epochs": 5,
+            "lr_bert": 1e-5,
             "lr_custom": 8e-5,
             "dropout_rate": 0.1,
             "weight_decay": 0.01,
             "optimizer_warmup": 0.2,
             "feature_hidden_size": 768,
-            "frozen_bert_epochs": 4,
+            "frozen_bert_epochs": 5,
         },
     },
 }

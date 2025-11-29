@@ -58,9 +58,11 @@ class CustomDataset(Dataset):
         return len(self.text)
 
     def __getitem__(self, index):
-        text = str(self.text[index])
-        features = torch.tensor(self.features[index], dtype=torch.float)
-        label = torch.tensor(self.labels[index], dtype=torch.float)
+        # Use position-based indexing to avoid KeyError when DataFrame indices
+        # are not contiguous or start at non-zero values after splits/concats.
+        text = str(self.text.iloc[index])
+        features = torch.tensor(self.features.iloc[index], dtype=torch.float)
+        label = torch.tensor(self.labels.iloc[index], dtype=torch.float)
 
         encoding = self.tokenizer.encode_plus(
             text,

@@ -1093,12 +1093,8 @@ class ModernBertTrainer(BaseTrainer):
         sess = rt.InferenceSession(str(model_path))
 
         with torch.no_grad():
-            pred_pytorch = (
-                self.model(dummy_input_ids, dummy_attention_mask, dummy_features)
-                .cpu()
-                .numpy()
-                .flatten()
-            )
+            outputs = self.model(dummy_input_ids, dummy_attention_mask, dummy_features)
+            pred_pytorch = outputs.logits.cpu().numpy().flatten()
 
         onnx_inputs = {
             "input_ids": dummy_input_ids.numpy(),

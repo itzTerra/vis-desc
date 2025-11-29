@@ -1133,7 +1133,7 @@ class ModernBertTrainer(BaseTrainer):
                 input_ids = batch["input_ids"].to(device)
                 attention_mask = batch["attention_mask"].to(device)
                 features = batch["features"].to(device)
-                labels = batch["label"].cpu().numpy()
+                labels = batch["labels"].cpu().numpy()
 
                 outputs = self.model(input_ids, attention_mask, features)
                 predictions = outputs.cpu().numpy().flatten()

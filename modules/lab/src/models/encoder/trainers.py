@@ -863,18 +863,42 @@ class ModernBertTrainer(BaseTrainer):
             include_large=self.include_large,
         )
         self.tokenizer = context.tokenizer
-        train_df = context.sm_train.copy()
+        sm_train_df = context.sm_train.copy()
+        lg_train_df = (
+            context.lg_train.copy()
+            if self.include_large and context.lg_train is not None
+            else None
+        )
 
-        if self.include_large and context.lg_train is not None:
-            train_df = pd.concat([context.lg_train, train_df], ignore_index=True)
+        if lg_train_df is not None:
+            combined_features = np.vstack(
+                [
+                    np.vstack(lg_train_df["features"].values),
+                    np.vstack(sm_train_df["features"].values),
+                ]
+            )
+        else:
+            combined_features = np.vstack(sm_train_df["features"].values)
 
         scaler = MinMaxScaler()
-        train_features_scaled = scaler.fit_transform(
-            np.vstack(train_df["features"].values)
-        )
-        train_df["features"] = [f for f in np.nan_to_num(train_features_scaled)]
+        scaler.fit(combined_features)
 
-        self.train_df = train_df
+        sm_train_scaled = scaler.transform(np.vstack(sm_train_df["features"].values))
+        sm_train_df["features"] = [f for f in np.nan_to_num(sm_train_scaled)]
+
+        if lg_train_df is not None:
+            lg_train_scaled = scaler.transform(
+                np.vstack(lg_train_df["features"].values)
+            )
+            lg_train_df["features"] = [f for f in np.nan_to_num(lg_train_scaled)]
+
+        self.sm_train = sm_train_df
+        self.lg_train = lg_train_df
+        self.train_df = (
+            pd.concat([lg_train_df, sm_train_df], ignore_index=True)
+            if lg_train_df is not None
+            else sm_train_df
+        )
 
     def train(self) -> None:
         """Train the ModernBERT model."""
@@ -887,13 +911,16 @@ class ModernBertTrainer(BaseTrainer):
             TRAINING_HISTORY_DIR / f"{self.model_name}_train_{self.timestamp}.json"
         )
 
+        small_df = getattr(self, "sm_train", self.train_df)
+        large_df = getattr(self, "lg_train", None) if self.include_large else None
+
         result = train_finetuned_mbert(
-            train_df=self.train_df,
+            train_df=small_df,
             val_df=None,
             tokenizer=self.tokenizer,
             params=self.params,
             seed=self.seed,
-            train_lg_df=None,
+            train_lg_df=large_df,
             save_history=True,
             history_path=history_path,
         )
@@ -921,13 +948,14 @@ class ModernBertTrainer(BaseTrainer):
         return calculate_metrics(np.array(y_true_train), np.array(y_pred_train))
 
     def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
-        """Perform cross-validation on small dataset only."""
+        """Perform cross-validation. If large dataset is enabled, use two-stage training with folds on small dataset."""
         context = CachedOptimizationContext(
             include_minilm_embeddings=False,
             include_modernbert_embeddings=False,
-            include_large=False,
+            include_large=self.include_large,
         )
         sm_train = context.sm_train
+        lg_train = context.lg_train if self.include_large else None
 
         kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
         fold_metrics = []
@@ -959,7 +987,7 @@ class ModernBertTrainer(BaseTrainer):
                 tokenizer=context.tokenizer,
                 params=training_params,
                 seed=self.seed,
-                train_lg_df=None,
+                train_lg_df=lg_train if self.include_large else None,
                 save_history=False,
                 history_path=None,
             )

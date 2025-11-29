@@ -1126,6 +1126,7 @@ class ModernBertTrainer(BaseTrainer):
         test_dataset = CustomDataset(test_df, self.tokenizer)
         test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
+        self.model.to(device)
         self.model.eval()
         y_true_test, y_pred_test = [], []
         with torch.no_grad():

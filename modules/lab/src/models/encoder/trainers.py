@@ -63,7 +63,6 @@ class BaseTrainer(ABC):
         self.enable_cv = enable_cv
         self.enable_test = enable_test
         self.save_model = save_model
-        # Optional user-provided label to distinguish runs (e.g., feature group ablations)
         self.label = label
         self.model = None
         self.model_name = self._get_model_name()
@@ -144,7 +143,7 @@ class BaseTrainer(ABC):
             else:
                 print("Model export skipped (save_model is False)")
 
-        if self.enable_test:
+        if self.enable_test or self.use_direct_test:
             print("\nEvaluating on test set...")
 
             set_seed(self.seed)

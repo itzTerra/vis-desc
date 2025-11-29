@@ -197,6 +197,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Enable test set evaluation (disabled by default)",
     )
+    parser.add_argument(
+        "--direct-test",
+        action="store_true",
+        help="Use trained model directly for test evaluation instead of ONNX export/load",
+    )
 
     parser.add_argument(
         "--no-save-model",
@@ -232,6 +237,7 @@ if __name__ == "__main__":
     enable_train = args.train
     enable_cv = args.val
     enable_test = args.test
+    use_direct_test = args.direct_test
     seed = args.seed
 
     set_seed(seed)
@@ -251,6 +257,7 @@ if __name__ == "__main__":
                 save_model=save_model,
                 seed=seed,
                 label=None,
+                use_direct_test=use_direct_test,
             )
             trainer.run_full_training()
         elif model_name == "random":
@@ -266,6 +273,7 @@ if __name__ == "__main__":
                 save_model=save_model,
                 seed=seed,
                 label=None,
+                use_direct_test=use_direct_test,
             )
             trainer.run_full_training()
         else:
@@ -288,6 +296,7 @@ if __name__ == "__main__":
                     save_model=save_model,
                     seed=seed,
                     label=None,
+                    use_direct_test=use_direct_test,
                 )
                 trainer.run_full_training()
 

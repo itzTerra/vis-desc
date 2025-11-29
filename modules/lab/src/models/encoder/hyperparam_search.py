@@ -543,14 +543,15 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
     SEARCH_SPACE = {
-        "stage1_epochs": [2, 5, 10],
-        "lr_bert": [1e-5, 3e-5],
-        "lr_custom": [5e-5, 8e-5, 1e-4],
-        "dropout_rate": [0.05, 0.1, 0.2],
-        "weight_decay": [0.005, 0.01, 0.03],
-        "optimizer_warmup": [0.1, 0.2, 0.3],
-        "feature_hidden_size": [512, 768, 1024],
-        "frozen_bert_epochs": [3, 4, 5],
+        "stage1_epochs": [3, 6],
+        "lr_bert": [1e-5],
+        "lr_custom": [5e-5, 1e-4],
+        "dropout_rate": [0.1, 0.3],
+        "weight_decay": [0.01],
+        "optimizer_warmup": [0.2],
+        "feature_hidden_size": [768],
+        "stage1_frozen_bert_epochs": [1],
+        "stage2_frozen_bert_epochs": [0, 5],
     }
 
     def get_n_trials(self) -> int:
@@ -587,8 +588,17 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                 "feature_hidden_size": trial.suggest_categorical(
                     "feature_hidden_size", self.SEARCH_SPACE["feature_hidden_size"]
                 ),
-                "frozen_bert_epochs": trial.suggest_categorical(
-                    "frozen_bert_epochs", self.SEARCH_SPACE["frozen_bert_epochs"]
+                "stage1_frozen_bert_epochs": (
+                    trial.suggest_categorical(
+                        "stage1_frozen_bert_epochs",
+                        self.SEARCH_SPACE["stage1_frozen_bert_epochs"],
+                    )
+                    if self.include_large
+                    else 0
+                ),
+                "stage2_frozen_bert_epochs": trial.suggest_categorical(
+                    "stage2_frozen_bert_epochs",
+                    self.SEARCH_SPACE["stage2_frozen_bert_epochs"],
                 ),
             }
 

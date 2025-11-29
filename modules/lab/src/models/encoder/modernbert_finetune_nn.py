@@ -216,7 +216,8 @@ def train_finetuned_mbert(
 
     Params dict expected keys:
       - lr_bert, lr_custom, dropout_rate, weight_decay, optimizer_warmup,
-        feature_hidden_size, stage1_epochs, frozen_bert_epochs.
+                feature_hidden_size, stage1_epochs, stage1_frozen_bert_epochs,
+                stage2_epochs, stage2_frozen_bert_epochs.
 
     Args:
         train_df: DataFrame with training data for stage 2
@@ -248,7 +249,8 @@ def train_finetuned_mbert(
     weight_decay = params["weight_decay"]
     optimizer_warmup = params["optimizer_warmup"]
     feature_hidden_size = params["feature_hidden_size"]
-    frozen_bert_epochs = params.get("frozen_bert_epochs", 0)
+    stage1_frozen_bert_epochs = params["stage1_frozen_bert_epochs"]
+    stage2_frozen_bert_epochs = params["stage2_frozen_bert_epochs"]
 
     # Scale features
     scaler = MinMaxScaler()
@@ -286,7 +288,7 @@ def train_finetuned_mbert(
         val_dataset = CustomDataset(val_df, tokenizer)
         val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
-    # Initialize model with frozen BERT
+    # Initialize model with frozen BERT (will be optionally unfrozen per-stage)
     model = ModernBertWithFeaturesTrainable.from_pretrained(
         "answerdotai/ModernBERT-base",
         feature_input_size=FeatureExtractorPipeline.FEATURE_COUNT,
@@ -322,6 +324,25 @@ def train_finetuned_mbert(
         )
         model.train()
         for epoch in range(stage1_epochs):
+            # Unfreeze BERT after stage1_frozen_bert_epochs
+            if epoch == stage1_frozen_bert_epochs and stage1_frozen_bert_epochs > 0:
+                print(f"\n[Stage 1] Unfreezing BERT encoder at epoch {epoch + 1}")
+                for p in model.model.parameters():
+                    p.requires_grad = True
+                optimizer = AdamW(
+                    [
+                        {"params": model.model.parameters(), "lr": lr_bert},
+                        {"params": model.feature_ff.parameters(), "lr": lr_custom},
+                        {"params": model.regressor.parameters(), "lr": lr_custom},
+                    ],
+                    weight_decay=weight_decay,
+                )
+                remaining_steps = len(lg_train_loader) * (stage1_epochs - epoch)
+                scheduler = get_linear_schedule_with_warmup(
+                    optimizer,
+                    num_warmup_steps=int(remaining_steps * optimizer_warmup),
+                    num_training_steps=remaining_steps,
+                )
             for batch in tqdm(
                 lg_train_loader, desc=f"Stage 1 - Epoch {epoch + 1}/{stage1_epochs}"
             ):
@@ -349,6 +370,12 @@ def train_finetuned_mbert(
         gc.collect()
 
     # Stage 2: Fine-tuning on small dataset
+    # If Stage 1 potentially unfroze BERT, and Stage 2 requires initial freezing,
+    # re-freeze encoder before starting Stage 2 epochs.
+    if stage2_frozen_bert_epochs > 0:
+        for p in model.model.parameters():
+            p.requires_grad = False
+
     print(
         f"Stage 2: Fine-tuning on small dataset ({len(train_df)} samples) "
         f"{'with' if val_df is not None else 'without'} early stopping (max {NUM_EPOCHS} epochs)"
@@ -392,9 +419,9 @@ def train_finetuned_mbert(
             desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
         )
 
-        # Unfreeze BERT after frozen_bert_epochs
-        if epoch == frozen_bert_epochs and frozen_bert_epochs > 0:
-            print(f"\nUnfreezing BERT encoder at epoch {epoch + 1}")
+        # Unfreeze BERT after stage2_frozen_bert_epochs
+        if epoch == stage2_frozen_bert_epochs and stage2_frozen_bert_epochs > 0:
+            print(f"\n[Stage 2] Unfreezing BERT encoder at epoch {epoch + 1}")
             for p in model.model.parameters():
                 p.requires_grad = True
             optimizer = AdamW(
@@ -547,7 +574,8 @@ def train_finetuned_mbert(
             "weight_decay": weight_decay,
             "optimizer_warmup": optimizer_warmup,
             "feature_hidden_size": feature_hidden_size,
-            "frozen_bert_epochs": frozen_bert_epochs,
+            "stage1_frozen_bert_epochs": stage1_frozen_bert_epochs,
+            "stage2_frozen_bert_epochs": stage2_frozen_bert_epochs,
         },
     }
 

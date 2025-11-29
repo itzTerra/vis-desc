@@ -1136,7 +1136,7 @@ class ModernBertTrainer(BaseTrainer):
                 labels = batch["labels"].cpu().numpy()
 
                 outputs = self.model(input_ids, attention_mask, features)
-                predictions = outputs.cpu().numpy().flatten()
+                predictions = outputs.logits.squeeze().cpu().numpy()
 
                 y_true_test.extend(labels)
                 y_pred_test.extend(predictions)

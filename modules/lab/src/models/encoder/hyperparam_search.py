@@ -663,8 +663,8 @@ if __name__ == "__main__":
         "-e",
         "--embeddings",
         type=str,
-        required=True,
         choices=["minilm", "mbert"],
+        default=None,
         help="Embedding type to use: 'minilm' or 'mbert'",
     )
     parser.add_argument(
@@ -709,6 +709,11 @@ if __name__ == "__main__":
     )
 
     for provider_name in providers_to_run:
+        if provider_name not in ("finetuned-mbert", "random") and embeddings is None:
+            print(
+                f"Skipping {provider_name} provider since no embeddings were specified."
+            )
+            continue
         print(f"\n{'=' * 60}")
         print(f"Running study for provider: {provider_name}")
         if seeds and provider_name == "finetuned-mbert":

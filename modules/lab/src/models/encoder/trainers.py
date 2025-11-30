@@ -970,22 +970,11 @@ class ModernBertTrainer(BaseTrainer):
             train_fold_df = sm_train.loc[train_index].copy().reset_index(drop=True)
             val_fold_df = sm_train.loc[val_index].copy().reset_index(drop=True)
 
-            training_params = {
-                "lr_bert": self.params["lr_bert"],
-                "lr_custom": self.params["lr_custom"],
-                "dropout_rate": self.params["dropout_rate"],
-                "weight_decay": self.params["weight_decay"],
-                "optimizer_warmup": self.params["optimizer_warmup"],
-                "feature_hidden_size": self.params["feature_hidden_size"],
-                "stage1_epochs": self.params["stage1_epochs"],
-                "frozen_bert_epochs": self.params["frozen_bert_epochs"],
-            }
-
             result = train_finetuned_mbert(
                 train_df=train_fold_df,
                 val_df=val_fold_df,
                 tokenizer=context.tokenizer,
-                params=training_params,
+                params=self.params,
                 seed=self.seed,
                 train_lg_df=lg_train if self.include_large else None,
                 save_history=False,

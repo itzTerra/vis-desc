@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from datetime import datetime
 from typing import Literal
 import argparse
 import pandas as pd
@@ -12,64 +13,19 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 from models.encoder.common import (
-    TRAINING_HISTORY_DIR,
+    CatBoostNamer,
+    FinetunedBertNamer,
+    ModelNamer,
+    PersistentMetrics,
+    RandomForestNamer,
+    RidgeNamer,
+    SVMNamer,
     run_study,
     SEED,
     run_cross_validation,
     set_seed,
 )
-import json
 import multiprocessing as mp
-
-HYPERPARAM_SEARCH_DIR = TRAINING_HISTORY_DIR / "hyperparam_search"
-
-
-def save_trial_overview(trial_number: int, params: dict, seed_data: list[dict]):
-    """Save an overview JSON with MSEs, accuracies, and best epochs for a trial.
-
-    Parameters
-    ----------
-    trial_number : int
-        The trial number.
-    params : dict
-        Hyperparameters for this trial.
-    seed_data : list[dict]
-        List of dictionaries, one per seed, each containing:
-        - seed: int
-        - mse: float (average across folds)
-        - folds: list of dicts with fold_num, mse, accuracy, best_epoch
-    """
-    overview = {
-        "trial_number": trial_number,
-        "hyperparameters": params,
-        "seeds": seed_data,
-        "summary": {
-            "mean_mse_across_seeds": float(np.mean([s["mse"] for s in seed_data])),
-            "mean_accuracy_across_seeds": float(
-                np.mean(
-                    [np.mean([f["accuracy"] for f in s["folds"]]) for s in seed_data]
-                )
-            ),
-            "mean_best_epoch_across_all": float(
-                np.mean(
-                    [
-                        f["best_epoch"]
-                        for s in seed_data
-                        for f in s["folds"]
-                        if f["best_epoch"] is not None
-                    ]
-                )
-            )
-            if any(f["best_epoch"] is not None for s in seed_data for f in s["folds"])
-            else None,
-        },
-    }
-
-    overview_path = HYPERPARAM_SEARCH_DIR / f"trial_{trial_number}_overview.json"
-    overview_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(overview_path, "w") as f:
-        json.dump(overview, f, indent=2)
-    print(f"Saved trial overview to {overview_path}")
 
 
 def run_modernbert_trial_single_seed(
@@ -90,16 +46,15 @@ def run_modernbert_trial_single_seed(
         Whether to include the large (noisy) dataset in stage 1 pretraining.
     seed : int
         Random seed for this run.
-
-    Returns
-    -------
-    dict
-        Dictionary containing 'mse' and 'best_epochs' for this seed.
     """
     from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
     set_seed(seed)
-    fold_details = []
+    timestamp = datetime.now()
+    metrics = PersistentMetrics.from_parts(
+        "finetuned-mbert", "val", timestamp, seed, trial.number
+    )
+    metrics["folds"] = []
 
     def train_and_evaluate_fold(
         train_df: pd.DataFrame,
@@ -115,11 +70,6 @@ def run_modernbert_trial_single_seed(
             lg_train_df = None
             sm_train_df = train_df.copy()
 
-        history_path = (
-            TRAINING_HISTORY_DIR
-            / f"finetuned-mbert_trial_{trial.number}_seed_{seed}_fold_{fold_num}.json"
-        )
-
         result = train_finetuned_mbert(
             train_df=sm_train_df,
             val_df=val_df,
@@ -127,35 +77,25 @@ def run_modernbert_trial_single_seed(
             params=trial_params,
             seed=seed,
             train_lg_df=lg_train_df,
-            save_history=True,
-            history_path=history_path,
         )
 
-        if history_path.exists():
-            with open(history_path, "r") as f:
-                history_data = json.load(f)
-            history_data["trial_number"] = trial.number
-            history_data["seed"] = seed
-            history_data["fold_num"] = fold_num
-            with open(history_path, "w") as f:
-                json.dump(history_data, f, indent=2)
-            best_epoch = history_data.get("best_epoch")
-        else:
-            best_epoch = None
+        fold_metrics = {
+            "mse": result["mse"],
+            "accuracy": result["accuracy"],
+            "precision": result["precision"].tolist(),
+            "recall": result["recall"].tolist(),
+            "f1": result["f1"].tolist(),
+            "support": result["support"].tolist(),
+            "confusion_matrix": result["confusion_matrix"].tolist(),
+            "train_losses": result["train_losses"],
+            "val_losses": result["val_losses"],
+        }
+        metrics["folds"].append(fold_metrics)
+        metrics.update()
 
-        final_metrics = result["final_metrics"]
-        fold_details.append(
-            {
-                "fold_num": fold_num,
-                "mse": float(final_metrics["mse"]),
-                "accuracy": float(final_metrics["accuracy"]),
-                "best_epoch": best_epoch,
-            }
-        )
+        return result["mse"]
 
-        return final_metrics["mse"], best_epoch
-
-    seed_result = run_cross_validation(
+    res = run_cross_validation(
         trial=trial,
         train_and_eval_func=train_and_evaluate_fold,
         include_minilm_embeddings=False,
@@ -165,12 +105,7 @@ def run_modernbert_trial_single_seed(
         two_stage_training=True,
     )
 
-    if isinstance(seed_result, dict):
-        seed_result["folds"] = fold_details
-    else:
-        seed_result = {"mse": seed_result, "best_epochs": [], "folds": fold_details}
-
-    return seed_result
+    return res
 
 
 def run_modernbert_trial_multi_seed(
@@ -198,7 +133,6 @@ def run_modernbert_trial_multi_seed(
         Dictionary containing averaged 'mse' and collected 'best_epochs'.
     """
     all_seed_results = []
-    seed_data = []
     ctx = mp.get_context("spawn")
 
     for seed_idx, seed in enumerate(seeds):
@@ -209,33 +143,12 @@ def run_modernbert_trial_multi_seed(
                 (trial, trial_params, include_large, seed),
             )
         all_seed_results.append(seed_result)
-        print(
-            f"  Seed {seed} completed: MSE = {seed_result['mse'] if isinstance(seed_result, dict) else seed_result:.4f}"
-        )
+        print(f"  Seed {seed} completed: MSE = {seed_result:.4f}")
 
-        if isinstance(seed_result, dict) and "folds" in seed_result:
-            seed_data.append(
-                {
-                    "seed": seed,
-                    "mse": seed_result["mse"],
-                    "folds": seed_result["folds"],
-                }
-            )
-
-    if seed_data:
-        save_trial_overview(trial.number, trial_params, seed_data)
-
-    if isinstance(all_seed_results[0], dict):
-        avg_mse = np.mean([r["mse"] for r in all_seed_results])
-        all_best_epochs = [
-            epoch for r in all_seed_results for epoch in r["best_epochs"]
-        ]
-        return {"mse": avg_mse, "best_epochs": all_best_epochs}
-    else:
-        return {"mse": np.mean(all_seed_results), "best_epochs": []}
+    return np.mean(all_seed_results)
 
 
-class ObjectiveProvider:
+class ObjectiveProvider(ModelNamer):
     def __init__(
         self,
         embeddings: Literal["minilm", "mbert"],
@@ -252,7 +165,7 @@ class ObjectiveProvider:
         raise NotImplementedError
 
     def get_study_name(self) -> str:
-        raise NotImplementedError
+        return self.get_model_name()
 
     def get_n_trials(self) -> int:
         return 100
@@ -261,7 +174,7 @@ class ObjectiveProvider:
         return None
 
 
-class RidgeObjectiveProvider(ObjectiveProvider):
+class RidgeObjectiveProvider(ObjectiveProvider, RidgeNamer):
     def get_n_trials(self):
         return 200
 
@@ -324,11 +237,8 @@ class RidgeObjectiveProvider(ObjectiveProvider):
 
         return objective
 
-    def get_study_name(self) -> str:
-        return f"{self.embeddings}_ridge{'_lg' if self.include_large else ''}"
 
-
-class SVMObjectiveProvider(ObjectiveProvider):
+class SVMObjectiveProvider(ObjectiveProvider, SVMNamer):
     def get_n_trials(self):
         return 100
 
@@ -391,11 +301,8 @@ class SVMObjectiveProvider(ObjectiveProvider):
 
         return objective
 
-    def get_study_name(self) -> str:
-        return f"{self.embeddings}_svm{'_lg' if self.include_large else ''}"
 
-
-class RandomForestObjectiveProvider(ObjectiveProvider):
+class RandomForestObjectiveProvider(ObjectiveProvider, RandomForestNamer):
     def get_n_trials(self):
         return 150
 
@@ -458,11 +365,8 @@ class RandomForestObjectiveProvider(ObjectiveProvider):
 
         return objective
 
-    def get_study_name(self) -> str:
-        return f"{self.embeddings}_rf{'_lg' if self.include_large else ''}"
 
-
-class CatBoostObjectiveProvider(ObjectiveProvider):
+class CatBoostObjectiveProvider(ObjectiveProvider, CatBoostNamer):
     def get_n_trials(self):
         return 200
 
@@ -537,11 +441,8 @@ class CatBoostObjectiveProvider(ObjectiveProvider):
 
         return objective
 
-    def get_study_name(self) -> str:
-        return f"{self.embeddings}_catboost{'_lg' if self.include_large else ''}"
 
-
-class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
+class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer):
     SEARCH_SPACE = {
         "stage1_epochs": [3, 6],
         "lr_bert": [1e-5],
@@ -611,39 +512,18 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider):
                         run_modernbert_trial_single_seed,
                         (trial, params, self.include_large, seeds[0]),
                     )
-                if isinstance(result, dict) and "folds" in result:
-                    seed_data = [
-                        {
-                            "seed": seeds[0],
-                            "mse": result["mse"],
-                            "folds": result["folds"],
-                        }
-                    ]
-                    save_trial_overview(trial.number, params, seed_data)
             else:
                 result = run_modernbert_trial_multi_seed(
                     trial, params, self.include_large, seeds
                 )
 
-            if isinstance(result, dict):
-                mse = result["mse"]
-                best_epochs = result["best_epochs"]
-                if best_epochs:
-                    trial.set_user_attr("mean_best_epoch", float(np.mean(best_epochs)))
-                    trial.set_user_attr(
-                        "median_best_epoch", float(np.median(best_epochs))
-                    )
+                mse = result
                 if len(seeds) > 1:
                     trial.set_user_attr("num_seeds", len(seeds))
                     trial.set_user_attr("seeds_used", seeds)
-            else:
-                mse = result
             return mse
 
         return objective
-
-    def get_study_name(self) -> str:
-        return f"finetuned-mbert{'_lg' if self.include_large else ''}"
 
 
 PROVIDER_MAPPING = {
@@ -698,8 +578,6 @@ if __name__ == "__main__":
         help="Objective providers to run. If empty, runs all defined providers. Valid options: ridge, svm, rf, catboost, modernbert",
     )
     args = parser.parse_args()
-
-    HYPERPARAM_SEARCH_DIR.mkdir(parents=True, exist_ok=True)
 
     include_large = args.lg
     embeddings = args.embeddings

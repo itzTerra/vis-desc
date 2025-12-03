@@ -1,11 +1,10 @@
+from typing import Optional
 from transformers import ModernBertPreTrainedModel, ModernBertModel
 from transformers.modeling_outputs import SequenceClassifierOutput
 import torch.nn as nn
 import torch
 import numpy as np
 import gc
-import json
-from pathlib import Path
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
@@ -13,6 +12,7 @@ from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
 from text2features import FeatureExtractorPipeline
 from models.encoder.common import (
+    PersistentMetrics,
     device,
     CustomDataset,
     calculate_metrics,
@@ -200,19 +200,14 @@ def train_finetuned_mbert(
     seed=SEED,
     val_df=None,
     train_lg_df=None,
-    history_path=None,
-    save_history=True,
+    metrics: Optional[PersistentMetrics] = None,
 ):
     """Unified ModernBERT training function.
 
     Behavior:
       - If `train_lg_df` is provided and not empty, perform Stage 1 pre-training on it (epochs = params['stage1_epochs']).
-      - Always perform Stage 2 training on `train_df`.
-      - If `params['frozen_bert_epochs'] > 0`, keep BERT encoder frozen for that many initial epochs of Stage 2 then unfreeze.
-      - Always perform gradient flow checking via `check_gradient_flow` at defined batch intervals.
       - If `val_df` is provided: compute validation loss each epoch, apply early stopping using constant `EARLY_STOPPING_PATIENCE`.
       - If `val_df` is None: no early stopping; train for full NUM_EPOCHS.
-      - Uses aggressive CUDA + GC cleanup after Stage 1 and after each epoch.
 
     Params dict expected keys:
       - lr_bert, lr_custom, dropout_rate, weight_decay, optimizer_warmup,
@@ -226,18 +221,7 @@ def train_finetuned_mbert(
         seed: Random seed for reproducibility
         val_df: Optional validation DataFrame (enables early stopping)
         train_lg_df: Optional large dataset DataFrame for stage 1
-        history_path: Optional path to save training history
-        save_history: Whether to save training history to file
-
-    Returns:
-        Dict containing:
-        - model: trained model instance (only in no-validation mode)
-        - train_losses: list of training losses per epoch
-        - val_losses: list of validation losses per epoch (empty if no validation)
-        - best_val_loss: best validation loss achieved (None if no validation)
-        - final_metrics: metrics dict on val_df or train_df
-        - history: structured history dict
-        - scaler: fitted MinMaxScaler
+        metrics: Optional PersistentMetrics object for logging
     """
     stage1_epochs = params.get("stage1_epochs", 0)
     stage2_epochs = (
@@ -251,6 +235,26 @@ def train_finetuned_mbert(
     feature_hidden_size = params["feature_hidden_size"]
     stage1_frozen_bert_epochs = params["stage1_frozen_bert_epochs"]
     stage2_frozen_bert_epochs = params["stage2_frozen_bert_epochs"]
+
+    model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}"
+    if metrics is None:
+        metrics = PersistentMetrics.dummy()
+    metrics.update(
+        model=model_name,
+        params={
+            "stage1_epochs": stage1_epochs,
+            "stage2_epochs": stage2_epochs,
+            "lr_bert": lr_bert,
+            "lr_custom": lr_custom,
+            "dropout_rate": dropout_rate,
+            "weight_decay": weight_decay,
+            "optimizer_warmup": optimizer_warmup,
+            "feature_hidden_size": feature_hidden_size,
+            "stage1_frozen_bert_epochs": stage1_frozen_bert_epochs,
+            "stage2_frozen_bert_epochs": stage2_frozen_bert_epochs,
+        },
+        seed=seed,
+    )
 
     # Scale features
     scaler = MinMaxScaler()
@@ -354,6 +358,8 @@ def train_finetuned_mbert(
                     labels=batch["labels"].to(device),
                 )
                 loss = outputs.loss
+                metrics["train_losses"].append(loss.item())
+                metrics.update()
                 if torch.isnan(loss) or torch.isinf(loss):
                     continue
                 loss.backward()
@@ -402,14 +408,7 @@ def train_finetuned_mbert(
 
     best_val_loss = float("inf")
     patience_counter = 0
-    train_loss_history = []
-    val_loss_history = []
-    train_losses_per_epoch = []
-    val_losses_per_epoch = []
-    total_batches = 0
-    batches_per_epoch = len(sm_train_loader)
     best_model_state = None
-    best_epoch = None
 
     model.train()
     for epoch in range(stage2_epochs):
@@ -451,10 +450,9 @@ def train_finetuned_mbert(
             if torch.isnan(loss) or torch.isinf(loss):
                 continue
 
-            current_batch = total_batches + step
             loss_value = loss.item()
-            train_loss_history.append((current_batch, loss_value))
-            epoch_train_losses.append(loss_value)
+            metrics["train_losses"].append(loss_value)
+            metrics.update()
 
             loss.backward()
 
@@ -470,13 +468,9 @@ def train_finetuned_mbert(
             progress_bar.set_postfix({"loss": loss_value})
             del loss, outputs
 
-        total_batches += batches_per_epoch
-
-        # Calculate average training loss for this epoch
         avg_train_loss = (
             float(np.mean(epoch_train_losses)) if epoch_train_losses else float("nan")
         )
-        train_losses_per_epoch.append(avg_train_loss)
 
         # Validation if val_df provided
         if val_loader is not None:
@@ -494,8 +488,8 @@ def train_finetuned_mbert(
                     del outputs
 
             avg_val_loss = np.mean(epoch_val_losses)
-            val_loss_history.append((total_batches - 1, avg_val_loss))
-            val_losses_per_epoch.append(avg_val_loss)
+            metrics["val_losses"].append(avg_val_loss)
+            metrics.update()
 
             print(
                 f"\nEpoch {epoch + 1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {avg_val_loss:.4f}"
@@ -506,7 +500,6 @@ def train_finetuned_mbert(
                 best_val_loss = avg_val_loss
                 patience_counter = 0
                 best_model_state = model.state_dict()
-                best_epoch = epoch + 1
                 print(f"✓ New best validation loss: {best_val_loss:.4f}")
             else:
                 patience_counter += 1
@@ -522,7 +515,6 @@ def train_finetuned_mbert(
             # No validation - just print training loss
             print(f"Epoch {epoch + 1} avg loss: {avg_train_loss:.4f}")
 
-        # Aggressive cleanup after each epoch
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
@@ -552,49 +544,11 @@ def train_finetuned_mbert(
             y_pred.extend(preds.cpu().numpy())
             del outputs
 
-    final_metrics = calculate_metrics(np.array(y_true), np.array(y_pred))
-
-    # Prepare history data
-    history = {
-        "batches_per_epoch": batches_per_epoch,
-        "epochs_trained": epoch + 1,
-        "train_loss_history": train_loss_history,
-        "val_loss_history": val_loss_history,
-        "train_losses": train_losses_per_epoch,
-        "val_losses": val_losses_per_epoch,
-        "best_val_loss": float(best_val_loss)
-        if val_df is not None and best_val_loss != float("inf")
-        else None,
-        "best_epoch": best_epoch,
-        "hyperparameters": {
-            "stage1_epochs": stage1_epochs,
-            "lr_bert": lr_bert,
-            "lr_custom": lr_custom,
-            "dropout_rate": dropout_rate,
-            "weight_decay": weight_decay,
-            "optimizer_warmup": optimizer_warmup,
-            "feature_hidden_size": feature_hidden_size,
-            "stage1_frozen_bert_epochs": stage1_frozen_bert_epochs,
-            "stage2_frozen_bert_epochs": stage2_frozen_bert_epochs,
-        },
-    }
-
-    # Save history if requested
-    if save_history and history_path is not None:
-        history_path = Path(history_path)
-        history_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(history_path, "w") as f:
-            json.dump(history, f, indent=2)
-        print(f"Saved training history to {history_path}")
+    m = calculate_metrics(np.array(y_true), np.array(y_pred))
+    metrics.update(**m)
 
     return {
         "model": model,
-        "train_losses": train_losses_per_epoch,
-        "val_losses": val_losses_per_epoch,
-        "best_val_loss": float(best_val_loss)
-        if val_df is not None and best_val_loss != float("inf")
-        else None,
-        "final_metrics": final_metrics,
-        "history": history,
         "scaler": scaler,
+        **metrics,
     }

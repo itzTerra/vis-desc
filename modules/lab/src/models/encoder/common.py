@@ -1,8 +1,10 @@
+from abc import ABC, abstractmethod
 import os
 import random
 import hashlib
 import json
 from datetime import datetime
+from typing import Any, Literal
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -19,6 +21,7 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 from pathlib import Path
+import re
 
 BERT_TOKENIZER_MAX_LENGTH = 160
 SEED = 42
@@ -36,10 +39,52 @@ def set_seed(seed=SEED):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 METRICS_DIR = DATA_DIR / "metrics" / "encoder"
 MODEL_DIR = DATA_DIR / "models" / "encoder"
-TRAINING_HISTORY_DIR = METRICS_DIR / "training_history"
 
-for d in [METRICS_DIR, MODEL_DIR, TRAINING_HISTORY_DIR]:
+for d in [METRICS_DIR, MODEL_DIR]:
     os.makedirs(d, exist_ok=True)
+
+
+class ModelNamer(ABC):
+    @abstractmethod
+    def _get_base_model_name(self) -> str:
+        pass
+
+    def get_model_name(self) -> str:
+        if not hasattr(self, "include_large"):
+            raise ValueError("ModelNamer subclass must have 'include_large' attribute.")
+        embeddings = getattr(self, "embeddings", "")
+        base_name = self._get_base_model_name()
+        return f"{base_name}{f'_{embeddings}' if embeddings else ''}{'_lg' if self.include_large else ''}"
+
+
+class RidgeNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "ridge"
+
+
+class SVMNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "svm"
+
+
+class RandomForestNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "rf"
+
+
+class CatBoostNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "catboost"
+
+
+class RandomBaselineNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "random"
+
+
+class FinetunedBertNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "finetuned-mbert"
 
 
 class CustomDataset(Dataset):
@@ -175,8 +220,6 @@ def hash_tokenizer(tokenizer):
     """
     Return (sha256_hash, vocab_size, added_tokens_count) for diagnostics.
     """
-    import json
-
     vocab = tokenizer.get_vocab()  # dict: token -> id
     items = sorted(vocab.items())
     sha = hashlib.sha256()
@@ -209,7 +252,6 @@ def run_cross_validation(
 
     kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=SEED)
     fold_scores = []
-    fold_best_epochs = []
     optimization_context = CachedOptimizationContext(
         include_minilm_embeddings=include_minilm_embeddings,
         include_modernbert_embeddings=include_modernbert_embeddings,
@@ -264,12 +306,7 @@ def run_cross_validation(
             fold,
         )
 
-        if isinstance(score, tuple):
-            mse, best_epoch = score
-            fold_scores.append(mse)
-            fold_best_epochs.append(best_epoch)
-        else:
-            fold_scores.append(score)
+        fold_scores.append(score)
 
         print(f"Fold {fold + 1}/{n_splits}: {fold_scores[-1]:.4f}")
 
@@ -288,10 +325,7 @@ def run_cross_validation(
             )
 
     mean_mse = np.mean(fold_scores)
-    if fold_best_epochs:
-        return {"mse": mean_mse, "best_epochs": fold_best_epochs}
-    else:
-        return mean_mse
+    return mean_mse
 
 
 # ---------------------- Diagnostics Utilities ----------------------
@@ -323,8 +357,6 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
     """
     Creates and runs an Optuna study.
     """
-    from datetime import datetime
-
     TEST_RUN = os.environ.get("TEST_RUN", "false").lower() in ("true", "1", "t")
 
     set_seed()
@@ -360,10 +392,6 @@ def run_study(objective_func, study_name, search_space=None, n_trials=None):
     print("Best hyperparameters:")
     for key, value in study.best_params.items():
         print(f"  {key}: {value}")
-    if study.best_trial.user_attrs:
-        print("Best trial user attributes:")
-        for key, value in study.best_trial.user_attrs.items():
-            print(f"  {key}: {value}")
 
     return study
 
@@ -403,85 +431,405 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     }
 
 
-def save_metrics_separate(
+def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    cms = np.array([m["confusion_matrix"] for m in metrics], dtype=float)
+    cm_avg = np.mean(cms, axis=0)
+    return {
+        "mse": np.mean([m["mse"] for m in metrics]),
+        "accuracy": np.mean([m["accuracy"] for m in metrics]),
+        "precision": np.mean([m["precision"] for m in metrics], axis=0).tolist(),
+        "recall": np.mean([m["recall"] for m in metrics], axis=0).tolist(),
+        "f1": np.mean([m["f1"] for m in metrics], axis=0).tolist(),
+        "support": np.sum([m["support"] for m in metrics], axis=0).tolist(),
+        "confusion_matrix": np.rint(cm_avg).astype(int).tolist(),
+    }
+
+
+def get_model_filename(
+    model_name: str, seed: int, datetime: datetime, ext: str = ".onnx"
+) -> Path:
+    filename = f"{model_name}_{seed}_{datetime.strftime('%Y-%m-%d-%H-%M-%S')}{ext}"
+    return MODEL_DIR / filename
+
+
+def get_metrics_filename(
     model_name: str,
-    params: dict,
-    train: dict | None,
-    val: dict | None,
-    test: dict | None,
-    extra_train: dict | None = None,
-    timestamp: str | None = None,
-) -> None:
-    """Persist metrics for train/val/test splits into separate JSON files.
-
-    This is a standalone utility extracted from the trainer class so it can also
-    be reused by scripts that compute aggregated or ensemble metrics (e.g.
-    feature importance / ablation studies).
-
-    Each JSON contains:
-      - model: the model name (includes any run label suffixes)
-      - params: parameter dict used for the run
-      - dataset: one of train | val | test
-      - metric keys (mse, accuracy, precision, recall, f1, support, confusion_matrix, ...)
-      - any optional extra_train data only in the train file
+    type: Literal["train", "val", "test"],
+    seed: int,
+    datetime: datetime,
+    trial: int | None = None,
+) -> Path:
     """
+    Generate a standardized filename for saving metrics based on data/metrics/metrics-docs.md.
 
-    if timestamp is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    Args:
+        model_name: Name of the model.
+        type: Type of dataset ('train', 'val', 'test').
+        seed: Random seed used.
+        datetime: Datetime object for timestamping.
+    Returns:
+        Path object for the metrics file.
+    """
+    filename = f"{model_name}_{type}{f'_t{trial}' if trial is not None else ''}_{seed}_{datetime.strftime('%Y-%m-%d-%H-%M-%S')}.json"
+    return METRICS_DIR / filename
 
-    def _write(split_name: str, data: dict | None, extra: dict | None = None):
-        payload = {
+
+def parse_metrics_filename(path: str | Path) -> dict[str, Any]:
+    """
+    Parse a metrics filename according to modules/lab/data/metrics/metric-docs.md.
+
+    Supports both formats:
+    - model_embedding_lg_type_seed_yyyy-MM-dd-hh-mm-ss.json
+    - model_embedding_lg_val_tX_seed_yyyy-MM-dd-hh-mm-ss.json
+
+    Returns a dict with keys:
+    - model_name: str (e.g., "svm_minilm_lg" or "finetuned-mbert_lg")
+    - type: Literal['train','val','test']
+    - trial: Optional[int]
+    - seed: int
+    - timestamp: str (yyyy-MM-dd-hh-mm-ss)
+    - stem: filename without extension
+    - common_key: filename stem without seed and timestamp (used for grouping)
+    """
+    p = Path(path)
+    stem = p.stem
+    # First, try val with trial: model_*_val_tX_seed_timestamp
+    m_val = re.match(
+        r"^(?P<model>.+)_val_t(?P<trial>\d+)_(?P<seed>\d+)_(?P<ts>\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$",
+        stem,
+    )
+    if m_val:
+        model_name = m_val.group("model")
+        trial = int(m_val.group("trial"))
+        seed = int(m_val.group("seed"))
+        ts = m_val.group("ts")
+        return {
+            "model_name": model_name,
+            "type": "val",
+            "trial": trial,
+            "seed": seed,
+            "timestamp": ts,
+            "stem": stem,
+            "common_key": f"{model_name}_val_t{trial}",
+        }
+
+    # General case: model_*_type_seed_timestamp (type in {train,test,val})
+    m = re.match(
+        r"^(?P<model>.+)_(?P<type>train|test|val)_(?P<seed>\d+)_(?P<ts>\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$",
+        stem,
+    )
+    if not m:
+        raise ValueError(
+            f"Filename '{p.name}' does not match expected metrics patterns."
+        )
+    model_name = m.group("model")
+    type_ = m.group("type")
+    seed = int(m.group("seed"))
+    ts = m.group("ts")
+    return {
+        "model_name": model_name,
+        "type": type_,
+        "trial": None,
+        "seed": seed,
+        "timestamp": ts,
+        "stem": stem,
+        "common_key": f"{model_name}_{type_}",
+    }
+
+
+def group_metric_files(paths: list[str | Path]) -> dict[str, list[str]]:
+    """
+    Group metric files by common identifier (model + embedding + lg + type [+ trial]).
+
+    Insensitive to timestamp. Each seed is counted only once per group; if multiple
+    files exist for the same common identifier and seed, only the latest (by timestamp
+    in filename) is kept.
+
+    Returns a dict mapping common_key -> list[str] of selected filenames.
+    The common_key matches the filename stem without seed and timestamp, e.g.:
+      - "svm_minilm_lg_train"
+      - "svm_minilm_lg_val_t1"
+      - "finetuned-mbert_lg_test"
+    """
+    grouped: dict[str, dict[int, dict[str, Any]]] = {}
+    for path in paths:
+        info = parse_metrics_filename(path)
+        key = info["common_key"]
+        seed = info["seed"]
+        grouped.setdefault(key, {})
+        existing = grouped[key].get(seed)
+        if not existing:
+            grouped[key][seed] = {"info": info, "path": str(Path(path))}
+        else:
+            # Keep the one with latest timestamp
+            if info["timestamp"] > existing["info"]["timestamp"]:
+                grouped[key][seed] = {"info": info, "path": str(Path(path))}
+
+    # Convert to desired output: common_key -> [paths]
+    result: dict[str, list[str]] = {}
+    for key, seeds_map in grouped.items():
+        # deterministic order by seed
+        ordered_paths = [
+            entry["path"] for _, entry in sorted(seeds_map.items(), key=lambda x: x[0])
+        ]
+        result[key] = ordered_paths
+    return result
+
+
+def average_metric_files(paths: list[str | Path]) -> dict[str, Any]:
+    """
+    Read metric files and average their contents into a single metric dict following
+    the same schema as defined in metric-docs.md.
+
+    All input files must be of the same format bucket:
+      - Train files (type == 'train')
+      - Test files (type == 'test')
+      - Val files (type == 'val' with identical folds length and presence of per-fold keys)
+
+    Raises ValueError if formats/types are mixed or incompatible.
+    """
+    infos = [parse_metrics_filename(p) for p in paths]
+    # Ensure same common_key
+    common_keys = {i["common_key"] for i in infos}
+    if len(common_keys) != 1:
+        raise ValueError(
+            f"All files must share the same identifier. Found: {sorted(common_keys)}"
+        )
+    type_ = infos[0]["type"]
+
+    # Load JSON contents
+    contents: list[dict[str, Any]] = []
+    for p in paths:
+        with open(Path(p), "r") as fh:
+            contents.append(json.load(fh))
+
+    # Basic format validations
+    types = {c.get("type") for c in contents}
+    if len(types) != 1 or type_ not in types:
+        raise ValueError("All files must have the same 'type' field.")
+
+    # model field must be the same
+    models = {c.get("model") for c in contents}
+    if len(models) != 1:
+        raise ValueError("All files must have the same 'model' field.")
+    model_name = next(iter(models))
+
+    # params field presence consistency (if present should be same structure)
+    # If params absent in some and present in others, treat as mismatch.
+    has_params = {"params" in c for c in contents}
+    if len(has_params) != 1:
+        raise ValueError("Mismatch in presence of 'params' across files.")
+    if True in has_params:
+        # Require identical params
+        params_set = {json.dumps(c["params"], sort_keys=True) for c in contents}
+        if len(params_set) != 1:
+            raise ValueError("All files must have identical 'params'.")
+        params = contents[0]["params"]
+    else:
+        params = {}
+
+    if type_ in ("train", "test"):
+        # Average basic metrics (including confusion matrix)
+        metrics_list = [
+            {
+                "mse": float(c["mse"]),
+                "accuracy": float(c["accuracy"]),
+                "precision": c["precision"],
+                "recall": c["recall"],
+                "f1": c["f1"],
+                "support": c["support"],
+                "confusion_matrix": c["confusion_matrix"],
+            }
+            for c in contents
+        ]
+        averaged = average_metrics(metrics_list)
+        result = {
             "model": model_name,
             "params": params,
-            "dataset": split_name,
+            "type": type_,
+            "seed": -1,  # not meaningful for averaged outputs
+            "mse": averaged["mse"],
+            "accuracy": averaged["accuracy"],
+            "precision": averaged["precision"],
+            "recall": averaged["recall"],
+            "f1": averaged["f1"],
+            "support": averaged["support"],
+            "confusion_matrix": averaged["confusion_matrix"],
         }
-        if data is not None:
-            payload.update(data)
-        if extra and split_name == "train":
-            for k, v in extra.items():
-                payload[k] = v
-        out_path = METRICS_DIR / f"{model_name}_{split_name}_{timestamp}.json"
-        try:
-            with open(out_path, "w") as f:
-                json.dump(payload, f, indent=2)
-            print(f"Saved {split_name} metrics to {out_path}")
-        except Exception as e:
-            print(f"Failed to save {split_name} metrics: {e}")
+        # For train type, optionally aggregate train_losses if present
+        if type_ == "train" and all("train_losses" in c for c in contents):
+            # Average per-index; lengths may differ → require equality
+            lengths = {len(c["train_losses"]) for c in contents}
+            if len(lengths) == 1:
+                arr = np.array([c["train_losses"] for c in contents], dtype=float)
+                result["train_losses"] = np.mean(arr, axis=0).tolist()
+        return result
 
-    if train is not None:
-        _write("train", train, extra_train)
-    if val is not None:
-        _write("val", val)
-    if test is not None:
-        _write("test", test)
+    if type_ == "val":
+        # Validate folds shape and keys
+        folds_lengths = {len(c.get("folds", [])) for c in contents}
+        if len(folds_lengths) != 1:
+            raise ValueError("Validation files must have the same number of folds.")
+        n_folds = next(iter(folds_lengths))
+
+        # trial consistency (val_tX vs val without trial should have same common_key already)
+        trials = {c.get("trial") for c in contents}
+        if len(trials) != 1:
+            raise ValueError(
+                "Validation files must have the same 'trial' value (both None or same integer)."
+            )
+        trial_val = next(iter(trials))
+
+        # Average per-fold metrics
+        averaged_folds = []
+        for f_idx in range(n_folds):
+            fold_metrics_list = []
+            for c in contents:
+                fold = c["folds"][f_idx]
+                fold_metrics_list.append(
+                    {
+                        "mse": float(fold["mse"]),
+                        "accuracy": float(fold["accuracy"]),
+                        "precision": fold["precision"],
+                        "recall": fold["recall"],
+                        "f1": fold["f1"],
+                        "support": fold["support"],
+                        "confusion_matrix": fold["confusion_matrix"],
+                    }
+                )
+            avg_fold = average_metrics(fold_metrics_list)
+
+            # Average losses if present uniformly
+            train_losses = None
+            val_losses = None
+            if all("train_losses" in c["folds"][f_idx] for c in contents):
+                lengths = {len(c["folds"][f_idx]["train_losses"]) for c in contents}
+                if len(lengths) == 1:
+                    arr = np.array(
+                        [c["folds"][f_idx]["train_losses"] for c in contents],
+                        dtype=float,
+                    )
+                    train_losses = np.mean(arr, axis=0).tolist()
+            if all("val_losses" in c["folds"][f_idx] for c in contents):
+                lengths = {len(c["folds"][f_idx]["val_losses"]) for c in contents}
+                if len(lengths) == 1:
+                    arr = np.array(
+                        [c["folds"][f_idx]["val_losses"] for c in contents], dtype=float
+                    )
+                    val_losses = np.mean(arr, axis=0).tolist()
+
+            averaged_folds.append(
+                {
+                    "mse": avg_fold["mse"],
+                    "accuracy": avg_fold["accuracy"],
+                    "precision": avg_fold["precision"],
+                    "recall": avg_fold["recall"],
+                    "f1": avg_fold["f1"],
+                    "support": avg_fold["support"],
+                    "confusion_matrix": avg_fold["confusion_matrix"],
+                    **(
+                        {"train_losses": train_losses}
+                        if train_losses is not None
+                        else {}
+                    ),
+                    **({"val_losses": val_losses} if val_losses is not None else {}),
+                }
+            )
+
+        return {
+            "model": model_name,
+            "params": params,
+            "type": "val",
+            "seed": -1,
+            "folds": averaged_folds,
+            **({"trial": trial_val} if trial_val is not None else {}),
+        }
+
+    raise ValueError(f"Unsupported metrics type: {type_}")
 
 
-def _average_metrics(seed_metrics_list):
-    """Average metrics structure returned by trainer.run_full_training across seeds.
+# https://stackoverflow.com/questions/1229068/with-python-can-i-keep-a-persistent-dictionary-and-modify-it
+class PersistentDict(dict):
+    def __init__(self, filename: str | Path, *args, **kwargs):
+        self.filename = filename
+        self._load()
 
-    Each metrics dict may contain train_metrics, cv_metrics, test_metrics with sub keys.
-    Arrays (precision, recall, f1, support, confusion_matrix) are averaged element-wise.
-    Scalar entries (mse, accuracy) are averaged directly.
+    def _load(self):
+        if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
+            with open(self.filename, "r") as fh:
+                super().update(json.load(fh))
+
+    def _dump(self):
+        with open(self.filename, "w") as fh:
+            json.dump(self, fh)
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+        self._dump()
+
+    def __repr__(self):
+        dictrepr = dict.__repr__(self)
+        return "%s(%s)" % (type(self).__name__, dictrepr)
+
+    def update(self, *args, **kwargs):
+        for k, v in dict(*args, **kwargs).items():
+            self[k] = v
+        self._dump()
+
+
+class PersistentMetrics(PersistentDict):
+    @classmethod
+    def from_parts(
+        cls,
+        model_name: str,
+        type: Literal["train", "val", "test"],
+        seed: int,
+        datetime: datetime,
+        trial: int | None = None,
+    ) -> "PersistentMetrics":
+        filename = get_metrics_filename(model_name, type, seed, datetime, trial)
+        metrics = PersistentMetrics(filename)
+
+        metrics.setdefault("model", model_name)
+        metrics.setdefault("type", type)
+        metrics.setdefault("seed", seed)
+        if type in ("train", "val"):
+            metrics.setdefault("train_losses", [])
+            metrics.setdefault("val_losses", [])
+        if trial is not None:
+            metrics.setdefault("trial", trial)
+
+        return metrics
+
+    @classmethod
+    def dummy() -> "PersistentMetrics":
+        """Create a dummy PersistentMetrics that does not persist to disk."""
+
+        class DummyPersistentMetrics(PersistentMetrics):
+            def __init__(self):
+                self.setdefault("train_losses", [])
+                self.setdefault("val_losses", [])
+
+            def __setitem__(self, key, val):
+                dict.__setitem__(self, key, val)
+
+            def update(self, *args, **kwargs):
+                for k, v in dict(*args, **kwargs).items():
+                    self[k] = v
+
+        return DummyPersistentMetrics()
+
+
+def get_best_epoch(val_losses: list[float]) -> tuple[int, float]:
     """
+    Find the epoch with the lowest validation loss.
 
-    def _avg_split(split_key):
-        splits = [
-            m.get(split_key) for m in seed_metrics_list if m.get(split_key) is not None
-        ]
-        if not splits:
-            return None
-        out = {}
-        for k in ["mse", "accuracy"]:
-            if k in splits[0]:
-                out[k] = float(np.mean([s[k] for s in splits]))
-        for k in ["precision", "recall", "f1", "support", "confusion_matrix"]:
-            if k in splits[0]:
-                arr = np.array([s[k] for s in splits], dtype=float)
-                out[k] = arr.mean(axis=0).tolist()
-        return out
-
-    return {
-        "train_metrics": _avg_split("train_metrics"),
-        "cv_metrics": _avg_split("cv_metrics"),
-        "test_metrics": _avg_split("test_metrics"),
-    }
+    Returns:
+        Tuple of (best_epoch_index, best_val_loss)
+    """
+    best_epoch = int(np.argmin(val_losses))
+    best_val_loss = float(val_losses[best_epoch])
+    return best_epoch, best_val_loss

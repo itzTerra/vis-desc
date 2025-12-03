@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Literal, Dict, Any, Optional
 from pathlib import Path
 from datetime import datetime
@@ -27,20 +27,27 @@ from catboost.utils import convert_to_onnx_object
 
 
 from models.encoder.common import (
-    MODEL_DIR,
     SEED,
+    ModelNamer,
+    PersistentMetrics,
+    average_metrics,
     calculate_metrics,
     device,
     CustomDataset,
     CachedOptimizationContext,
+    get_model_filename,
     set_seed,
-    save_metrics_separate as save_metrics_separate_fn,
+    RidgeNamer,
+    SVMNamer,
+    RandomForestNamer,
+    CatBoostNamer,
+    RandomBaselineNamer,
+    FinetunedBertNamer,
 )
-from models.encoder.common import TRAINING_HISTORY_DIR
 from text2features import FeatureExtractorPipeline
 
 
-class BaseTrainer(ABC):
+class BaseTrainer(ModelNamer):
     """Base class for all trainers."""
 
     def __init__(
@@ -52,7 +59,6 @@ class BaseTrainer(ABC):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
-        label: Optional[str] = None,
         seed: Optional[int] = None,
         use_direct_test: bool = False,
     ):
@@ -63,29 +69,25 @@ class BaseTrainer(ABC):
         self.enable_cv = enable_cv
         self.enable_test = enable_test
         self.save_model = save_model
-        self.label = label
         self.model = None
-        self.model_name = self._get_model_name()
-        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.model_name = self.get_model_name()
+        self.timestamp = datetime.now()
         self.seed = seed if seed is not None else SEED
         self.use_direct_test = use_direct_test
-
-    @abstractmethod
-    def _get_model_name(self) -> str:
-        """Return the model name for file saving."""
-        pass
 
     def _get_model_extension(self) -> str:
         """Return the model file extension (default: .onnx)."""
         return ".onnx"
 
     @abstractmethod
-    def train(self) -> None:
+    def train(self, metrics: PersistentMetrics | None = None) -> None:
         """Train the model on the full training set."""
         pass
 
     @abstractmethod
-    def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
+    def cross_validate(
+        self, n_splits: int = 5, metrics: PersistentMetrics | None = None
+    ) -> Dict[str, Any]:
         """Perform cross-validation and return average metrics."""
         pass
 
@@ -94,33 +96,14 @@ class BaseTrainer(ABC):
         """Export the trained model to disk."""
         pass
 
-    def save_metrics_separate(
-        self,
-        train: Optional[Dict],
-        val: Optional[Dict],
-        test: Optional[Dict],
-        extra_train: Optional[Dict] = None,
-    ) -> None:
-        """Delegate metrics saving to shared utility (see common.save_metrics_separate)."""
-        save_metrics_separate_fn(
-            model_name=self.model_name,
-            params=self.params,
-            train=train,
-            val=val,
-            test=test,
-            extra_train=extra_train,
-            timestamp=self.timestamp,
-        )
-
     def run_full_training(self) -> Dict[str, Any]:
         """Execute training pipeline: train, evaluate, cross-validate, export, and save metrics based on enabled flags."""
         print(f"\n{'=' * 60}")
         print(f"Processing {self.model_name}")
         print(f"{'=' * 60}\n")
 
-        model_path = (
-            MODEL_DIR
-            / f"{self.model_name}_{self.timestamp}{self._get_model_extension()}"
+        model_path = get_model_filename(
+            self.model_name, self.seed, self.timestamp, self._get_model_extension()
         )
         train_metrics = None
         cv_metrics = None
@@ -131,9 +114,14 @@ class BaseTrainer(ABC):
 
             set_seed(self.seed)
 
-            self.train()
+            metrics = PersistentMetrics.from_parts(
+                self.model_name, "train", self.seed, self.timestamp
+            )
+
+            self.train(metrics=metrics)
 
             train_metrics = self.evaluate_train()
+            metrics.update(**train_metrics)
             print(f"Train MSE: {train_metrics['mse']:.4f}")
             print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
 
@@ -148,10 +136,15 @@ class BaseTrainer(ABC):
 
             set_seed(self.seed)
 
+            metrics = PersistentMetrics.from_parts(
+                self.model_name, "test", self.seed, self.timestamp
+            )
+
             if self.use_direct_test:
                 test_metrics = self.evaluate_test_direct()
             else:
                 test_metrics = self.evaluate_test(model_path)
+            metrics.update(**test_metrics)
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 
@@ -160,16 +153,13 @@ class BaseTrainer(ABC):
 
             set_seed(self.seed)
 
-            cv_metrics = self.cross_validate()
+            metrics = PersistentMetrics.from_parts(
+                self.model_name, "val", self.seed, self.timestamp
+            )
+
+            cv_metrics = self.cross_validate(metrics=metrics)
             print(f"CV MSE: {cv_metrics['mse']:.4f}")
             print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
-
-        # Save metrics (only if at least one metric was computed)
-        if train_metrics or cv_metrics or test_metrics:
-            extra_train = self._get_extra_metrics_data()
-            self.save_metrics_separate(
-                train_metrics, cv_metrics, test_metrics, extra_train=extra_train
-            )
 
         return {
             "train_metrics": train_metrics,
@@ -192,10 +182,6 @@ class BaseTrainer(ABC):
         """Evaluate model on test set using trained model directly (no ONNX export/load)."""
         pass
 
-    def _get_extra_metrics_data(self) -> Dict[str, Any]:
-        """Override to add extra data to metrics file."""
-        return {}
-
 
 class BaseSklearnTrainer(BaseTrainer):
     """Base class for sklearn-like models."""
@@ -211,7 +197,6 @@ class BaseSklearnTrainer(BaseTrainer):
         save_model: bool = True,
         feature_mask: Optional[np.ndarray] = None,
         minilm_mask: Optional[np.ndarray] = None,
-        label: Optional[str] = None,
         seed: Optional[int] = None,
         use_direct_test: bool = False,
     ):
@@ -223,7 +208,6 @@ class BaseSklearnTrainer(BaseTrainer):
             enable_cv,
             enable_test,
             save_model,
-            label=label,
             seed=seed,
             use_direct_test=use_direct_test,
         )
@@ -235,16 +219,6 @@ class BaseSklearnTrainer(BaseTrainer):
         self.feature_mask = feature_mask
         self.minilm_mask = minilm_mask
         self._load_data()
-
-    def _get_model_name(self) -> str:
-        base_name = self._get_base_model_name()
-        label_str = f"_{self.label}" if self.label else ""
-        return f"{base_name}_{self.embeddings}{'_lg' if self.include_large else ''}{label_str}"
-
-    @abstractmethod
-    def _get_base_model_name(self) -> str:
-        """Return the base model name (e.g., 'ridge', 'svm')."""
-        pass
 
     @abstractmethod
     def _create_model(self):
@@ -276,7 +250,7 @@ class BaseSklearnTrainer(BaseTrainer):
         self.y_train = train_df["label"].values
         self.weights = train_df["weight"].values
 
-    def train(self) -> None:
+    def train(self, metrics: Optional[PersistentMetrics] = None) -> None:
         """Train the sklearn model."""
         self.model = self._create_model()
         fit_params = self._get_fit_params()
@@ -292,7 +266,9 @@ class BaseSklearnTrainer(BaseTrainer):
         y_pred_train = self.model.predict(self.X_train)
         return calculate_metrics(self.y_train, y_pred_train)
 
-    def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
+    def cross_validate(
+        self, n_splits: int = 5, metrics: Optional[PersistentMetrics] = None
+    ) -> Dict[str, Any]:
         """Perform cross-validation.
 
         Always stratifies and validates on the small dataset folds. If
@@ -310,7 +286,11 @@ class BaseSklearnTrainer(BaseTrainer):
         lg_train = context.lg_train  # may be None
 
         kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        fold_metrics = []
+
+        if metrics is None:
+            metrics = PersistentMetrics.dummy()
+        metrics["folds"] = []
+        metrics["params"] = self.params
 
         for fold, (train_index, val_index) in enumerate(
             kf.split(sm_train, sm_train["label"])
@@ -348,33 +328,20 @@ class BaseSklearnTrainer(BaseTrainer):
 
             # Evaluate
             y_pred = fold_model.predict(X_val_fold)
-            metrics = calculate_metrics(y_val_fold, y_pred)
-            fold_metrics.append(metrics)
+            m = calculate_metrics(y_val_fold, y_pred)
+            metrics["folds"].append(m)
+            metrics.update()
 
             print(
-                f"Fold {fold + 1}/{n_splits}: MSE={metrics['mse']:.4f}, Acc={metrics['accuracy']:.4f}"
+                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}"
             )
 
-        # Average metrics across folds
-        return self._average_fold_metrics(fold_metrics)
+        return average_metrics(metrics["folds"])
 
     def _get_fit_params_for_weights(self, weights: np.ndarray) -> Dict[str, Any]:
         """Get fit params for a specific weight array (used in CV)."""
         # Default implementation - override if needed
         return self._get_fit_params()
-
-    def _average_fold_metrics(self, fold_metrics: list) -> Dict[str, Any]:
-        """Average metrics across folds."""
-        return {
-            "mse": np.mean([m["mse"] for m in fold_metrics]),
-            "accuracy": np.mean([m["accuracy"] for m in fold_metrics]),
-            "precision": np.mean(
-                [m["precision"] for m in fold_metrics], axis=0
-            ).tolist(),
-            "recall": np.mean([m["recall"] for m in fold_metrics], axis=0).tolist(),
-            "f1": np.mean([m["f1"] for m in fold_metrics], axis=0).tolist(),
-            "support": np.sum([m["support"] for m in fold_metrics], axis=0).tolist(),
-        }
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
         """Evaluate model on test set using saved ONNX model, applying feature/minilm masks."""
@@ -476,11 +443,8 @@ class BaseSklearnTrainer(BaseTrainer):
             print(f"Max difference: {np.max(diff)}")
 
 
-class RidgeTrainer(BaseSklearnTrainer):
+class RidgeTrainer(BaseSklearnTrainer, RidgeNamer):
     """Trainer for Ridge regression."""
-
-    def _get_base_model_name(self) -> str:
-        return "ridge"
 
     def _create_model(self):
         return make_pipeline(
@@ -495,11 +459,8 @@ class RidgeTrainer(BaseSklearnTrainer):
         return {"ridge__sample_weight": weights}
 
 
-class SVMTrainer(BaseSklearnTrainer):
+class SVMTrainer(BaseSklearnTrainer, SVMNamer):
     """Trainer for SVM regression."""
-
-    def _get_base_model_name(self) -> str:
-        return "svm"
 
     def _create_model(self):
         if self.include_large:
@@ -533,12 +494,15 @@ class SVMTrainer(BaseSklearnTrainer):
         else:
             return {"svr__sample_weight": self.weights}
 
+    def _get_fit_params_for_weights(self, weights: np.ndarray) -> Dict[str, Any]:
+        if self.include_large:
+            return {"sgdregressor__sample_weight": weights}
+        else:
+            return {"svr__sample_weight": weights}
 
-class RandomForestTrainer(BaseSklearnTrainer):
+
+class RandomForestTrainer(BaseSklearnTrainer, RandomForestNamer):
     """Trainer for Random Forest regression."""
-
-    def _get_base_model_name(self) -> str:
-        return "rf"
 
     def _create_model(self):
         # Extract RF-specific params
@@ -556,11 +520,8 @@ class RandomForestTrainer(BaseSklearnTrainer):
         return {"sample_weight": weights}
 
 
-class CatBoostTrainer(BaseSklearnTrainer):
+class CatBoostTrainer(BaseSklearnTrainer, CatBoostNamer):
     """Trainer for CatBoost regression."""
-
-    def _get_base_model_name(self) -> str:
-        return "catboost"
 
     def _create_model(self):
         # Extract CatBoost-specific params
@@ -641,7 +602,7 @@ class WeightedRandomSampler(BaseEstimator, RegressorMixin):
         return self.y_train_[sampled_indices]
 
 
-class WeightedRandomBaselineTrainer(BaseTrainer):
+class WeightedRandomBaselineTrainer(BaseTrainer, RandomBaselineNamer):
     """Trainer for weighted random baseline that samples from training distribution.
 
     This model doesn't use embeddings - it just samples from the training label distribution.
@@ -655,7 +616,6 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
-        label: Optional[str] = None,
         seed: Optional[int] = None,
         use_direct_test: bool = False,
     ):
@@ -667,7 +627,6 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             enable_cv=enable_cv,
             enable_test=enable_test,
             save_model=save_model,
-            label=label,
             seed=seed,
             use_direct_test=use_direct_test,
         )
@@ -675,10 +634,6 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         self.weights = None
         self.train_df = None
         self._load_data()
-
-    def _get_model_name(self) -> str:
-        label_str = f"_{self.label}" if self.label else ""
-        return f"random{'_lg' if self.include_large else ''}{label_str}"
 
     def _get_model_extension(self) -> str:
         """Random baseline uses JSON format instead of ONNX."""
@@ -699,7 +654,7 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         self.train_df = train_df
         self.y_train = train_df["label"].values
 
-    def train(self) -> None:
+    def train(self, metrics: Optional[PersistentMetrics] = None) -> None:
         """Train the random sampler using uniform distribution over training labels."""
         self.model = WeightedRandomSampler(random_state=self.seed)
         # We need dummy X data since the sampler expects it (but doesn't use it)
@@ -713,8 +668,14 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         y_pred_train = self.model.predict(X_dummy)
         return calculate_metrics(self.y_train, y_pred_train)
 
-    def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
-        """Perform cross-validation on small dataset only."""
+    def cross_validate(
+        self, n_splits: int = 5, metrics: Optional[PersistentMetrics] = None
+    ) -> Dict[str, Any]:
+        """Perform cross-validation on small dataset only.
+
+        If a `metrics` container is provided, per-fold metrics are appended
+        under `metrics["folds"]` for external persistence.
+        """
         context = CachedOptimizationContext(
             include_minilm_embeddings=False,
             include_modernbert_embeddings=False,
@@ -723,7 +684,10 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         sm_train = context.sm_train
 
         kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        fold_metrics = []
+        if metrics is None:
+            metrics = PersistentMetrics.dummy()
+        metrics["folds"] = []
+        metrics["params"] = self.params
 
         for fold, (train_index, val_index) in enumerate(
             kf.split(sm_train, sm_train["label"])
@@ -742,27 +706,15 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
             # Evaluate
             X_val_dummy = np.zeros((len(y_val_fold), 1))
             y_pred = fold_model.predict(X_val_dummy)
-            metrics = calculate_metrics(y_val_fold, y_pred)
-            fold_metrics.append(metrics)
+            m = calculate_metrics(y_val_fold, y_pred)
+            metrics["folds"].append(m)
+            metrics.update()
 
             print(
-                f"Fold {fold + 1}/{n_splits}: MSE={metrics['mse']:.4f}, Acc={metrics['accuracy']:.4f}"
+                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}"
             )
 
-        # Average metrics across folds
-        return {
-            "mse": np.mean([m["mse"] for m in fold_metrics]),
-            "accuracy": np.mean([m["accuracy"] for m in fold_metrics]),
-            "precision": np.mean(
-                [m["precision"] for m in fold_metrics], axis=0
-            ).tolist(),
-            "recall": np.mean([m["recall"] for m in fold_metrics], axis=0).tolist(),
-            "f1": np.mean([m["f1"] for m in fold_metrics], axis=0).tolist(),
-            "support": np.sum([m["support"] for m in fold_metrics], axis=0).tolist(),
-            "confusion_matrix": np.sum(
-                [m["confusion_matrix"] for m in fold_metrics], axis=0
-            ).tolist(),
-        }
+        return average_metrics(metrics["folds"])
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
         """Evaluate model on test set using saved distribution."""
@@ -816,11 +768,8 @@ class WeightedRandomBaselineTrainer(BaseTrainer):
         y_true_test = test_df["label"].values
         return calculate_metrics(y_true_test, y_pred_test)
 
-    def _get_extra_metrics_data(self) -> Dict[str, Any]:
-        return {}
 
-
-class ModernBertTrainer(BaseTrainer):
+class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
     """Trainer for fine-tuned ModernBERT model."""
 
     def __init__(
@@ -831,7 +780,6 @@ class ModernBertTrainer(BaseTrainer):
         enable_cv: bool = False,
         enable_test: bool = False,
         save_model: bool = True,
-        label: Optional[str] = None,
         seed: Optional[int] = None,
         use_direct_test: bool = False,
     ):
@@ -843,17 +791,11 @@ class ModernBertTrainer(BaseTrainer):
             enable_cv=enable_cv,
             enable_test=enable_test,
             save_model=save_model,
-            label=label,
             seed=seed,
             use_direct_test=use_direct_test,
         )
         self.tokenizer = None
         self.train_df = None
-        self.batch_losses = []
-
-    def _get_model_name(self) -> str:
-        label_str = f"_{self.label}" if self.label else ""
-        return f"finetuned_mbert{'_lg' if self.include_large else ''}{label_str}"
 
     def _load_data(self):
         """Load and prepare training data."""
@@ -900,16 +842,12 @@ class ModernBertTrainer(BaseTrainer):
             else sm_train_df
         )
 
-    def train(self) -> None:
+    def train(self, metrics: Optional[PersistentMetrics] = None) -> None:
         """Train the ModernBERT model."""
         from models.encoder.modernbert_finetune_nn import train_finetuned_mbert
 
         if self.tokenizer is None or self.train_df is None:
             self._load_data()
-
-        history_path = (
-            TRAINING_HISTORY_DIR / f"{self.model_name}_train_{self.timestamp}.json"
-        )
 
         small_df = getattr(self, "sm_train", self.train_df)
         large_df = getattr(self, "lg_train", None) if self.include_large else None
@@ -921,8 +859,7 @@ class ModernBertTrainer(BaseTrainer):
             params=self.params,
             seed=self.seed,
             train_lg_df=large_df,
-            save_history=True,
-            history_path=history_path,
+            metrics=metrics,
         )
         self.model = result["model"]
 
@@ -947,7 +884,9 @@ class ModernBertTrainer(BaseTrainer):
 
         return calculate_metrics(np.array(y_true_train), np.array(y_pred_train))
 
-    def cross_validate(self, n_splits: int = 5) -> Dict[str, Any]:
+    def cross_validate(
+        self, n_splits: int = 5, metrics: Optional[PersistentMetrics] = None
+    ) -> Dict[str, Any]:
         """Perform cross-validation. If large dataset is enabled, use two-stage training with folds on small dataset."""
         context = CachedOptimizationContext(
             include_minilm_embeddings=False,
@@ -958,8 +897,10 @@ class ModernBertTrainer(BaseTrainer):
         lg_train = context.lg_train if self.include_large else None
 
         kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
-        fold_metrics = []
-        fold_histories = []
+        if metrics is None:
+            metrics = PersistentMetrics.dummy()
+        metrics["folds"] = []
+        metrics["params"] = self.params
 
         for fold, (train_index, val_index) in enumerate(
             kf.split(sm_train, sm_train["label"])
@@ -977,63 +918,27 @@ class ModernBertTrainer(BaseTrainer):
                 params=self.params,
                 seed=self.seed,
                 train_lg_df=lg_train if self.include_large else None,
-                save_history=False,
-                history_path=None,
             )
 
-            metrics = result["final_metrics"]
-            fold_metrics.append(metrics)
-
-            fold_history = {
+            fold_metrics = {
+                "mse": result["mse"],
+                "accuracy": result["accuracy"],
+                "precision": result["precision"].tolist(),
+                "recall": result["recall"].tolist(),
+                "f1": result["f1"].tolist(),
+                "support": result["support"].tolist(),
+                "confusion_matrix": result["confusion_matrix"].tolist(),
                 "train_losses": result["train_losses"],
                 "val_losses": result["val_losses"],
-                "best_val_loss": result["best_val_loss"],
-                "best_epoch": int(np.argmin(result["val_losses"])) + 1
-                if result["val_losses"]
-                else None,
-                "final_metrics": metrics,
             }
-            fold_histories.append(fold_history)
+            metrics["folds"].append(fold_metrics)
+            metrics.update()
 
             print(
                 f"Fold {fold + 1} MSE: {metrics['mse']:.4f}, Acc: {metrics['accuracy']:.4f}"
             )
 
-        # Average metrics across folds
-        avg_metrics = {
-            "mse": np.mean([m["mse"] for m in fold_metrics]),
-            "accuracy": np.mean([m["accuracy"] for m in fold_metrics]),
-            "precision": np.mean(
-                [m["precision"] for m in fold_metrics], axis=0
-            ).tolist(),
-            "recall": np.mean([m["recall"] for m in fold_metrics], axis=0).tolist(),
-            "f1": np.mean([m["f1"] for m in fold_metrics], axis=0).tolist(),
-            "support": np.sum([m["support"] for m in fold_metrics], axis=0).tolist(),
-            "confusion_matrix": np.sum(
-                [m["confusion_matrix"] for m in fold_metrics], axis=0
-            ).tolist(),
-            "training_history_saved": str(
-                TRAINING_HISTORY_DIR / f"{self.model_name}_cv_{self.timestamp}.json"
-            ),
-            "fold_histories": fold_histories,
-        }
-
-        # Save training history to file
-        training_history = {
-            "model": self.model_name,
-            "n_splits": n_splits,
-            "folds": fold_histories,
-        }
-        save_path = TRAINING_HISTORY_DIR / f"{self.model_name}_cv_{self.timestamp}.json"
-        try:
-            with open(save_path, "w") as f:
-                json.dump(training_history, f, indent=2)
-            print(f"Saved training history to {save_path}")
-            avg_metrics["training_history_path"] = str(save_path)
-        except Exception as e:
-            print(f"Failed to save training history: {e}")
-
-        return avg_metrics
+        return average_metrics(metrics["folds"])
 
     def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
         """Evaluate model on test set using saved ONNX model."""
@@ -1160,7 +1065,3 @@ class ModernBertTrainer(BaseTrainer):
                 y_pred_test.extend(predictions)
 
         return calculate_metrics(np.array(y_true_test), np.array(y_pred_test))
-
-    def _get_extra_metrics_data(self) -> Dict[str, Any]:
-        """Add batch losses to metrics."""
-        return {"batch_losses": self.batch_losses}

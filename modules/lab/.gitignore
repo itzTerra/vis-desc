@@ -203,6 +203,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 .vscode/settings.json
+**/.directory
 
 data/**/*
 !data/books
@@ -224,3 +225,7 @@ data/datasets/large/*.parquet
 data/datasets/large/split
 !data/optuna
 !data/optuna/*.py
+!data/metrics
+!data/metrics/encoder
+!data/metrics/**/*.json
+!data/**/*.md

@@ -1,7 +1,7 @@
 import numpy as np
 from text2features import FeatureExtractorPipeline
 from training import MODEL_PARAMS, TRAINER_CLASSES
-from models.encoder.common import _average_metrics
+from models.encoder.common import average_metrics
 
 model = "catboost"
 embeddings = "minilm"
@@ -28,12 +28,12 @@ def run_config(base_label, feature_mask=None, minilm_mask=None):
             save_model=save_model,
             feature_mask=feature_mask,
             minilm_mask=minilm_mask,
-            label=f"{base_label}-s{seed}",
             seed=seed,
         )
+        trainer.model_name += f"_{base_label}"
         metrics = trainer.run_full_training()
         per_seed.append(metrics)
-    averaged = _average_metrics(per_seed)
+    averaged = average_metrics(per_seed)
     return averaged, per_seed
 
 

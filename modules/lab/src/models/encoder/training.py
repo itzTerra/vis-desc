@@ -258,7 +258,6 @@ if __name__ == "__main__":
                 enable_test=enable_test,
                 save_model=save_model,
                 seed=seed,
-                label=None,
                 use_direct_test=use_direct_test,
             )
             trainer.run_full_training()
@@ -274,7 +273,6 @@ if __name__ == "__main__":
                 enable_test=enable_test,
                 save_model=save_model,
                 seed=seed,
-                label=None,
                 use_direct_test=use_direct_test,
             )
             trainer.run_full_training()
@@ -297,7 +295,6 @@ if __name__ == "__main__":
                     enable_test=enable_test,
                     save_model=save_model,
                     seed=seed,
-                    label=None,
                     use_direct_test=use_direct_test,
                 )
                 trainer.run_full_training()

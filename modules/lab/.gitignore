@@ -229,3 +229,4 @@ data/datasets/large/split
 !data/metrics/encoder
 !data/metrics/**/*.json
 !data/**/*.md
+setup_lab.sh

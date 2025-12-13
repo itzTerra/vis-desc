@@ -281,12 +281,12 @@ def print_comparison_table(models: list[dict[str, Any]]) -> None:
 
 def load_cv_history_files() -> list[Path]:
     """Load all validation (CV) metric files with training curves."""
-    return sorted(list(METRICS_DIR.glob("*_val_*.json")))
+    return sorted(list(METRICS_DIR.glob("finetuned*_val_*.json")))
 
 
 def load_train_history_files() -> list[Path]:
     """Load all train metric files with training curves."""
-    return sorted(list(METRICS_DIR.glob("*_train_*.json")))
+    return sorted(list(METRICS_DIR.glob("finetuned*_train_*.json")))
 
 
 def load_cv_data(file_path: Path) -> dict[str, Any] | None:

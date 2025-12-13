@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
+from peft import get_peft_model, LoraConfig
 from text2features import FeatureExtractorPipeline
 from models.encoder.common import (
     PersistentMetrics,
@@ -236,7 +237,12 @@ def train_finetuned_mbert(
     stage1_frozen_bert_epochs = params["stage1_frozen_bert_epochs"]
     stage2_frozen_bert_epochs = params["stage2_frozen_bert_epochs"]
 
-    model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}"
+    use_lora = params.get("use_lora", True)
+    lora_r = params.get("lora_r", 8)
+    lora_alpha = params.get("lora_alpha", 32)
+    lora_dropout = params.get("lora_dropout", 0.1)
+
+    model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}{'_lora' if use_lora else ''}"
     if metrics is None:
         metrics = PersistentMetrics.dummy()
     metrics.update(
@@ -252,6 +258,10 @@ def train_finetuned_mbert(
             "feature_hidden_size": feature_hidden_size,
             "stage1_frozen_bert_epochs": stage1_frozen_bert_epochs,
             "stage2_frozen_bert_epochs": stage2_frozen_bert_epochs,
+            "use_lora": use_lora,
+            "lora_r": lora_r,
+            "lora_alpha": lora_alpha,
+            "lora_dropout": lora_dropout,
         },
         seed=seed,
     )
@@ -299,6 +309,19 @@ def train_finetuned_mbert(
         dropout_rate=dropout_rate,
         feature_hidden_size=feature_hidden_size,
     )
+
+    if use_lora:
+        peft_config = LoraConfig(
+            task_type=None,
+            inference_mode=False,
+            r=lora_r,
+            lora_alpha=lora_alpha,
+            lora_dropout=lora_dropout,
+            target_modules=["Wqkv", "Wo", "Wi"],
+        )
+        model.model = get_peft_model(model.model, peft_config)
+        model.model.print_trainable_parameters()
+
     for param in model.model.parameters():
         param.requires_grad = False
     model.to(device)
@@ -329,10 +352,17 @@ def train_finetuned_mbert(
         model.train()
         for epoch in range(stage1_epochs):
             # Unfreeze BERT after stage1_frozen_bert_epochs
-            if epoch == stage1_frozen_bert_epochs and stage1_frozen_bert_epochs > 0:
-                print(f"\n[Stage 1] Unfreezing BERT encoder at epoch {epoch + 1}")
-                for p in model.model.parameters():
-                    p.requires_grad = True
+            if epoch == stage1_frozen_bert_epochs:
+                print(
+                    f"\n[Stage 1] Unfreezing {'LoRA adapters' if use_lora else 'BERT encoder'} at epoch {epoch + 1}"
+                )
+                if use_lora:
+                    for name, param in model.model.named_parameters():
+                        if "lora" in name:
+                            param.requires_grad = True
+                else:
+                    for p in model.model.parameters():
+                        p.requires_grad = True
                 optimizer = AdamW(
                     [
                         {"params": model.model.parameters(), "lr": lr_bert},
@@ -419,10 +449,17 @@ def train_finetuned_mbert(
         )
 
         # Unfreeze BERT after stage2_frozen_bert_epochs
-        if epoch == stage2_frozen_bert_epochs and stage2_frozen_bert_epochs > 0:
-            print(f"\n[Stage 2] Unfreezing BERT encoder at epoch {epoch + 1}")
-            for p in model.model.parameters():
-                p.requires_grad = True
+        if epoch == stage2_frozen_bert_epochs:
+            print(
+                f"\n[Stage 2] Unfreezing {'LoRA adapters' if use_lora else 'BERT encoder'} at epoch {epoch + 1}"
+            )
+            if use_lora:
+                for name, param in model.model.named_parameters():
+                    if "lora" in name:
+                        param.requires_grad = True
+            else:
+                for p in model.model.parameters():
+                    p.requires_grad = True
             optimizer = AdamW(
                 [
                     {"params": model.model.parameters(), "lr": lr_bert},

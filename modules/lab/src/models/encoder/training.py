@@ -126,6 +126,10 @@ MODEL_PARAMS = {
             "weight_decay": 0.01,
             "optimizer_warmup": 0.2,
             "feature_hidden_size": 512,
+            "use_lora": True,
+            "lora_r": 8,
+            "lora_alpha": 32,
+            "lora_dropout": 0.1,
         },
         "lg": {
             "stage1_epochs": 6,
@@ -138,6 +142,10 @@ MODEL_PARAMS = {
             "weight_decay": 0.01,
             "optimizer_warmup": 0.2,
             "feature_hidden_size": 768,
+            "use_lora": True,
+            "lora_r": 8,
+            "lora_alpha": 32,
+            "lora_dropout": 0.1,
         },
     },
 }

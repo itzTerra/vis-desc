@@ -236,11 +236,10 @@ def train_finetuned_mbert(
     feature_hidden_size = params["feature_hidden_size"]
     stage1_frozen_bert_epochs = params["stage1_frozen_bert_epochs"]
     stage2_frozen_bert_epochs = params["stage2_frozen_bert_epochs"]
-
-    use_lora = params.get("use_lora", True)
-    lora_r = params.get("lora_r", 8)
-    lora_alpha = params.get("lora_alpha", 32)
-    lora_dropout = params.get("lora_dropout", 0.1)
+    use_lora = params["use_lora"]
+    lora_r = params["lora_r"]
+    lora_alpha = params["lora_alpha"]
+    lora_dropout = params["lora_dropout"]
 
     model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}{'_lora' if use_lora else ''}"
     if metrics is None:

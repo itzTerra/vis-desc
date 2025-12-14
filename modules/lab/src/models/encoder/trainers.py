@@ -813,34 +813,12 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         )
 
         if lg_train_df is not None:
-            combined_features = np.vstack(
-                [
-                    np.vstack(lg_train_df["features"].values),
-                    np.vstack(sm_train_df["features"].values),
-                ]
-            )
+            self.train_df = pd.concat([lg_train_df, sm_train_df], ignore_index=True)
         else:
-            combined_features = np.vstack(sm_train_df["features"].values)
-
-        scaler = MinMaxScaler()
-        scaler.fit(combined_features)
-
-        sm_train_scaled = scaler.transform(np.vstack(sm_train_df["features"].values))
-        sm_train_df["features"] = [f for f in np.nan_to_num(sm_train_scaled)]
-
-        if lg_train_df is not None:
-            lg_train_scaled = scaler.transform(
-                np.vstack(lg_train_df["features"].values)
-            )
-            lg_train_df["features"] = [f for f in np.nan_to_num(lg_train_scaled)]
+            self.train_df = sm_train_df
 
         self.sm_train = sm_train_df
         self.lg_train = lg_train_df
-        self.train_df = (
-            pd.concat([lg_train_df, sm_train_df], ignore_index=True)
-            if lg_train_df is not None
-            else sm_train_df
-        )
 
     def train(self, metrics: Optional[PersistentMetrics] = None) -> None:
         """Train the ModernBERT model."""
@@ -861,11 +839,18 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
             train_lg_df=large_df,
             metrics=metrics,
         )
-        self.model = result["model"]
+        self.scaler = result["saved_scaler"]
+        self.model = result["saved_model"]
 
     def evaluate_train(self) -> Dict[str, Any]:
         """Evaluate model on training set."""
-        train_dataset = CustomDataset(self.train_df, self.tokenizer)
+        train_df_scaled = self.train_df.copy()
+        features_scaled = self.scaler.transform(
+            np.vstack(train_df_scaled["features"].values)
+        )
+        train_df_scaled["features"] = [f for f in np.nan_to_num(features_scaled)]
+
+        train_dataset = CustomDataset(train_df_scaled, self.tokenizer)
         train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE)
 
         self.model.eval()
@@ -946,12 +931,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
         test_df = test_df.reset_index(drop=True)
 
-        scaler = MinMaxScaler()
-        train_features = np.vstack(self.train_df["features"].values)
-        scaler.fit(train_features)
-
-        test_features_scaled = scaler.transform(np.vstack(test_df["features"].values))
-        test_df["features"] = [f for f in np.nan_to_num(test_features_scaled)]
+        # Note: Features are not scaled here because the ONNX model includes the scaler.
 
         test_dataset = CustomDataset(test_df, self.tokenizer)
         test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
@@ -983,6 +963,28 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         self.model.eval()
         self.model.to("cpu")
 
+        class ScaledModel(torch.nn.Module):
+            def __init__(self, model, scaler):
+                super().__init__()
+                self.model = model
+                self.register_buffer(
+                    "scale", torch.tensor(scaler.scale_, dtype=torch.float32)
+                )
+                self.register_buffer(
+                    "min", torch.tensor(scaler.min_, dtype=torch.float32)
+                )
+
+            def forward(self, input_ids, attention_mask, features):
+                scaled_features = features * self.scale + self.min
+                return self.model(input_ids, attention_mask, scaled_features)
+
+            @property
+            def config(self):
+                return self.model.config
+
+        scaled_model = ScaledModel(self.model, self.scaler)
+        scaled_model.eval()
+
         dummy_input_ids = torch.randint(
             0, self.model.config.vocab_size, (1, 160), dtype=torch.long
         )
@@ -995,7 +997,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         output_names = ["logits"]
 
         torch.onnx.export(
-            self.model,
+            scaled_model,
             (dummy_input_ids, dummy_attention_mask, dummy_features),
             model_path,
             input_names=input_names,
@@ -1014,7 +1016,9 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         sess = rt.InferenceSession(str(model_path))
 
         with torch.no_grad():
-            outputs = self.model(dummy_input_ids, dummy_attention_mask, dummy_features)
+            outputs = scaled_model(
+                dummy_input_ids, dummy_attention_mask, dummy_features
+            )
             pred_pytorch = outputs.logits.cpu().numpy().flatten()
 
         onnx_inputs = {
@@ -1038,11 +1042,9 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
         test_df = test_df.reset_index(drop=True)
 
-        scaler = MinMaxScaler()
-        train_features = np.vstack(self.train_df["features"].values)
-        scaler.fit(train_features)
-
-        test_features_scaled = scaler.transform(np.vstack(test_df["features"].values))
+        test_features_scaled = self.scaler.transform(
+            np.vstack(test_df["features"].values)
+        )
         test_df["features"] = [f for f in np.nan_to_num(test_features_scaled)]
 
         test_dataset = CustomDataset(test_df, self.tokenizer)

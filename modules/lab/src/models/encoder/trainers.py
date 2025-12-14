@@ -920,7 +920,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
             metrics.update()
 
             print(
-                f"Fold {fold + 1} MSE: {metrics['mse']:.4f}, Acc: {metrics['accuracy']:.4f}"
+                f"Fold {fold + 1} MSE: {fold_metrics['mse']:.4f}, Acc: {fold_metrics['accuracy']:.4f}"
             )
 
         return average_metrics(metrics["folds"])

@@ -441,7 +441,6 @@ def train_finetuned_mbert(
 
     model.train()
     for epoch in range(stage2_epochs):
-        epoch_train_losses = []
         progress_bar = tqdm(
             sm_train_loader,
             desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
@@ -505,7 +504,9 @@ def train_finetuned_mbert(
             del loss, outputs
 
         avg_train_loss = (
-            float(np.mean(epoch_train_losses)) if epoch_train_losses else float("nan")
+            float(np.mean(metrics["train_losses"]))
+            if metrics["train_losses"]
+            else float("nan")
         )
 
         # Validation if val_df provided

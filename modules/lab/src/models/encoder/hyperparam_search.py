@@ -82,11 +82,11 @@ def run_modernbert_trial_single_seed(
         fold_metrics = {
             "mse": result["mse"],
             "accuracy": result["accuracy"],
-            "precision": result["precision"].tolist(),
-            "recall": result["recall"].tolist(),
-            "f1": result["f1"].tolist(),
-            "support": result["support"].tolist(),
-            "confusion_matrix": result["confusion_matrix"].tolist(),
+            "precision": result["precision"],
+            "recall": result["recall"],
+            "f1": result["f1"],
+            "support": result["support"],
+            "confusion_matrix": result["confusion_matrix"],
             "train_losses": result["train_losses"],
             "val_losses": result["val_losses"],
         }

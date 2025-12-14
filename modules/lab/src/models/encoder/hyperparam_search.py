@@ -445,7 +445,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider, CatBoostNamer):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer):
     SEARCH_SPACE = {
-        "stage1_epochs": [6, 12],
+        "stage1_epochs": [6],
         "lr_bert": [1e-5, 3e-5],
         "lr_custom": [5e-5, 1e-4],
         "dropout_rate": [0.1, 0.3],

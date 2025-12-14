@@ -545,10 +545,10 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer)
                     trial, params, self.include_large, seeds
                 )
 
-                mse = result
-                if len(seeds) > 1:
-                    trial.set_user_attr("num_seeds", len(seeds))
-                    trial.set_user_attr("seeds_used", seeds)
+            mse = result
+            if len(seeds) > 1:
+                trial.set_user_attr("num_seeds", len(seeds))
+                trial.set_user_attr("seeds_used", seeds)
             return mse
 
         return objective

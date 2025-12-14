@@ -161,7 +161,6 @@ class ModernBertWithFeaturesTrainable(ModernBertPreTrainedModel):
 def check_gradient_flow(model, step, epoch):
     """Check gradient flow through different parts of the model."""
     grad_stats = {
-        "embeddings": [],
         "0.attn.Wo": [],
         "0.mlp.Wi": [],
         "0.mlp.Wo": [],
@@ -180,17 +179,18 @@ def check_gradient_flow(model, step, epoch):
                     grad_stats[key].append(grad_norm)
 
     # Print summary statistics
-    print(f"\n=== Gradient Flow Check (Epoch {epoch}, Step {step}) ===")
+    print(f"\n=========== Gradient Flow Check (Epoch {epoch}, Step {step}) ===========")
     for layer_name, grads in grad_stats.items():
         if grads:
             avg_grad = np.mean(grads)
             max_grad = np.max(grads)
             min_grad = np.min(grads)
             print(
-                f"{layer_name:20s}: avg={avg_grad:.6f}, max={max_grad:.6f}, min={min_grad:.6f}, count={len(grads)}"
+                f"{layer_name:12s}: avg={avg_grad:.6f}, max={max_grad:.6f}, min={min_grad:.6f}, count={len(grads)}",
+                end=" | ",
             )
         else:
-            print(f"{layer_name:20s}: NO GRADIENTS")
+            print(f"{layer_name:12s}: NO GRADIENTS", end=" | ")
     print("=" * 60)
 
 

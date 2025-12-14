@@ -445,7 +445,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider, CatBoostNamer):
 
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer):
     SEARCH_SPACE = {
-        "stage1_epochs": [3, 6],
+        "stage1_epochs": [6, 12],
         "lr_bert": [1e-5, 3e-5],
         "lr_custom": [5e-5, 1e-4],
         "dropout_rate": [0.1, 0.3],
@@ -453,8 +453,8 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer)
         "optimizer_warmup": [0.2],
         "feature_hidden_size": [512, 768],
         "stage1_frozen_bert_epochs": [1],
-        # "stage2_frozen_bert_epochs": [0, 5],
-        "stage2_frozen_bert_epochs": [3, 5, 10],
+        "stage2_frozen_bert_epochs": [5],
+        # "stage2_frozen_bert_epochs": [3, 5, 10],
         "use_lora": [True],
         "lora_r": [8, 32],
         "lora_alpha": [16, 32, 64],

@@ -425,10 +425,8 @@ def _find_first_list(d: dict[str, Any], keys: Iterable[str]) -> list[float] | No
 def best_val_epochs_for_file(file_path: Path) -> dict[str, Any] | None:
     """Compute best validation epoch and loss per-fold and averaged from a CV file.
 
-    The function tries common keys to locate validation losses within each fold:
-    one of ['val_losses', 'val_loss', 'cv_losses', 'mse', 'losses']. If per-epoch
-    series are available for all folds, it also computes an averaged per-epoch
-    curve and its best epoch.
+    Expects CV format per metric-docs.md with folds containing 'val_losses' (list)
+    for finetuned-mbert models, or 'mse' (scalar) for other models.
 
     Returns a dict with:
     {
@@ -449,31 +447,24 @@ def best_val_epochs_for_file(file_path: Path) -> dict[str, Any] | None:
     epoch_series: list[list[float]] = []
 
     for idx, fold in enumerate(folds):
-        # Each fold may be a dict or nested under 'history'
-        fold_dict = fold if isinstance(fold, dict) else {}
-        if "history" in fold_dict and isinstance(fold_dict["history"], dict):
-            fold_dict = fold_dict["history"]
+        if not isinstance(fold, dict):
+            continue
 
-        losses = _find_first_list(
-            fold_dict, ["val_losses", "val_loss", "cv_losses", "mse", "losses"]
-        )
-        if not losses:
-            # If only a scalar loss is present, treat as single epoch
-            scalar = fold_dict.get("val_mse") or fold_dict.get("mse")
-            if isinstance(scalar, (int, float)):
-                loss_list = [float(scalar)]
-            else:
-                loss_list = []
-        else:
-            loss_list = losses
-
-        if loss_list:
-            best_epoch = int(np.argmin(loss_list))
-            best_loss = float(loss_list[best_epoch])
+        # Check for val_losses (finetuned-mbert) or mse (other models)
+        val_losses = fold.get("val_losses")
+        if val_losses and isinstance(val_losses, list):
+            # Per-epoch validation losses
+            best_epoch = int(np.argmin(val_losses))
+            best_loss = float(val_losses[best_epoch])
             per_fold.append(
                 {"fold": idx, "best_epoch": best_epoch, "best_loss": best_loss}
             )
-            epoch_series.append(loss_list)
+            epoch_series.append(val_losses)
+        elif "mse" in fold:
+            # Single MSE value (no per-epoch data)
+            mse = float(fold["mse"])
+            per_fold.append({"fold": idx, "best_epoch": 0, "best_loss": mse})
+            epoch_series.append([mse])
 
     averaged: dict[str, Any] | None = None
     if epoch_series and all(len(s) == len(epoch_series[0]) for s in epoch_series):
@@ -484,7 +475,7 @@ def best_val_epochs_for_file(file_path: Path) -> dict[str, Any] | None:
         avg_best_loss = float(mean_curve[avg_best_epoch])
         averaged = {"best_epoch": avg_best_epoch, "best_loss": avg_best_loss}
     elif per_fold:
-        # Fallback: average the best losses without an epoch curve
+        # Fallback: average the best losses without consistent epoch curves
         avg_best_loss = float(np.mean([pf["best_loss"] for pf in per_fold]))
         averaged = {"best_epoch": -1, "best_loss": avg_best_loss}
 

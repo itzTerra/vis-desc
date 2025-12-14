@@ -584,7 +584,7 @@ def train_finetuned_mbert(
     metrics.update(**m)
 
     return {
-        "model": model,
-        "scaler": scaler,
+        "saved_model": model,
+        "saved_scaler": scaler,
         **metrics,
     }

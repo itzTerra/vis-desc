@@ -804,7 +804,7 @@ class PersistentMetrics(PersistentDict):
 
         return metrics
 
-    @classmethod
+    @staticmethod
     def dummy() -> "PersistentMetrics":
         """Create a dummy PersistentMetrics that does not persist to disk."""
 

@@ -437,6 +437,7 @@ class CatBoostObjectiveProvider(ObjectiveProvider, CatBoostNamer):
                 include_minilm_embeddings=self.include_minilm_embeddings,
                 include_modernbert_embeddings=self.include_modernbert_embeddings,
                 include_large=self.include_large,
+                small_dataset_weight_multiplier=200.0 if self.include_large else None,
             )
 
         return objective

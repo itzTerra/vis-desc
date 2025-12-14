@@ -409,6 +409,16 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         - f1: F1-score for each class (0-5)
         - confusion_matrix: Confusion matrix for rounded scores
     """
+    if np.any(np.isnan(y_pred)):
+        return {
+            "mse": float("nan"),
+            "accuracy": float("nan"),
+            "precision": [float("nan")] * 6,
+            "recall": [float("nan")] * 6,
+            "f1": [float("nan")] * 6,
+            "support": [0] * 6,
+            "confusion_matrix": [[0] * 6 for _ in range(6)],
+        }
     # Round predictions and true values to nearest integer (0-5)
     y_true_rounded = np.clip(np.round(y_true), 0, 5).astype(int)
     y_pred_rounded = np.clip(np.round(y_pred), 0, 5).astype(int)

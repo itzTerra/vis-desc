@@ -241,7 +241,7 @@ def train_finetuned_mbert(
     lora_alpha = params["lora_alpha"]
     lora_dropout = params["lora_dropout"]
 
-    model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}{'_lora' if use_lora else ''}"
+    model_name = f"finetuned-mbert{'_lg' if train_lg_df is not None else ''}"
     if metrics is None:
         metrics = PersistentMetrics.dummy()
     metrics.update(

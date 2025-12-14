@@ -445,14 +445,19 @@ class CatBoostObjectiveProvider(ObjectiveProvider, CatBoostNamer):
 class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer):
     SEARCH_SPACE = {
         "stage1_epochs": [3, 6],
-        "lr_bert": [1e-5],
+        "lr_bert": [1e-5, 3e-5],
         "lr_custom": [5e-5, 1e-4],
         "dropout_rate": [0.1, 0.3],
         "weight_decay": [0.01],
         "optimizer_warmup": [0.2],
-        "feature_hidden_size": [768],
+        "feature_hidden_size": [512, 768],
         "stage1_frozen_bert_epochs": [1],
-        "stage2_frozen_bert_epochs": [0, 5],
+        # "stage2_frozen_bert_epochs": [0, 5],
+        "stage2_frozen_bert_epochs": [3, 5, 10],
+        "use_lora": [True],
+        "lora_r": [8, 32],
+        "lora_alpha": [16, 32, 64],
+        "lora_dropout": [0.05],
     }
 
     def get_n_trials(self) -> int:
@@ -463,6 +468,9 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer)
 
     def get_objective_fn(self) -> callable:
         def objective(trial):
+            use_lora = trial.suggest_categorical(
+                "use_lora", self.SEARCH_SPACE["use_lora"]
+            )
             params = {
                 "stage1_epochs": (
                     trial.suggest_categorical(
@@ -500,6 +508,26 @@ class ModernBertFinetuneObjectiveProvider(ObjectiveProvider, FinetunedBertNamer)
                 "stage2_frozen_bert_epochs": trial.suggest_categorical(
                     "stage2_frozen_bert_epochs",
                     self.SEARCH_SPACE["stage2_frozen_bert_epochs"],
+                ),
+                "use_lora": use_lora,
+                "lora_r": (
+                    trial.suggest_categorical("lora_r", self.SEARCH_SPACE["lora_r"])
+                    if use_lora
+                    else 0
+                ),
+                "lora_alpha": (
+                    trial.suggest_categorical(
+                        "lora_alpha", self.SEARCH_SPACE["lora_alpha"]
+                    )
+                    if use_lora
+                    else 0
+                ),
+                "lora_dropout": (
+                    trial.suggest_categorical(
+                        "lora_dropout", self.SEARCH_SPACE["lora_dropout"]
+                    )
+                    if use_lora
+                    else 0.0
                 ),
             }
 

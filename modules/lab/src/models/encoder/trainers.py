@@ -144,7 +144,7 @@ class BaseTrainer(ModelNamer):
                 test_metrics = self.evaluate_test_direct()
             else:
                 test_metrics = self.evaluate_test(model_path)
-            metrics.update(**test_metrics)
+            metrics.update(**test_metrics, params=self.params)
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 

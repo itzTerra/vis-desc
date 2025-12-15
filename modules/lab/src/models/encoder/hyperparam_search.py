@@ -52,7 +52,11 @@ def run_modernbert_trial_single_seed(
     set_seed(seed)
     timestamp = datetime.now()
     metrics = PersistentMetrics.from_parts(
-        "finetuned-mbert", "val", seed, timestamp, trial.number
+        f"finetuned-mbert{'_lg' if include_large else ''}",
+        "val",
+        seed,
+        timestamp,
+        trial.number,
     )
     metrics["folds"] = []
 

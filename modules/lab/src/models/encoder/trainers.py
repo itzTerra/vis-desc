@@ -117,11 +117,14 @@ class BaseTrainer(ModelNamer):
             metrics = PersistentMetrics.from_parts(
                 self.model_name, "train", self.seed, self.timestamp
             )
+            train_start_time = datetime.now()
+            metrics["time_start"] = train_start_time.isoformat()
 
             self.train(metrics=metrics)
 
             train_metrics = self.evaluate_train()
-            metrics.update(**train_metrics)
+            train_end_time = datetime.now()
+            metrics.update(**train_metrics, time_end=train_end_time.isoformat())
             print(f"Train MSE: {train_metrics['mse']:.4f}")
             print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
 
@@ -139,12 +142,17 @@ class BaseTrainer(ModelNamer):
             metrics = PersistentMetrics.from_parts(
                 self.model_name, "test", self.seed, self.timestamp
             )
+            test_start_time = datetime.now()
+            metrics["time_start"] = test_start_time.isoformat()
 
             if self.use_direct_test:
                 test_metrics = self.evaluate_test_direct()
             else:
                 test_metrics = self.evaluate_test(model_path)
-            metrics.update(**test_metrics, params=self.params)
+            test_end_time = datetime.now()
+            metrics.update(
+                **test_metrics, params=self.params, time_end=test_end_time.isoformat()
+            )
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
 
@@ -156,8 +164,12 @@ class BaseTrainer(ModelNamer):
             metrics = PersistentMetrics.from_parts(
                 self.model_name, "val", self.seed, self.timestamp
             )
+            cv_start_time = datetime.now()
+            metrics["time_start"] = cv_start_time.isoformat()
 
             cv_metrics = self.cross_validate(metrics=metrics)
+            cv_end_time = datetime.now()
+            metrics["time_end"] = cv_end_time.isoformat()
             print(f"CV MSE: {cv_metrics['mse']:.4f}")
             print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
 

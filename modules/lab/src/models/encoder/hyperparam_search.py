@@ -59,6 +59,8 @@ def run_modernbert_trial_single_seed(
         trial.number,
     )
     metrics["folds"] = []
+    start_time = datetime.now()
+    metrics["time_start"] = start_time.isoformat()
 
     def train_and_evaluate_fold(
         train_df: pd.DataFrame,
@@ -108,6 +110,9 @@ def run_modernbert_trial_single_seed(
         n_splits=5,
         two_stage_training=True,
     )
+
+    end_time = datetime.now()
+    metrics["time_end"] = end_time.isoformat()
 
     return res
 
@@ -186,13 +191,7 @@ class RidgeObjectiveProvider(ObjectiveProvider, RidgeNamer):
         def objective(trial):
             ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 1000.0, log=True)
             # ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
-            small_dataset_weight_multiplier = (
-                trial.suggest_float(
-                    "small_dataset_weight_multiplier", 10.0, 10000.0, log=True
-                )
-                if self.include_large
-                else None
-            )
+            small_dataset_weight_multiplier = 200.0 if self.include_large else None
 
             def train_and_evaluate_fold(
                 train_df: pd.DataFrame,
@@ -250,13 +249,7 @@ class SVMObjectiveProvider(ObjectiveProvider, SVMNamer):
         def objective(trial):
             c = trial.suggest_float("svr_c", 0.0001, 10.0, log=True)
             epsilon = trial.suggest_float("svr_epsilon", 0.0, 1.0)
-            small_dataset_weight_multiplier = (
-                trial.suggest_float(
-                    "small_dataset_weight_multiplier", 10.0, 10000.0, log=True
-                )
-                if self.include_large
-                else None
-            )
+            small_dataset_weight_multiplier = 200.0 if self.include_large else None
 
             def train_and_evaluate_fold(
                 train_df: pd.DataFrame,
@@ -322,6 +315,7 @@ class RandomForestObjectiveProvider(ObjectiveProvider, RandomForestNamer):
                 ),
                 "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
             }
+            small_dataset_weight_multiplier = 200.0 if self.include_large else None
 
             def train_and_evaluate_fold(
                 train_df: pd.DataFrame,
@@ -365,6 +359,7 @@ class RandomForestObjectiveProvider(ObjectiveProvider, RandomForestNamer):
                 include_minilm_embeddings=self.include_minilm_embeddings,
                 include_modernbert_embeddings=self.include_modernbert_embeddings,
                 include_large=self.include_large,
+                small_dataset_weight_multiplier=small_dataset_weight_multiplier,
             )
 
         return objective

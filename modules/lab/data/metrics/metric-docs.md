@@ -17,6 +17,8 @@ FILENAME EXAMPLE 2: `svm_minilm_lg_val_t1_42_2025-12-02-20-05-43.json`
   "params": { hyperparameter: 0 },        // including batch_size for fine-tuned model
   "type": "train",                        // always "train"
   "seed": 42,                             // int
+  "time_start": "2025-12-15T10:30:00",    // ISO 8601 timestamp string
+  "time_end": "2025-12-15T10:45:00",      // ISO 8601 timestamp string
   "mse": 0.75,                            // float
   "accuracy": 0.5,                        // float
   "precision": [<float>, ...],            // list[float]: Per-label precision (length 6)
@@ -35,6 +37,8 @@ FILENAME EXAMPLE 2: `svm_minilm_lg_val_t1_42_2025-12-02-20-05-43.json`
   "params": { hyperparameter: 0 },        // including batch_size for fine-tuned model
   "type": "test",                         // always "test"
   "seed": 42,                             // int
+  "time_start": "2025-12-15T10:30:00",    // ISO 8601 timestamp string
+  "time_end": "2025-12-15T10:45:00",      // ISO 8601 timestamp string
   "mse": 0.75,                            // float
   "accuracy": 0.5,                        // float
   "precision": [<float>, ...],            // list[float]: Per-label precision (length 6)
@@ -52,6 +56,8 @@ FILENAME EXAMPLE 2: `svm_minilm_lg_val_t1_42_2025-12-02-20-05-43.json`
   "params": { hyperparameter: 0 },            // including batch_size for fine-tuned model
   "type": "val",                              // always "val"
   "seed": 42,                                 // int
+  "time_start": "2025-12-15T10:30:00",        // ISO 8601 timestamp string
+  "time_end": "2025-12-15T10:45:00",          // ISO 8601 timestamp string
   "folds": [
     {
       "mse": 0.75,                            // float

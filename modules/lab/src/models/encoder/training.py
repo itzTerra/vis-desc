@@ -85,13 +85,13 @@ MODEL_PARAMS = {
             "border_count": 207,
         },
         "minilm_lg": {
-            "iterations": 1510,
-            "learning_rate": 0.014286,
+            "iterations": 804,
+            "learning_rate": 0.0714,
             "depth": 3,
-            "l2_leaf_reg": 0.0000034047,
-            "bagging_temperature": 2.5656,
-            "random_strength": 4.1266,
-            "border_count": 207,
+            "l2_leaf_reg": 0.0016,
+            "bagging_temperature": 11.6586,
+            "random_strength": 8.5578e-9,
+            "border_count": 105,
             "small_dataset_weight_multiplier": 200.0,
         },
         "mbert": {
@@ -134,7 +134,7 @@ MODEL_PARAMS = {
         "lg": {
             "stage1_epochs": 6,
             "stage1_frozen_bert_epochs": 1,
-            "stage2_epochs": 25,
+            "stage2_epochs": 21,
             "stage2_frozen_bert_epochs": 5,
             "lr_bert": 1e-5,
             "lr_custom": 1e-4,

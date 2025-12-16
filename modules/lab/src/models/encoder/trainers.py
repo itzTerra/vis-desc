@@ -927,6 +927,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
                 "confusion_matrix": result["confusion_matrix"],
                 "train_losses": result["train_losses"],
                 "val_losses": result["val_losses"],
+                "epoch_batch_counts": result["epoch_batch_counts"],
             }
             metrics["folds"].append(fold_metrics)
             metrics.update()

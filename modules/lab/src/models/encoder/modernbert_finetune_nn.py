@@ -266,6 +266,7 @@ def train_finetuned_mbert(
             "early_stopping_patience": EARLY_STOPPING_PATIENCE,
         },
         seed=seed,
+        epoch_batch_counts=[],
     )
 
     # Scale features

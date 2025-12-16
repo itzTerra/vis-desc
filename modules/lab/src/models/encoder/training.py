@@ -20,9 +20,15 @@ MODEL_PARAMS = {
     },
     "ridge": {
         "minilm": {"ridge_alpha": 67.8330},
-        "minilm_lg": {"ridge_alpha": 67.8330, "small_dataset_weight_multiplier": 200.0},
+        "minilm_lg": {
+            "ridge_alpha": 3188.7925,
+            "small_dataset_weight_multiplier": 200.0,
+        },
         "mbert": {"ridge_alpha": 64.4018},
-        "mbert_lg": {"ridge_alpha": 64.4018, "small_dataset_weight_multiplier": 200.0},
+        "mbert_lg": {
+            "ridge_alpha": 2836.7557,
+            "small_dataset_weight_multiplier": 200.0,
+        },
     },
     "svm": {
         "minilm": {"svr_c": 2.5276, "svr_epsilon": 0.0018},
@@ -48,10 +54,10 @@ MODEL_PARAMS = {
             "bootstrap": False,
         },
         "minilm_lg": {
-            "n_estimators": 507,
-            "max_depth": 30,
-            "min_samples_split": 7,
-            "min_samples_leaf": 2,
+            "n_estimators": 278,
+            "max_depth": 6,
+            "min_samples_split": 13,
+            "min_samples_leaf": 12,
             "max_features": "sqrt",
             "bootstrap": False,
             "small_dataset_weight_multiplier": 200.0,
@@ -65,10 +71,10 @@ MODEL_PARAMS = {
             "bootstrap": False,
         },
         "mbert_lg": {
-            "n_estimators": 726,
-            "max_depth": 17,
-            "min_samples_split": 4,
-            "min_samples_leaf": 1,
+            "n_estimators": 143,
+            "max_depth": 6,
+            "min_samples_split": 13,
+            "min_samples_leaf": 12,
             "max_features": "sqrt",
             "bootstrap": False,
             "small_dataset_weight_multiplier": 200.0,

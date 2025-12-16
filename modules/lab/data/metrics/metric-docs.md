@@ -26,7 +26,8 @@ FILENAME EXAMPLE 2: `svm_minilm_lg_val_t1_42_2025-12-02-20-05-43.json`
   "f1": [<float>, ...],                   // list[float]: Per-label F1 score (length 6)
   "support": [<int>, ...],                // list[int]: Per-label sample count (length 6)
   "confusion_matrix": [[<int>, ...], ...], // list[list[int]]: 6x6 confusion matrix
-  "train_losses": [<float>, ...]          // list[float] Per-batch, finetuned-mbert model only
+  "train_losses": [<float>, ...],         // list[float] Per-batch, finetuned-mbert model only
+  "epoch_batch_counts": [<int>, ...]     // list[int]: Number of batches per epoch, finetuned-mbert model only
 }
 ```
 
@@ -68,6 +69,7 @@ FILENAME EXAMPLE 2: `svm_minilm_lg_val_t1_42_2025-12-02-20-05-43.json`
       "support": [<int>, ...],                // list[int]: Per-label sample count (length 6)
       "confusion_matrix": [[<int>, ...], ...], // list[list[int]]: 6x6 confusion matrix
       "train_losses": [<float>, ...],         // list[float] Per-batch, finetuned-mbert model only
+      "epoch_batch_counts": [<int>, ...],    // list[int]: Number of batches per epoch, finetuned-mbert model only
       "val_losses": [<float>, ...]            // list[float] Per-epoch, finetuned-mbert model only
     }
   ],

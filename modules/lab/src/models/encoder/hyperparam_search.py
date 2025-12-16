@@ -189,7 +189,7 @@ class RidgeObjectiveProvider(ObjectiveProvider, RidgeNamer):
 
     def get_objective_fn(self) -> callable:
         def objective(trial):
-            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 1000.0, log=True)
+            ridge_alpha = trial.suggest_float("ridge_alpha", 0.0001, 10000.0, log=True)
             # ridge_alpha = trial.suggest_categorical("ridge_alpha", [0.01])
             small_dataset_weight_multiplier = 200.0 if self.include_large else None
 

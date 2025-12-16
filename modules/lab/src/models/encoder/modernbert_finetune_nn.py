@@ -21,7 +21,7 @@ from models.encoder.common import (
 )
 
 BATCH_SIZE = 64
-NUM_EPOCHS = 40
+MAX_EPOCHS = 40
 EARLY_STOPPING_PATIENCE = 5
 
 
@@ -226,7 +226,7 @@ def train_finetuned_mbert(
     """
     stage1_epochs = params.get("stage1_epochs", 0)
     stage2_epochs = (
-        params.get("stage2_epochs", NUM_EPOCHS) if val_df is None else NUM_EPOCHS
+        params.get("stage2_epochs", MAX_EPOCHS) if val_df is None else MAX_EPOCHS
     )
     lr_bert = params["lr_bert"]
     lr_custom = params["lr_custom"]
@@ -261,6 +261,9 @@ def train_finetuned_mbert(
             "lora_r": lora_r,
             "lora_alpha": lora_alpha,
             "lora_dropout": lora_dropout,
+            "batch_size": BATCH_SIZE,
+            "max_epochs": MAX_EPOCHS,
+            "early_stopping_patience": EARLY_STOPPING_PATIENCE,
         },
         seed=seed,
     )
@@ -350,6 +353,7 @@ def train_finetuned_mbert(
         )
         model.train()
         for epoch in range(stage1_epochs):
+            epoch_batch_count = 0
             # Unfreeze BERT after stage1_frozen_bert_epochs
             if epoch == stage1_frozen_bert_epochs:
                 print(
@@ -387,7 +391,9 @@ def train_finetuned_mbert(
                     labels=batch["labels"].to(device),
                 )
                 loss = outputs.loss
-                metrics["train_losses"].append(loss.item())
+                loss_item = loss.item()
+                metrics["train_losses"].append(loss_item)
+                epoch_batch_count += 1
                 metrics.update()
                 if torch.isnan(loss) or torch.isinf(loss):
                     continue
@@ -396,6 +402,7 @@ def train_finetuned_mbert(
                 optimizer.step()
                 scheduler.step()
                 del loss, outputs
+            metrics["epoch_batch_counts"].append(epoch_batch_count)
 
         # Aggressive cleanup after Stage 1
         del optimizer, scheduler
@@ -413,7 +420,7 @@ def train_finetuned_mbert(
 
     print(
         f"Stage 2: Fine-tuning on small dataset ({len(train_df)} samples) "
-        f"{'with' if val_df is not None else 'without'} early stopping (max {NUM_EPOCHS} epochs)"
+        f"{'with' if val_df is not None else 'without'} early stopping (max {MAX_EPOCHS} epochs)"
     )
     sm_train_dataset = CustomDataset(train_df, tokenizer)
     sm_train_loader = DataLoader(
@@ -441,6 +448,7 @@ def train_finetuned_mbert(
 
     model.train()
     for epoch in range(stage2_epochs):
+        epoch_batch_count = 0
         progress_bar = tqdm(
             sm_train_loader,
             desc=f"Stage 2 - Epoch {epoch + 1}/{stage2_epochs}",
@@ -487,6 +495,7 @@ def train_finetuned_mbert(
 
             loss_value = loss.item()
             metrics["train_losses"].append(loss_value)
+            epoch_batch_count += 1
             metrics.update()
 
             loss.backward()
@@ -502,6 +511,7 @@ def train_finetuned_mbert(
 
             progress_bar.set_postfix({"loss": loss_value})
             del loss, outputs
+        metrics["epoch_batch_counts"].append(epoch_batch_count)
 
         avg_train_loss = (
             float(np.mean(metrics["train_losses"]))

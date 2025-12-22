@@ -12,7 +12,7 @@ from sklearn.model_selection import StratifiedKFold
 import numpy as np
 import optuna
 from transformers import AutoTokenizer
-from utils import DATA_DIR
+from utils import DATA_DIR, PersistentDict
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.metrics import (
     mean_squared_error,
@@ -756,38 +756,6 @@ def average_metric_files(paths: list[str | Path]) -> dict[str, Any]:
         }
 
     raise ValueError(f"Unsupported metrics type: {type_}")
-
-
-# https://stackoverflow.com/questions/1229068/with-python-can-i-keep-a-persistent-dictionary-and-modify-it
-class PersistentDict(dict):
-    def __init__(self, filename: str | Path, *args, **kwargs):
-        self.filename = filename
-        self._load()
-
-    def _load(self):
-        if os.path.isfile(self.filename) and os.path.getsize(self.filename) > 0:
-            with open(self.filename, "r") as fh:
-                super().update(json.load(fh))
-
-    def _dump(self):
-        with open(self.filename, "w") as fh:
-            json.dump(self, fh)
-
-    def __getitem__(self, key):
-        return dict.__getitem__(self, key)
-
-    def __setitem__(self, key, val):
-        dict.__setitem__(self, key, val)
-        self._dump()
-
-    def __repr__(self):
-        dictrepr = dict.__repr__(self)
-        return "%s(%s)" % (type(self).__name__, dictrepr)
-
-    def update(self, *args, **kwargs):
-        for k, v in dict(*args, **kwargs).items():
-            self[k] = v
-        self._dump()
 
 
 class PersistentMetrics(PersistentDict):

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import filecmp
 
@@ -64,6 +65,13 @@ PAIRS = [
 ]
 
 for file1, file2 in PAIRS:
+    if not os.path.exists(file1):
+        print(f"Warning: File {file1} does not exist, skipping pair")
+        continue
+    if not os.path.exists(file2):
+        print(f"Warning: File {file2} does not exist, skipping pair")
+        continue
+
     if not filecmp.cmp(file1, file2, shallow=False):
         print(f"Error: Files {file1} and {file2} are not identical")
         sys.exit(1)

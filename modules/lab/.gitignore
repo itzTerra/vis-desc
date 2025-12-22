@@ -227,6 +227,7 @@ data/datasets/large/split
 !data/optuna/*.py
 !data/metrics
 !data/metrics/encoder
+!data/metrics/nli
 !data/metrics/**/*.json
 !data/**/*.md
 setup_lab.sh

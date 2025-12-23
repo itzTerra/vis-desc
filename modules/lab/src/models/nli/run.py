@@ -513,6 +513,9 @@ Examples:
   # Evaluate all models on all configs with test set
   python nli_eval.py --dataset test --models all --configs -1
 
+  # Evaluate on both train and test datasets
+  python nli_eval.py --dataset both --models roberta --configs 0
+
   # Evaluate specific models on specific configs
   python nli_eval.py --dataset train --models roberta deberta_large --configs 0 1
 
@@ -524,8 +527,8 @@ Examples:
         "--dataset",
         type=str,
         required=True,
-        choices=["train", "test"],
-        help="Dataset to evaluate on",
+        choices=["train", "test", "both"],
+        help="Dataset to evaluate on (use 'both' to evaluate on both train and test)",
     )
     parser.add_argument(
         "--models",
@@ -590,31 +593,45 @@ Examples:
     else:
         configs_to_eval = args.configs
 
-    # Load dataset
-    if args.data_file:
-        data_path = Path(args.data_file)
+    # Resolve datasets to evaluate
+    if args.dataset == "both":
+        datasets_to_eval = ["train", "test"]
     else:
-        data_path = DATA_DIR / "datasets" / "small" / f"{args.dataset}.parquet"
+        datasets_to_eval = [args.dataset]
 
-    if not data_path.exists():
-        print(f"❌ Error: Dataset file not found at {data_path}")
-        sys.exit(1)
+    # Load datasets
+    datasets = {}
+    for dataset_name in datasets_to_eval:
+        if args.data_file:
+            data_path = Path(args.data_file)
+        else:
+            data_path = DATA_DIR / "datasets" / "small" / f"{dataset_name}.parquet"
 
-    df = pd.read_parquet(data_path)
-    texts = df["text"].tolist()
-    labels = df.get("label", None)
-    if labels is not None:
-        labels = labels.tolist()
+        if not data_path.exists():
+            print(f"❌ Error: Dataset file not found at {data_path}")
+            sys.exit(1)
 
-    print(f"✓ Loaded {len(texts)} samples from {args.dataset} set")
+        df = pd.read_parquet(data_path)
+        texts = df["text"].tolist()
+        labels = df.get("label", None)
+        if labels is not None:
+            labels = labels.tolist()
+
+        datasets[dataset_name] = {"texts": texts, "labels": labels}
+        print(f"✓ Loaded {len(texts)} samples from {dataset_name} set")
     print("\n📊 Evaluation Summary:")
+    print(
+        f"  Datasets to evaluate: {len(datasets_to_eval)} - {', '.join(datasets_to_eval)}"
+    )
     print(f"  Models to evaluate: {len(models_to_eval)} - {', '.join(models_to_eval)}")
     print(f"  Configs to evaluate: {len(configs_to_eval)} - {configs_to_eval}")
-    print(f"  Total evaluations: {len(models_to_eval) * len(configs_to_eval)}")
+    print(
+        f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(configs_to_eval)}"
+    )
     print(f"  Results will be saved to: {METRICS_DIR}\n")
 
-    # Evaluate each config, then each model on that config
-    total_evals = len(models_to_eval) * len(configs_to_eval)
+    # Evaluate each config, then each model on that config, for each dataset
+    total_evals = len(datasets_to_eval) * len(models_to_eval) * len(configs_to_eval)
     current_eval = 0
     successful_evals = 0
     metrics_files = []
@@ -625,32 +642,39 @@ Examples:
         metrics_files.append(metrics.filename)
 
         for model_key in models_to_eval:
-            current_eval += 1
+            for dataset_name in datasets_to_eval:
+                current_eval += 1
+                dataset_data = datasets[dataset_name]
 
-            print(
-                f"\n  [{current_eval}/{total_evals}] Evaluating {model_key} on config {config_idx}..."
-            )
-            print(f"      Template: {config.hypothesis_template}")
-            print(f"      Labels: {', '.join(config.candidate_labels)}")
-
-            try:
-                model_class = AVAILABLE_MODELS[model_key]
-                model = model_class()
-
-                # Evaluate model on configuration (updates metrics internally)
-                evaluate_model_on_config(
-                    model, config, texts, metrics, labels, args.dataset
-                )
-                print("      ✓ Metrics updated and persisted")
-                successful_evals += 1
-
-            except Exception as e:
                 print(
-                    f"      ❌ Error evaluating {model_key} on config {config_idx}: {e}"
+                    f"\n  [{current_eval}/{total_evals}] Evaluating {model_key} on config {config_idx} with {dataset_name} set..."
                 )
-                import traceback
+                print(f"      Template: {config.hypothesis_template}")
+                print(f"      Labels: {', '.join(config.candidate_labels)}")
 
-                traceback.print_exc()
+                try:
+                    model_class = AVAILABLE_MODELS[model_key]
+                    model = model_class()
+
+                    # Evaluate model on configuration (updates metrics internally)
+                    evaluate_model_on_config(
+                        model,
+                        config,
+                        dataset_data["texts"],
+                        metrics,
+                        dataset_data["labels"],
+                        dataset_name,
+                    )
+                    print("      ✓ Metrics updated and persisted")
+                    successful_evals += 1
+
+                except Exception as e:
+                    print(
+                        f"      ❌ Error evaluating {model_key} on config {config_idx} with {dataset_name}: {e}"
+                    )
+                    import traceback
+
+                    traceback.print_exc()
 
     print(f"\n{'=' * 60}")
     print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")

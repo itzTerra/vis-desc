@@ -76,17 +76,50 @@ def to_model_score_data(
     y_test = df_test["label"].to_numpy(dtype=float) if df_test is not None else None
     for file_idx, item in enumerate(items):
         models = item.get("models", [])
-        for model_idx, model_entry in enumerate(models):
-            model_name = model_entry.get("model_name", "")
-            train_scores = np.asarray(model_entry.get("scores", []), dtype=float)
-            test_scores = None
-            if items_test and file_idx < len(items_test):
-                test_item = items_test[file_idx]
-                test_models = test_item.get("models", [])
-                if model_idx < len(test_models):
-                    test_scores = np.asarray(
-                        test_models[model_idx].get("scores", []), dtype=float
-                    )
+        # Group entries by model_name and split by dataset where available
+        grouped: Dict[str, Dict[str, Any]] = {}
+        for m in models:
+            name = m.get("model_name", "")
+            if not name:
+                continue
+            ds = (m.get("dataset") or "train").lower()
+            if name not in grouped:
+                grouped[name] = {}
+            grouped[name][ds] = m
+
+        for model_name, splits in grouped.items():
+            # Prefer in-file train/test; optionally merge with items_test if provided
+            train_entry = (
+                splits.get("train")
+                or splits.get("val")
+                or splits.get("validation")
+                or next(iter(splits.values()), None)
+            )
+            test_entry = splits.get("test")
+
+            train_scores = np.asarray(
+                (train_entry or {}).get("scores", []), dtype=float
+            )
+            test_scores = (
+                np.asarray((test_entry or {}).get("scores", []), dtype=float)
+                if test_entry is not None
+                else None
+            )
+
+            # If test not present in same file, try pulling from items_test by model_name
+            if test_scores is None and items_test and file_idx < len(items_test):
+                t_item = items_test[file_idx]
+                t_models = t_item.get("models", [])
+                # Build lookup in case ordering differs
+                by_name: Dict[str, Any] = {}
+                for tm in t_models:
+                    n = tm.get("model_name")
+                    if n:
+                        by_name[n] = tm
+                t_entry = by_name.get(model_name)
+                if t_entry is not None:
+                    test_scores = np.asarray(t_entry.get("scores", []), dtype=float)
+
             results.append(
                 ModelScoreData(
                     config_id=file_idx,
@@ -158,6 +191,7 @@ def plot_correlation_matrix(
     score_vectors: Sequence[np.ndarray],
     names: Sequence[str],
     figsize: Tuple[int, int] = (8, 6),
+    title: str | None = None,
 ) -> None:
     lengths = [np.asarray(vec).size for vec in score_vectors]
     if len(score_vectors) < 2:
@@ -185,12 +219,75 @@ def plot_correlation_matrix(
         xticklabels=names,
         yticklabels=names,
     )
+    if title:
+        plt.title(title)
     plt.xlabel("Model")
     plt.ylabel("Model")
     plt.tight_layout()
     plt.show()
     print("Correlation coefficients:")
     print(pd.DataFrame(corr_matrix, index=names, columns=names))
+
+
+def correlation_vectors_from_score_data(
+    score_data: Sequence[ModelScoreData],
+    config_id: int,
+    split: str = "train",
+    name_map: Dict[str, str] | None = None,
+) -> tuple[list[np.ndarray], list[str]]:
+    name_map = name_map or MODEL_NAME_MAP
+    split = split.lower()
+    assert split in {"train", "test"}, "split must be 'train' or 'test'"
+    vecs: list[np.ndarray] = []
+    names: list[str] = []
+    seen: set[str] = set()
+    for sd in score_data:
+        if sd.config_id != config_id:
+            continue
+        raw_name = sd.model_name
+        if raw_name in seen:
+            continue
+        if split == "train":
+            if sd.train_scores is None or len(sd.train_scores) == 0:
+                continue
+            vecs.append(np.asarray(sd.train_scores, dtype=float))
+        else:
+            if sd.test_scores is None or len(sd.test_scores) == 0:
+                continue
+            vecs.append(np.asarray(sd.test_scores, dtype=float))
+        names.append(name_map.get(raw_name, raw_name))
+        seen.add(raw_name)
+    return vecs, names
+
+
+def plot_train_test_correlation_from_score_data(
+    score_data: Sequence[ModelScoreData],
+    config_id: int,
+    name_map: Dict[str, str] | None = None,
+    figsize: Tuple[int, int] = (8, 6),
+) -> None:
+    name_map = name_map or MODEL_NAME_MAP
+    train_vecs, train_names = correlation_vectors_from_score_data(
+        score_data, config_id, split="train", name_map=name_map
+    )
+    if len(train_vecs) >= 2:
+        plot_correlation_matrix(
+            train_vecs, train_names, figsize=figsize, title="Correlation (Train)"
+        )
+    else:
+        print("Not enough train vectors to compute correlation matrix.")
+
+    test_vecs, test_names = correlation_vectors_from_score_data(
+        score_data, config_id, split="test", name_map=name_map
+    )
+    if len(test_vecs) >= 2:
+        plot_correlation_matrix(
+            test_vecs, test_names, figsize=figsize, title="Correlation (Test)"
+        )
+    else:
+        print(
+            "Not enough test vectors to compute correlation matrix or no test scores available."
+        )
 
 
 def _align_and_sort(
@@ -366,9 +463,25 @@ def build_table_b(items: List[Dict[str, Any]]) -> pd.DataFrame:
     rows = []
     for it in items:
         row = {"id": it.get("id")}
-        models_by_name = {m.get("model_name"): m for m in it.get("models", [])}
+        # Group multiple entries per model_name and prefer train split for table stats
+        grouped: Dict[str, Dict[str, Any]] = {}
+        for m in it.get("models", []):
+            n = m.get("model_name")
+            if not n:
+                continue
+            ds = (m.get("dataset") or "train").lower()
+            if n not in grouped:
+                grouped[n] = {}
+            grouped[n][ds] = m
         for name in model_names:
-            m = models_by_name.get(name, {})
+            g = grouped.get(name, {})
+            # Prefer train; else fall back to any available
+            m = (
+                g.get("train")
+                or g.get("val")
+                or g.get("validation")
+                or (next(iter(g.values()), {}) if g else {})
+            )
             row[f"{name} corr"] = m.get("corr")
             perf = m.get("performance") or {}
             row[f"{name} throughput"] = perf.get("throughput")
@@ -383,11 +496,33 @@ def build_table_b(items: List[Dict[str, Any]]) -> pd.DataFrame:
 
 def _best_corr(item: Dict[str, Any]) -> float | None:
     best = None
+    # Prefer train corr if present; otherwise consider all
+    grouped: Dict[str, Dict[str, Any]] = {}
     for model in item.get("models", []):
-        corr = model.get("corr")
+        name = model.get("model_name")
+        if not name:
+            continue
+        ds = (model.get("dataset") or "train").lower()
+        if name not in grouped:
+            grouped[name] = {}
+        grouped[name][ds] = model
+
+    def _update(best_val: Optional[float], val: Optional[float]) -> Optional[float]:
+        if val is None:
+            return best_val
+        return val if best_val is None else max(best_val, val)
+
+    # First pass: train-only
+    for splits in grouped.values():
+        corr = (splits.get("train") or {}).get("corr")
         if corr is None:
             continue
-        best = corr if best is None else max(best, corr)
+        best = _update(best, corr)
+    # If none found, consider any split
+    if best is None:
+        for splits in grouped.values():
+            for m in splits.values():
+                best = _update(best, m.get("corr"))
     return best
 
 

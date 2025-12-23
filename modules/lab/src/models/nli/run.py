@@ -1,6 +1,7 @@
 import argparse
 import sys
 import time
+import re
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -89,14 +90,32 @@ class NLIPersistentMetrics(PersistentDict):
     @classmethod
     def create_for_config(
         cls,
-        dataset_name: str,
         config: NLIConfig,
     ) -> "NLIPersistentMetrics":
-        """Create metrics file for a dataset and config combination."""
+        """Create metrics file for a config combination using the new unified format.
+
+        Filename format: tcode_lcode_yyyy-MM-dd-hh-mm-ss.json
+        - tcode: lowercase first letters of words in hypothesis_template (ignoring '{}')
+        - lcode: lowercase first letters of each candidate label string
+        """
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        filename = METRICS_DIR / f"nli_{dataset_name}_{timestamp}.json"
+
+        def _tcode(template: str) -> str:
+            # Ignore non-letter tokens (e.g., '{}'), take first letter of each word
+            words = re.findall(r"[A-Za-z]+", template)
+            return "".join(w[0].lower() for w in words if w)
+
+        def _lcode(labels: list[str]) -> str:
+            # Take the first character of each label string
+            return "".join(
+                (lbl.strip()[0].lower()) for lbl in labels if lbl and lbl.strip()
+            )
+
+        filename = (
+            METRICS_DIR
+            / f"{_tcode(config.hypothesis_template)}_{_lcode(config.candidate_labels)}_{timestamp}.json"
+        )
         metrics = cls(filename)
-        metrics.setdefault("dataset", dataset_name)
         metrics.setdefault("hypothesis_template", config.hypothesis_template)
         metrics.setdefault("candidate_labels", config.candidate_labels)
         metrics.setdefault("models", [])
@@ -162,6 +181,7 @@ def evaluate_model_on_config(
     texts: list[str],
     metrics: "NLIPersistentMetrics",
     labels: list[float],
+    dataset_name: str,
 ) -> None:
     """
     Evaluate a model on a configuration in batches and update metrics after each batch.
@@ -209,6 +229,7 @@ def evaluate_model_on_config(
 
     model_result = {
         "model_name": model_name,
+        "dataset": dataset_name,
         "probabilities": all_probabilities,
         "scores": scores,
         "corr": corr,
@@ -342,7 +363,7 @@ Examples:
 
     for config_idx in configs_to_eval:
         config = AVAILABLE_CONFIGS[config_idx]
-        metrics = NLIPersistentMetrics.create_for_config(args.dataset, config)
+        metrics = NLIPersistentMetrics.create_for_config(config)
         metrics_files.append(metrics.filename)
 
         for model_key in models_to_eval:
@@ -359,7 +380,9 @@ Examples:
                 model = model_class()
 
                 # Evaluate model on configuration (updates metrics internally)
-                evaluate_model_on_config(model, config, texts, metrics, labels)
+                evaluate_model_on_config(
+                    model, config, texts, metrics, labels, args.dataset
+                )
                 print("      ✓ Metrics updated and persisted")
                 successful_evals += 1
 

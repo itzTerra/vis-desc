@@ -1,6 +1,6 @@
 import numpy as np
 from text2features import FeatureExtractorPipeline
-from training import MODEL_PARAMS, TRAINER_CLASSES
+from models.encoder.train import MODEL_PARAMS, TRAINER_CLASSES
 from models.encoder.common import average_metrics
 
 model = "catboost"

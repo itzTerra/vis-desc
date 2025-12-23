@@ -21,7 +21,6 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 from pathlib import Path
-import re
 
 BERT_TOKENIZER_MAX_LENGTH = 160
 SEED = 42
@@ -258,11 +257,6 @@ def run_cross_validation(
         include_large=include_large,
     )
     tokenizer = optimization_context.tokenizer
-    if diagnostics_enabled():
-        tok_hash, vocab_size, added_size = hash_tokenizer(tokenizer)
-        print(
-            f"[DIAG] Tokenizer hash={tok_hash} vocab_size={vocab_size} added_tokens={added_size}"
-        )
     sm_train = optimization_context.sm_train
     lg_train = optimization_context.lg_train
 
@@ -271,19 +265,6 @@ def run_cross_validation(
     ):
         train_fold_df = sm_train.loc[train_index].copy()
         val_fold_df = sm_train.loc[val_index].copy()
-
-        if diagnostics_enabled():
-            train_summary = summarize_dataframe(train_fold_df, "train")
-            val_summary = summarize_dataframe(val_fold_df, "val")
-            print(
-                f"[DIAG] Trial {getattr(trial, 'number', '?')} Fold {fold} | Train size={train_summary['size']} Val size={val_summary['size']}"
-            )
-            print(
-                f"[DIAG] Train label dist: {train_summary['label_distribution']} | Val label dist: {val_summary['label_distribution']}"
-            )
-            cache_files = list(Path(os.environ.get("HF_HOME")).glob("**/*"))
-            cache_sizes = sum(f.stat().st_size for f in cache_files if f.is_file())
-            print(f"[DIAG] Cache size before fold {fold}: {cache_sizes / 1e9:.2f} GB")
 
         lg_size = None
         if lg_train is not None:
@@ -314,43 +295,9 @@ def run_cross_validation(
         # trial.report(score, fold)
         # if trial.should_prune():
         #     raise optuna.exceptions.TrialPruned()
-        if diagnostics_enabled():
-            tok_hash_after, vocab_size_after, added_size_after = hash_tokenizer(
-                tokenizer
-            )
-            print(
-                f"[DIAG] Tokenizer post-fold hash={tok_hash_after} "
-                f"vocab_size={vocab_size_after} added_tokens={added_size_after} "
-                f"(unchanged={tok_hash_after == tok_hash})"
-            )
 
     mean_mse = np.mean(fold_scores)
     return mean_mse
-
-
-# ---------------------- Diagnostics Utilities ----------------------
-
-
-def diagnostics_enabled():
-    return os.environ.get("ENCODER_DIAG", "0") in ("1", "true", "True")
-
-
-def hash_model_parameters(model):
-    sha = hashlib.sha256()
-    for p in model.parameters():
-        sha.update(p.detach().cpu().numpy().tobytes())
-    return sha.hexdigest()
-
-
-def summarize_dataframe(df: pd.DataFrame, name: str):
-    labels = df["label"].values
-    unique, counts = np.unique(labels, return_counts=True)
-    dist_map = {int(k): int(v) for k, v in zip(unique, counts)}
-    return {
-        "name": name,
-        "size": len(df),
-        "label_distribution": dist_map,
-    }
 
 
 def run_study(objective_func, study_name, search_space=None, n_trials=None):
@@ -442,14 +389,27 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 
 def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    if not metrics:
+        return {
+            "mse": float("nan"),
+            "accuracy": float("nan"),
+            "precision": [float("nan")] * 6,
+            "recall": [float("nan")] * 6,
+            "f1": [float("nan")] * 6,
+            "support": [0] * 6,
+            "confusion_matrix": [[0] * 6 for _ in range(6)],
+        }
+
     cms = np.array([m["confusion_matrix"] for m in metrics], dtype=float)
-    cm_avg = np.mean(cms, axis=0)
+    cm_avg = np.nanmean(cms, axis=0)
+    cm_avg = np.nan_to_num(cm_avg, nan=0.0)
+
     return {
-        "mse": np.mean([m["mse"] for m in metrics]),
-        "accuracy": np.mean([m["accuracy"] for m in metrics]),
-        "precision": np.mean([m["precision"] for m in metrics], axis=0).tolist(),
-        "recall": np.mean([m["recall"] for m in metrics], axis=0).tolist(),
-        "f1": np.mean([m["f1"] for m in metrics], axis=0).tolist(),
+        "mse": float(np.nanmean([m["mse"] for m in metrics])),
+        "accuracy": float(np.nanmean([m["accuracy"] for m in metrics])),
+        "precision": np.nanmean([m["precision"] for m in metrics], axis=0).tolist(),
+        "recall": np.nanmean([m["recall"] for m in metrics], axis=0).tolist(),
+        "f1": np.nanmean([m["f1"] for m in metrics], axis=0).tolist(),
         "support": np.sum([m["support"] for m in metrics], axis=0).tolist(),
         "confusion_matrix": np.rint(cm_avg).astype(int).tolist(),
     }
@@ -482,280 +442,6 @@ def get_metrics_filename(
     """
     filename = f"{model_name}_{type}{f'_t{trial}' if trial is not None else ''}_{seed}_{datetime.strftime('%Y-%m-%d-%H-%M-%S')}.json"
     return METRICS_DIR / filename
-
-
-def parse_metrics_filename(path: str | Path) -> dict[str, Any]:
-    """
-    Parse a metrics filename according to modules/lab/data/metrics/metric-docs.md.
-
-    Supports both formats:
-    - model_embedding_lg_type_seed_yyyy-MM-dd-hh-mm-ss.json
-    - model_embedding_lg_val_tX_seed_yyyy-MM-dd-hh-mm-ss.json
-
-    Returns a dict with keys:
-    - model_name: str (e.g., "svm_minilm_lg" or "finetuned-mbert_lg")
-    - type: Literal['train','val','test']
-    - trial: Optional[int]
-    - seed: int
-    - timestamp: str (yyyy-MM-dd-hh-mm-ss)
-    - stem: filename without extension
-    - common_key: filename stem without seed and timestamp (used for grouping)
-    """
-    p = Path(path)
-    stem = p.stem
-    # First, try val with trial: model_*_val_tX_seed_timestamp
-    m_val = re.match(
-        r"^(?P<model>.+)_val_t(?P<trial>\d+)_(?P<seed>\d+)_(?P<ts>\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$",
-        stem,
-    )
-    if m_val:
-        model_name = m_val.group("model")
-        trial = int(m_val.group("trial"))
-        seed = int(m_val.group("seed"))
-        ts = m_val.group("ts")
-        return {
-            "model_name": model_name,
-            "type": "val",
-            "trial": trial,
-            "seed": seed,
-            "timestamp": ts,
-            "stem": stem,
-            "common_key": f"{model_name}_val_t{trial}",
-        }
-
-    # General case: model_*_type_seed_timestamp (type in {train,test,val})
-    m = re.match(
-        r"^(?P<model>.+)_(?P<type>train|test|val)_(?P<seed>\d+)_(?P<ts>\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$",
-        stem,
-    )
-    if not m:
-        raise ValueError(
-            f"Filename '{p.name}' does not match expected metrics patterns."
-        )
-    model_name = m.group("model")
-    type_ = m.group("type")
-    seed = int(m.group("seed"))
-    ts = m.group("ts")
-    return {
-        "model_name": model_name,
-        "type": type_,
-        "trial": None,
-        "seed": seed,
-        "timestamp": ts,
-        "stem": stem,
-        "common_key": f"{model_name}_{type_}",
-    }
-
-
-def group_metric_files(paths: list[str | Path]) -> dict[str, list[str]]:
-    """
-    Group metric files by common identifier (model + embedding + lg + type [+ trial]).
-
-    Insensitive to timestamp. Each seed is counted only once per group; if multiple
-    files exist for the same common identifier and seed, only the latest (by timestamp
-    in filename) is kept.
-
-    Returns a dict mapping common_key -> list[str] of selected filenames.
-    The common_key matches the filename stem without seed and timestamp, e.g.:
-      - "svm_minilm_lg_train"
-      - "svm_minilm_lg_val_t1"
-      - "finetuned-mbert_lg_test"
-    """
-    grouped: dict[str, dict[int, dict[str, Any]]] = {}
-    for path in paths:
-        info = parse_metrics_filename(path)
-        key = info["common_key"]
-        seed = info["seed"]
-        grouped.setdefault(key, {})
-        existing = grouped[key].get(seed)
-        if not existing:
-            grouped[key][seed] = {"info": info, "path": str(Path(path))}
-        else:
-            # Keep the one with latest timestamp
-            if info["timestamp"] > existing["info"]["timestamp"]:
-                grouped[key][seed] = {"info": info, "path": str(Path(path))}
-
-    # Convert to desired output: common_key -> [paths]
-    result: dict[str, list[str]] = {}
-    for key, seeds_map in grouped.items():
-        # deterministic order by seed
-        ordered_paths = [
-            entry["path"] for _, entry in sorted(seeds_map.items(), key=lambda x: x[0])
-        ]
-        result[key] = ordered_paths
-    return result
-
-
-def average_metric_files(paths: list[str | Path]) -> dict[str, Any]:
-    """
-    Read metric files and average their contents into a single metric dict following
-    the same schema as defined in metric-docs.md.
-
-    All input files must be of the same format bucket:
-      - Train files (type == 'train')
-      - Test files (type == 'test')
-      - Val files (type == 'val' with identical folds length and presence of per-fold keys)
-
-    Raises ValueError if formats/types are mixed or incompatible.
-    """
-    infos = [parse_metrics_filename(p) for p in paths]
-    # Ensure same common_key
-    common_keys = {i["common_key"] for i in infos}
-    if len(common_keys) != 1:
-        raise ValueError(
-            f"All files must share the same identifier. Found: {sorted(common_keys)}"
-        )
-    type_ = infos[0]["type"]
-
-    # Load JSON contents
-    contents: list[dict[str, Any]] = []
-    for p in paths:
-        with open(Path(p), "r") as fh:
-            contents.append(json.load(fh))
-
-    # Basic format validations
-    types = {c.get("type") for c in contents}
-    if len(types) != 1 or type_ not in types:
-        raise ValueError("All files must have the same 'type' field.")
-
-    # model field must be the same
-    models = {c.get("model") for c in contents}
-    if len(models) != 1:
-        raise ValueError("All files must have the same 'model' field.")
-    model_name = next(iter(models))
-
-    # params field presence consistency (if present should be same structure)
-    # If params absent in some and present in others, treat as mismatch.
-    has_params = {"params" in c for c in contents}
-    if len(has_params) != 1:
-        raise ValueError("Mismatch in presence of 'params' across files.")
-    if True in has_params:
-        # Require identical params
-        params_set = {json.dumps(c["params"], sort_keys=True) for c in contents}
-        if len(params_set) != 1:
-            raise ValueError("All files must have identical 'params'.")
-        params = contents[0]["params"]
-    else:
-        params = {}
-
-    if type_ in ("train", "test"):
-        # Average basic metrics (including confusion matrix)
-        metrics_list = [
-            {
-                "mse": float(c["mse"]),
-                "accuracy": float(c["accuracy"]),
-                "precision": c["precision"],
-                "recall": c["recall"],
-                "f1": c["f1"],
-                "support": c["support"],
-                "confusion_matrix": c["confusion_matrix"],
-            }
-            for c in contents
-        ]
-        averaged = average_metrics(metrics_list)
-        result = {
-            "model": model_name,
-            "params": params,
-            "type": type_,
-            "seed": -1,  # not meaningful for averaged outputs
-            "mse": averaged["mse"],
-            "accuracy": averaged["accuracy"],
-            "precision": averaged["precision"],
-            "recall": averaged["recall"],
-            "f1": averaged["f1"],
-            "support": averaged["support"],
-            "confusion_matrix": averaged["confusion_matrix"],
-        }
-        # For train type, optionally aggregate train_losses if present
-        if type_ == "train" and all("train_losses" in c for c in contents):
-            # Average per-index; lengths may differ → require equality
-            lengths = {len(c["train_losses"]) for c in contents}
-            if len(lengths) == 1:
-                arr = np.array([c["train_losses"] for c in contents], dtype=float)
-                result["train_losses"] = np.mean(arr, axis=0).tolist()
-        return result
-
-    if type_ == "val":
-        # Validate folds shape and keys
-        folds_lengths = {len(c.get("folds", [])) for c in contents}
-        if len(folds_lengths) != 1:
-            raise ValueError("Validation files must have the same number of folds.")
-        n_folds = next(iter(folds_lengths))
-
-        # trial consistency (val_tX vs val without trial should have same common_key already)
-        trials = {c.get("trial") for c in contents}
-        if len(trials) != 1:
-            raise ValueError(
-                "Validation files must have the same 'trial' value (both None or same integer)."
-            )
-        trial_val = next(iter(trials))
-
-        # Average per-fold metrics
-        averaged_folds = []
-        for f_idx in range(n_folds):
-            fold_metrics_list = []
-            for c in contents:
-                fold = c["folds"][f_idx]
-                fold_metrics_list.append(
-                    {
-                        "mse": float(fold["mse"]),
-                        "accuracy": float(fold["accuracy"]),
-                        "precision": fold["precision"],
-                        "recall": fold["recall"],
-                        "f1": fold["f1"],
-                        "support": fold["support"],
-                        "confusion_matrix": fold["confusion_matrix"],
-                    }
-                )
-            avg_fold = average_metrics(fold_metrics_list)
-
-            # Average losses if present uniformly
-            train_losses = None
-            val_losses = None
-            if all("train_losses" in c["folds"][f_idx] for c in contents):
-                lengths = {len(c["folds"][f_idx]["train_losses"]) for c in contents}
-                if len(lengths) == 1:
-                    arr = np.array(
-                        [c["folds"][f_idx]["train_losses"] for c in contents],
-                        dtype=float,
-                    )
-                    train_losses = np.mean(arr, axis=0).tolist()
-            if all("val_losses" in c["folds"][f_idx] for c in contents):
-                lengths = {len(c["folds"][f_idx]["val_losses"]) for c in contents}
-                if len(lengths) == 1:
-                    arr = np.array(
-                        [c["folds"][f_idx]["val_losses"] for c in contents], dtype=float
-                    )
-                    val_losses = np.mean(arr, axis=0).tolist()
-
-            averaged_folds.append(
-                {
-                    "mse": avg_fold["mse"],
-                    "accuracy": avg_fold["accuracy"],
-                    "precision": avg_fold["precision"],
-                    "recall": avg_fold["recall"],
-                    "f1": avg_fold["f1"],
-                    "support": avg_fold["support"],
-                    "confusion_matrix": avg_fold["confusion_matrix"],
-                    **(
-                        {"train_losses": train_losses}
-                        if train_losses is not None
-                        else {}
-                    ),
-                    **({"val_losses": val_losses} if val_losses is not None else {}),
-                }
-            )
-
-        return {
-            "model": model_name,
-            "params": params,
-            "type": "val",
-            "seed": -1,
-            "folds": averaged_folds,
-            **({"trial": trial_val} if trial_val is not None else {}),
-        }
-
-    raise ValueError(f"Unsupported metrics type: {type_}")
 
 
 class PersistentMetrics(PersistentDict):
@@ -799,15 +485,3 @@ class PersistentMetrics(PersistentDict):
                     self[k] = v
 
         return DummyPersistentMetrics()
-
-
-def get_best_epoch(val_losses: list[float]) -> tuple[int, float]:
-    """
-    Find the epoch with the lowest validation loss.
-
-    Returns:
-        Tuple of (best_epoch_index, best_val_loss)
-    """
-    best_epoch = int(np.argmin(val_losses))
-    best_val_loss = float(val_losses[best_epoch])
-    return best_epoch, best_val_loss

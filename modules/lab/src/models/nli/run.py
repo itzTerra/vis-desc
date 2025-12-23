@@ -7,7 +7,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from models.nli.models import (
+from models.nli.classifiers import (
     NLIRoberta,
     NLIDebertaLarge,
     NLIModernBERTLarge,

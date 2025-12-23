@@ -6,11 +6,15 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 
-from models.nli.nli_models import NLIRoberta, NLIDebertaLarge, NLIModernBERTLarge
-from models.nli.nli_base import (
+from models.nli.models import (
+    NLIRoberta,
+    NLIDebertaLarge,
+    NLIModernBERTLarge,
+    ORTNLIZeroshotClassifier,
+)
+from models.nli.common import (
     METRICS_DIR,
     NLIConfig,
-    ORTNLIZeroshotClassifier,
     get_corrs,
     probs_to_scores,
 )

@@ -1,23 +1,23 @@
 ### NLI Zero-Shot Model Metrics Filenames
 
-FILENAME FORMAT: `nli_dataset_yyyy-MM-dd-hh-mm-ss.json`
-- `dataset`: train or test
+FILENAME FORMAT: `tcode_lcode_yyyy-MM-dd-hh-mm-ss.json`
+- `tcode`: lowercase first letters of words in hypothesis_template
+- `lcode`: lowercase first letters of candidate_labels
 - Timestamp: ISO 8601 format (yyyy-MM-dd-hh-mm-ss)
 
-FILENAME EXAMPLES:
-- `nli_train_2025-12-21-14-30-45.json`
-- `nli_test_2025-12-21-15-45-20.json`
+FILENAME EXAMPLE:
+- `ttiitovdocsoe_nd_2025-12-21-14-30-45.json`
 
 ### Metric File Structure
 
 ```json
 {
-  "dataset": "train",                          // string: "train" or "test"
   "hypothesis_template": "This text is {} in terms of visual details of characters, setting, or environment.",  // string: Template used for zero-shot classification
   "candidate_labels": ["not detailed", "detailed"],  // list[string]: Labels used in classification, MUST BE ORDERED UNIFORMLY IN THE 0-1 REGRESSION SENSE
   "models": [                                  // list[object]: Evaluation results for each model
     {
       "model_name": "MoritzLaurer/roberta-base-zeroshot-v2.0-c",  // string: Full model identifier (HuggingFace model ID or custom name)
+      "dataset": "train",                          // string: "train" or "test"
       "probabilities": [                       // list[list[float]]: Probabilities for each sample (outer list) and each label (inner list)
         [0.8234, 0.1766],                      // Sample 1: [prob_label_0, prob_label_1]
         [0.6521, 0.3479],                      // Sample 2: [prob_label_0, prob_label_1]

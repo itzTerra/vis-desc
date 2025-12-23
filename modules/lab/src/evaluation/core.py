@@ -29,6 +29,71 @@ class AggregatedModelData:
     test: Optional[DatasetMetrics] = None
 
 
+def _pad_cm_to_six(cm: np.ndarray) -> np.ndarray:
+    if cm.shape[0] < 6:
+        padding = np.zeros((6 - cm.shape[0], cm.shape[1]))
+        cm = np.vstack([cm, padding])
+    if cm.shape[1] < 6:
+        padding = np.zeros((cm.shape[0], 6 - cm.shape[1]))
+        cm = np.hstack([cm, padding])
+    return cm[:6, :6]
+
+
+def _collapse_cm_relaxed(cm6: np.ndarray) -> np.ndarray:
+    groups = [(0, 1), (2, 3), (4, 5)]
+    out = np.zeros((3, 3), dtype=cm6.dtype)
+    for i, gi in enumerate(groups):
+        for j, gj in enumerate(groups):
+            out[i, j] = cm6[np.ix_(gi, gj)].sum()
+    return out
+
+
+def _metrics_from_cm(
+    cm: np.ndarray,
+) -> tuple[list[float], list[float], list[float], list[int], float, float]:
+    tp = np.diag(cm).astype(float)
+    pred_pos = cm.sum(axis=0).astype(float)
+    true_pos = cm.sum(axis=1).astype(float)
+    precision = [
+        (tp[i] / pred_pos[i]) if pred_pos[i] > 0 else 0.0 for i in range(cm.shape[0])
+    ]
+    recall = [
+        (tp[i] / true_pos[i]) if true_pos[i] > 0 else 0.0 for i in range(cm.shape[0])
+    ]
+    f1 = [
+        (2 * precision[i] * recall[i] / (precision[i] + recall[i]))
+        if (precision[i] + recall[i]) > 0
+        else 0.0
+        for i in range(cm.shape[0])
+    ]
+    support = [int(v) for v in true_pos]
+    total = cm.sum()
+    accuracy = float(tp.sum() / total) if total > 0 else 0.0
+    idx = np.arange(cm.shape[0])
+    diff2 = (idx[:, None] - idx[None, :]) ** 2
+    mse = float((cm * diff2).sum() / total) if total > 0 else 0.0
+    return precision, recall, f1, support, accuracy, mse
+
+
+def collapse_dataset_metrics_relaxed(dm: DatasetMetrics) -> DatasetMetrics:
+    cm6 = _pad_cm_to_six(dm.confusion_matrix)
+    cm3 = _collapse_cm_relaxed(cm6)
+    precision, recall, f1, support, accuracy, mse = _metrics_from_cm(cm3)
+    folds = None
+    if dm.folds:
+        folds = [collapse_dataset_metrics_relaxed(f) for f in dm.folds]
+    return DatasetMetrics(
+        mse=mse,
+        accuracy=accuracy,
+        precision=precision,
+        recall=recall,
+        f1=f1,
+        support=support,
+        confusion_matrix=cm3,
+        folds=folds,
+    )
+
+
 def extract_per_label_metrics(
     metrics_dict: AggregatedModelData, dataset: str = "test"
 ) -> pd.DataFrame | None:
@@ -54,9 +119,14 @@ def extract_per_label_metrics(
 
 
 def get_confusion_matrix(
-    metrics_dict: AggregatedModelData, dataset: str = "test"
+    metrics_dict: AggregatedModelData, dataset: str = "test", class_mode: str = "full"
 ) -> np.ndarray | None:
-    """Extract confusion matrix from aggregated model data."""
+    """Extract confusion matrix from aggregated model data.
+
+    class_mode:
+      - "full": returns a 6x6 matrix, padding if needed
+      - "relaxed": merges classes (0,1), (2,3), (4,5) into a 3x3 matrix
+    """
     data = getattr(metrics_dict, dataset, None)
     if data is None:
         return None
@@ -69,7 +139,17 @@ def get_confusion_matrix(
         padding = np.zeros((cm.shape[0], 6 - cm.shape[1]))
         cm = np.hstack([cm, padding])
 
-    return cm[:6, :6]
+    cm = cm[:6, :6]
+
+    if class_mode == "relaxed":
+        groups = [(0, 1), (2, 3), (4, 5)]
+        out = np.zeros((3, 3), dtype=cm.dtype)
+        for i, gi in enumerate(groups):
+            for j, gj in enumerate(groups):
+                out[i, j] = cm[np.ix_(gi, gj)].sum()
+        return out
+
+    return cm
 
 
 def plot_confusion_matrix(
@@ -77,9 +157,10 @@ def plot_confusion_matrix(
     dataset: str = "test",
     show_proportional: bool = True,
     show_title: bool = True,
+    class_mode: str = "full",
 ) -> None:
     """Plot confusion matrix showing hits (diagonal) and misses (off-diagonal)."""
-    cm = get_confusion_matrix(metrics_dict, dataset)
+    cm = get_confusion_matrix(metrics_dict, dataset, class_mode=class_mode)
     if cm is None:
         print(f"Warning: {dataset} not available for this model")
         return
@@ -108,8 +189,12 @@ def plot_confusion_matrix(
         )
     ax1.set_xlabel("Predicted Label", fontsize=12)
     ax1.set_ylabel("True Label", fontsize=12)
-    ax1.set_xticklabels([f"Label {i}" for i in range(6)])
-    ax1.set_yticklabels([f"Label {i}" for i in range(6)])
+    if class_mode == "relaxed":
+        labels = ["0/1", "2/3", "4/5"]
+    else:
+        labels = [f"Label {i}" for i in range(6)]
+    ax1.set_xticklabels(labels[: cm.shape[1]])
+    ax1.set_yticklabels(labels[: cm.shape[0]])
 
     if show_proportional and ax2 is not None:
         cm_normalized = cm.astype("float")
@@ -137,8 +222,8 @@ def plot_confusion_matrix(
             )
         ax2.set_xlabel("Predicted Label", fontsize=12)
         ax2.set_ylabel("True Label", fontsize=12)
-        ax2.set_xticklabels([f"Label {i}" for i in range(6)])
-        ax2.set_yticklabels([f"Label {i}" for i in range(6)])
+        ax2.set_xticklabels(labels[: cm.shape[1]])
+        ax2.set_yticklabels(labels[: cm.shape[0]])
 
     plt.tight_layout()
     plt.show()
@@ -153,7 +238,7 @@ def plot_confusion_matrix(
     print(f"  Incorrect predictions (off-diagonal): {total - correct}")
     print(f"  Accuracy: {accuracy:.4f}")
     print("\nPer-label statistics:")
-    for i in range(6):
+    for i in range(cm.shape[0]):
         true_count = cm[i, :].sum()
         correct_count = cm[i, i]
         if true_count > 0:
@@ -262,26 +347,33 @@ def vis_specific_model_conf_matrices(
     metrics_data: AggregatedModelData,
     show_proportional: bool = True,
     show_title: bool = True,
+    class_mode: str = "full",
 ) -> None:
     """Visualize confusion matrices for train/val/test datasets."""
     print("=" * 80)
     print("TRAIN SET CONFUSION MATRIX")
     print("=" * 80)
-    plot_confusion_matrix(metrics_data, "train", show_proportional, show_title)
+    plot_confusion_matrix(
+        metrics_data, "train", show_proportional, show_title, class_mode=class_mode
+    )
 
     print("\n" + "=" * 80)
     print("CROSS-VALIDATION CONFUSION MATRIX")
     print("=" * 80)
-    plot_confusion_matrix(metrics_data, "val", show_proportional, show_title)
+    plot_confusion_matrix(
+        metrics_data, "val", show_proportional, show_title, class_mode=class_mode
+    )
 
     print("\n" + "=" * 80)
     print("TEST SET CONFUSION MATRIX")
     print("=" * 80)
-    plot_confusion_matrix(metrics_data, "test", show_proportional, show_title)
+    plot_confusion_matrix(
+        metrics_data, "test", show_proportional, show_title, class_mode=class_mode
+    )
 
 
 def vis_all_models_plots(
-    models: list[AggregatedModelData], dataset: str = "test"
+    models: list[AggregatedModelData], dataset: str = "test", class_mode: str = "full"
 ) -> None:
     """Compare per-label metrics across multiple aggregated model dicts."""
     models_data = []
@@ -289,11 +381,21 @@ def vis_all_models_plots(
     for m in models:
         if getattr(m, dataset, None) is not None:
             if "_lg" in m.model:
-                lg_models_data.append(
-                    {"model": m.model, "metrics": getattr(m, dataset)}
+                md = getattr(m, dataset)
+                md = (
+                    collapse_dataset_metrics_relaxed(md)
+                    if class_mode == "relaxed"
+                    else md
                 )
+                lg_models_data.append({"model": m.model, "metrics": md})
             else:
-                models_data.append({"model": m.model, "metrics": getattr(m, dataset)})
+                md = getattr(m, dataset)
+                md = (
+                    collapse_dataset_metrics_relaxed(md)
+                    if class_mode == "relaxed"
+                    else md
+                )
+                models_data.append({"model": m.model, "metrics": md})
 
     if not models_data:
         print(f"No models with {dataset} available")
@@ -373,8 +475,8 @@ def vis_all_models_plots(
             for v_idx, (emb, md) in enumerate(variants):
                 metric_key = metric_name.lower()
                 values = md["metrics"].__dict__.get(metric_key, [])
-                values = values + [0.0] * (6 - len(values))
-                base_positions = np.arange(6) + base_center_offset
+                n_labels = len(values)
+                base_positions = np.arange(n_labels) + base_center_offset
 
                 variant_offset_start = (v_idx - (n_variants - 1) / 2) * bar_width
 
@@ -384,7 +486,7 @@ def vis_all_models_plots(
                     c = darken(c)
                 ax.bar(
                     x_positions,
-                    values[:6],
+                    values[:n_labels],
                     width=bar_width,
                     label=md["model"],
                     alpha=0.9,
@@ -396,8 +498,7 @@ def vis_all_models_plots(
                 lg_md = lg_lookup.get(md["model"])
                 if lg_md is not None:
                     lg_values = lg_md["metrics"].__dict__.get(metric_key, [])
-                    lg_values = lg_values + [0.0] * (6 - len(lg_values))
-                    for label_idx in range(6):
+                    for label_idx in range(min(n_labels, len(lg_values))):
                         x_pos = x_positions[label_idx]
                         lg_val = lg_values[label_idx]
 
@@ -420,8 +521,19 @@ def vis_all_models_plots(
             fontsize=14,
             fontweight="bold",
         )
-        ax.set_xticks(np.arange(6))
-        ax.set_xticklabels([f"Label {i}" for i in range(6)])
+        if models_data:
+            sample_vals = models_data[0]["metrics"].__dict__.get(
+                metric_name.lower(), []
+            )
+            n_labels = len(sample_vals)
+        else:
+            n_labels = 6
+        if class_mode == "relaxed":
+            xticks = ["0/1", "2/3", "4/5"][:n_labels]
+        else:
+            xticks = [f"Label {i}" for i in range(n_labels)]
+        ax.set_xticks(np.arange(n_labels))
+        ax.set_xticklabels(xticks)
         ax.set_ylim(0, 1.0)
         ax.grid(axis="y", alpha=0.3)
         handles, labels = ax.get_legend_handles_labels()
@@ -605,6 +717,7 @@ def vis_all_models_tables(
     splits: list[str] | None = None,
     model_groups: dict[str, list[str]] | None = None,
     show_large_variants: bool = True,
+    class_mode: str = "full",
 ) -> pd.DataFrame:
     """Create comparison table of key metrics across all models.
 
@@ -630,35 +743,44 @@ def vis_all_models_tables(
     all_metrics = []
     for m in aggregated_models:
 
-        def _safe(dataset, key):
+        def _get_ds(dataset: str) -> Optional[DatasetMetrics]:
             d = getattr(m, dataset, None)
+            if d is None:
+                return None
+            return collapse_dataset_metrics_relaxed(d) if class_mode == "relaxed" else d
+
+        def _safe_val(d: Optional[DatasetMetrics], key: str):
             if d is None:
                 return np.nan
             val = getattr(d, key, None)
             return val if val is not None else np.nan
 
-        def _rmse(dataset):
-            mse = _safe(dataset, "mse")
-            return np.sqrt(mse) if not pd.isna(mse) else np.nan
+        def _rmse(d: Optional[DatasetMetrics]):
+            if d is None:
+                return np.nan
+            return np.sqrt(d.mse) if d.mse is not None else np.nan
 
-        def _macro_f1(dataset):
-            d = getattr(m, dataset, None)
+        def _macro_f1(d: Optional[DatasetMetrics]):
             if d and d.f1:
                 return float(np.mean(d.f1))
             return np.nan
 
+        train_d = _get_ds("train")
+        val_d = _get_ds("val")
+        test_d = _get_ds("test")
+
         all_metrics.append(
             {
                 "Model": m.model,
-                "Train RMSE": _rmse("train"),
-                "CV RMSE": _rmse("val"),
-                "Test RMSE": _rmse("test"),
-                "Train Acc": _safe("train", "accuracy"),
-                "CV Acc": _safe("val", "accuracy"),
-                "Test Acc": _safe("test", "accuracy"),
-                "Train Macro-F1": _macro_f1("train"),
-                "CV Macro-F1": _macro_f1("val"),
-                "Test Macro-F1": _macro_f1("test"),
+                "Train RMSE": _rmse(train_d),
+                "CV RMSE": _rmse(val_d),
+                "Test RMSE": _rmse(test_d),
+                "Train Acc": _safe_val(train_d, "accuracy"),
+                "CV Acc": _safe_val(val_d, "accuracy"),
+                "Test Acc": _safe_val(test_d, "accuracy"),
+                "Train Macro-F1": _macro_f1(train_d),
+                "CV Macro-F1": _macro_f1(val_d),
+                "Test Macro-F1": _macro_f1(test_d),
             }
         )
 

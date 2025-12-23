@@ -30,10 +30,39 @@ AVAILABLE_MODELS = {
     "modernbert_large": NLIModernBERTLarge,
 }
 
-AVAILABLE_CONFIGS = [
+BINARY_CONFIGS = [
+    # Original configs - general visual/detailed/descriptive
     NLIConfig(
         candidate_labels=["not detailed", "detailed"],
         hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+    ),
+    NLIConfig(
+        candidate_labels=["not descriptive", "descriptive"],
+        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+    ),
+    NLIConfig(
+        candidate_labels=["not visual", "visual"],
+        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+    ),
+    NLIConfig(
+        candidate_labels=["not detailed", "detailed"],
+        hypothesis_template="This text is {} in terms of sensory details, imagery, and vivid descriptions.",
+    ),
+    NLIConfig(
+        candidate_labels=["not descriptive", "descriptive"],
+        hypothesis_template="This text is {} in terms of sensory details, imagery, and vivid descriptions.",
+    ),
+    NLIConfig(
+        candidate_labels=["not visual", "visual"],
+        hypothesis_template="This text is {} in terms of sensory details, imagery, and vivid descriptions.",
+    ),
+    NLIConfig(
+        candidate_labels=["not visual", "visual"],
+        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
+    ),
+    NLIConfig(
+        candidate_labels=["not visual", "visual"],
+        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, and vivid descriptions of foreground and background.",
     ),
     NLIConfig(
         candidate_labels=[
@@ -43,45 +72,274 @@ AVAILABLE_CONFIGS = [
         hypothesis_template="This text {}",
     ),
     NLIConfig(
-        candidate_labels=["visual", "not visual"],
-        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
+        candidate_labels=[
+            "contains minimal or no visual description",
+            "contains vivid visual description with multiple specific details",
+        ],
+        hypothesis_template="This text {}",
     ),
     NLIConfig(
-        candidate_labels=["non_visual", "visual"],
-        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions of foreground and background.",
+        candidate_labels=[
+            "describes abstract concepts without visual imagery",
+            "describes a visually complete scene with setting and details",
+        ],
+        hypothesis_template="This text {}",
     ),
     NLIConfig(
-        candidate_labels=["non_descriptive", "descriptive"],
-        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+        candidate_labels=[
+            "provides little visual description",
+            "provides rich visual description of people, places, or objects",
+        ],
+        hypothesis_template="This text {}",
+    ),
+    # New configs - abstract vs concrete
+    NLIConfig(
+        candidate_labels=["abstract", "concrete"],
+        hypothesis_template="This text describes {} concepts.",
+    ),
+    NLIConfig(
+        candidate_labels=["abstract and intangible", "concrete and visualizable"],
+        hypothesis_template="The content in this text is {}.",
+    ),
+    # New configs - objects and characters
+    NLIConfig(
+        candidate_labels=[
+            "lacks specific objects or characters",
+            "contains specific objects or characters",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["no visible elements", "visible objects, people, or places"],
+        hypothesis_template="This text describes {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "does not describe appearance",
+            "describes physical appearance",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "without visual attributes",
+            "with visual attributes like color, shape, or size",
+        ],
+        hypothesis_template="This text describes things {}.",
+    ),
+    # New configs - scene completeness
+    NLIConfig(
+        candidate_labels=["incomplete or fragmented", "a complete visual scene"],
+        hypothesis_template="This text presents {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "lacks setting or environment",
+            "includes setting and environment",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "no spatial context",
+            "clear spatial context and arrangement",
+        ],
+        hypothesis_template="This text provides {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["isolated elements", "elements within a scene"],
+        hypothesis_template="This text describes {}.",
+    ),
+    # New configs - detail and vividness
+    NLIConfig(
+        candidate_labels=["generic and vague", "specific and detailed"],
+        hypothesis_template="The visual descriptions in this text are {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["lacks sensory details", "rich in sensory details"],
+        hypothesis_template="This text is {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["plain description", "vivid and evocative description"],
+        hypothesis_template="This text uses {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["minimal detail", "extensive visual detail"],
+        hypothesis_template="This text provides {}.",
+    ),
+    # New configs - atmospheric and environmental
+    NLIConfig(
+        candidate_labels=[
+            "no atmosphere or mood",
+            "conveys atmosphere through visual details",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "lacks environmental context",
+            "establishes environment with visual elements",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "without lighting or time indicators",
+            "includes lighting, time of day, or weather",
+        ],
+        hypothesis_template="This text is {}.",
+    ),
+    # New configs - foreground and background
+    NLIConfig(
+        candidate_labels=[
+            "no depth or layers",
+            "distinguishes foreground and background",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["flat description", "layered scene with depth"],
+        hypothesis_template="This text presents a {}.",
+    ),
+    # New configs - action and movement (visual actions from annotation guidelines)
+    NLIConfig(
+        candidate_labels=["static concepts", "observable actions or movements"],
+        hypothesis_template="This text describes {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "does not depict visual actions",
+            "depicts characters performing visual actions",
+        ],
+        hypothesis_template="This text {}.",
+    ),
+    # New configs - imageability focus
+    NLIConfig(
+        candidate_labels=["hard to form a mental image", "easy to form a mental image"],
+        hypothesis_template="From this text, it is {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["low imageability", "high imageability"],
+        hypothesis_template="This text has {}.",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "cannot be easily pictured",
+            "can be easily pictured in mind",
+        ],
+        hypothesis_template="The content of this text {}.",
+    ),
+    # New configs - character vs scene focus
+    NLIConfig(
+        candidate_labels=[
+            "no character description",
+            "character appearance or clothing",
+        ],
+        hypothesis_template="This text includes {}.",
+    ),
+    NLIConfig(
+        candidate_labels=["no scene description", "scene with location and objects"],
+        hypothesis_template="This text includes {}.",
     ),
 ]
 
-UNDERSCORE_STUDY_CONFIGS = [
+TERTIARY_CONFIGS = [
     NLIConfig(
-        candidate_labels=["not detailed", "detailed"],
-        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+        candidate_labels=["disagree", "agree", "strongly agree"],
+        hypothesis_template="I {} that the text is visual in terms of sensory details, imagery, and vivid descriptions.",
     ),
     NLIConfig(
-        candidate_labels=["not_detailed", "detailed"],
-        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+        candidate_labels=["low", "medium", "high"],
+        hypothesis_template="The visual descriptiveness of this text is {}.",
     ),
     NLIConfig(
-        candidate_labels=["not visual", "visual"],
-        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
+        candidate_labels=["none", "some", "rich"],
+        hypothesis_template="The imagery in this text is {}.",
     ),
     NLIConfig(
-        candidate_labels=["not_visual", "visual"],
-        hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
-    ),
-    NLIConfig(
-        candidate_labels=["not descriptive", "descriptive"],
-        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
-    ),
-    NLIConfig(
-        candidate_labels=["not_descriptive", "descriptive"],
-        hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+        candidate_labels=["minimal", "moderate", "extensive"],
+        hypothesis_template="The visual detail level of this text is: {}",
     ),
 ]
+
+HEXA_CONFIGS = [
+    NLIConfig(
+        candidate_labels=[
+            "no visual imagery",
+            "simple object or person",
+            "object or person in action",
+            "detailed place or character",
+            "complete scene with action",
+            "fully immersive visual scene",
+        ],
+        hypothesis_template="This passage depicts {}",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "no visual description",
+            "basic visible object or person",
+            "object or person doing something",
+            "detailed location or recognizable character",
+            "rich visual scene with character, setting, and details",
+            "vivid, complete scene with atmosphere and lighting",
+        ],
+        hypothesis_template="The visual richness of this text shows {}",
+    ),
+    NLIConfig(
+        candidate_labels=[
+            "zero visual imagery",
+            "minimal visual content",
+            "moderate visual scene",
+            "good visual description",
+            "rich visual scene",
+            "fully immersive visual scene",
+        ],
+        hypothesis_template="The level of visual description in this text is: {}",
+    ),
+    NLIConfig(
+        candidate_labels=["none", "minimal", "low", "moderate", "high", "vivid"],
+        hypothesis_template="The imagery level of this text is: {}",
+    ),
+]
+
+# Sanity checks for counts
+assert len(BINARY_CONFIGS) == 38, (
+    f"Expected 38 binary configs, got {len(BINARY_CONFIGS)}"
+)
+assert len(TERTIARY_CONFIGS) == 4, (
+    f"Expected 4 tertiary configs, got {len(TERTIARY_CONFIGS)}"
+)
+assert len(HEXA_CONFIGS) == 4, f"Expected 4 hexa configs, got {len(HEXA_CONFIGS)}"
+
+# Combined list used by CLI
+AVAILABLE_CONFIGS = BINARY_CONFIGS + TERTIARY_CONFIGS + HEXA_CONFIGS
+
+# UNDERSCORE_STUDY_CONFIGS = [
+#     NLIConfig(
+#         candidate_labels=["not detailed", "detailed"],
+#         hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+#     ),
+#     NLIConfig(
+#         candidate_labels=["not_detailed", "detailed"],
+#         hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+#     ),
+#     NLIConfig(
+#         candidate_labels=["not visual", "visual"],
+#         hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
+#     ),
+#     NLIConfig(
+#         candidate_labels=["not_visual", "visual"],
+#         hypothesis_template="This text is {} in terms of sensory details, imagery, characters, environment, and vivid descriptions.",
+#     ),
+#     NLIConfig(
+#         candidate_labels=["not descriptive", "descriptive"],
+#         hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+#     ),
+#     NLIConfig(
+#         candidate_labels=["not_descriptive", "descriptive"],
+#         hypothesis_template="This text is {} in terms of visual details of characters, setting, or environment.",
+#     ),
+# ]
 
 
 class NLIPersistentMetrics(PersistentDict):

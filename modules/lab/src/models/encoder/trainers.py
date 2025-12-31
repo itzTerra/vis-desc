@@ -127,6 +127,7 @@ class BaseTrainer(ModelNamer):
             metrics.update(**train_metrics, time_end=train_end_time.isoformat())
             print(f"Train MSE: {train_metrics['mse']:.4f}")
             print(f"Train Accuracy: {train_metrics['accuracy']:.4f}")
+            print(f"Train Correlation: {train_metrics['corr']:.4f}")
 
             if self.save_model:
                 self.export(model_path)
@@ -155,6 +156,7 @@ class BaseTrainer(ModelNamer):
             )
             print(f"Test MSE: {test_metrics['mse']:.4f}")
             print(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+            print(f"Test Correlation: {test_metrics['corr']:.4f}")
 
         if self.enable_cv:
             print("\nPerforming cross-validation...")
@@ -172,6 +174,7 @@ class BaseTrainer(ModelNamer):
             metrics["time_end"] = cv_end_time.isoformat()
             print(f"CV MSE: {cv_metrics['mse']:.4f}")
             print(f"CV Accuracy: {cv_metrics['accuracy']:.4f}")
+            print(f"CV Correlation: {cv_metrics['corr']:.4f}")
 
         return {
             "train_metrics": train_metrics,
@@ -341,11 +344,13 @@ class BaseSklearnTrainer(BaseTrainer):
             # Evaluate
             y_pred = fold_model.predict(X_val_fold)
             m = calculate_metrics(y_val_fold, y_pred)
-            metrics["folds"].append(m)
+            # Exclude predictions from fold metrics to keep file sizes manageable
+            fold_metrics = {k: v for k, v in m.items() if k != "predictions"}
+            metrics["folds"].append(fold_metrics)
             metrics.update()
 
             print(
-                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}"
+                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}, Corr={m['corr']:.4f}"
             )
 
         return average_metrics(metrics["folds"])
@@ -719,11 +724,13 @@ class WeightedRandomBaselineTrainer(BaseTrainer, RandomBaselineNamer):
             X_val_dummy = np.zeros((len(y_val_fold), 1))
             y_pred = fold_model.predict(X_val_dummy)
             m = calculate_metrics(y_val_fold, y_pred)
-            metrics["folds"].append(m)
+            # Exclude predictions from fold metrics to keep file sizes manageable
+            fold_metrics = {k: v for k, v in m.items() if k != "predictions"}
+            metrics["folds"].append(fold_metrics)
             metrics.update()
 
             print(
-                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}"
+                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}, Corr={m['corr']:.4f}"
             )
 
         return average_metrics(metrics["folds"])
@@ -920,6 +927,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
             fold_metrics = {
                 "mse": result["mse"],
                 "accuracy": result["accuracy"],
+                "corr": result["corr"],
                 "precision": result["precision"],
                 "recall": result["recall"],
                 "f1": result["f1"],
@@ -933,7 +941,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
             metrics.update()
 
             print(
-                f"Fold {fold + 1} MSE: {fold_metrics['mse']:.4f}, Acc: {fold_metrics['accuracy']:.4f}"
+                f"Fold {fold + 1} MSE: {fold_metrics['mse']:.4f}, Acc: {fold_metrics['accuracy']:.4f}, Corr: {fold_metrics['corr']:.4f}"
             )
 
         return average_metrics(metrics["folds"])

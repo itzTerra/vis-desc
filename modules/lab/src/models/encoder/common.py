@@ -20,6 +20,7 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     confusion_matrix,
 )
+from scipy.stats import pearsonr
 from pathlib import Path
 
 BERT_TOKENIZER_MAX_LENGTH = 160
@@ -351,20 +352,25 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         dict with keys:
         - mse: Mean squared error
         - accuracy: Accuracy of rounded scores
+        - corr: Pearson correlation coefficient
         - precision: Precision for each class (0-5)
         - recall: Recall for each class (0-5)
         - f1: F1-score for each class (0-5)
+        - support: Support for each class (0-5)
         - confusion_matrix: Confusion matrix for rounded scores
+        - predictions: Model predictions
     """
     if np.any(np.isnan(y_pred)):
         return {
             "mse": float("nan"),
             "accuracy": float("nan"),
+            "corr": float("nan"),
             "precision": [float("nan")] * 6,
             "recall": [float("nan")] * 6,
             "f1": [float("nan")] * 6,
             "support": [0] * 6,
             "confusion_matrix": [[0] * 6 for _ in range(6)],
+            "predictions": y_pred.tolist(),
         }
     # Round predictions and true values to nearest integer (0-5)
     y_true_rounded = np.clip(np.round(y_true), 0, 5).astype(int)
@@ -372,6 +378,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
     mse = mean_squared_error(y_true, y_pred)
     accuracy = accuracy_score(y_true_rounded, y_pred_rounded)
+    corr, _ = pearsonr(y_true, y_pred)
     precision, recall, f1, support = precision_recall_fscore_support(
         y_true_rounded, y_pred_rounded, labels=[0, 1, 2, 3, 4, 5], zero_division=0
     )
@@ -380,11 +387,13 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     return {
         "mse": float(mse),
         "accuracy": float(accuracy),
+        "corr": float(corr),
         "precision": precision.tolist(),
         "recall": recall.tolist(),
         "f1": f1.tolist(),
         "support": support.tolist(),
         "confusion_matrix": cm.tolist(),
+        "predictions": y_pred.tolist(),
     }
 
 
@@ -393,6 +402,7 @@ def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "mse": float("nan"),
             "accuracy": float("nan"),
+            "corr": float("nan"),
             "precision": [float("nan")] * 6,
             "recall": [float("nan")] * 6,
             "f1": [float("nan")] * 6,
@@ -407,6 +417,7 @@ def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "mse": float(np.nanmean([m["mse"] for m in metrics])),
         "accuracy": float(np.nanmean([m["accuracy"] for m in metrics])),
+        "corr": float(np.nanmean([m["corr"] for m in metrics])),
         "precision": np.nanmean([m["precision"] for m in metrics], axis=0).tolist(),
         "recall": np.nanmean([m["recall"] for m in metrics], axis=0).tolist(),
         "f1": np.nanmean([m["f1"] for m in metrics], axis=0).tolist(),

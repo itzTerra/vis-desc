@@ -88,6 +88,7 @@ def run_modernbert_trial_single_seed(
         fold_metrics = {
             "mse": result["mse"],
             "accuracy": result["accuracy"],
+            "corr": result["corr"],
             "precision": result["precision"],
             "recall": result["recall"],
             "f1": result["f1"],

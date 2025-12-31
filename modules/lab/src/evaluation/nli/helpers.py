@@ -183,6 +183,74 @@ class IsotonicCalibration:
         return _IsotonicCalibrator(iso)
 
 
+class _OrdinalLogisticCalibrator:
+    def __init__(self, thresholds: np.ndarray, coef: np.ndarray) -> None:
+        self._thresholds = thresholds
+        self._coef = coef
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        from scipy.special import expit
+
+        x = np.asarray(x, dtype=float).reshape(-1, 1)
+        z = x * self._coef[0]
+        cumulative_probs = expit(self._thresholds - z)
+        cumulative_probs = np.clip(cumulative_probs, 1e-10, 1 - 1e-10)
+
+        class_probs = np.zeros((len(x), 6))
+        class_probs[:, 0] = cumulative_probs[:, 0]
+        for j in range(1, 5):
+            class_probs[:, j] = cumulative_probs[:, j] - cumulative_probs[:, j - 1]
+        class_probs[:, 5] = 1 - cumulative_probs[:, 4]
+
+        predicted_values = np.sum(class_probs * np.arange(6), axis=1)
+        return np.clip(predicted_values, 0, 5)
+
+
+class OrdinalLogisticCalibration:
+    def fit(self, scores: np.ndarray, labels: np.ndarray) -> Calibrator:
+        from scipy.optimize import minimize
+        from scipy.special import expit
+
+        scores_array = np.asarray(scores, dtype=float).ravel()
+        labels = np.asarray(labels, dtype=float).ravel()
+        n_classes = 6
+        n_thresholds = n_classes - 1
+
+        def loss_function(params):
+            coef = params[0]
+            thresholds = np.sort(params[1:])
+
+            z = scores_array * coef
+            cumulative_probs = expit(thresholds[:, np.newaxis] - z[np.newaxis, :])
+            cumulative_probs = np.clip(cumulative_probs, 1e-10, 1 - 1e-10)
+
+            loss = 0.0
+            for i, label in enumerate(labels):
+                label_int = int(np.clip(label, 0, n_classes - 1))
+                if label_int == 0:
+                    prob = cumulative_probs[0, i]
+                elif label_int == n_classes - 1:
+                    prob = 1 - cumulative_probs[-1, i]
+                else:
+                    prob = (
+                        cumulative_probs[label_int, i]
+                        - cumulative_probs[label_int - 1, i]
+                    )
+                loss -= np.log(prob + 1e-10)
+
+            return loss
+
+        initial_params = [1.0] + list(
+            np.percentile(labels, np.linspace(0, 100, n_thresholds))
+        )
+        result = minimize(loss_function, initial_params, method="BFGS")
+
+        coef = np.array([result.x[0]])
+        thresholds = np.sort(result.x[1:])
+
+        return _OrdinalLogisticCalibrator(thresholds, coef)
+
+
 def to_int_0_5(arr: np.ndarray) -> np.ndarray:
     return np.clip(np.rint(arr), 0, 5).astype(int)
 
@@ -429,28 +497,102 @@ def _prettify_model_name(model_name: str) -> str:
     return MODEL_NAME_MAP.get(model_name, model_name)
 
 
-def build_table_a(items: List[Dict[str, Any]]) -> pd.DataFrame:
+def _compute_combined_correlation(
+    scores_list: List[np.ndarray],
+    labels_list: List[np.ndarray],
+) -> float | None:
+    if not scores_list or not labels_list:
+        return None
+    scores = np.concatenate([np.asarray(s, dtype=float) for s in scores_list])
+    labels = np.concatenate([np.asarray(lab, dtype=float) for lab in labels_list])
+    if len(scores) == 0 or len(labels) == 0 or len(scores) != len(labels):
+        return None
+    try:
+        corr = np.corrcoef(scores, labels)[0, 1]
+        return float(corr) if not np.isnan(corr) else None
+    except Exception:
+        return None
+
+
+def _get_combined_corr_for_model_in_item(
+    item: Dict[str, Any],
+    model_name: str,
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> float | None:
+    models = [m for m in item.get("models", []) if m.get("model_name") == model_name]
+    if not models:
+        return None
+
+    scores_list = []
+    labels_list = []
+
+    for m in models:
+        scores = m.get("scores")
+        if not scores:
+            continue
+        dataset_name = (m.get("dataset") or "train").lower()
+
+        if dataset_name in ("train", "val", "validation"):
+            if df_train is not None and "label" in df_train.columns:
+                labels = df_train["label"].to_numpy(dtype=float)
+                if len(labels) == len(scores):
+                    scores_list.append(scores)
+                    labels_list.append(labels)
+        elif dataset_name == "test":
+            if df_test is not None and "label" in df_test.columns:
+                labels = df_test["label"].to_numpy(dtype=float)
+                if len(labels) == len(scores):
+                    scores_list.append(scores)
+                    labels_list.append(labels)
+
+    return _compute_combined_correlation(scores_list, labels_list)
+
+
+def build_table_a(
+    items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     rows = []
     for it in items:
         models = it.get("models", [])
         best_corr = None
+
+        seen_model_names = set()
         for m in models:
-            c = m.get("corr")
+            model_name = m.get("model_name")
+            if not model_name or model_name in seen_model_names:
+                continue
+            seen_model_names.add(model_name)
+
+            if df_train is not None or df_test is not None:
+                c = _get_combined_corr_for_model_in_item(
+                    it, model_name, df_train, df_test
+                )
+            else:
+                c = m.get("corr")
+
             if c is None:
                 continue
             best_corr = c if best_corr is None else max(best_corr, c)
+
         rows.append(
             {
                 "id": it.get("id"),
                 "hypothesis_template": it.get("hypothesis_template", ""),
                 "candidate_labels": ", ".join(it.get("candidate_labels", [])),
-                "best_score": best_corr,
+                "best_corr": best_corr,
             }
         )
     return pd.DataFrame(rows)
 
 
-def build_table_b(items: List[Dict[str, Any]]) -> pd.DataFrame:
+def build_table_b(
+    items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     seen_names = set()
     for it in items:
         for m in it.get("models", []):
@@ -463,27 +605,48 @@ def build_table_b(items: List[Dict[str, Any]]) -> pd.DataFrame:
     rows = []
     for it in items:
         row = {"id": it.get("id")}
-        # Group multiple entries per model_name and prefer train split for table stats
-        grouped: Dict[str, Dict[str, Any]] = {}
-        for m in it.get("models", []):
-            n = m.get("model_name")
-            if not n:
-                continue
-            ds = (m.get("dataset") or "train").lower()
-            if n not in grouped:
-                grouped[n] = {}
-            grouped[n][ds] = m
         for name in model_names:
-            g = grouped.get(name, {})
-            # Prefer train; else fall back to any available
-            m = (
-                g.get("train")
-                or g.get("val")
-                or g.get("validation")
-                or (next(iter(g.values()), {}) if g else {})
+            if df_train is not None or df_test is not None:
+                corr = _get_combined_corr_for_model_in_item(it, name, df_train, df_test)
+            else:
+                grouped: Dict[str, Dict[str, Any]] = {}
+                for m in it.get("models", []):
+                    n = m.get("model_name")
+                    if not n:
+                        continue
+                    ds = (m.get("dataset") or "train").lower()
+                    if n not in grouped:
+                        grouped[n] = {}
+                    grouped[n][ds] = m
+                g = grouped.get(name, {})
+                m = (
+                    g.get("train")
+                    or g.get("val")
+                    or g.get("validation")
+                    or (next(iter(g.values()), {}) if g else {})
+                )
+                corr = m.get("corr")
+
+            row[f"{name} corr"] = corr
+
+            grouped_perf: Dict[str, Dict[str, Any]] = {}
+            for m in it.get("models", []):
+                n = m.get("model_name")
+                if not n:
+                    continue
+                ds = (m.get("dataset") or "train").lower()
+                if n not in grouped_perf:
+                    grouped_perf[n] = {}
+                grouped_perf[n][ds] = m
+
+            g_perf = grouped_perf.get(name, {})
+            m_perf = (
+                g_perf.get("train")
+                or g_perf.get("val")
+                or g_perf.get("validation")
+                or (next(iter(g_perf.values()), {}) if g_perf else {})
             )
-            row[f"{name} corr"] = m.get("corr")
-            perf = m.get("performance") or {}
+            perf = m_perf.get("performance") or {}
             row[f"{name} throughput"] = perf.get("throughput")
         rows.append(row)
     df = pd.DataFrame(rows)
@@ -494,35 +657,44 @@ def build_table_b(items: List[Dict[str, Any]]) -> pd.DataFrame:
     return df
 
 
-def _best_corr(item: Dict[str, Any]) -> float | None:
+def _best_corr(
+    item: Dict[str, Any],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> float | None:
     best = None
-    # Prefer train corr if present; otherwise consider all
-    grouped: Dict[str, Dict[str, Any]] = {}
+    seen_model_names = set()
     for model in item.get("models", []):
         name = model.get("model_name")
-        if not name:
+        if not name or name in seen_model_names:
             continue
-        ds = (model.get("dataset") or "train").lower()
-        if name not in grouped:
-            grouped[name] = {}
-        grouped[name][ds] = model
+        seen_model_names.add(name)
 
-    def _update(best_val: Optional[float], val: Optional[float]) -> Optional[float]:
-        if val is None:
-            return best_val
-        return val if best_val is None else max(best_val, val)
+        if df_train is not None or df_test is not None:
+            corr = _get_combined_corr_for_model_in_item(item, name, df_train, df_test)
+        else:
+            grouped: Dict[str, Dict[str, Any]] = {}
+            for m in item.get("models", []):
+                n = m.get("model_name")
+                if not n:
+                    continue
+                ds = (m.get("dataset") or "train").lower()
+                if n not in grouped:
+                    grouped[n] = {}
+                grouped[n][ds] = m
+            g = grouped.get(name, {})
+            m = (
+                g.get("train")
+                or g.get("val")
+                or g.get("validation")
+                or (next(iter(g.values()), {}) if g else {})
+            )
+            corr = m.get("corr")
 
-    # First pass: train-only
-    for splits in grouped.values():
-        corr = (splits.get("train") or {}).get("corr")
         if corr is None:
             continue
-        best = _update(best, corr)
-    # If none found, consider any split
-    if best is None:
-        for splits in grouped.values():
-            for m in splits.values():
-                best = _update(best, m.get("corr"))
+        best = corr if best is None else max(best, corr)
+
     return best
 
 
@@ -637,8 +809,12 @@ def create_table_b_styler(df_b: pd.DataFrame, bold_cols: List[str]) -> Any:
     )
 
 
-def _sort_items_by_best_corr(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    items_with_scores = [(it, _best_corr(it)) for it in items]
+def _sort_items_by_best_corr(
+    items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> List[Dict[str, Any]]:
+    items_with_scores = [(it, _best_corr(it, df_train, df_test)) for it in items]
     return [
         it
         for it, score in sorted(
@@ -649,17 +825,21 @@ def _sort_items_by_best_corr(items: List[Dict[str, Any]]) -> List[Dict[str, Any]
     ]
 
 
-def _prepare_table_a(sorted_items: List[Dict[str, Any]]) -> Tuple[pd.DataFrame, str]:
-    df_a = build_table_a(sorted_items)
+def _prepare_table_a(
+    sorted_items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+) -> Tuple[pd.DataFrame, str]:
+    df_a = build_table_a(sorted_items, df_train, df_test)
     df_a["id"] = list(range(1, len(df_a) + 1))
     df_a = df_a.rename(
         columns={
             "id": "Rank",
             "hypothesis_template": "Hypothesis Template",
             "candidate_labels": "Candidate Labels",
-            "best_score": "Best Score",
+            "best_corr": "Best Corr",
         }
-    )[["Rank", "Hypothesis Template", "Candidate Labels", "Best Score"]]
+    )[["Rank", "Hypothesis Template", "Candidate Labels", "Best Corr"]]
     df_a = _round_numeric(df_a)
     latex_a = df_to_latex(df_a, bold_columns=[])
     return df_a, latex_a
@@ -687,8 +867,10 @@ def _reorder_table_b_columns(df_b: pd.DataFrame) -> pd.DataFrame:
 
 def _prepare_table_b(
     sorted_items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
 ) -> Tuple[pd.DataFrame, str, List[str]]:
-    df_b = build_table_b(sorted_items)
+    df_b = build_table_b(sorted_items, df_train, df_test)
     df_b.loc[df_b["id"] != "AVG", "id"] = list(range(1, len(df_b)))
 
     rename_map = _build_model_rename_map(df_b)
@@ -705,8 +887,12 @@ def _prepare_table_b(
     return df_b, latex_b, bold_cols
 
 
-def prepare_nli_tables(items: List[Dict[str, Any]]):
-    sorted_items = _sort_items_by_best_corr(items)
-    df_a, latex_a = _prepare_table_a(sorted_items)
-    df_b, latex_b, bold_cols = _prepare_table_b(sorted_items)
+def prepare_nli_tables(
+    items: List[Dict[str, Any]],
+    df_train: pd.DataFrame | None = None,
+    df_test: pd.DataFrame | None = None,
+):
+    sorted_items = _sort_items_by_best_corr(items, df_train, df_test)
+    df_a, latex_a = _prepare_table_a(sorted_items, df_train, df_test)
+    df_b, latex_b, bold_cols = _prepare_table_b(sorted_items, df_train, df_test)
     return df_a, latex_a, df_b, latex_b, bold_cols

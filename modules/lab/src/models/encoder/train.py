@@ -140,7 +140,8 @@ MODEL_PARAMS = {
         "lg": {
             "stage1_epochs": 6,
             "stage1_frozen_bert_epochs": 1,
-            "stage2_epochs": 21,
+            # "stage2_epochs": 21,
+            "stage2_epochs": 0,
             "stage2_frozen_bert_epochs": 5,
             "lr_bert": 1e-5,
             "lr_custom": 1e-4,

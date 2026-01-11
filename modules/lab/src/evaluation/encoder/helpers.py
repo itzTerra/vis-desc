@@ -215,6 +215,10 @@ def average_metric_files(paths: list[str | Path]) -> dict[str, Any]:
             "support": averaged["support"],
             "confusion_matrix": averaged["confusion_matrix"],
         }
+        # Optionally include corr if present
+        if all("corr" in c for c in contents):
+            corr_values = [float(c["corr"]) for c in contents]
+            result["corr"] = float(np.mean(corr_values))
         # For train type, optionally aggregate train_losses if present
         if type_ == "train" and all("train_losses" in c for c in contents):
             # Average per-index; lengths may differ → require equality
@@ -316,10 +320,15 @@ def aggregate_metrics_by_model() -> list[dict[str, Any]]:
     """
     Aggregate metrics across all seeds for each model/embedding/lg/type combination.
 
+    For finetuned-mbert, handles three variants:
+    - finetuned-mbert_lg-only: large dataset only
+    - finetuned-mbert_lg: large dataset (combined)
+    - finetuned-mbert: small dataset only
+
     Returns:
         List of dicts with structure:
         {
-            'model': str,  # e.g., "svm_minilm_lg"
+            'model': str,  # e.g., "svm_minilm_lg" or "finetuned-mbert_lg-only"
             'params': dict,
             'train': dict | None,  # Averaged metrics
             'val': dict | None,
@@ -1145,64 +1154,6 @@ def main():
             files = [f for f in files if args.filter in f.name]
         print_best_val_epochs(files)
         return
-
-
-def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
-    """
-    Format metrics DataFrame for LaTeX output with best values bolded.
-
-    Args:
-        df_metrics: DataFrame with 'Model' column and numeric metric columns.
-
-    Returns:
-        LaTeX table string with bolded best values and model names.
-    """
-    models_to_bold = [
-        "Random",
-        "Ridge",
-        "RandomForest",
-        "SVM",
-        "CatBoost",
-        "FinetunedMBERT",
-    ]
-
-    df_latex = df_metrics.copy()
-    numeric_cols = df_latex.columns[1:]
-
-    for col in numeric_cols:
-        s = pd.to_numeric(df_latex[col], errors="coerce")
-
-        if s.notna().any():
-            best_val = s.min() if "RMSE" in col else s.max()
-            is_best = np.isclose(s, best_val, atol=1e-6) & s.notna()
-
-            for idx in df_latex.index:
-                val = df_latex.loc[idx, col]
-                if val == "" or pd.isna(val):
-                    df_latex.loc[idx, col] = ""
-                    continue
-
-                try:
-                    float_val = float(val)
-                    df_latex.loc[idx, col] = (
-                        f"\\textbf{{{float_val:.4f}}}"
-                        if is_best[idx]
-                        else f"{float_val:.4f}"
-                    )
-                except (ValueError, TypeError):
-                    df_latex.loc[idx, col] = str(val)
-
-    df_latex.columns = [f"\\textbf{{{col}}}" for col in df_latex.columns]
-
-    model_col = df_latex.columns[0]
-
-    def format_model_name(val: str) -> str:
-        return f"\\textbf{{{val}}}" if val in models_to_bold else val
-
-    df_latex[model_col] = df_latex[model_col].apply(format_model_name)
-
-    col_format = "r" * len(df_latex.columns)
-    return df_latex.to_latex(index=False, escape=False, column_format=col_format)
 
 
 if __name__ == "__main__":

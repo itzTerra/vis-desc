@@ -438,6 +438,9 @@ def vis_all_models_plots(
         "catboost": "#E45756",
         "finetuned": "#7F3C8D",
         "finetuned-mbert": "#7F3C8D",
+        "RoBERTa": "#2CA02C",
+        "MBERT-L": "#9467BD",
+        "DeBERTa-L": "#FF7F0E",
     }
 
     def darken(hex_color, factor=0.75):
@@ -792,7 +795,33 @@ def vis_all_models_tables(
     rows = []
 
     for prefix, models in model_groups.items():
-        if len(models) == 1:
+        # Special handling for finetuned-mbert with three variants
+        if (
+            prefix == "FinetunedMBERT"
+            and len(models) == 3
+            and all(
+                m
+                in ["finetuned-mbert_lg-only", "finetuned-mbert", "finetuned-mbert_lg"]
+                for m in models
+            )
+        ):
+            row = [prefix] + [""] * len(columns)
+            rows.append(row)
+
+            # Add three sub-rows for different dataset configurations
+            variants = [
+                ("finetuned-mbert_lg-only", "Large only"),
+                ("finetuned-mbert", "Small only"),
+                ("finetuned-mbert_lg", "Small+Large"),
+            ]
+            for model_name, label in variants:
+                row = [label]
+                m_dict = model_to_metrics.get(model_name, {})
+                for col in columns:
+                    val = m_dict.get(col, np.nan)
+                    row.append(val if not pd.isna(val) else "")
+                rows.append(row)
+        elif len(models) == 1:
             model = models[0]
             row = [prefix]
             m_dict = model_to_metrics.get(model, {})
@@ -803,7 +832,7 @@ def vis_all_models_tables(
 
             if show_large_variants:
                 model = f"{models[0]}_lg"
-                row = ["(Large)"]
+                row = ["(+Large)"]
                 m_dict = model_to_metrics.get(model, {})
                 for col in columns:
                     val = m_dict.get(col, np.nan)
@@ -816,7 +845,7 @@ def vis_all_models_tables(
                 if "_lg" in model:
                     base_emb = model.split("_")[-2]
                     emb = "MiniLM" if base_emb == "minilm" else "MBERT"
-                    variant = f"{emb} (Large)"
+                    variant = f"{emb} (+Large)"
                 else:
                     emb = model.split("_")[-1]
                     variant = "MiniLM" if emb == "minilm" else "MBERT"
@@ -851,7 +880,66 @@ def vis_all_models_tables(
     return df
 
 
+def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
+    """
+    Format metrics DataFrame for LaTeX output with best values bolded.
+
+    Args:
+        df_metrics: DataFrame with 'Model' column and numeric metric columns.
+
+    Returns:
+        LaTeX table string with bolded best values and model names.
+    """
+    models_to_bold = [
+        "Random",
+        "Ridge",
+        "RandomForest",
+        "SVM",
+        "CatBoost",
+        "FinetunedMBERT",
+    ]
+
+    df_latex = df_metrics.copy()
+    numeric_cols = df_latex.columns[1:]
+
+    for col in numeric_cols:
+        s = pd.to_numeric(df_latex[col], errors="coerce")
+
+        if s.notna().any():
+            best_val = s.min() if "RMSE" in col else s.max()
+            is_best = np.isclose(s, best_val, atol=1e-6) & s.notna()
+
+            for idx in df_latex.index:
+                val = df_latex.loc[idx, col]
+                if val == "" or pd.isna(val):
+                    df_latex.loc[idx, col] = ""
+                    continue
+
+                try:
+                    float_val = float(val)
+                    df_latex.loc[idx, col] = (
+                        f"\\textbf{{{float_val:.4f}}}"
+                        if is_best[idx]
+                        else f"{float_val:.4f}"
+                    )
+                except (ValueError, TypeError):
+                    df_latex.loc[idx, col] = str(val)
+
+    df_latex.columns = [f"\\textbf{{{col}}}" for col in df_latex.columns]
+
+    model_col = df_latex.columns[0]
+
+    def format_model_name(val: str) -> str:
+        return f"\\textbf{{{val}}}" if val in models_to_bold else val
+
+    df_latex[model_col] = df_latex[model_col].apply(format_model_name)
+
+    col_format = "r" * len(df_latex.columns)
+    return df_latex.to_latex(index=False, escape=False, column_format=col_format)
+
+
 def latex_escape(text: str) -> str:
+    text = text.replace("\\", r"\textbackslash{}")
     replacements = {
         "&": r"\&",
         "%": r"\%",
@@ -860,9 +948,8 @@ def latex_escape(text: str) -> str:
         "_": r"\_",
         "{": r"\{",
         "}": r"\}",
-        "~": r"\\textasciitilde{}",
-        "^": r"\\textasciicircum{}",
-        "\\": r"\\textbackslash{}",
+        "~": r"\textasciitilde{}",
+        "^": r"\textasciicircum{}",
     }
     for k, v in replacements.items():
         text = text.replace(k, v)

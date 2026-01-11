@@ -402,7 +402,6 @@ def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
         return {
             "mse": float("nan"),
             "accuracy": float("nan"),
-            "corr": float("nan"),
             "precision": [float("nan")] * 6,
             "recall": [float("nan")] * 6,
             "f1": [float("nan")] * 6,
@@ -414,16 +413,21 @@ def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
     cm_avg = np.nanmean(cms, axis=0)
     cm_avg = np.nan_to_num(cm_avg, nan=0.0)
 
-    return {
+    result = {
         "mse": float(np.nanmean([m["mse"] for m in metrics])),
         "accuracy": float(np.nanmean([m["accuracy"] for m in metrics])),
-        "corr": float(np.nanmean([m["corr"] for m in metrics])),
         "precision": np.nanmean([m["precision"] for m in metrics], axis=0).tolist(),
         "recall": np.nanmean([m["recall"] for m in metrics], axis=0).tolist(),
         "f1": np.nanmean([m["f1"] for m in metrics], axis=0).tolist(),
         "support": np.sum([m["support"] for m in metrics], axis=0).tolist(),
         "confusion_matrix": np.rint(cm_avg).astype(int).tolist(),
     }
+
+    # Optionally include corr if present
+    if all("corr" in m for m in metrics):
+        result["corr"] = float(np.nanmean([m["corr"] for m in metrics]))
+
+    return result
 
 
 def get_model_filename(

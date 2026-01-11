@@ -21,7 +21,7 @@ class WorkerInitializationMiddleware(Middleware):
             # Evaluator.minilm_svm: MiniLMSVMEvaluator(
             #     feature_service=worker_resources["feature_service"]
             # ),
-            # Evaluator.nli_roberta: NLIRoberta(cache_dir=settings.MODEL_CACHE_DIR),
+            # Evaluator.nli_roberta: NLIRoberta(),
             Evaluator.random: RandomEvaluator(),
         }
 

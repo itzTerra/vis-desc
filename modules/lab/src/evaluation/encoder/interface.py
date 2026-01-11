@@ -67,6 +67,11 @@ def encoder_metrics_to_core(
 def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
     """Get model grouping configuration for encoder models.
 
+    For finetuned-mbert, includes three dataset variants:
+    - finetuned-mbert_lg-only: large dataset only
+    - finetuned-mbert: small dataset only
+    - finetuned-mbert_lg: large + small combined
+
     Returns:
         Tuple of (model_groups, show_large_variants)
     """
@@ -81,6 +86,10 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
             "catboost_minilm_lg",
             "catboost_mbert_lg",
         ],
-        "FinetunedMBERT": ["finetuned-mbert"],
+        "FinetunedMBERT": [
+            "finetuned-mbert_lg-only",
+            "finetuned-mbert",
+            "finetuned-mbert_lg",
+        ],
     }
     return model_groups, True

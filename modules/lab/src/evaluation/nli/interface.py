@@ -18,6 +18,7 @@ from evaluation.nli.helpers import (
     IsotonicCalibration,
     to_int_0_5,
     Calibrator,
+    MODEL_NAME_MAP,
 )
 
 
@@ -103,6 +104,8 @@ def nli_scores_to_core(
     """
     if calibration_method is None:
         calibration_method = IsotonicCalibration
+
+    model_name = MODEL_NAME_MAP.get(model_name, model_name)
 
     train_scores = np.asarray(train_scores, dtype=float)
     y_train = np.asarray(y_train, dtype=float)

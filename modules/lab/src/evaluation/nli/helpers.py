@@ -13,8 +13,8 @@ from evaluation.core import format_number, latex_escape
 
 MODEL_NAME_MAP = {
     "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
-    "onnx-community/ModernBERT-large-zeroshot-v2.0-ONNX": "ModernBERT-Large",
-    "richardr1126/deberta-v3-large-zeroshot-v2.0-ONNX": "DeBERTaV3-Large",
+    "onnx-community/ModernBERT-large-zeroshot-v2.0-ONNX": "MBERT-L",
+    "richardr1126/deberta-v3-large-zeroshot-v2.0-ONNX": "DeBERTa-L",
 }
 
 
@@ -698,22 +698,31 @@ def _best_corr(
     return best
 
 
-def _round_numeric(df: pd.DataFrame, decimals: int = 4) -> pd.DataFrame:
+def _round_numeric(
+    df: pd.DataFrame, decimals: int = 4, column_decimals: Dict[str, int] | None = None
+) -> pd.DataFrame:
+    column_decimals = column_decimals or {}
     for col in df.columns:
-        if col == "Rank":
+        if col == "Rank" or col == "#":
             continue
+        col_decimals = column_decimals.get(col, decimals)
         if pd.api.types.is_numeric_dtype(df[col]):
-            df[col] = df[col].round(decimals)
+            df[col] = df[col].round(col_decimals)
             continue
         coerced = pd.to_numeric(df[col], errors="coerce")
         if coerced.notna().any():
-            df[col] = coerced.round(decimals).where(~coerced.isna(), df[col])
+            df[col] = coerced.round(col_decimals).where(~coerced.isna(), df[col])
     return df
 
 
-def df_to_latex(df: pd.DataFrame, bold_columns: List[str] | None = None) -> str:
+def df_to_latex(
+    df: pd.DataFrame,
+    bold_columns: List[str] | None = None,
+    column_decimals: Dict[str, int] | None = None,
+) -> str:
     bold_columns = bold_columns or []
-    id_col = next((c for c in ("Rank", "id") if c in df.columns), df.columns[0])
+    column_decimals = column_decimals or {}
+    id_col = next((c for c in ("#", "Rank", "id") if c in df.columns), df.columns[0])
     non_avg = df[df[id_col] != "AVG"] if "AVG" in df[id_col].values else df
     max_idx: Dict[str, int] = {}
     for col in bold_columns:
@@ -728,21 +737,97 @@ def df_to_latex(df: pd.DataFrame, bold_columns: List[str] | None = None) -> str:
     lines: List[str] = []
     lines.append("\\begin{tabular}{" + colspec + "}")
     lines.append("\\hline")
-    lines.append(" " + " & ".join(headers) + " " + "\\\\")
+    lines.append(" & ".join(headers) + " \\\\")
     lines.append("\\hline")
     for i, row in df.iterrows():
         cells: List[str] = []
         for col, val in row.items():
-            if col == "Rank":
+            if col == "#" or col == "Rank":
                 s = str(val) if val is not None else ""
             elif pd.api.types.is_number(val):
-                s = format_number(val)
+                decimals = column_decimals.get(col, 4)
+                s = format_number(val, decimals=decimals)
             else:
                 s = str(val) if val is not None else ""
             should_bold = col in max_idx and (i == max_idx[col])
             s_esc = latex_escape(s)
             cells.append(("\\textbf{" + s_esc + "}") if should_bold else s_esc)
-        lines.append(" " + " & ".join(cells) + " " + "\\\\")
+        lines.append(" & ".join(cells) + " \\\\")
+    lines.append("\\hline")
+    lines.append("\\end{tabular}")
+    return "\n".join(lines)
+
+
+def df_to_latex_multirow_header(
+    df: pd.DataFrame,
+    bold_columns: List[str] | None = None,
+    column_decimals: Dict[str, int] | None = None,
+) -> str:
+    bold_columns = bold_columns or []
+    column_decimals = column_decimals or {}
+    id_col = next((c for c in ("#", "Rank", "id") if c in df.columns), df.columns[0])
+    non_avg = df[df[id_col] != "AVG"] if "AVG" in df[id_col].values else df
+    max_idx: Dict[str, int] = {}
+    for col in bold_columns:
+        if col not in df.columns:
+            continue
+        series = pd.to_numeric(non_avg[col], errors="coerce")
+        if series.empty or series.isna().all():
+            continue
+        max_idx[col] = int(series.idxmax())
+
+    corr_cols = [c for c in df.columns if c.endswith(" Corr")]
+    thr_cols = [c for c in df.columns if c.endswith(" Throughput")]
+
+    colspec = "l" + ("r" * len(corr_cols)) + ("r" * len(thr_cols))
+    lines: List[str] = []
+    lines.append("\\begin{tabular}{" + colspec + "}")
+    lines.append("\\hline")
+
+    # First header row with multicolumn spans
+    id_col_display = df.columns[0] if len(df.columns) > 0 else "#"
+    header_row1 = [f"\\multirow{{2}}{{*}}{{{latex_escape(id_col_display)}}}"]
+    if corr_cols:
+        header_row1.append(
+            f"\\multicolumn{{{len(corr_cols)}}}{{c}}{{Pearson correlation coefficient}}"
+        )
+    if thr_cols:
+        header_row1.append(
+            f"\\multicolumn{{{len(thr_cols)}}}{{c}}{{Throughput (predictions/sec)}}"
+        )
+    lines.append(" & ".join(header_row1) + " \\\\")
+
+    # Second header row with model names
+    header_row2 = [""]
+    for col in corr_cols:
+        model_name = col.replace(" Corr", "")
+        header_row2.append(latex_escape(model_name))
+    for col in thr_cols:
+        model_name = col.replace(" Throughput", "")
+        header_row2.append(latex_escape(model_name))
+    lines.append(" & ".join(header_row2) + " \\\\")
+    lines.append("\\hline")
+
+    for i, row in df.iterrows():
+        cells: List[str] = []
+        is_avg_row = row.get(id_col) == "AVG"
+        for col, val in row.items():
+            if col == "#" or col == "Rank":
+                s = str(val) if val is not None else ""
+            elif pd.api.types.is_number(val):
+                decimals = column_decimals.get(col, 4)
+                s = format_number(val, decimals=decimals)
+            else:
+                s = str(val) if val is not None else ""
+            should_bold = col in max_idx and (i == max_idx[col])
+            s_esc = latex_escape(s)
+            if is_avg_row:
+                cells.append("\\textit{" + s_esc + "}")
+            elif should_bold:
+                cells.append("\\textbf{" + s_esc + "}")
+            else:
+                cells.append(s_esc)
+        lines.append(" & ".join(cells) + " \\\\")
     lines.append("\\hline")
     lines.append("\\end{tabular}")
     return "\n".join(lines)
@@ -779,12 +864,14 @@ def get_table_b_styles() -> List[Dict[str, Any]]:
 def create_avg_row_combined(
     df_b: pd.DataFrame, main_rows: pd.DataFrame
 ) -> pd.DataFrame:
-    avg_row = df_b[df_b["Rank"] == "AVG"]
+    id_col = "#" if "#" in df_b.columns else "Rank"
+    avg_row = df_b[df_b[id_col] == "AVG"]
     return pd.concat([main_rows, avg_row], ignore_index=True)
 
 
 def create_table_b_styler(df_b: pd.DataFrame, bold_cols: List[str]) -> Any:
-    main_rows = df_b[df_b["Rank"] != "AVG"]
+    id_col = "#" if "#" in df_b.columns else "Rank"
+    main_rows = df_b[df_b[id_col] != "AVG"]
     combined = create_avg_row_combined(df_b, main_rows)
 
     def _highlight_best(col: pd.Series) -> List[str]:
@@ -792,7 +879,7 @@ def create_table_b_styler(df_b: pd.DataFrame, bold_cols: List[str]) -> Any:
             return [""] * len(col)
         best_val = pd.to_numeric(main_rows[col.name], errors="coerce").max()
         styles: List[str] = []
-        for val, rank in zip(col, combined["Rank"]):
+        for val, rank in zip(col, combined[id_col]):
             if rank == "AVG":
                 styles.append("")
                 continue
@@ -800,10 +887,15 @@ def create_table_b_styler(df_b: pd.DataFrame, bold_cols: List[str]) -> Any:
             styles.append("font-weight:bold" if is_best else "")
         return styles
 
+    def _italic_avg_row(col: pd.Series) -> List[str]:
+        return [
+            "font-style:italic" if rank == "AVG" else "" for rank in combined[id_col]
+        ]
+
     table_styles = get_table_b_styles()
     return (
         combined.style.apply(_highlight_best, subset=bold_cols)
-        .format(precision=4, subset=[c for c in df_b.columns if c != "Rank"])
+        .apply(_italic_avg_row)
         .hide(axis="index")
         .set_table_styles(table_styles)
     )
@@ -834,19 +926,20 @@ def _prepare_table_a(
     df_a["id"] = list(range(1, len(df_a) + 1))
     df_a = df_a.rename(
         columns={
-            "id": "Rank",
+            "id": "#",
             "hypothesis_template": "Hypothesis Template",
             "candidate_labels": "Candidate Labels",
             "best_corr": "Best Corr",
         }
-    )[["Rank", "Hypothesis Template", "Candidate Labels", "Best Corr"]]
-    df_a = _round_numeric(df_a)
-    latex_a = df_to_latex(df_a, bold_columns=[])
+    )[["#", "Hypothesis Template", "Candidate Labels", "Best Corr"]]
+    column_decimals = {"Best Corr": 3}
+    df_a = _round_numeric(df_a, column_decimals=column_decimals)
+    latex_a = df_to_latex(df_a, bold_columns=[], column_decimals=column_decimals)
     return df_a, latex_a
 
 
 def _build_model_rename_map(df_b: pd.DataFrame) -> Dict[str, str]:
-    rename_map = {"id": "Rank"}
+    rename_map = {"id": "#"}
     for col in df_b.columns:
         if col.endswith(" corr"):
             raw_name = col[:-5]
@@ -862,7 +955,8 @@ def _build_model_rename_map(df_b: pd.DataFrame) -> Dict[str, str]:
 def _reorder_table_b_columns(df_b: pd.DataFrame) -> pd.DataFrame:
     corr_cols = [c for c in df_b.columns if c.endswith(" Corr")]
     thr_cols = [c for c in df_b.columns if c.endswith(" Throughput")]
-    return df_b[["Rank"] + corr_cols + thr_cols]
+    id_col = "#" if "#" in df_b.columns else "Rank"
+    return df_b[[id_col] + corr_cols + thr_cols]
 
 
 def _prepare_table_b(
@@ -882,8 +976,12 @@ def _prepare_table_b(
     thr_cols = [c for c in df_b.columns if c.endswith(" Throughput")]
     bold_cols = corr_cols + thr_cols
 
-    df_b = _round_numeric(df_b)
-    latex_b = df_to_latex(df_b, bold_columns=bold_cols)
+    column_decimals = {col: 1 for col in thr_cols}
+    column_decimals.update({col: 4 for col in corr_cols})
+    df_b = _round_numeric(df_b, column_decimals=column_decimals)
+    latex_b = df_to_latex_multirow_header(
+        df_b, bold_columns=bold_cols, column_decimals=column_decimals
+    )
     return df_b, latex_b, bold_cols
 
 

@@ -48,23 +48,28 @@ dependencies = [
 [project.optional-dependencies]
 cpu = [
     "intel-openmp==2024.2.1",
-    "torch-cpu",
-    "torchvision-cpu",
+    "torch>=2.9.1",
+    "torchvision==0.24.1+cpu",
     "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cpu-cp38-abi3-manylinux_2_35_x86_64.whl",
 ]
 gpu = [
-    "torch-gpu",
-    "torchvision-gpu",
+    "onnxruntime-gpu>=1.23.2",
+    "torch>=2.9.1",
+    "torchvision==0.24.1+cu124",
     "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cu124-cp38-abi3-manylinux_x86_64.whl",
 ]
 
 [tool.uv.sources]
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 booknlp = { git = "https://github.com/itzTerra/booknlp" }
-torch-cpu = { package = "torch", version = ">=2.9.1", index = "pytorch-cpu" }
-torchvision-cpu = { package = "torchvision", version = "0.24.1+cpu", index = "pytorch-cpu" }
-torch-gpu = { package = "torch", version = ">=2.9.1", index = "pytorch-gpu" }
-torchvision-gpu = { package = "torchvision", version = "0.24.1+cu124", index = "pytorch-gpu" }
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-gpu", extra = "gpu" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-gpu", extra = "gpu" },
+]
 
 [[tool.uv.index]]
 name = "pytorch-cpu"

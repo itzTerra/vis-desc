@@ -18,6 +18,7 @@ dependencies = [
     "nltk>=3.9.1",
     "onnx==1.18",
     "onnxscript>=0.5.0",
+    "openai>=2.15.0",
     "openpyxl>=3.1.5",
     "optimum-onnx[onnxruntime]>=0.0.3",
     "optuna>=4.5.0",
@@ -38,11 +39,40 @@ dependencies = [
     "tensorflow-hub>=0.16.1",
     "tf-keras>=2.18.0",
     "tf-models-official>=2.18.0",
+    "tqdm>=4.67.1",
     "wn>=0.13.0",
     "ydata-profiling>=4.12.2",
     "zodb>=6.1",
 ]
 
+[project.optional-dependencies]
+cpu = [
+    "intel-openmp==2024.2.1",
+    "torch-cpu",
+    "torchvision-cpu",
+    "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cpu-cp38-abi3-manylinux_2_35_x86_64.whl",
+]
+gpu = [
+    "torch-gpu",
+    "torchvision-gpu",
+    "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cu124-cp38-abi3-manylinux_x86_64.whl",
+]
+
 [tool.uv.sources]
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 booknlp = { git = "https://github.com/itzTerra/booknlp" }
+torch-cpu = { package = "torch", version = ">=2.9.1", index = "pytorch-cpu" }
+torchvision-cpu = { package = "torchvision", version = "0.24.1+cpu", index = "pytorch-cpu" }
+torch-gpu = { package = "torch", version = ">=2.9.1", index = "pytorch-gpu" }
+torchvision-gpu = { package = "torchvision", version = "0.24.1+cu124", index = "pytorch-gpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+

@@ -42,3 +42,25 @@ class PersistentDict(dict):
         for k, v in dict(*args, **kwargs).items():
             self[k] = v
         self._dump()
+
+
+def get_device_name() -> str:
+    """Get the device name (GPU or CPU)."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            return torch.cuda.get_device_name(0)
+    except Exception:
+        pass
+
+    # Get CPU name from /proc/cpuinfo
+    try:
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if "model name" in line:
+                    return line.split(":")[1].strip()
+    except Exception:
+        pass
+
+    return "CPU"

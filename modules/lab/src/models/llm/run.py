@@ -1,0 +1,456 @@
+import argparse
+import os
+import sys
+import time
+from pathlib import Path
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import tiktoken
+import json
+import re
+from tqdm import tqdm
+
+from models.llm.agents import (
+    ModelAgent,
+    VLLMAgent,
+    APIAgent,
+    EINFRA_MODELS,
+    LOCAL_MODELS,
+)
+from models.llm.prompts import PROMPTS, Prompt
+from utils import DATA_DIR, PersistentDict, get_device_name
+from huggingface_hub import login
+from dotenv import load_dotenv
+
+load_dotenv()
+
+BATCH_SIZE = 16
+METRICS_DIR = DATA_DIR / "metrics" / "llm"
+METRICS_DIR.mkdir(parents=True, exist_ok=True)
+
+AVAILABLE_MODELS = EINFRA_MODELS + LOCAL_MODELS
+
+
+def count_tokens(text: str, encoding_name: str = "cl100k_base") -> int:
+    """Count tokens in text using tiktoken.
+
+    Args:
+        text: Text to count tokens for
+        encoding_name: Encoding to use (default: cl100k_base for GPT-4)
+
+    Returns:
+        Number of tokens
+    """
+    encoding = tiktoken.get_encoding(encoding_name)
+    return len(encoding.encode(text))
+
+
+class LLMPersistentMetrics(PersistentDict):
+    """Persistent metrics storage for LLM model evaluations."""
+
+    @classmethod
+    def create_for_prompt(
+        cls,
+        prompt: Prompt,
+    ) -> "LLMPersistentMetrics":
+        """Create metrics file for a prompt using the format specified in metric-docs.md.
+
+        Filename format: promptId_yyyy-MM-dd-hh-mm-ss.json
+        - promptId: result of Prompt.get_id()
+        - Timestamp: ISO 8601 format (yyyy-MM-dd-hh-mm-ss)
+        """
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        prompt_id = prompt.get_id()
+        filename = METRICS_DIR / f"{prompt_id}_{timestamp}.json"
+
+        metrics = cls(filename)
+        prompt_text = prompt.build_user_prompt("{{TEXT_SEGMENT}}")
+        metrics.setdefault("prompt", prompt_text)
+        metrics.setdefault("prompt_token_count", count_tokens(prompt_text))
+        metrics.setdefault("models", [])
+        return metrics
+
+    def add_model_result(self, model_result: dict) -> None:
+        """Add evaluation results for a model.
+
+        Args:
+            model_result: Dict with model_name, dataset, outputs, output_errors,
+                         device, batch_size, performance, time_start, time_end
+        """
+        self["models"].append(model_result)
+        self._dump()
+
+
+def calculate_performance_metrics(
+    latencies: list[float],
+) -> dict:
+    """
+    Calculate performance metrics from latency measurements.
+
+    Args:
+        latencies: List of per-sample latencies in milliseconds
+
+    Returns:
+        dict with keys: throughput, latency_mean, latency_std
+    """
+    latencies_arr = np.array(latencies)
+    throughput = 1000.0 / np.mean(latencies_arr)
+
+    return {
+        "throughput": float(throughput),
+        "latency_mean": float(np.mean(latencies_arr)),
+        "latency_std": float(np.std(latencies_arr)),
+    }
+
+
+def parse_output(response: str) -> tuple[str | None, bool]:
+    """
+    Parse the rating from model output.
+
+    Returns:
+        Tuple of (parsed_rating, had_error)
+        - parsed_rating: The extracted rating as string, or None if error
+        - had_error: True if parsing failed
+    """
+
+    def fallback_from_text(text: str) -> tuple[str | None, bool]:
+        # Fallback: take the last integer and last boolean (true/false) in text
+        numbers = re.findall(r"[-+]?\d+", text)
+        bools = re.findall(r"\b(?:true|false)\b", text, flags=re.IGNORECASE)
+        if numbers:
+            val = int(numbers[-1])
+            bonus_applied = bools and bools[-1].lower() == "true"
+            if bonus_applied:
+                val += 1
+            return str(val), False
+        return None, True
+
+    try:
+        json_start = response.find("{")
+        json_end = response.rfind("}") + 1
+        if json_start != -1 and json_end > json_start:
+            json_str = response[json_start:json_end]
+            parsed = json.loads(json_str)
+
+            rating = parsed.get("rating")
+            if rating is None:
+                rating = parsed.get("rating_without_action_bonus")
+
+            if rating is not None:
+                rating = int(rating)
+                if parsed.get("action_bonus_applied") is True:
+                    rating += 1
+                return str(rating), False
+            # JSON parsed but no rating fields; try fallback extraction
+            return fallback_from_text(response)
+        # No JSON substring found; try fallback extraction
+        return fallback_from_text(response)
+    except (json.JSONDecodeError, Exception):
+        # JSON parse failed; try fallback extraction
+        return fallback_from_text(response)
+
+
+def evaluate_model_on_prompt(
+    agent: ModelAgent,
+    prompt: Prompt,
+    texts: list[str],
+    metrics: "LLMPersistentMetrics",
+    dataset_name: str,
+    temperature: float = 0.0,
+    max_tokens: int = 512,
+) -> None:
+    """
+    Evaluate a model on a prompt in batches and update metrics after each batch.
+
+    Args:
+        agent: ModelAgent instance to evaluate
+        prompt: Prompt object to use
+        texts: List of texts to evaluate
+        metrics: LLMPersistentMetrics instance for storing results
+        dataset_name: Name of the dataset (train/test)
+        temperature: Sampling temperature
+        max_tokens: Maximum tokens to generate
+    """
+    time_start = datetime.now().isoformat()
+    model_name = agent.model_name if hasattr(agent, "model_name") else "unknown"
+    device = get_device_name()
+
+    all_outputs = []
+    all_latencies = []
+    output_errors = 0
+
+    user_prompts = [prompt.build_user_prompt(text) for text in texts]
+
+    model_result = {
+        "model_name": model_name,
+        "dataset": dataset_name,
+        "outputs": all_outputs,
+        "output_errors": output_errors,
+        "device": device,
+        "batch_size": BATCH_SIZE,
+        "performance": None,
+        "time_start": time_start,
+        "time_end": None,
+    }
+    metrics["models"].append(model_result)
+
+    for i in tqdm(
+        range(0, len(user_prompts), BATCH_SIZE),
+        desc="Processing batches",
+        leave=False,
+        file=sys.stdout,
+    ):
+        batch = user_prompts[i : i + BATCH_SIZE]
+
+        start = time.perf_counter()
+        responses = agent.generate_batch(
+            prompts=batch,
+            system_prompt=prompt.system,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        end = time.perf_counter()
+
+        batch_latency_ms = (end - start) * 1000 / len(batch)
+        all_latencies.extend([batch_latency_ms] * len(batch))
+
+        for response in responses:
+            parsed_output, had_error = parse_output(response)
+            all_outputs.append(parsed_output)
+            if had_error:
+                output_errors += 1
+
+        model_result["performance"] = calculate_performance_metrics(all_latencies)
+        model_result["time_end"] = datetime.now().isoformat()
+        metrics._dump()
+
+
+def create_agent_for_model(model_name: str) -> ModelAgent:
+    """Create appropriate agent based on model type."""
+    if model_name in EINFRA_MODELS:
+        base_url = os.environ.get("EINFRA_BASE_URL")
+        api_key = os.environ.get("EINFRA_API_KEY")
+        if not base_url or not api_key:
+            raise ValueError(
+                "EINFRA_BASE_URL and EINFRA_API_KEY environment variables must be set for eInfra models"
+            )
+        return APIAgent(model_name=model_name, api_key=api_key, base_url=base_url)
+    else:
+        return VLLMAgent(model_name=model_name)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Evaluate LLM models on prompts and save results.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Evaluate default model on prompt 0 with train set
+  python run.py --dataset train --models google/gemma-3-1b-it
+
+  # Evaluate all models on all prompts with test set
+  python run.py --dataset test --models all --prompts -1
+
+  # Evaluate on both train and test datasets
+  python run.py --dataset both --models google/gemma-3-1b-it --prompts 0
+
+  # Evaluate specific models on specific prompts
+  python run.py --dataset train --models google/gemma-3-1b-it microsoft/Phi-4-mini-reasoning --prompts 0 1
+
+  # Use custom data file
+  python run.py --dataset train --data-file /path/to/custom.parquet --models google/gemma-3-1b-it
+        """,
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=False,
+        choices=["train", "test", "both"],
+        help="Dataset to evaluate on (use 'both' to evaluate on both train and test)",
+    )
+    parser.add_argument(
+        "--models",
+        type=str,
+        nargs="+",
+        required=False,
+        help="Models to evaluate. Use model names from EINFRA_MODELS or LOCAL_MODELS, or 'all'",
+    )
+    parser.add_argument(
+        "--prompts",
+        type=int,
+        nargs="+",
+        default=[0],
+        help="Prompt indices to evaluate (0-based). Use -1 for all prompts (default: 0)",
+    )
+    parser.add_argument(
+        "--data-file",
+        type=str,
+        default=None,
+        help="Path to parquet file with 'text' column. "
+        "Default: DATA_DIR/datasets/small/{dataset}.parquet",
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.5,
+        help="Sampling temperature (default: 0.5)",
+    )
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=512,
+        help="Maximum tokens to generate (default: 512)",
+    )
+    parser.add_argument(
+        "--list-models",
+        action="store_true",
+        help="List available models and exit",
+    )
+    parser.add_argument(
+        "--list-prompts",
+        action="store_true",
+        help="List available prompts and exit",
+    )
+
+    args = parser.parse_args()
+
+    if args.list_models:
+        print("Available models:")
+        print("\neInfra models:")
+        for i, model in enumerate(EINFRA_MODELS, 1):
+            print(f"  {i}. {model}")
+        print("\nLocal models:")
+        for i, model in enumerate(LOCAL_MODELS, 1):
+            print(f"  {i}. {model}")
+        sys.exit(0)
+
+    if args.list_prompts:
+        print(f"Available prompts ({len(PROMPTS)} total):")
+        for i, prompt in enumerate(PROMPTS):
+            print(f"  {i}. {prompt.get_id()}")
+        sys.exit(0)
+
+    if not args.dataset:
+        parser.error(
+            "--dataset is required unless using --list-models or --list-prompts"
+        )
+
+    if not args.models:
+        parser.error(
+            "--models is required unless using --list-models or --list-prompts"
+        )
+
+    if "all" in args.models:
+        models_to_eval = AVAILABLE_MODELS
+    else:
+        models_to_eval = args.models
+        for model in models_to_eval:
+            if model not in AVAILABLE_MODELS:
+                print(f"❌ Error: Unknown model '{model}'")
+                print(f"Available models: {', '.join(AVAILABLE_MODELS)}")
+                sys.exit(1)
+
+    if -1 in args.prompts:
+        prompts_to_eval = list(range(len(PROMPTS)))
+    else:
+        prompts_to_eval = args.prompts
+        for idx in prompts_to_eval:
+            if idx < 0 or idx >= len(PROMPTS):
+                print(
+                    f"❌ Error: Invalid prompt index {idx} (valid range: 0-{len(PROMPTS) - 1})"
+                )
+                sys.exit(1)
+
+    if args.dataset == "both":
+        datasets_to_eval = ["train", "test"]
+    else:
+        datasets_to_eval = [args.dataset]
+
+    datasets = {}
+    for dataset_name in datasets_to_eval:
+        if args.data_file:
+            data_path = Path(args.data_file)
+        else:
+            data_path = DATA_DIR / "datasets" / "small" / f"{dataset_name}.parquet"
+
+        if not data_path.exists():
+            print(f"❌ Error: Dataset file not found at {data_path}")
+            sys.exit(1)
+
+        df = pd.read_parquet(data_path)
+        texts = df["text"].tolist()
+
+        datasets[dataset_name] = {"texts": texts}
+        print(f"✓ Loaded {len(texts)} samples from {dataset_name} set")
+
+    print("\n📊 Evaluation Summary:")
+    print(
+        f"  Datasets to evaluate: {len(datasets_to_eval)} - {', '.join(datasets_to_eval)}"
+    )
+    print(f"  Models to evaluate: {len(models_to_eval)} - {', '.join(models_to_eval)}")
+    print(f"  Prompts to evaluate: {len(prompts_to_eval)} - {prompts_to_eval}")
+    print(
+        f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)}"
+    )
+    print(f"  Results will be saved to: {METRICS_DIR}")
+    print(f"  Temperature: {args.temperature}, Max tokens: {args.max_tokens}\n")
+
+    total_evals = len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)
+    current_eval = 0
+    successful_evals = 0
+    metrics_files = []
+
+    login(token=os.environ.get("HF_TOKEN"))
+
+    for prompt_idx in prompts_to_eval:
+        prompt = PROMPTS[prompt_idx]
+        metrics = LLMPersistentMetrics.create_for_prompt(prompt)
+        metrics_files.append(metrics.filename)
+
+        for model_name in models_to_eval:
+            for dataset_name in datasets_to_eval:
+                current_eval += 1
+                dataset_data = datasets[dataset_name]
+
+                print(
+                    f"\n  [{current_eval}/{total_evals}] Evaluating {model_name} on prompt {prompt_idx} with {dataset_name} set..."
+                )
+                print(f"      Prompt ID: {prompt.get_id()}")
+
+                try:
+                    agent = create_agent_for_model(model_name)
+
+                    evaluate_model_on_prompt(
+                        agent,
+                        prompt,
+                        dataset_data["texts"],
+                        metrics,
+                        dataset_name,
+                        args.temperature,
+                        args.max_tokens,
+                    )
+                    print("      ✓ Metrics updated and persisted")
+                    successful_evals += 1
+
+                except Exception as e:
+                    print(
+                        f"      ❌ Error evaluating {model_name} on prompt {prompt_idx} with {dataset_name}: {e}"
+                    )
+                    import traceback
+
+                    traceback.print_exc()
+
+    print(f"\n{'=' * 60}")
+    print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")
+    print("✓ Metrics files saved to:")
+    for filepath in metrics_files:
+        print(f"  - {filepath}")
+    print(f"{'=' * 60}")
+
+
+if __name__ == "__main__":
+    import os
+
+    main()

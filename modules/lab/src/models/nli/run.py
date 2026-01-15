@@ -19,7 +19,7 @@ from models.nli.common import (
     get_corrs,
     probs_to_scores,
 )
-from utils import DATA_DIR, PersistentDict
+from utils import DATA_DIR, PersistentDict, get_device_name
 
 
 BATCH_SIZE = 16
@@ -387,28 +387,6 @@ class NLIPersistentMetrics(PersistentDict):
         """
         self["models"].append(model_result)
         self._dump()
-
-
-def get_device_name() -> str:
-    """Get the device name (GPU or CPU)."""
-    try:
-        import torch
-
-        if torch.cuda.is_available():
-            return torch.cuda.get_device_name(0)
-    except Exception:
-        pass
-
-    # Get CPU name from /proc/cpuinfo
-    try:
-        with open("/proc/cpuinfo", "r") as f:
-            for line in f:
-                if "model name" in line:
-                    return line.split(":")[1].strip()
-    except Exception:
-        pass
-
-    return "CPU"
 
 
 def calculate_performance_metrics(

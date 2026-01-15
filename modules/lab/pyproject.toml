@@ -48,13 +48,13 @@ dependencies = [
 [project.optional-dependencies]
 cpu = [
     "intel-openmp==2024.2.1",
-    "torch>=2.9.1+cpu",
+    "torch==2.9.1+cpu",
     "torchvision==0.24.1+cpu",
     "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cpu-cp38-abi3-manylinux_2_35_x86_64.whl",
 ]
 gpu = [
-    "onnxruntime-gpu>=1.23.2",
-    "torch>=2.9.1+cu124",
+    "onnxruntime-gpu==1.23.2",
+    "torch==2.9.1+cu124",
     "torchvision==0.24.1+cu124",
     "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cu124-cp38-abi3-manylinux_x86_64.whl",
 ]

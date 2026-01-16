@@ -11,6 +11,8 @@ import tiktoken
 import json
 import re
 from tqdm import tqdm
+import torch
+import torch.distributed as dist
 
 from models.llm.agents import (
     ModelAgent,
@@ -237,8 +239,18 @@ def create_agent_for_model(model_name: str) -> ModelAgent:
                 "EINFRA_BASE_URL and EINFRA_API_KEY environment variables must be set for eInfra models"
             )
         return APIAgent(model_name=model_name, api_key=api_key, base_url=base_url)
-    else:
+    elif model_name in LOCAL_MODELS:
         return VLLMAgent(model_name=model_name)
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
+
+
+def cleanup_distributed_group() -> None:
+    """Clean up PyTorch distributed process group to prevent reinitialization errors."""
+    if dist.is_initialized():
+        dist.destroy_process_group()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def main():
@@ -451,6 +463,8 @@ Examples:
                     import traceback
 
                     traceback.print_exc()
+                finally:
+                    cleanup_distributed_group()
 
     print(f"\n{'=' * 60}")
     print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")

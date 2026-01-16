@@ -253,6 +253,12 @@ Examples:
   # Evaluate all models on all prompts with test set
   python run.py --dataset test --models all --prompts -1
 
+  # Evaluate all local models on prompt 0
+  python run.py --dataset train --models local --prompts 0
+
+  # Evaluate all einfra models on prompt 0
+  python run.py --dataset train --models einfra --prompts 0
+
   # Evaluate on both train and test datasets
   python run.py --dataset both --models google/gemma-3-1b-it --prompts 0
 
@@ -275,7 +281,7 @@ Examples:
         type=str,
         nargs="+",
         required=False,
-        help="Models to evaluate. Use model names from EINFRA_MODELS or LOCAL_MODELS, or 'all'",
+        help="Models to evaluate. Use model names from EINFRA_MODELS or LOCAL_MODELS, or 'all', 'local', 'einfra'",
     )
     parser.add_argument(
         "--prompts",
@@ -344,6 +350,10 @@ Examples:
 
     if "all" in args.models:
         models_to_eval = AVAILABLE_MODELS
+    elif "local" in args.models:
+        models_to_eval = LOCAL_MODELS
+    elif "einfra" in args.models:
+        models_to_eval = EINFRA_MODELS
     else:
         models_to_eval = args.models
         for model in models_to_eval:

@@ -163,6 +163,7 @@ def evaluate_model_on_prompt(
     dataset_name: str,
     temperature: float = 0.0,
     max_tokens: int = 512,
+    debug_parse: bool = False,
 ) -> None:
     """
     Evaluate a model on a prompt in batches and update metrics after each batch.
@@ -175,6 +176,7 @@ def evaluate_model_on_prompt(
         dataset_name: Name of the dataset (train/test)
         temperature: Sampling temperature
         max_tokens: Maximum tokens to generate
+        debug_parse: If True, pause on parse failures and show raw output
     """
     time_start = datetime.now().isoformat()
     model_name = agent.model_name if hasattr(agent, "model_name") else "unknown"
@@ -224,7 +226,15 @@ def evaluate_model_on_prompt(
             all_outputs.append(parsed_output)
             if had_error:
                 output_errors += 1
+                if debug_parse:
+                    print("\n[DEBUG] Failed to parse model output:")
+                    print(response)
+                    try:
+                        input("Press Enter to continue...")
+                    except EOFError:
+                        pass
 
+        model_result["output_errors"] = output_errors
         model_result["performance"] = calculate_performance_metrics(all_latencies)
         model_result["time_end"] = datetime.now().isoformat()
         metrics._dump()
@@ -347,6 +357,11 @@ Examples:
         type=int,
         default=512,
         help="Maximum tokens to generate (default: 512)",
+    )
+    parser.add_argument(
+        "--debug-parse",
+        action="store_true",
+        help="Pause on parse_output failures and show raw model output",
     )
     parser.add_argument(
         "--list-models",
@@ -490,6 +505,7 @@ Examples:
                             dataset_name,
                             args.temperature,
                             args.max_tokens,
+                            args.debug_parse,
                         )
                         print("      ✓ Metrics updated and persisted")
                         successful_evals += 1

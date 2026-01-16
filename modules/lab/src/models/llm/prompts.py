@@ -208,7 +208,10 @@ Provide your rating as a JSON object:
 {
   "rating": <integer 0-5>
 }
-```""",
+```
+
+## Answer
+Your rating is:""",
         "action_bonus": """## Input
 Rate the following text segment:
 
@@ -224,7 +227,10 @@ Provide your rating as a JSON object:
   "action_bonus_applied": <boolean>,
   "rating_without_action_bonus": <integer 0-5>
 }
-```""",
+```
+
+## Answer
+Your rating is:""",
         "zs_cot": """## Input
 Rate the following text segment:
 
@@ -240,7 +246,10 @@ Provide your rating as a JSON object:
   "reasoning": "<brief explanation of your rating decision>",
   "rating": <integer 0-5>
 }
-```""",
+```
+
+## Answer
+Your rating is:""",
         "cot_action_bonus": """## Input
 Rate the following text segment:
 
@@ -257,7 +266,10 @@ Provide your rating as a JSON object:
   "action_bonus_applied": <boolean>,
   "rating_without_action_bonus": <integer 0-5>
 }
-```""",
+```
+
+## Answer
+Your rating is:""",
     },
 }
 

@@ -57,6 +57,7 @@ class VLLMAgent(ModelAgent):
             model=model_name,
             tensor_parallel_size=tensor_parallel_size,
             gpu_memory_utilization=gpu_memory_utilization,
+            trust_remote_code=True,
         )
 
     def generate(
@@ -240,13 +241,3 @@ class APIAgent(ModelAgent):
                 results_by_id[custom_id] = ""
 
         return [results_by_id[i] for i in range(len(prompts))]
-
-
-def create_agent(model_name: str, **kwargs) -> ModelAgent:
-    """Factory function to create appropriate agent based on model type."""
-    if model_name in EINFRA_MODELS:
-        return APIAgent(model_name, **kwargs)
-    elif model_name in LOCAL_MODELS:
-        return VLLMAgent(model_name, **kwargs)
-    else:
-        raise ValueError(f"Unknown model: {model_name}")

@@ -54,9 +54,9 @@ cpu = [
 ]
 gpu = [
     "onnxruntime-gpu==1.23.2",
-    "torch==2.9.1+cu126",
-    "torchvision==0.24.1+cu126",
-    "vllm>=0.1.2",
+    "torch==2.9.0+cu130",
+    "torchvision==0.24.0+cu130",
+    "vllm>=0.13.0",
 ]
 
 [tool.uv]

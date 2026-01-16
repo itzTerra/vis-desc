@@ -92,7 +92,7 @@ PROMPT_PARTS = {
 
 ## Action Bonus Consideration
 
-In some cases (usually ratings 1, 2), the objects may be described in a visualizable action. For example, "a book" would be rating 1, but "closing a book" would receive the action bonus. Determine whether this applies to the text segment.
+In some cases (usually ratings 1, 2), the objects may be described in a **visualizable** action (**NOT** just hand movement or talking - those are not visualizable). For example, "a book" would be rating 1, but "closing a book" would receive the action bonus. Determine whether this applies to the text segment.
 
 ## Important Rules
 
@@ -211,7 +211,7 @@ Provide your rating as a JSON object:
 ```
 
 ## Answer
-Your rating is:""",
+Your JSON answer:""",
         "action_bonus": """## Input
 Rate the following text segment:
 
@@ -230,7 +230,7 @@ Provide your rating as a JSON object:
 ```
 
 ## Answer
-Your rating is:""",
+Your JSON answer:""",
         "zs_cot": """## Input
 Rate the following text segment:
 
@@ -249,7 +249,7 @@ Provide your rating as a JSON object:
 ```
 
 ## Answer
-Your rating is:""",
+Your JSON answer:""",
         "cot_action_bonus": """## Input
 Rate the following text segment:
 
@@ -269,7 +269,7 @@ Provide your rating as a JSON object:
 ```
 
 ## Answer
-Your rating is:""",
+Your JSON answer:""",
     },
 }
 

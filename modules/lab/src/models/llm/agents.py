@@ -5,7 +5,19 @@ from abc import ABC, abstractmethod
 
 from openai import OpenAI
 from tqdm import tqdm
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams, StructuredOutputsParams
+
+from models.llm.prompts import schema_for_suffix_key
+
+
+def _choose_schema(
+    structured_schema: dict | None, default_key: str | None = None
+) -> dict | None:
+    if structured_schema:
+        return structured_schema
+    if default_key:
+        return schema_for_suffix_key(default_key)
+    return None
 
 
 EINFRA_MODELS = [
@@ -31,7 +43,12 @@ class ModelAgent(ABC):
     """Abstract base class for model agents."""
 
     @abstractmethod
-    def generate(self, prompt: str, system_prompt: str | None = None, **kwargs) -> str:
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        **kwargs,
+    ) -> str:
         """Generate text from a prompt."""
         pass
 
@@ -69,12 +86,21 @@ class VLLMAgent(ModelAgent):
         temperature: float = 0.0,
         max_tokens: int = 512,
         top_p: float = 1.0,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
         **kwargs,
     ) -> str:
+        chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
+
         sampling_params = SamplingParams(
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
+            structured_outputs=(
+                StructuredOutputsParams(json=chosen_schema)
+                if use_structured_outputs and chosen_schema
+                else None
+            ),
         )
 
         if system_prompt:
@@ -92,12 +118,21 @@ class VLLMAgent(ModelAgent):
         temperature: float = 0.0,
         max_tokens: int = 512,
         top_p: float = 1.0,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
         **kwargs,
     ) -> list[str]:
+        chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
+
         sampling_params = SamplingParams(
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=top_p,
+            structured_outputs=(
+                StructuredOutputsParams(json=chosen_schema)
+                if use_structured_outputs and chosen_schema
+                else None
+            ),
         )
 
         full_prompts = []
@@ -135,6 +170,8 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 512,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
         **kwargs,
     ) -> str:
         messages = []
@@ -147,6 +184,18 @@ class APIAgent(ModelAgent):
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            response_format=(
+                {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "LLMRating",
+                        "schema": _choose_schema(structured_schema, "cot_action_bonus"),
+                    },
+                }
+                if use_structured_outputs
+                and _choose_schema(structured_schema, "cot_action_bonus")
+                else None
+            ),
         )
         return response.choices[0].message.content.strip()
 
@@ -156,15 +205,27 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 512,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
         **kwargs,
     ) -> list[str]:
         if self.use_batch_api:
             return self._generate_batch_api(
-                prompts, system_prompt, temperature, max_tokens
+                prompts,
+                system_prompt,
+                temperature,
+                max_tokens,
+                use_structured_outputs=use_structured_outputs,
+                structured_schema=structured_schema,
             )
         else:
             return self._generate_batch_sequential(
-                prompts, system_prompt, temperature, max_tokens
+                prompts,
+                system_prompt,
+                temperature,
+                max_tokens,
+                use_structured_outputs=use_structured_outputs,
+                structured_schema=structured_schema,
             )
 
     def _generate_batch_sequential(
@@ -173,6 +234,8 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 512,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
     ) -> list[str]:
         """Process prompts sequentially using individual API calls."""
         responses = []
@@ -187,6 +250,20 @@ class APIAgent(ModelAgent):
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                response_format=(
+                    {
+                        "type": "json_schema",
+                        "json_schema": {
+                            "name": "LLMRating",
+                            "schema": _choose_schema(
+                                structured_schema, "cot_action_bonus"
+                            ),
+                        },
+                    }
+                    if use_structured_outputs
+                    and _choose_schema(structured_schema, "cot_action_bonus")
+                    else None
+                ),
             )
             responses.append(response.choices[0].message.content.strip())
         return responses
@@ -197,6 +274,8 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         temperature: float = 0.0,
         max_tokens: int = 512,
+        use_structured_outputs: bool = True,
+        structured_schema: dict | None = None,
     ) -> list[str]:
         """Process prompts using OpenAI Batch API (asynchronous, discounted pricing)."""
         requests = []
@@ -216,6 +295,20 @@ class APIAgent(ModelAgent):
                         "messages": messages,
                         "temperature": temperature,
                         "max_tokens": max_tokens,
+                        "response_format": (
+                            {
+                                "type": "json_schema",
+                                "json_schema": {
+                                    "name": "LLMRating",
+                                    "schema": _choose_schema(
+                                        structured_schema, "cot_action_bonus"
+                                    ),
+                                },
+                            }
+                            if use_structured_outputs
+                            and _choose_schema(structured_schema, "cot_action_bonus")
+                            else None
+                        ),
                     },
                 }
             )

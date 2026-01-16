@@ -22,7 +22,7 @@ from models.llm.agents import (
     EINFRA_MODELS,
     LOCAL_MODELS,
 )
-from models.llm.prompts import PROMPTS, Prompt
+from models.llm.prompts import PROMPTS, Prompt, schema_for_prompt
 from utils import DATA_DIR, PersistentDict, get_device_name
 from huggingface_hub import login
 from dotenv import load_dotenv
@@ -127,7 +127,7 @@ def parse_output(response: str) -> tuple[str | None, bool]:
 
     def fallback_from_text(text: str) -> tuple[str | None, bool]:
         # Fallback: take the last integer and last boolean (true/false) in text
-        numbers = re.findall(r"[-+]?\d+", text)
+        numbers = re.findall(r"(?<!-)\d+(?!-)", text)
         bools = re.findall(r"\b(?:true|false)\b", text, flags=re.IGNORECASE)
         if numbers:
             val = int(numbers[-1])
@@ -171,6 +171,8 @@ def evaluate_model_on_prompt(
     temperature: float = 0.0,
     max_tokens: int = 512,
     debug_parse: bool = False,
+    use_structured_outputs: bool = True,
+    structured_schema: dict | None = None,
 ) -> None:
     """
     Evaluate a model on a prompt in batches and update metrics after each batch.
@@ -222,6 +224,8 @@ def evaluate_model_on_prompt(
             system_prompt=prompt.system,
             temperature=temperature,
             max_tokens=max_tokens,
+            use_structured_outputs=use_structured_outputs,
+            structured_schema=structured_schema,
         )
         end = time.perf_counter()
 
@@ -367,6 +371,11 @@ Examples:
         help="Pause on parse_output failures and show raw model output",
     )
     parser.add_argument(
+        "--no-structured-outputs",
+        action="store_true",
+        help="Disable structured outputs (JSON schema-guided generation)",
+    )
+    parser.add_argument(
         "--list-models",
         action="store_true",
         help="List available models and exit",
@@ -463,6 +472,7 @@ Examples:
     )
     print(f"  Results will be saved to: {METRICS_DIR}")
     print(f"  Temperature: {args.temperature}, Max tokens: {args.max_tokens}\n")
+    print(f"  Structured outputs: {'OFF' if args.no_structured_outputs else 'ON'}")
 
     total_evals = len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)
     current_eval = 0
@@ -509,6 +519,8 @@ Examples:
                             args.temperature,
                             args.max_tokens,
                             args.debug_parse,
+                            use_structured_outputs=(not args.no_structured_outputs),
+                            structured_schema=schema_for_prompt(prompt),
                         )
                         print("      ✓ Metrics updated and persisted")
                         successful_evals += 1

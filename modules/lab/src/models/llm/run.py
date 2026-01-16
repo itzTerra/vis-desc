@@ -118,6 +118,13 @@ def parse_output(response: str) -> tuple[str | None, bool]:
         - had_error: True if parsing failed
     """
 
+    def finalize(value: str | None, had_error: bool) -> tuple[str | None, bool]:
+        if value is None:
+            return None, True
+        if value not in {"0", "1", "2", "3", "4", "5"}:
+            return None, True
+        return value, had_error
+
     def fallback_from_text(text: str) -> tuple[str | None, bool]:
         # Fallback: take the last integer and last boolean (true/false) in text
         numbers = re.findall(r"[-+]?\d+", text)
@@ -127,8 +134,8 @@ def parse_output(response: str) -> tuple[str | None, bool]:
             bonus_applied = bools and bools[-1].lower() == "true"
             if bonus_applied:
                 val += 1
-            return str(val), False
-        return None, True
+            return finalize(str(val), False)
+        return finalize(None, True)
 
     try:
         json_start = response.find("{")
@@ -145,7 +152,7 @@ def parse_output(response: str) -> tuple[str | None, bool]:
                 rating = int(rating)
                 if parsed.get("action_bonus_applied") is True:
                     rating += 1
-                return str(rating), False
+                return finalize(str(rating), False)
             # JSON parsed but no rating fields; try fallback extraction
             return fallback_from_text(response)
         # No JSON substring found; try fallback extraction

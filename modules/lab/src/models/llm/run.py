@@ -422,54 +422,70 @@ Examples:
     total_evals = len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)
     current_eval = 0
     successful_evals = 0
-    metrics_files = []
+    metrics_files = {}
 
     login(token=os.environ.get("HF_TOKEN"))
 
-    for prompt_idx in prompts_to_eval:
-        prompt = PROMPTS[prompt_idx]
-        metrics = LLMPersistentMetrics.create_for_prompt(prompt)
-        metrics_files.append(metrics.filename)
+    for model_name in models_to_eval:
+        print(f"\n{'=' * 60}")
+        print(f"🤖 Loading model: {model_name}")
+        print(f"{'=' * 60}")
 
-        for model_name in models_to_eval:
-            for dataset_name in datasets_to_eval:
-                current_eval += 1
-                dataset_data = datasets[dataset_name]
+        try:
+            agent = create_agent_for_model(model_name)
+            print("✓ Model loaded successfully")
 
-                print(
-                    f"\n  [{current_eval}/{total_evals}] Evaluating {model_name} on prompt {prompt_idx} with {dataset_name} set..."
-                )
-                print(f"      Prompt ID: {prompt.get_id()}")
+            for prompt_idx in prompts_to_eval:
+                prompt = PROMPTS[prompt_idx]
 
-                try:
-                    agent = create_agent_for_model(model_name)
+                if prompt_idx not in metrics_files:
+                    metrics = LLMPersistentMetrics.create_for_prompt(prompt)
+                    metrics_files[prompt_idx] = metrics.filename
+                else:
+                    metrics = LLMPersistentMetrics(metrics_files[prompt_idx])
 
-                    evaluate_model_on_prompt(
-                        agent,
-                        prompt,
-                        dataset_data["texts"],
-                        metrics,
-                        dataset_name,
-                        args.temperature,
-                        args.max_tokens,
-                    )
-                    print("      ✓ Metrics updated and persisted")
-                    successful_evals += 1
+                for dataset_name in datasets_to_eval:
+                    current_eval += 1
+                    dataset_data = datasets[dataset_name]
 
-                except Exception as e:
                     print(
-                        f"      ❌ Error evaluating {model_name} on prompt {prompt_idx} with {dataset_name}: {e}"
+                        f"\n  [{current_eval}/{total_evals}] Evaluating {model_name} on prompt {prompt_idx} with {dataset_name} set..."
                     )
-                    import traceback
+                    print(f"      Prompt ID: {prompt.get_id()}")
 
-                    traceback.print_exc()
-                finally:
-                    cleanup_distributed_group()
+                    try:
+                        evaluate_model_on_prompt(
+                            agent,
+                            prompt,
+                            dataset_data["texts"],
+                            metrics,
+                            dataset_name,
+                            args.temperature,
+                            args.max_tokens,
+                        )
+                        print("      ✓ Metrics updated and persisted")
+                        successful_evals += 1
+
+                    except Exception as e:
+                        print(
+                            f"      ❌ Error evaluating {model_name} on prompt {prompt_idx} with {dataset_name}: {e}"
+                        )
+                        import traceback
+
+                        traceback.print_exc()
+
+        except Exception as e:
+            print(f"❌ Error loading model {model_name}: {e}")
+            import traceback
+
+            traceback.print_exc()
+        finally:
+            cleanup_distributed_group()
 
     print(f"\n{'=' * 60}")
     print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")
     print("✓ Metrics files saved to:")
-    for filepath in metrics_files:
+    for filepath in metrics_files.values():
         print(f"  - {filepath}")
     print(f"{'=' * 60}")
 

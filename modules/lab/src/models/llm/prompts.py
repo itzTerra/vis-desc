@@ -1,6 +1,58 @@
 from dataclasses import dataclass
 
 
+SCHEMAS = {
+    "base": {
+        "type": "object",
+        "properties": {
+            "rating": {"type": "integer", "minimum": 0, "maximum": 5},
+        },
+        "required": ["rating"],
+        "additionalProperties": False,
+    },
+    "action_bonus": {
+        "type": "object",
+        "properties": {
+            "action_bonus_applied": {"type": "boolean"},
+            "rating_without_action_bonus": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5,
+            },
+        },
+        "required": ["action_bonus_applied", "rating_without_action_bonus"],
+        "additionalProperties": False,
+    },
+    "zs_cot": {
+        "type": "object",
+        "properties": {
+            "reasoning": {"type": "string"},
+            "rating": {"type": "integer", "minimum": 0, "maximum": 5},
+        },
+        "required": ["reasoning", "rating"],
+        "additionalProperties": False,
+    },
+    "cot_action_bonus": {
+        "type": "object",
+        "properties": {
+            "reasoning": {"type": "string"},
+            "action_bonus_applied": {"type": "boolean"},
+            "rating_without_action_bonus": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5,
+            },
+        },
+        "required": [
+            "reasoning",
+            "action_bonus_applied",
+            "rating_without_action_bonus",
+        ],
+        "additionalProperties": False,
+    },
+}
+
+
 PROMPT_PARTS = {
     "system": "You are an expert annotator tasked with rating text segments based on their visual descriptiveness. Your goal is to determine how well a reader can visualize the content described in the text.",
     "guidelines": {
@@ -287,6 +339,7 @@ class Prompt:
     guideline: str
     examples: str | None
     suffix: str
+    suffix_key: str
 
     def build_user_prompt(self, text_segment: str) -> str:
         """Build the complete user prompt with text segment."""
@@ -362,10 +415,18 @@ def select_examples(include_examples: bool, cot: str) -> str | None:
 
 def select_suffix(has_action_bonus: bool, cot: str) -> str:
     if has_action_bonus:
-        return PROMPT_PARTS["suffix"][
-            "cot_action_bonus" if cot != "none" else "action_bonus"
-        ]
-    return PROMPT_PARTS["suffix"]["zs_cot" if cot != "none" else "base"]
+        key = "cot_action_bonus" if cot != "none" else "action_bonus"
+    else:
+        key = "zs_cot" if cot != "none" else "base"
+    return key, PROMPT_PARTS["suffix"][key]
+
+
+def schema_for_suffix_key(key: str) -> dict:
+    return SCHEMAS[key]
+
+
+def schema_for_prompt(prompt: Prompt) -> dict:
+    return schema_for_suffix_key(prompt.suffix_key)
 
 
 PROMPTS: list[Prompt] = []
@@ -378,7 +439,12 @@ for plan in COMBINATION_PLANS:
                     system=PROMPT_PARTS["system"],
                     guideline=guideline_config["text"],
                     examples=select_examples(plan["include_examples"], cot_option),
-                    suffix=select_suffix(guideline_config["action_bonus"], cot_option),
+                    suffix_key=select_suffix(
+                        guideline_config["action_bonus"], cot_option
+                    )[0],
+                    suffix=select_suffix(guideline_config["action_bonus"], cot_option)[
+                        1
+                    ],
                 )
             )
 

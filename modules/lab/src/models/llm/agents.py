@@ -51,12 +51,14 @@ class VLLMAgent(ModelAgent):
         model_name: str,
         tensor_parallel_size: int = 1,
         gpu_memory_utilization: float = 0.9,
+        max_model_len: int = 4096,
     ):
         self.model_name = model_name
         self.llm = LLM(
             model=model_name,
             tensor_parallel_size=tensor_parallel_size,
             gpu_memory_utilization=gpu_memory_utilization,
+            max_model_len=max_model_len,
             trust_remote_code=True,
         )
 

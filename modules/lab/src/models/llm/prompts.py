@@ -202,13 +202,15 @@ Rate the following text segment:
 </text_segment>
 
 ## Output Format
-Provide your rating as a JSON object:
+Provide your rating as a JSON object right after the string '---YOUR ANSWER BELOW---':
 
 ```json
 {
   "rating": <integer 0-5>
 }
 ```
+
+**CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
 ## Answer
 Your JSON answer:""",
@@ -220,7 +222,7 @@ Rate the following text segment:
 </text_segment>
 
 ## Output Format
-Provide your rating as a JSON object:
+Provide your rating as a JSON object right after the string '---YOUR ANSWER BELOW---':
 
 ```json
 {
@@ -228,6 +230,8 @@ Provide your rating as a JSON object:
   "rating_without_action_bonus": <integer 0-5>
 }
 ```
+
+**CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
 ## Answer
 Your JSON answer:""",
@@ -239,7 +243,7 @@ Rate the following text segment:
 </text_segment>
 
 ## Output Format
-Provide your rating as a JSON object:
+Provide your rating as a JSON object right after the string '---YOUR ANSWER BELOW---':
 
 ```json
 {
@@ -247,6 +251,8 @@ Provide your rating as a JSON object:
   "rating": <integer 0-5>
 }
 ```
+
+**CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
 ## Answer
 Your JSON answer:""",
@@ -258,7 +264,7 @@ Rate the following text segment:
 </text_segment>
 
 ## Output Format
-Provide your rating as a JSON object:
+Provide your rating as a JSON object right after the string '---YOUR ANSWER BELOW---':
 
 ```json
 {
@@ -268,8 +274,9 @@ Provide your rating as a JSON object:
 }
 ```
 
-## Answer
-Your JSON answer:""",
+**CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
+
+---YOUR ANSWER BELOW---""",
     },
 }
 

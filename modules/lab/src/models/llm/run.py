@@ -133,7 +133,7 @@ def parse_output(response: str) -> tuple[str | None, bool]:
             val = int(numbers[-1])
             bonus_applied = bools and bools[-1].lower() == "true"
             if bonus_applied:
-                val += 1
+                val = max(0, min(5, val + 1))
             return finalize(str(val), False)
         return finalize(None, True)
 
@@ -151,7 +151,7 @@ def parse_output(response: str) -> tuple[str | None, bool]:
             if rating is not None:
                 rating = int(rating)
                 if parsed.get("action_bonus_applied") is True:
-                    rating += 1
+                    rating = max(0, min(5, rating + 1))
                 return finalize(str(rating), False)
             # JSON parsed but no rating fields; try fallback extraction
             return fallback_from_text(response)
@@ -234,12 +234,8 @@ def evaluate_model_on_prompt(
             if had_error:
                 output_errors += 1
                 if debug_parse:
-                    print("\n[DEBUG] Failed to parse model output:")
-                    print(response)
-                    try:
-                        input("Press Enter to continue...")
-                    except EOFError:
-                        pass
+                    print("\n[DEBUG] Failed to parse model output:", file=sys.stderr)
+                    print(response, file=sys.stderr)
 
         model_result["output_errors"] = output_errors
         model_result["performance"] = calculate_performance_metrics(all_latencies)

@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 
 from openai import OpenAI
 from tqdm import tqdm
-from vllm import LLM, SamplingParams, StructuredOutputsParams
+from vllm import LLM, SamplingParams
+from vllm.sampling_params import StructuredOutputsParams
 
 from models.llm.prompts import schema_for_suffix_key
 

@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 import sys
 import time
@@ -253,6 +254,32 @@ def cleanup_distributed_group() -> None:
         torch.cuda.empty_cache()
 
 
+def cleanup_agent(agent: ModelAgent) -> None:
+    """Clean up agent resources, particularly for vLLM models.
+
+    Args:
+        agent: ModelAgent instance to cleanup
+    """
+    if agent is None:
+        return
+
+    if hasattr(agent, "llm") and agent.llm is not None:
+        if hasattr(agent.llm, "llm_engine") and hasattr(
+            agent.llm.llm_engine, "driver_worker"
+        ):
+            try:
+                agent.llm.llm_engine.driver_worker.shutdown()
+            except Exception:
+                pass
+
+    del agent
+    gc.collect()
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Evaluate LLM models on prompts and save results.",
@@ -431,6 +458,7 @@ Examples:
         print(f"🤖 Loading model: {model_name}")
         print(f"{'=' * 60}")
 
+        agent = None
         try:
             agent = create_agent_for_model(model_name)
             print("✓ Model loaded successfully")
@@ -480,6 +508,7 @@ Examples:
 
             traceback.print_exc()
         finally:
+            cleanup_agent(agent)
             cleanup_distributed_group()
 
     print(f"\n{'=' * 60}")

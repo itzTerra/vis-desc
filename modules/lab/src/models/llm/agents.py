@@ -16,7 +16,7 @@ EINFRA_MODELS = [
 ]
 
 LOCAL_MODELS = [
-    "google/gemma-3n-E2B",
+    # "google/gemma-3n-E2B", does not work on gpu server
     "google/gemma-3-1b-it",
     "meta-llama/Llama-3.2-3B-Instruct",
     "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",

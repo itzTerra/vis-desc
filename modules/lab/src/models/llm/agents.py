@@ -4,7 +4,13 @@ import sys
 import time
 from abc import ABC, abstractmethod
 
-from openai import OpenAI
+from openai import OpenAI, RateLimitError, APIError, APIConnectionError
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 from tqdm import tqdm
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import StructuredOutputsParams
@@ -12,6 +18,20 @@ from vllm.sampling_params import StructuredOutputsParams
 from models.llm.prompts import schema_for_suffix_key
 
 MAX_TOKENS = 1024
+
+
+def _create_retry_decorator():
+    """Create a retry decorator for API calls with exponential backoff.
+
+    Retries on rate limits and temporary API errors, with exponential backoff.
+    Max 5 attempts: wait 2s, 4s, 8s, 16s between retries.
+    """
+    return retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=2, max=32),
+        retry=retry_if_exception_type((RateLimitError, APIError, APIConnectionError)),
+        reraise=True,
+    )
 
 
 def _choose_schema(
@@ -255,6 +275,19 @@ class APIAgent(ModelAgent):
             base_url=base_url or os.getenv("OPENAI_BASE_URL"),
         )
 
+    @_create_retry_decorator()
+    def _call_chat_completions(self, messages: list, response_format=None) -> str:
+        """Call chat completions API with automatic retry on transient errors."""
+        response = self.client.chat.completions.create(
+            model=self.model_id,
+            temperature=self.model_config.params.temperature,
+            max_tokens=self.model_config.params.max_tokens,
+            messages=messages,
+            response_format=response_format,
+        )
+        content = response.choices[0].message.content
+        return content.strip() if content else ""
+
     def generate(
         self,
         prompt: str,
@@ -268,26 +301,20 @@ class APIAgent(ModelAgent):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        response = self.client.chat.completions.create(
-            model=self.model_id,
-            temperature=self.model_config.params.temperature,
-            max_tokens=self.model_config.params.max_tokens,
-            messages=messages,
-            response_format=(
-                {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "LLMRating",
-                        "schema": _choose_schema(structured_schema, "cot_action_bonus"),
-                    },
-                }
-                if use_structured_outputs
-                and _choose_schema(structured_schema, "cot_action_bonus")
-                else None
-            ),
+        response_format = (
+            {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "LLMRating",
+                    "schema": _choose_schema(structured_schema, "cot_action_bonus"),
+                },
+            }
+            if use_structured_outputs
+            and _choose_schema(structured_schema, "cot_action_bonus")
+            else None
         )
-        content = response.choices[0].message.content
-        return content.strip() if content else ""
+
+        return self._call_chat_completions(messages, response_format)
 
     def generate_batch(
         self,
@@ -327,28 +354,21 @@ class APIAgent(ModelAgent):
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
 
-            response = self.client.chat.completions.create(
-                model=self.model_id,
-                messages=messages,
-                temperature=self.model_config.params.temperature,
-                max_tokens=self.model_config.params.max_tokens,
-                response_format=(
-                    {
-                        "type": "json_schema",
-                        "json_schema": {
-                            "name": "LLMRating",
-                            "schema": _choose_schema(
-                                structured_schema, "cot_action_bonus"
-                            ),
-                        },
-                    }
-                    if use_structured_outputs
-                    and _choose_schema(structured_schema, "cot_action_bonus")
-                    else None
-                ),
+            response_format = (
+                {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "LLMRating",
+                        "schema": _choose_schema(structured_schema, "cot_action_bonus"),
+                    },
+                }
+                if use_structured_outputs
+                and _choose_schema(structured_schema, "cot_action_bonus")
+                else None
             )
-            content = response.choices[0].message.content
-            responses.append(content.strip() if content else "")
+
+            content = self._call_chat_completions(messages, response_format)
+            responses.append(content)
         return responses
 
     def _generate_batch_api(

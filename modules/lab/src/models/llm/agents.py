@@ -247,6 +247,7 @@ class APIAgent(ModelAgent):
         use_batch_api: bool = False,
     ):
         self.model_config = model_config
+        self.model_id = model_config.id
         self.model_name = model_config.name
         self.use_batch_api = use_batch_api
         self.client = OpenAI(
@@ -268,7 +269,7 @@ class APIAgent(ModelAgent):
         messages.append({"role": "user", "content": prompt})
 
         response = self.client.chat.completions.create(
-            model=self.model_name,
+            model=self.model_id,
             temperature=self.model_config.params.temperature,
             max_tokens=self.model_config.params.max_tokens,
             messages=messages,
@@ -285,7 +286,8 @@ class APIAgent(ModelAgent):
                 else None
             ),
         )
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        return content.strip() if content else ""
 
     def generate_batch(
         self,
@@ -326,7 +328,7 @@ class APIAgent(ModelAgent):
             messages.append({"role": "user", "content": prompt})
 
             response = self.client.chat.completions.create(
-                model=self.model_name,
+                model=self.model_id,
                 messages=messages,
                 temperature=self.model_config.params.temperature,
                 max_tokens=self.model_config.params.max_tokens,
@@ -345,7 +347,8 @@ class APIAgent(ModelAgent):
                     else None
                 ),
             )
-            responses.append(response.choices[0].message.content.strip())
+            content = response.choices[0].message.content
+            responses.append(content.strip() if content else "")
         return responses
 
     def _generate_batch_api(
@@ -369,7 +372,7 @@ class APIAgent(ModelAgent):
                     "method": "POST",
                     "url": "/v1/chat/completions",
                     "body": {
-                        "model": self.model_name,
+                        "model": self.model_id,
                         "messages": messages,
                         "temperature": self.model_config.params.temperature,
                         "max_tokens": self.model_config.params.max_tokens,
@@ -409,7 +412,8 @@ class APIAgent(ModelAgent):
         for result in self.client.beta.batches.results(batch_id):
             custom_id = int(result.custom_id)
             if result.result.message:
-                results_by_id[custom_id] = result.result.message.content.strip()
+                content = result.result.message.content
+                results_by_id[custom_id] = content.strip() if content else ""
             else:
                 results_by_id[custom_id] = ""
 

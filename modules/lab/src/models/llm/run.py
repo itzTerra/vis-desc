@@ -78,16 +78,6 @@ class LLMPersistentMetrics(PersistentDict):
         metrics.setdefault("models", [])
         return metrics
 
-    def add_model_result(self, model_result: dict) -> None:
-        """Add evaluation results for a model.
-
-        Args:
-            model_result: Dict with model_name, dataset, outputs, output_errors,
-                         device, batch_size, performance, time_start, time_end
-        """
-        self["models"].append(model_result)
-        self._dump()
-
 
 def calculate_performance_metrics(
     latencies: list[float],
@@ -209,7 +199,7 @@ def evaluate_model_on_prompt(
         "time_start": time_start,
         "time_end": None,
     }
-    metrics["models"].append(model_result)
+    metrics.setdefault("models", []).append(model_result)
 
     for i in tqdm(
         range(0, len(user_prompts), BATCH_SIZE),

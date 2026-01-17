@@ -28,7 +28,7 @@ def _choose_schema(
 class ModelConfig:
     id: str
     name: str
-    params: SamplingParams | None = None
+    params: SamplingParams
     system_prefix: str | None = None
     system_suffix: str | None = None
     prompt_prefix: str | None = None
@@ -41,6 +41,7 @@ EINFRA_MODELS = [
     ModelConfig(
         id="gpt-oss-120b",
         name="gpt-oss-120b",
+        params=SamplingParams(temperature=1.0),
         system_prefix="<|start|>system<|message|>",
         system_suffix="<|end|>",
         prompt_prefix="<|start|>user<|message|>",
@@ -121,16 +122,16 @@ LOCAL_MODELS = [
     ),
     # "meta-llama/Llama-3.2-3B-Instruct",
     # https://huggingface.co/unsloth/Llama-3.2-11B-Vision-Instruct
-    ModelConfig(
-        id="unsloth/Llama-3.2-11B-Vision-Instruct-unsloth-bnb-4bit",
-        name="llama3.2-11b",
-        enable_thinking=False,
-        params=SamplingParams(temperature=1.0),
-        system_prefix="<|header_start|>system<|header_end|>\n\n",
-        system_suffix="<|eot|>",
-        prompt_prefix="<|header_start|>user<|header_end|>\n\n",
-        prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
-    ),
+    # ModelConfig(
+    #     id="unsloth/Llama-3.2-11B-Vision-Instruct-unsloth-bnb-4bit",
+    #     name="llama3.2-11b",
+    #     enable_thinking=False,
+    #     params=SamplingParams(temperature=1.0),
+    #     system_prefix="<|header_start|>system<|header_end|>\n\n",
+    #     system_suffix="<|eot|>",
+    #     prompt_prefix="<|header_start|>user<|header_end|>\n\n",
+    #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
+    # ), does not work in vLLM
 ]
 
 

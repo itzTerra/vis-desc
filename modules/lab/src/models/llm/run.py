@@ -19,6 +19,7 @@ from models.llm.agents import (
     ModelAgent,
     VLLMAgent,
     APIAgent,
+    ModelConfig,
     EINFRA_MODELS,
     LOCAL_MODELS,
 )
@@ -34,6 +35,8 @@ METRICS_DIR = DATA_DIR / "metrics" / "llm"
 METRICS_DIR.mkdir(parents=True, exist_ok=True)
 
 AVAILABLE_MODELS = EINFRA_MODELS + LOCAL_MODELS
+MODEL_BY_ID = {model.id: model for model in AVAILABLE_MODELS}
+MODEL_BY_NAME = {model.name: model for model in AVAILABLE_MODELS}
 
 
 def count_tokens(text: str, encoding_name: str = "cl100k_base") -> int:
@@ -168,8 +171,6 @@ def evaluate_model_on_prompt(
     texts: list[str],
     metrics: "LLMPersistentMetrics",
     dataset_name: str,
-    temperature: float = 0.0,
-    max_tokens: int = 512,
     debug_parse: bool = False,
     use_structured_outputs: bool = True,
     structured_schema: dict | None = None,
@@ -222,8 +223,6 @@ def evaluate_model_on_prompt(
         responses = agent.generate_batch(
             prompts=batch,
             system_prompt=prompt.system,
-            temperature=temperature,
-            max_tokens=max_tokens,
             use_structured_outputs=use_structured_outputs,
             structured_schema=structured_schema,
         )
@@ -247,20 +246,30 @@ def evaluate_model_on_prompt(
         metrics._dump()
 
 
-def create_agent_for_model(model_name: str) -> ModelAgent:
-    """Create appropriate agent based on model type."""
-    if model_name in EINFRA_MODELS:
+def create_agent_for_model(model_config: ModelConfig) -> ModelAgent:
+    """Create appropriate agent based on model config.
+
+    Args:
+        model_config: ModelConfig instance to create agent for
+
+    Returns:
+        ModelAgent instance configured for the model
+    """
+    is_einfra = any(m.id == model_config.id for m in EINFRA_MODELS)
+    is_local = any(m.id == model_config.id for m in LOCAL_MODELS)
+
+    if is_einfra:
         base_url = os.environ.get("EINFRA_BASE_URL")
         api_key = os.environ.get("EINFRA_API_KEY")
         if not base_url or not api_key:
             raise ValueError(
                 "EINFRA_BASE_URL and EINFRA_API_KEY environment variables must be set for eInfra models"
             )
-        return APIAgent(model_name=model_name, api_key=api_key, base_url=base_url)
-    elif model_name in LOCAL_MODELS:
-        return VLLMAgent(model_name=model_name)
+        return APIAgent(model_config=model_config, api_key=api_key, base_url=base_url)
+    elif is_local:
+        return VLLMAgent(model_config=model_config)
     else:
-        raise ValueError(f"Unknown model: {model_name}")
+        raise ValueError(f"Unknown model: {model_config.id}")
 
 
 def cleanup_distributed_group() -> None:
@@ -303,8 +312,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Evaluate default model on prompt 0 with train set
-  python run.py --dataset train --models google/gemma-3-1b-it
+  # Evaluate model by name on prompt 0 with train set
+  python run.py --dataset train --models ministral3-14b
 
   # Evaluate all models on all prompts with test set
   python run.py --dataset test --models all --prompts -1
@@ -316,13 +325,16 @@ Examples:
   python run.py --dataset train --models einfra --prompts 0
 
   # Evaluate on both train and test datasets
-  python run.py --dataset both --models google/gemma-3-1b-it --prompts 0
+  python run.py --dataset both --models ministral3-14b --prompts 0
 
-  # Evaluate specific models on specific prompts
-  python run.py --dataset train --models google/gemma-3-1b-it microsoft/Phi-4-mini-reasoning --prompts 0 1
+  # Evaluate specific models by name on specific prompts
+  python run.py --dataset train --models ministral3-14b gemma3-12b --prompts 0 1
+
+  # Evaluate models by ID
+  python run.py --dataset train --models unsloth/Ministral-3-14B-Instruct-2512-FP8
 
   # Use custom data file
-  python run.py --dataset train --data-file /path/to/custom.parquet --models google/gemma-3-1b-it
+  python run.py --dataset train --data-file /path/to/custom.parquet --models ministral3-14b
         """,
     )
     parser.add_argument(
@@ -337,7 +349,7 @@ Examples:
         type=str,
         nargs="+",
         required=False,
-        help="Models to evaluate. Use model names from EINFRA_MODELS or LOCAL_MODELS, or 'all', 'local', 'einfra'",
+        help="Models to evaluate. Use model names (e.g., ministral3-14b) or IDs (e.g., unsloth/Ministral-3-14B-Instruct-2512-FP8), or use 'all', 'local', 'einfra'",
     )
     parser.add_argument(
         "--prompts",
@@ -352,18 +364,6 @@ Examples:
         default=None,
         help="Path to parquet file with 'text' column. "
         "Default: DATA_DIR/datasets/small/{dataset}.parquet",
-    )
-    parser.add_argument(
-        "--temperature",
-        type=float,
-        default=0.5,
-        help="Sampling temperature (default: 0.5)",
-    )
-    parser.add_argument(
-        "--max-tokens",
-        type=int,
-        default=512,
-        help="Maximum tokens to generate (default: 512)",
     )
     parser.add_argument(
         "--debug-parse",
@@ -392,10 +392,10 @@ Examples:
         print("Available models:")
         print("\neInfra models:")
         for i, model in enumerate(EINFRA_MODELS, 1):
-            print(f"  {i}. {model}")
+            print(f"  {i}. {model.name} ({model.id})")
         print("\nLocal models:")
         for i, model in enumerate(LOCAL_MODELS, 1):
-            print(f"  {i}. {model}")
+            print(f"  {i}. {model.name} ({model.id})")
         sys.exit(0)
 
     if args.list_prompts:
@@ -421,11 +421,16 @@ Examples:
     elif "einfra" in args.models:
         models_to_eval = EINFRA_MODELS
     else:
-        models_to_eval = args.models
-        for model in models_to_eval:
-            if model not in AVAILABLE_MODELS:
-                print(f"❌ Error: Unknown model '{model}'")
-                print(f"Available models: {', '.join(AVAILABLE_MODELS)}")
+        models_to_eval = []
+        for model_ref in args.models:
+            if model_ref in MODEL_BY_NAME:
+                models_to_eval.append(MODEL_BY_NAME[model_ref])
+            elif model_ref in MODEL_BY_ID:
+                models_to_eval.append(MODEL_BY_ID[model_ref])
+            else:
+                print(f"❌ Error: Unknown model '{model_ref}'")
+                available = ", ".join([f"{m.name} ({m.id})" for m in AVAILABLE_MODELS])
+                print(f"Available models: {available}")
                 sys.exit(1)
 
     if -1 in args.prompts:
@@ -465,7 +470,8 @@ Examples:
     print(
         f"  Datasets to evaluate: {len(datasets_to_eval)} - {', '.join(datasets_to_eval)}"
     )
-    print(f"  Models to evaluate: {len(models_to_eval)} - {', '.join(models_to_eval)}")
+    models_str = ", ".join([f"{m.name} ({m.id})" for m in models_to_eval])
+    print(f"  Models to evaluate: {len(models_to_eval)} - {models_str}")
     print(f"  Prompts to evaluate: {len(prompts_to_eval)} - {prompts_to_eval}")
     print(
         f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)}"
@@ -481,14 +487,14 @@ Examples:
 
     login(token=os.environ.get("HF_TOKEN"))
 
-    for model_name in models_to_eval:
+    for model_config in models_to_eval:
         print(f"\n{'=' * 60}")
-        print(f"🤖 Loading model: {model_name}")
+        print(f"🤖 Loading model: {model_config.name} ({model_config.id})")
         print(f"{'=' * 60}")
 
         agent = None
         try:
-            agent = create_agent_for_model(model_name)
+            agent = create_agent_for_model(model_config)
             print("✓ Model loaded successfully")
 
             for prompt_idx in prompts_to_eval:
@@ -505,7 +511,7 @@ Examples:
                     dataset_data = datasets[dataset_name]
 
                     print(
-                        f"\n  [{current_eval}/{total_evals}] Evaluating {model_name} on prompt {prompt_idx} with {dataset_name} set..."
+                        f"\n  [{current_eval}/{total_evals}] Evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} set..."
                     )
                     print(f"      Prompt ID: {prompt.get_id()}")
 
@@ -516,8 +522,6 @@ Examples:
                             dataset_data["texts"],
                             metrics,
                             dataset_name,
-                            args.temperature,
-                            args.max_tokens,
                             args.debug_parse,
                             use_structured_outputs=(not args.no_structured_outputs),
                             structured_schema=schema_for_prompt(prompt),
@@ -527,14 +531,14 @@ Examples:
 
                     except Exception as e:
                         print(
-                            f"      ❌ Error evaluating {model_name} on prompt {prompt_idx} with {dataset_name}: {e}"
+                            f"      ❌ Error evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name}: {e}"
                         )
                         import traceback
 
                         traceback.print_exc()
 
         except Exception as e:
-            print(f"❌ Error loading model {model_name}: {e}")
+            print(f"❌ Error loading model {model_config.name}: {e}")
             import traceback
 
             traceback.print_exc()

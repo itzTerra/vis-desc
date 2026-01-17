@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import os
 import sys
 import time
@@ -10,6 +11,8 @@ from vllm.sampling_params import StructuredOutputsParams
 
 from models.llm.prompts import schema_for_suffix_key
 
+MAX_TOKENS = 1024
+
 
 def _choose_schema(
     structured_schema: dict | None, default_key: str | None = None
@@ -21,22 +24,113 @@ def _choose_schema(
     return None
 
 
+@dataclass
+class ModelConfig:
+    id: str
+    name: str
+    params: SamplingParams
+    system_prefix: str | None = None
+    system_suffix: str | None = None
+    prompt_prefix: str | None = None
+    prompt_suffix: str | None = None
+    enable_thinking: bool = False
+
+
 EINFRA_MODELS = [
-    "gpt-oss-120b",
-    "phi4:14b-q8_0",
-    "mistral-small3.2:24b-instruct-2506-q8_0",
-    "llama-4-scout-17b-16e-instruct",
+    # "phi4:14b-q8_0", bad
+    ModelConfig(
+        id="gpt-oss-120b",
+        name="gpt-oss-120b",
+        system_prefix="<|start|>system<|message|>",
+        system_suffix="<|end|>",
+        prompt_prefix="<|start|>user<|message|>",
+        prompt_suffix="<|end|>\n<|start|>assistant<|message|>",
+    ),
+    ModelConfig(
+        id="mistral-small3.2:24b-instruct-2506-q8_0",
+        name="mistral-small3.2-24b",
+        params=SamplingParams(temperature=0.15, top_p=1.0),
+        system_prefix="<s>[SYSTEM_PROMPT]",
+        system_suffix="[/SYSTEM_PROMPT]",
+        prompt_prefix="[INST]",
+        prompt_suffix="[/INST]",
+    ),
+    ModelConfig(
+        id="llama-4-scout-17b-16e-instruct",
+        name="llama4-scout-17b",
+        enable_thinking=False,
+        params=SamplingParams(temperature=1.0),
+        system_prefix="<|header_start|>system<|header_end|>\n\n",
+        system_suffix="<|eot|>",
+        prompt_prefix="<|header_start|>user<|header_end|>\n\n",
+        prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
+    ),
 ]
 
 LOCAL_MODELS = [
     # "google/gemma-3n-E2B", does not work on gpu server
-    "google/gemma-3-1b-it",
-    "meta-llama/Llama-3.2-3B-Instruct",
-    "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-    "microsoft/Phi-4-mini-reasoning",
-    "mistralai/Ministral-3-3B-Reasoning-2512",
-    "Qwen/Qwen3-0.6B",
-    "Qwen/Qwen3-1.7B",
+    # "google/gemma-3-1b-it", bad
+    # "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", bad
+    # "microsoft/Phi-4-mini-reasoning", bad
+    # "Qwen/Qwen3-0.6B", bad
+    # "Qwen/Qwen3-1.7B", bad
+    # "mistralai/Ministral-3-3B-Reasoning-2512",
+    # https://unsloth.ai/docs/models/ministral-3
+    ModelConfig(
+        id="unsloth/Ministral-3-14B-Instruct-2512-FP8",
+        name="ministral3-14b",
+        params=SamplingParams(temperature=0.15),
+        system_prefix="<s>[SYSTEM_PROMPT]",
+        system_suffix="[/SYSTEM_PROMPT]",
+        prompt_prefix="[INST]",
+        prompt_suffix="[/INST]",
+    ),
+    # https://unsloth.ai/docs/models/gemma-3-how-to-run-and-fine-tune
+    ModelConfig(
+        id="unsloth/gemma-3-12b-it-bnb-4bit",
+        name="gemma3-12b",
+        params=SamplingParams(
+            temperature=1.0, top_k=64, min_p=0.01, top_p=0.95, repetition_penalty=1.0
+        ),
+        system_prefix="<start_of_turn>system\n",
+        system_suffix="<end_of_turn>\n",
+        prompt_prefix="<start_of_turn>user\n",
+        prompt_suffix="<end_of_turn>\n<start_of_turn>model\n",
+    ),
+    # https://unsloth.ai/docs/models/qwen3-how-to-run-and-fine-tune
+    ModelConfig(
+        id="unsloth/Qwen3-14B-FP8",
+        name="qwen3-14b",
+        enable_thinking=False,
+        params=SamplingParams(temperature=0.7, top_k=20, min_p=0.01, top_p=0.8),
+        system_prefix="<|im_start|>system\n",
+        system_suffix="<|im_end|>\n",
+        prompt_prefix="<|im_start|>user\n",
+        prompt_suffix="<|im_end|>\n<|im_start|>assistant\n",
+    ),
+    # https://unsloth.ai/docs/models/nemotron-3
+    ModelConfig(
+        id="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
+        name="nemotron3nano-30b",
+        enable_thinking=False,
+        params=SamplingParams(temperature=1.0, top_p=1.0),
+        system_prefix="<|im_start|>system\n",
+        system_suffix="<|im_end|>\n",
+        prompt_prefix="<|im_start|>user\n",
+        prompt_suffix="<|im_end|>\n<|im_start|>assistant\n",
+    ),
+    # "meta-llama/Llama-3.2-3B-Instruct",
+    # https://huggingface.co/unsloth/Llama-3.2-11B-Vision-Instruct
+    ModelConfig(
+        id="unsloth/Llama-3.2-11B-Vision-Instruct-unsloth-bnb-4bit",
+        name="llama3.2-11b",
+        enable_thinking=False,
+        sampling_params=SamplingParams(temperature=1.0),
+        system_prefix="<|header_start|>system<|header_end|>\n\n",
+        system_suffix="<|eot|>",
+        prompt_prefix="<|header_start|>user<|header_end|>\n\n",
+        prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
+    ),
 ]
 
 
@@ -66,14 +160,15 @@ class VLLMAgent(ModelAgent):
 
     def __init__(
         self,
-        model_name: str,
+        model_config: "ModelConfig",
         tensor_parallel_size: int = 1,
         gpu_memory_utilization: float = 0.9,
         max_model_len: int = 4096,
     ):
-        self.model_name = model_name
+        self.model_config = model_config
+        self.model_name = model_config.name
         self.llm = LLM(
-            model=model_name,
+            model=model_config.id,
             tensor_parallel_size=tensor_parallel_size,
             gpu_memory_utilization=gpu_memory_utilization,
             max_model_len=max_model_len,
@@ -84,30 +179,26 @@ class VLLMAgent(ModelAgent):
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
-        top_p: float = 1.0,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         **kwargs,
     ) -> str:
         chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
 
-        sampling_params = SamplingParams(
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            structured_outputs=(
-                StructuredOutputsParams(json=chosen_schema)
-                if use_structured_outputs and chosen_schema
-                else None
-            ),
-        )
+        sampling_params = self.model_config.params
+        if use_structured_outputs and chosen_schema:
+            sampling_params = SamplingParams(
+                temperature=sampling_params.temperature,
+                max_tokens=sampling_params.max_tokens,
+                top_p=sampling_params.top_p,
+                structured_outputs=StructuredOutputsParams(json=chosen_schema),
+            )
 
-        if system_prompt:
-            full_prompt = f"{system_prompt}\n\n{prompt}"
-        else:
-            full_prompt = prompt
+        full_prompt = prompt
+        if self.model_config.system_prefix and system_prompt:
+            full_prompt = f"{self.model_config.system_prefix}{system_prompt}{self.model_config.system_suffix}{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
+        elif self.model_config.prompt_prefix:
+            full_prompt = f"{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
 
         outputs = self.llm.generate([full_prompt], sampling_params)
         return outputs[0].outputs[0].text.strip()
@@ -116,32 +207,28 @@ class VLLMAgent(ModelAgent):
         self,
         prompts: list[str],
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
-        top_p: float = 1.0,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         **kwargs,
     ) -> list[str]:
         chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
 
-        sampling_params = SamplingParams(
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            structured_outputs=(
-                StructuredOutputsParams(json=chosen_schema)
-                if use_structured_outputs and chosen_schema
-                else None
-            ),
-        )
+        sampling_params = self.model_config.params
+        if use_structured_outputs and chosen_schema:
+            sampling_params = SamplingParams(
+                temperature=sampling_params.temperature,
+                max_tokens=sampling_params.max_tokens,
+                top_p=sampling_params.top_p,
+                structured_outputs=StructuredOutputsParams(json=chosen_schema),
+            )
 
         full_prompts = []
         for prompt in prompts:
-            if system_prompt:
-                full_prompt = f"{system_prompt}\n\n{prompt}"
-            else:
-                full_prompt = prompt
+            full_prompt = prompt
+            if self.model_config.system_prefix and system_prompt:
+                full_prompt = f"{self.model_config.system_prefix}{system_prompt}{self.model_config.system_suffix}{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
+            elif self.model_config.prompt_prefix:
+                full_prompt = f"{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
             full_prompts.append(full_prompt)
 
         outputs = self.llm.generate(full_prompts, sampling_params)
@@ -153,12 +240,13 @@ class APIAgent(ModelAgent):
 
     def __init__(
         self,
-        model_name: str,
+        model_config: "ModelConfig",
         api_key: str | None = None,
         base_url: str | None = None,
         use_batch_api: bool = False,
     ):
-        self.model_name = model_name
+        self.model_config = model_config
+        self.model_name = model_config.name
         self.use_batch_api = use_batch_api
         self.client = OpenAI(
             api_key=api_key or os.getenv("OPENAI_API_KEY"),
@@ -169,8 +257,6 @@ class APIAgent(ModelAgent):
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         **kwargs,
@@ -182,9 +268,9 @@ class APIAgent(ModelAgent):
 
         response = self.client.chat.completions.create(
             model=self.model_name,
+            temperature=self.model_config.params.temperature,
+            max_tokens=self.model_config.params.max_tokens,
             messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
             response_format=(
                 {
                     "type": "json_schema",
@@ -204,8 +290,6 @@ class APIAgent(ModelAgent):
         self,
         prompts: list[str],
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         **kwargs,
@@ -214,8 +298,6 @@ class APIAgent(ModelAgent):
             return self._generate_batch_api(
                 prompts,
                 system_prompt,
-                temperature,
-                max_tokens,
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
             )
@@ -223,8 +305,6 @@ class APIAgent(ModelAgent):
             return self._generate_batch_sequential(
                 prompts,
                 system_prompt,
-                temperature,
-                max_tokens,
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
             )
@@ -233,8 +313,6 @@ class APIAgent(ModelAgent):
         self,
         prompts: list[str],
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
     ) -> list[str]:
@@ -249,8 +327,8 @@ class APIAgent(ModelAgent):
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+                temperature=self.model_config.params.temperature,
+                max_tokens=self.model_config.params.max_tokens,
                 response_format=(
                     {
                         "type": "json_schema",
@@ -273,8 +351,6 @@ class APIAgent(ModelAgent):
         self,
         prompts: list[str],
         system_prompt: str | None = None,
-        temperature: float = 0.0,
-        max_tokens: int = 512,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
     ) -> list[str]:
@@ -294,8 +370,8 @@ class APIAgent(ModelAgent):
                     "body": {
                         "model": self.model_name,
                         "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
+                        "temperature": self.model_config.params.temperature,
+                        "max_tokens": self.model_config.params.max_tokens,
                         "response_format": (
                             {
                                 "type": "json_schema",

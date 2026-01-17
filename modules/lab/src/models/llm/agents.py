@@ -28,7 +28,7 @@ def _choose_schema(
 class ModelConfig:
     id: str
     name: str
-    params: SamplingParams
+    params: SamplingParams | None = None
     system_prefix: str | None = None
     system_suffix: str | None = None
     prompt_prefix: str | None = None
@@ -125,7 +125,7 @@ LOCAL_MODELS = [
         id="unsloth/Llama-3.2-11B-Vision-Instruct-unsloth-bnb-4bit",
         name="llama3.2-11b",
         enable_thinking=False,
-        sampling_params=SamplingParams(temperature=1.0),
+        params=SamplingParams(temperature=1.0),
         system_prefix="<|header_start|>system<|header_end|>\n\n",
         system_suffix="<|eot|>",
         prompt_prefix="<|header_start|>user<|header_end|>\n\n",

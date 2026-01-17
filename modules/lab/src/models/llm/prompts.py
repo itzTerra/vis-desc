@@ -178,69 +178,69 @@ You can rate theoretical or spoken-about content **unless** it is either:
 Here are examples demonstrating each rating level:
 
 <example>
-<text>If not, please say so. The alternative is in the hands of the Crown. I am the Crown. The Crown may at any time confiscate property and banish malcontents and disturbers.</text>
+<text_segment>If not, please say so. The alternative is in the hands of the Crown. I am the Crown. The Crown may at any time confiscate property and banish malcontents and disturbers.</text_segment>
 <rating>0</rating>
 </example>
 
 <example>
-<text>By this time the fresh new fool's cap made from yesterday's "Bee" would have been pinned on her head. "Quelle injustice! Quelle injustice!" This last apostrophe in a high, whining nasal voice, always procured Pupasse's elevation on the tall three-legged stool in the corner.</text>
+<text_segment>By this time the fresh new fool's cap made from yesterday's "Bee" would have been pinned on her head. "Quelle injustice! Quelle injustice!" This last apostrophe in a high, whining nasal voice, always procured Pupasse's elevation on the tall three-legged stool in the corner.</text_segment>
 <rating>1</rating>
 </example>
 
 <example>
-<text>So he looked through the deep-blue luminous window once more, beyond the battles we know. From this he turned back shuddering. Again he saw the Professor smile with his lips, though whether at his own weakness, or whether with cynical mirth at the fate of the world, Rodriguez could not say.</text>
+<text_segment>So he looked through the deep-blue luminous window once more, beyond the battles we know. From this he turned back shuddering. Again he saw the Professor smile with his lips, though whether at his own weakness, or whether with cynical mirth at the fate of the world, Rodriguez could not say.</text_segment>
 <rating>2</rating>
 </example>
 
 <example>
-<text>When the meal had been arranged the prisoners saw that there was enough for four people instead of two; and the soldiers realized this also, for they turned puzzled looks first on the tables and then on the prisoners. Then they shook all their twin heads gravely and went away, locking the twin doors behind them.</text>
+<text_segment>When the meal had been arranged the prisoners saw that there was enough for four people instead of two; and the soldiers realized this also, for they turned puzzled looks first on the tables and then on the prisoners. Then they shook all their twin heads gravely and went away, locking the twin doors behind them.</text_segment>
 <rating>3</rating>
 </example>
 
 <example>
-<text>The wonderful wheat-field was cut into a thousand squares and angles and lanes and curves. The big whirring combines passed one another, stopped and waited and turned out of the way, leaving everywhere little patches and cubes of standing wheat, that soon fell before the onslaught of the smaller combines.</text>
+<text_segment>The wonderful wheat-field was cut into a thousand squares and angles and lanes and curves. The big whirring combines passed one another, stopped and waited and turned out of the way, leaving everywhere little patches and cubes of standing wheat, that soon fell before the onslaught of the smaller combines.</text_segment>
 <rating>4</rating>
 </example>
 
 <example>
-<text>Or one might go out into the harbour late upon a winter afternoon, and see it as a city of a million lights, rising like an incantation from the sea. Round about it was an unbroken ring of docks, with ferry-boats and tugs darting everywhere, and vessels which had come from every port in the world, emptying their cargoes into the huge maw of the Metropolis.</text>
+<text_segment>Or one might go out into the harbour late upon a winter afternoon, and see it as a city of a million lights, rising like an incantation from the sea. Round about it was an unbroken ring of docks, with ferry-boats and tugs darting everywhere, and vessels which had come from every port in the world, emptying their cargoes into the huge maw of the Metropolis.</text_segment>
 <rating>5</rating>
 </example>""",
         "cot": """## Examples
 Here are examples demonstrating each rating level:
 
 <example>
-<text>If not, please say so. The alternative is in the hands of the Crown. I am the Crown. The Crown may at any time confiscate property and banish malcontents and disturbers.</text>
+<text_segment>If not, please say so. The alternative is in the hands of the Crown. I am the Crown. The Crown may at any time confiscate property and banish malcontents and disturbers.</text_segment>
 <reasoning>Part of dialogue about abstract legal/political concepts with no visual elements to visualize.</reasoning>
 <rating>0</rating>
 </example>
 
 <example>
-<text>By this time the fresh new fool's cap made from yesterday's "Bee" would have been pinned on her head. "Quelle injustice! Quelle injustice!" This last apostrophe in a high, whining nasal voice, always procured Pupasse's elevation on the tall three-legged stool in the corner.</text>
+<text_segment>By this time the fresh new fool's cap made from yesterday's "Bee" would have been pinned on her head. "Quelle injustice! Quelle injustice!" This last apostrophe in a high, whining nasal voice, always procured Pupasse's elevation on the tall three-legged stool in the corner.</text_segment>
 <reasoning>Simple objects mentioned (fool's cap, stool) but minimal scene context or spatial detail.</reasoning>
 <rating>1</rating>
 </example>
 
 <example>
-<text>So he looked through the deep-blue luminous window once more, beyond the battles we know. From this he turned back shuddering. Again he saw the Professor smile with his lips, though whether at his own weakness, or whether with cynical mirth at the fate of the world, Rodriguez could not say.</text>
+<text_segment>So he looked through the deep-blue luminous window once more, beyond the battles we know. From this he turned back shuddering. Again he saw the Professor smile with his lips, though whether at his own weakness, or whether with cynical mirth at the fate of the world, Rodriguez could not say.</text_segment>
 <reasoning>Detailed interesting object (deep-blue luminous window) with some action (unknown person looking through) but limited scene composition.</reasoning>
 <rating>2</rating>
 </example>
 
 <example>
-<text>When the meal had been arranged the prisoners saw that there was enough for four people instead of two; and the soldiers realized this also, for they turned puzzled looks first on the tables and then on the prisoners. Then they shook all their twin heads gravely and went away, locking the twin doors behind them.</text>
+<text_segment>When the meal had been arranged the prisoners saw that there was enough for four people instead of two; and the soldiers realized this also, for they turned puzzled looks first on the tables and then on the prisoners. Then they shook all their twin heads gravely and went away, locking the twin doors behind them.</text_segment>
 <reasoning>Basic scene with multiple characters, actions, and spatial relationships (tables, doors, people looking at each other).</reasoning>
 <rating>3</rating>
 </example>
 
 <example>
-<text>The wonderful wheat-field was cut into a thousand squares and angles and lanes and curves. The big whirring combines passed one another, stopped and waited and turned out of the way, leaving everywhere little patches and cubes of standing wheat, that soon fell before the onslaught of the smaller combines.</text>
+<text_segment>The wonderful wheat-field was cut into a thousand squares and angles and lanes and curves. The big whirring combines passed one another, stopped and waited and turned out of the way, leaving everywhere little patches and cubes of standing wheat, that soon fell before the onslaught of the smaller combines.</text_segment>
 <reasoning>Full scene with detailed spatial arrangement, movement, and specific visual patterns (geometric shapes, machinery interactions).</reasoning>
 <rating>4</rating>
 </example>
 
 <example>
-<text>Or one might go out into the harbour late upon a winter afternoon, and see it as a city of a million lights, rising like an incantation from the sea. Round about it was an unbroken ring of docks, with ferry-boats and tugs darting everywhere, and vessels which had come from every port in the world, emptying their cargoes into the huge maw of the Metropolis.</text>
+<text_segment>Or one might go out into the harbour late upon a winter afternoon, and see it as a city of a million lights, rising like an incantation from the sea. Round about it was an unbroken ring of docks, with ferry-boats and tugs darting everywhere, and vessels which had come from every port in the world, emptying their cargoes into the huge maw of the Metropolis.</text_segment>
 <reasoning>Vivid, complete scene with rich atmospheric details (time of day, season, lighting), comprehensive spatial layout, dynamic movement, and evocative imagery.</reasoning>
 <rating>5</rating>
 </example>""",

@@ -210,7 +210,7 @@ class VLLMAgent(ModelAgent):
         if use_structured_outputs and chosen_schema:
             sampling_params = SamplingParams(
                 temperature=sampling_params.temperature,
-                max_tokens=sampling_params.max_tokens,
+                max_tokens=MAX_TOKENS,
                 top_p=sampling_params.top_p,
                 structured_outputs=StructuredOutputsParams(json=chosen_schema),
             )
@@ -238,7 +238,7 @@ class VLLMAgent(ModelAgent):
         if use_structured_outputs and chosen_schema:
             sampling_params = SamplingParams(
                 temperature=sampling_params.temperature,
-                max_tokens=sampling_params.max_tokens,
+                max_tokens=MAX_TOKENS,
                 top_p=sampling_params.top_p,
                 structured_outputs=StructuredOutputsParams(json=chosen_schema),
             )
@@ -281,7 +281,7 @@ class APIAgent(ModelAgent):
         response = self.client.chat.completions.create(
             model=self.model_id,
             temperature=self.model_config.params.temperature,
-            max_tokens=self.model_config.params.max_tokens,
+            max_tokens=MAX_TOKENS,
             messages=messages,
             response_format=response_format,
         )
@@ -395,7 +395,7 @@ class APIAgent(ModelAgent):
                         "model": self.model_id,
                         "messages": messages,
                         "temperature": self.model_config.params.temperature,
-                        "max_tokens": self.model_config.params.max_tokens,
+                        "max_tokens": MAX_TOKENS,
                         "response_format": (
                             {
                                 "type": "json_schema",

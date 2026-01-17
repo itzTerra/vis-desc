@@ -477,7 +477,6 @@ Examples:
         f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)}"
     )
     print(f"  Results will be saved to: {METRICS_DIR}")
-    print(f"  Temperature: {args.temperature}, Max tokens: {args.max_tokens}\n")
     print(f"  Structured outputs: {'OFF' if args.no_structured_outputs else 'ON'}")
 
     total_evals = len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)

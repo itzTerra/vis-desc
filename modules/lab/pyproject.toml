@@ -53,6 +53,7 @@ cpu = [
     "vllm @ https://github.com/vllm-project/vllm/releases/download/v0.13.0/vllm-0.13.0+cpu-cp38-abi3-manylinux_2_35_x86_64.whl",
 ]
 gpu = [
+    "bitsandbytes>=0.49.1",
     "onnxruntime-gpu==1.23.2",
     "torch==2.9.0+cu130",
     "torchvision==0.24.0+cu130",

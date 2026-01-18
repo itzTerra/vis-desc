@@ -58,18 +58,18 @@ class ModelConfig:
 
 EINFRA_MODELS = [
     # "phi4:14b-q8_0", bad
-    ModelConfig(
-        id="gpt-oss-120b",
-        name="gpt-oss-120b",
-        params=SamplingParams(temperature=1.0),
-        system_prefix="<|start|>system<|message|>",
-        system_suffix="<|end|>",
-        prompt_prefix="<|start|>user<|message|>",
-        prompt_suffix="<|end|>\n<|start|>assistant<|message|>",
-    ),
+    # ModelConfig(
+    #     id="gpt-oss-120b",
+    #     name="gpt-oss-120b",
+    #     params=SamplingParams(temperature=1.0),
+    #     system_prefix="<|start|>system<|message|>",
+    #     system_suffix="<|end|>",
+    #     prompt_prefix="<|start|>user<|message|>",
+    #     prompt_suffix="<|end|>\n<|start|>assistant<|message|>",
+    # ),
     ModelConfig(
         id="mistral-small3.2:24b-instruct-2506-q8_0",
-        name="mistral-small3.2-24b",
+        name="Mistral-Small3.2-24b",
         params=SamplingParams(temperature=0.15, top_p=1.0),
         system_prefix="<s>[SYSTEM_PROMPT]",
         system_suffix="[/SYSTEM_PROMPT]",
@@ -78,7 +78,7 @@ EINFRA_MODELS = [
     ),
     ModelConfig(
         id="llama-4-scout-17b-16e-instruct",
-        name="llama4-scout-17b",
+        name="Llama4-Scout-17b",
         enable_thinking=False,
         params=SamplingParams(temperature=1.0),
         system_prefix="<|header_start|>system<|header_end|>\n\n",
@@ -99,7 +99,7 @@ LOCAL_MODELS = [
     # https://unsloth.ai/docs/models/ministral-3
     ModelConfig(
         id="unsloth/Ministral-3-14B-Instruct-2512-FP8",
-        name="ministral3-14b",
+        name="Ministral3-14b",
         params=SamplingParams(temperature=0.15),
         system_prefix="<s>[SYSTEM_PROMPT]",
         system_suffix="[/SYSTEM_PROMPT]",
@@ -109,7 +109,7 @@ LOCAL_MODELS = [
     # https://unsloth.ai/docs/models/gemma-3-how-to-run-and-fine-tune
     ModelConfig(
         id="unsloth/gemma-3-12b-it-bnb-4bit",
-        name="gemma3-12b",
+        name="Gemma3-12b",
         params=SamplingParams(
             temperature=1.0, top_k=64, min_p=0.01, top_p=0.95, repetition_penalty=1.0
         ),
@@ -121,7 +121,7 @@ LOCAL_MODELS = [
     # https://unsloth.ai/docs/models/qwen3-how-to-run-and-fine-tune
     ModelConfig(
         id="unsloth/Qwen3-14B-FP8",
-        name="qwen3-14b",
+        name="Qwen3-14b",
         enable_thinking=False,
         params=SamplingParams(temperature=0.7, top_k=20, min_p=0.01, top_p=0.8),
         system_prefix="<|im_start|>system\n",
@@ -130,16 +130,16 @@ LOCAL_MODELS = [
         prompt_suffix="<|im_end|>\n<|im_start|>assistant\n",
     ),
     # https://unsloth.ai/docs/models/nemotron-3
-    ModelConfig(
-        id="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
-        name="nemotron3nano-30b",
-        enable_thinking=False,
-        params=SamplingParams(temperature=1.0, top_p=1.0),
-        system_prefix="<|im_start|>system\n",
-        system_suffix="<|im_end|>\n",
-        prompt_prefix="<|im_start|>user\n",
-        prompt_suffix="<|im_end|>\n<|im_start|>assistant\n",
-    ),
+    # ModelConfig(
+    #     id="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
+    #     name="nemotron3nano-30b",
+    #     enable_thinking=False,
+    #     params=SamplingParams(temperature=1.0, top_p=1.0),
+    #     system_prefix="<|im_start|>system\n",
+    #     system_suffix="<|im_end|>\n",
+    #     prompt_prefix="<|im_start|>user\n",
+    #     prompt_suffix="<|im_end|>\n<|im_start|>assistant\n",
+    # ),
     # "meta-llama/Llama-3.2-3B-Instruct",
     # https://huggingface.co/unsloth/Llama-3.2-11B-Vision-Instruct
     # ModelConfig(
@@ -152,6 +152,15 @@ LOCAL_MODELS = [
     #     prompt_prefix="<|header_start|>user<|header_end|>\n\n",
     #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
     # ), does not work in vLLM
+    ModelConfig(
+        id="stelterlab/Mistral-Small-3.2-24B-Instruct-2506-FP8",
+        name="Mistral-Small3.2-24b",
+        params=SamplingParams(temperature=0.15, top_p=1.0),
+        system_prefix="<s>[SYSTEM_PROMPT]",
+        system_suffix="[/SYSTEM_PROMPT]",
+        prompt_prefix="[INST]",
+        prompt_suffix="[/INST]",
+    ),
 ]
 
 

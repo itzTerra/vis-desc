@@ -154,18 +154,13 @@ LOCAL_MODELS = [
     #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
     # ), does not work in vLLM
     ModelConfig(
-        id="stelterlab/Mistral-Small-3.2-24B-Instruct-2506-FP8",
+        id="unsloth/Mistral-Small-3.2-24B-Instruct-2506-unsloth-bnb-4bit",
         name="Mistral-Small3.2-24b",
         params=SamplingParams(temperature=0.15, top_p=1.0),
         system_prefix="<s>[SYSTEM_PROMPT]",
         system_suffix="[/SYSTEM_PROMPT]",
         prompt_prefix="[INST]",
         prompt_suffix="[/INST]",
-        llm_args={
-            "tokenizer_mode": "mistral",
-            "config_format": "mistral",
-            "load_format": "mistral",
-        },
     ),
 ]
 

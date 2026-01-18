@@ -61,7 +61,7 @@ EINFRA_MODELS = [
     # "phi4:14b-q8_0", bad
     # ModelConfig(
     #     id="gpt-oss-120b",
-    #     name="gpt-oss-120b",
+    #     name="GPT-oss-120b",
     #     params=SamplingParams(temperature=1.0),
     #     system_prefix="<|start|>system<|message|>",
     #     system_suffix="<|end|>",
@@ -133,7 +133,7 @@ LOCAL_MODELS = [
     # https://unsloth.ai/docs/models/nemotron-3
     # ModelConfig(
     #     id="nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8",
-    #     name="nemotron3nano-30b",
+    #     name="Nemotron3Nano-30b",
     #     enable_thinking=False,
     #     params=SamplingParams(temperature=1.0, top_p=1.0),
     #     system_prefix="<|im_start|>system\n",

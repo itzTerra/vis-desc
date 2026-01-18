@@ -303,7 +303,7 @@ def main():
         epilog="""
 Examples:
   # Evaluate model by name on prompt 0 with train set
-  python run.py --dataset train --models ministral3-14b
+  python run.py --dataset train --models Ministral3-14b
 
   # Evaluate all models on all prompts with test set
   python run.py --dataset test --models all --prompts -1
@@ -315,16 +315,16 @@ Examples:
   python run.py --dataset train --models einfra --prompts 0
 
   # Evaluate on both train and test datasets
-  python run.py --dataset both --models ministral3-14b --prompts 0
+  python run.py --dataset both --models Ministral3-14b --prompts 0
 
   # Evaluate specific models by name on specific prompts
-  python run.py --dataset train --models ministral3-14b gemma3-12b --prompts 0 1
+  python run.py --dataset train --models Ministral3-14b Gemma3-12b --prompts 0 1
 
   # Evaluate models by ID
   python run.py --dataset train --models unsloth/Ministral-3-14B-Instruct-2512-FP8
 
   # Use custom data file
-  python run.py --dataset train --data-file /path/to/custom.parquet --models ministral3-14b
+  python run.py --dataset train --data-file /path/to/custom.parquet --models Ministral3-14b
         """,
     )
     parser.add_argument(
@@ -339,7 +339,7 @@ Examples:
         type=str,
         nargs="+",
         required=False,
-        help="Models to evaluate. Use model names (e.g., ministral3-14b) or IDs (e.g., unsloth/Ministral-3-14B-Instruct-2512-FP8), or use 'all', 'local', 'einfra'",
+        help="Models to evaluate. Use model names (e.g., Ministral3-14b) or IDs (e.g., unsloth/Ministral-3-14B-Instruct-2512-FP8), or use 'all', 'local', 'einfra'",
     )
     parser.add_argument(
         "--prompts",

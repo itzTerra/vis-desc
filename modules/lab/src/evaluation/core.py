@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 from IPython.display import display
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import seaborn as sns
+from pathlib import Path
 
 
 @dataclass
@@ -430,17 +432,10 @@ def vis_all_models_plots(
         md_map = {emb: md for emb, md in base_to_models[base]}
         base_to_models[base] = [(emb, md_map[emb]) for emb in ordered_embeds]
 
+    cmap = plt.cm.get_cmap("tab10" if len(ordered_bases) <= 10 else "tab20")
     base_colors = {
-        "random": "#4C78A8",
-        "ridge": "#F58518",
-        "rf": "#54A24B",
-        "svm": "#B79F00",
-        "catboost": "#E45756",
-        "finetuned": "#7F3C8D",
-        "finetuned-mbert": "#7F3C8D",
-        "RoBERTa": "#2CA02C",
-        "MBERT-L": "#9467BD",
-        "DeBERTa-L": "#FF7F0E",
+        base: mcolors.rgb2hex(cmap(i / max(len(ordered_bases) - 1, 1)))
+        for i, base in enumerate(ordered_bases)
     }
 
     def darken(hex_color, factor=0.75):
@@ -484,7 +479,7 @@ def vis_all_models_plots(
                 variant_offset_start = (v_idx - (n_variants - 1) / 2) * bar_width
 
                 x_positions = base_positions + variant_offset_start
-                c = base_colors.get(base, "#888888")
+                c = base_colors[base]
                 if emb == "mbert":
                     c = darken(c)
                 ax.bar(
@@ -599,7 +594,7 @@ def vis_all_models_plots(
                 continue
             if transform:
                 val = transform(val)
-            c = base_colors.get(base, "#888888")
+            c = base_colors[base]
             if emb == "mbert":
                 c = darken(c)
             bar = ax.bar(
@@ -664,7 +659,7 @@ def vis_all_models_plots(
         if not f1_list:
             continue
         macro_f1 = np.mean(f1_list)
-        c = base_colors.get(base, "#888888")
+        c = base_colors[base]
         if emb == "mbert":
             c = darken(c)
         bar = ax.bar(
@@ -962,3 +957,19 @@ def format_number(val: Any, decimals: int = 4) -> str:
     except (TypeError, ValueError):
         return str(val) if val is not None else ""
     return f"{num:.{decimals}f}"
+
+
+def load_train_test_data(data_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame | None]:
+    train_path = data_dir / "datasets" / "small" / "train.parquet"
+    test_path = data_dir / "datasets" / "small" / "test.parquet"
+    if not train_path.exists():
+        raise FileNotFoundError(f"Train dataset not found at {train_path}")
+    df_train = pd.read_parquet(train_path)
+    if "label" not in df_train.columns:
+        raise KeyError("Train dataset must contain a 'label' column")
+    df_test = None
+    if test_path.exists():
+        df_test_candidate = pd.read_parquet(test_path)
+        if "label" in df_test_candidate.columns:
+            df_test = df_test_candidate
+    return df_train, df_test

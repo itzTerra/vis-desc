@@ -4,6 +4,7 @@ from typing import Optional
 import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr, spearmanr
+from dataclasses import dataclass
 
 from utils import DATA_DIR
 
@@ -161,6 +162,7 @@ def extract_model_metrics(
                 "model_name": model_name,
                 "prompt_id": prompt_id,
                 "prompt": prompt,
+                "prompt_token_count": metrics.get("prompt_token_count"),
                 "dataset": dataset_name,
                 "throughput": throughput,
                 "error_rate": error_rate,
@@ -173,3 +175,150 @@ def extract_model_metrics(
         )
 
     return results
+
+
+def load_metric_files(files: list[Path]) -> list[dict]:
+    """Load multiple metric JSON files.
+
+    Args:
+        files: List of paths to metric JSON files
+
+    Returns:
+        List of dictionaries from loaded files, with 'config_id' added
+    """
+    data = []
+    for i, fp in enumerate(files):
+        try:
+            with open(fp, "r", encoding="utf-8") as f:
+                obj = json.load(f)
+            obj["config_id"] = i
+            data.append(obj)
+        except Exception as e:
+            print(f"Skip {fp}: {e}")
+    return data
+
+
+def prepare_llm_metrics_summary(items: list[dict]) -> pd.DataFrame:
+    """Prepare a summary table of LLM metrics from loaded metric files.
+
+    Args:
+        items: List of metric dictionaries loaded from JSON files
+
+    Returns:
+        DataFrame with model metrics aggregated by model name
+    """
+    all_metrics = []
+
+    for item in items:
+        config_id = item.get("config_id", 0)
+        prompt_id = item.get("prompt_id", "")
+
+        for model_result in item.get("models", []):
+            model_name = model_result.get("model_name", "unknown")
+            dataset = model_result.get("dataset", "test")
+            throughput = model_result.get("performance", {}).get("throughput", 0)
+            output_errors = model_result.get("output_errors", 0)
+            predictions = model_result.get("outputs", [])
+            error_rate = calculate_error_rate(predictions)
+            correlation = model_result.get("correlation", None)
+
+            all_metrics.append(
+                {
+                    "config_id": config_id,
+                    "model_name": model_name,
+                    "prompt_id": prompt_id,
+                    "dataset": dataset,
+                    "throughput": throughput,
+                    "error_rate": error_rate,
+                    "correlation": correlation,
+                    "output_errors": output_errors,
+                }
+            )
+
+    return pd.DataFrame(all_metrics)
+
+
+def to_llm_score_data(
+    items: list[dict], df_train: pd.DataFrame, df_test: pd.DataFrame
+) -> list:
+    """Convert LLM metric items to score data format for evaluation.
+
+    Properly handles train and test datasets by reading the 'dataset' field in each model result.
+    Groups results by (config_id, model_name) and combines train/test splits.
+
+    Args:
+        items: List of metric items from load_metric_files
+        df_train: Training dataset with 'label' column
+        df_test: Test dataset with 'label' column
+
+    Returns:
+        List of ScoreData objects with train_scores and test_scores properly populated
+    """
+
+    @dataclass
+    class ScoreData:
+        model_name: str
+        train_scores: np.ndarray
+        y_train: np.ndarray
+        test_scores: np.ndarray | None
+        y_test: np.ndarray | None
+        config_id: int
+
+    y_train = df_train["label"].values.astype(float)
+    y_test = df_test["label"].values.astype(float)
+
+    model_data_map = {}
+
+    for item in items:
+        config_id = item.get("config_id", 0)
+
+        for model_result in item.get("models", []):
+            model_name = model_result.get("model_name", "")
+            if not model_name:
+                continue
+
+            outputs = model_result.get("outputs", [])
+            if not outputs:
+                continue
+
+            dataset_name = model_result.get("dataset", "test")
+            key = (config_id, model_name)
+
+            if key not in model_data_map:
+                model_data_map[key] = {
+                    "model_name": model_name,
+                    "config_id": config_id,
+                    "train_scores": None,
+                    "test_scores": None,
+                }
+
+            outputs_array = np.asarray(outputs, dtype=float)
+
+            if dataset_name == "train":
+                model_data_map[key]["train_scores"] = outputs_array
+            elif dataset_name == "test":
+                model_data_map[key]["test_scores"] = outputs_array
+
+    score_data_list = []
+    for data in model_data_map.values():
+        train_scores = (
+            data["train_scores"]
+            if data["train_scores"] is not None
+            else np.array([], dtype=float)
+        )
+        test_scores = data["test_scores"]
+
+        score_data_list.append(
+            ScoreData(
+                model_name=data["model_name"],
+                train_scores=train_scores,
+                y_train=y_train if train_scores.size > 0 else np.array([], dtype=float),
+                test_scores=test_scores,
+                y_test=y_test
+                if test_scores is not None and test_scores.size > 0
+                else None,
+                config_id=data["config_id"],
+            )
+        )
+
+    return score_data_list

@@ -49,27 +49,10 @@ def load_metric_files(files: List[Path]) -> List[Dict[str, Any]]:
     return data
 
 
-def load_train_test_data(data_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame | None]:
-    train_path = data_dir / "datasets" / "small" / "train.parquet"
-    test_path = data_dir / "datasets" / "small" / "test.parquet"
-    if not train_path.exists():
-        raise FileNotFoundError(f"Train dataset not found at {train_path}")
-    df_train = pd.read_parquet(train_path)
-    if "label" not in df_train.columns:
-        raise KeyError("Train dataset must contain a 'label' column")
-    df_test = None
-    if test_path.exists():
-        df_test_candidate = pd.read_parquet(test_path)
-        if "label" in df_test_candidate.columns:
-            df_test = df_test_candidate
-    return df_train, df_test
-
-
 def to_model_score_data(
     items: List[Dict[str, Any]],
     df_train: pd.DataFrame,
     df_test: pd.DataFrame | None,
-    items_test: List[Dict[str, Any]] | None = None,
 ) -> List[ModelScoreData]:
     results: List[ModelScoreData] = []
     y_train = df_train["label"].to_numpy(dtype=float)
@@ -88,7 +71,7 @@ def to_model_score_data(
             grouped[name][ds] = m
 
         for model_name, splits in grouped.items():
-            # Prefer in-file train/test; optionally merge with items_test if provided
+            # Prefer in-file train/test
             train_entry = (
                 splits.get("train")
                 or splits.get("val")
@@ -105,20 +88,6 @@ def to_model_score_data(
                 if test_entry is not None
                 else None
             )
-
-            # If test not present in same file, try pulling from items_test by model_name
-            if test_scores is None and items_test and file_idx < len(items_test):
-                t_item = items_test[file_idx]
-                t_models = t_item.get("models", [])
-                # Build lookup in case ordering differs
-                by_name: Dict[str, Any] = {}
-                for tm in t_models:
-                    n = tm.get("model_name")
-                    if n:
-                        by_name[n] = tm
-                t_entry = by_name.get(model_name)
-                if t_entry is not None:
-                    test_scores = np.asarray(t_entry.get("scores", []), dtype=float)
 
             results.append(
                 ModelScoreData(
@@ -356,28 +325,6 @@ def plot_train_test_correlation_from_score_data(
         print(
             "Not enough test vectors to compute correlation matrix or no test scores available."
         )
-
-
-def _align_and_sort(
-    scores: np.ndarray,
-    labels: np.ndarray,
-    a_pred: np.ndarray,
-    b_pred: np.ndarray,
-    sort_by_b: bool = False,
-):
-    min_len = min(len(scores), len(labels), len(a_pred), len(b_pred))
-    scores_aligned = scores[:min_len]
-    labels_aligned = labels[:min_len]
-    a_pred_aligned = a_pred[:min_len]
-    b_pred_aligned = b_pred[:min_len]
-    secondary = b_pred_aligned if sort_by_b else a_pred_aligned
-    order = np.lexsort((secondary, labels_aligned))
-    return (
-        scores_aligned[order],
-        labels_aligned[order],
-        a_pred_aligned[order],
-        b_pred_aligned[order],
-    )
 
 
 def plot_calibration_comparison(

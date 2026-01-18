@@ -54,6 +54,7 @@ class ModelConfig:
     prompt_prefix: str | None = None
     prompt_suffix: str | None = None
     enable_thinking: bool = False
+    llm_args: dict | None = None
 
 
 EINFRA_MODELS = [
@@ -153,13 +154,20 @@ LOCAL_MODELS = [
     #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
     # ), does not work in vLLM
     ModelConfig(
-        id="unsloth/Mistral-Small-3.2-24B-Instruct-2506-GGUF",
+        id="stelterlab/Mistral-Small-3.2-24B-Instruct-2506-FP8",
         name="Mistral-Small3.2-24b",
         params=SamplingParams(temperature=0.15, top_p=1.0),
         system_prefix="<s>[SYSTEM_PROMPT]",
         system_suffix="[/SYSTEM_PROMPT]",
         prompt_prefix="[INST]",
         prompt_suffix="[/INST]",
+        llm_args={
+            "tokenizer_mode": "mistral",
+            "config_format": "mistral",
+            "load_format": "mistral",
+            "tool_call_parser": "mistral",
+            "enable_auto_tool_choice": True,
+        },
     ),
 ]
 
@@ -203,6 +211,7 @@ class VLLMAgent(ModelAgent):
             gpu_memory_utilization=gpu_memory_utilization,
             max_model_len=max_model_len,
             trust_remote_code=True,
+            **(model_config.llm_args or {}),
         )
 
     def generate(

@@ -165,7 +165,6 @@ LOCAL_MODELS = [
             "tokenizer_mode": "mistral",
             "config_format": "mistral",
             "load_format": "mistral",
-            "enable_auto_tool_choice": True,
         },
     ),
 ]

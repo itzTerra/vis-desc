@@ -154,7 +154,7 @@ LOCAL_MODELS = [
     #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
     # ), does not work in vLLM
     ModelConfig(
-        id="jeffcookio/Mistral-Small-3.2-24B-Instruct-2506-awq-sym",
+        id="jiangchengchengNLP/Mistral-Small-3.2-24B-Instruct-W8A8",
         name="Mistral-Small3.2-24b",
         params=SamplingParams(temperature=0.15, top_p=1.0),
         system_prefix="<s>[SYSTEM_PROMPT]",

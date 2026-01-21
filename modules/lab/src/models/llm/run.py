@@ -72,6 +72,7 @@ class LLMPersistentMetrics(PersistentDict):
         filename = METRICS_DIR / f"{prompt_id}_{timestamp}.json"
 
         metrics = cls(filename)
+        metrics.setdefault("system", prompt.system)
         prompt_text = prompt.build_user_prompt("{{TEXT_SEGMENT}}")
         metrics.setdefault("prompt", prompt_text)
         metrics.setdefault("prompt_token_count", count_tokens(prompt_text))

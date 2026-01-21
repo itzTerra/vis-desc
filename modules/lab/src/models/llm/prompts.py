@@ -341,33 +341,30 @@ class Prompt:
 
 
 GUIDELINE_CONFIGS = {
-    "small1": {"text": PROMPT_PARTS["guidelines"]["small1"], "action_bonus": False},
-    "small2": {"text": PROMPT_PARTS["guidelines"]["small2"], "action_bonus": True},
-    "small3": {"text": PROMPT_PARTS["guidelines"]["small3"], "action_bonus": False},
-    "medium1": {"text": PROMPT_PARTS["guidelines"]["medium1"], "action_bonus": True},
-    "medium2": {"text": PROMPT_PARTS["guidelines"]["medium2"], "action_bonus": False},
+    "small": {"text": PROMPT_PARTS["guidelines"]["small1"], "action_bonus": False},
+    "medium": {"text": PROMPT_PARTS["guidelines"]["medium"], "action_bonus": False},
     "full": {"text": PROMPT_PARTS["guidelines"]["full"], "action_bonus": True},
 }
 
 
 COMBINATION_PLANS = [
     {
-        "guidelines": ("small1", "small2", "small3"),
+        "guidelines": ("small",),
         "include_examples": False,
         "cot_options": ("none", "zero-shot"),
     },
     {
-        "guidelines": ("small1", "small2", "small3"),
+        "guidelines": ("small",),
         "include_examples": True,
         "cot_options": ("none", "zero-shot"),
     },
     {
-        "guidelines": ("medium1", "medium2"),
+        "guidelines": ("medium",),
         "include_examples": False,
         "cot_options": ("none", "zero-shot"),
     },
     {
-        "guidelines": ("medium1", "medium2"),
+        "guidelines": ("medium",),
         "include_examples": True,
         "cot_options": ("none", "zero-shot", "few-shot"),
     },

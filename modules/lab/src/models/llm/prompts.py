@@ -424,4 +424,4 @@ for plan in COMBINATION_PLANS:
                 )
             )
 
-assert len(PROMPTS) == 27
+assert len(PROMPTS) == 14

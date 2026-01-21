@@ -56,32 +56,14 @@ SCHEMAS = {
 PROMPT_PARTS = {
     "system": "You are an expert annotator tasked with rating text segments based on their visual descriptiveness. Your goal is to determine how well a reader can visualize the content described in the text.",
     "guidelines": {
-        "small1": "Rate this text segment from 0-5 based on how vividly a reader can visualize the scene, objects, or characters described.",
-        "small2": "On a scale of 0-5, rate how well this text allows visualization: 0=not visualizable, 1=simple object/person, 2=recognizable place/basic character, 3=basic scene/detailed face, 4=full scene with details, 5=vivid complete scene.",
-        "small3": "Analyze the visual descriptiveness of this text and assign a rating from 0 (abstract/not visualizable) to 5 (vivid scene with multiple sensory details).",
-        "medium1": """You are rating text segments for visual descriptiveness on a 0-5 scale.
-
-## Rating Scale:
-- 5: Complete vivid scene with background, foreground, and compelling details (lighting, atmosphere, etc.)
-- 4: Full scene with 3+ elements (background, action, characters, visual details) OR detailed character with clothing and body details
-- 3: Basic visualizable scene OR detailed facial description
-- 2: Recognizable place/building/room OR interesting object in detail OR basic character without details
-- 1: Simple ordinary object, animal, body part, clothing OR mentioned person physically present in scene
-- 0: Not visualizable or abstract
-
-## Important rules:
-- Rate only the HIGHEST visual value found in the segment
-- Action bonus applies when objects rated 1-2 are shown in visualizable action
-- If multiple perspectives exist, rate only the most visual one
-- Only rate visual metaphors, not abstract ones
-- Don't rate commands, intentions, or hypothetical future actions""",
-        "medium2": """Rate this text segment's visual descriptiveness from 0-5 by answering these questions in order:
+        "small": "On a scale of 0-5, rate how well this text allows a reader to visualize the scene, objects, or characters described: 0=not visualizable, 1=simple object/person, 2=recognizable place/basic character, 3=basic scene/detailed face, 4=full scene with details, 5=vivid complete scene.",
+        "medium": """Rate this text segment's visual descriptiveness from 0-5 by answering these questions in order:
 
 1. Can you visualize a complete scene with vivid background, foreground objects, AND compelling details (lighting, time of day, atmosphere)? → Rating 5
 
 2. Can you visualize EITHER:
    - A full scene with 3+ of these: background, action, describable characters, distinct visual details? OR
-   - A full character with both clothing AND body details?
+   - A full character with clothing and body details?
    → Rating 4
 
 3. Can you visualize EITHER:
@@ -106,11 +88,11 @@ PROMPT_PARTS = {
 
 ## Rating Scale
 
-**Rating 5** 🏞️ - Full vivid scene
+**Rating 5** - Full vivid scene
 - Can visualize a complete scene with vivid background, foreground objects, and compelling details (e.g., time of day, lighting, atmospheric conditions)
 - Example: "The sun was setting behind the mountains, casting long shadows over the bustling village square where children played and vendors packed up their stalls."
 
-**Rating 4** 🏞️ - Full scene with details OR detailed character
+**Rating 4** - Full scene with details OR detailed character
 - **Option A (Scene)**: Can visualize a full scene with multiple elements - must have at least 3 of:
   1. Background/surroundings
   2. Action/main scene
@@ -120,19 +102,19 @@ PROMPT_PARTS = {
 - **Option B (Character)**: Can visualize a full character with clothing AND body details
   - Example: "She wore a long red coat over a white dress, her curly hair tied back with a blue ribbon, and her boots were splattered with mud."
 
-**Rating 3** 🏞️ - Basic scene OR detailed face
+**Rating 3** - Basic scene OR detailed face
 - **Option A (Scene)**: Can visualize a scene without additional details
   - Examples: "car driving down a busy street" / "the teacher sat down in his chair"
 - **Option B (Face)**: Can visualize a detailed face
   - Example: "Brown patches of skin had appeared on his cheeks. The patches extended down the sides of his face. Everything about him was old, including his eyes. They were the same color as the sea and they looked cheerful and untwisted."
 
-**Rating 2** 🏞️ - Recognizable place/object OR basic character
+**Rating 2** - Recognizable place/object OR basic character
 - **Option A (Place/Object)**: Can visualize a commonly-known building, room, place, OR an interesting/unusual object, body part, clothing, or accessory in detail
   - Examples: "castle" / "bathroom" / "field" / "king's sword covered in blood" / "crown with a missing jewel"
 - **Option B (Character)**: Can visualize a character without details
   - Example: "king"
 
-**Rating 1** 🏞️ - Simple visual element OR mentioned person
+**Rating 1** - Simple visual element OR mentioned person
 - **Option A (Object/Animal)**: Can visualize an ordinary animal, object, body part, or clothing
   - Examples: "frog" / "book" / "his hands were dirty"
 - **Option B (Person)**: Can visualize an unknown-looking person if physically described in the scene by the narrator or another character
@@ -264,8 +246,7 @@ Provide your rating as a JSON object right after the string '---YOUR ANSWER BELO
 
 **CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
-## Answer
-Your JSON answer:""",
+---YOUR ANSWER BELOW---""",
         "action_bonus": """## Input
 Rate the following text segment:
 
@@ -285,8 +266,7 @@ Provide your rating as a JSON object right after the string '---YOUR ANSWER BELO
 
 **CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
-## Answer
-Your JSON answer:""",
+---YOUR ANSWER BELOW---""",
         "zs_cot": """## Input
 Rate the following text segment:
 
@@ -306,8 +286,7 @@ Provide your rating as a JSON object right after the string '---YOUR ANSWER BELO
 
 **CRITICAL RULE**: You must not answer with anything other than the JSON. Your message must end with the JSON.
 
-## Answer
-Your JSON answer:""",
+---YOUR ANSWER BELOW---""",
         "cot_action_bonus": """## Input
 Rate the following text segment:
 

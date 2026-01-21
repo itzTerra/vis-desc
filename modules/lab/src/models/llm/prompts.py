@@ -341,7 +341,7 @@ class Prompt:
 
 
 GUIDELINE_CONFIGS = {
-    "small": {"text": PROMPT_PARTS["guidelines"]["small1"], "action_bonus": False},
+    "small": {"text": PROMPT_PARTS["guidelines"]["small"], "action_bonus": False},
     "medium": {"text": PROMPT_PARTS["guidelines"]["medium"], "action_bonus": False},
     "full": {"text": PROMPT_PARTS["guidelines"]["full"], "action_bonus": True},
 }

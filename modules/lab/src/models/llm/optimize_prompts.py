@@ -27,7 +27,7 @@ class MistralRunner(Runner):
         self.agent = vllm_agent
         super().__init__()
 
-    def generate_text(
+    async def generate_text(
         self,
         prompt: str,
         max_tokens: int | None = None,

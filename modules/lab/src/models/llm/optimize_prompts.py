@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import json
 import sys
 from pathlib import Path
@@ -54,8 +53,7 @@ class MistralRunner(Runner):
         if system_prompt is None and "\n\n" in prompt:
             system_prompt, user_prompt = prompt.split("\n\n", 1)
 
-        response_text = await asyncio.to_thread(
-            self.agent.generate,
+        response_text = self.agent.generate(
             prompt=user_prompt,
             system_prompt=system_prompt,
             use_structured_outputs=True,

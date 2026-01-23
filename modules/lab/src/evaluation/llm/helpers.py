@@ -547,12 +547,10 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     all_acc_values = []
 
     for plan in COMBINATION_PLANS:
-        for guideline_key in plan["guidelines"]:
+        for guideline_key in plan["task_descriptions"]:
             guideline_config = GUIDELINE_CONFIGS[guideline_key]
             for cot_option in plan["cot_options"]:
-                suffix_key, suffix_text = select_suffix(
-                    guideline_config["action_bonus"], cot_option
-                )
+                suffix_key, suffix_text = select_suffix(cot_option)
                 prompt = Prompt(
                     system=PROMPT_PARTS["system"],
                     guideline=guideline_config["text"],

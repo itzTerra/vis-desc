@@ -57,7 +57,7 @@ class MistralRunner(Runner):
             prompt=user_prompt,
             system_prompt=system_prompt,
             use_structured_outputs=True,
-            structured_schema=schema_for_suffix_key("zs_cot"),
+            structured_schema=schema_for_suffix_key("cot"),
         )
 
         return LLMResult(response_text)
@@ -116,10 +116,6 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
             if isinstance(obj, dict):
                 if "rating" in obj and isinstance(obj["rating"], int):
                     return obj["rating"]
-                if "rating_without_action_bonus" in obj and isinstance(
-                    obj["rating_without_action_bonus"], int
-                ):
-                    return obj["rating_without_action_bonus"]
         except Exception:
             pass
         for char in str(value):
@@ -159,10 +155,6 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             if isinstance(obj, dict):
                 if "rating" in obj and isinstance(obj["rating"], int):
                     return obj["rating"]
-                if "rating_without_action_bonus" in obj and isinstance(
-                    obj["rating_without_action_bonus"], int
-                ):
-                    return obj["rating_without_action_bonus"]
         except Exception:
             pass
         for char in str(value):
@@ -202,13 +194,11 @@ class InitialPromptCandidates:
         example_formatter = PlainFormatter()
 
         examples = PROMPT_PARTS["examples"]["cot"]
-        suffix = PROMPT_PARTS["suffix"]["zs_cot"].replace(
-            "{{TEXT_SEGMENT}}", "{{input}}"
-        )
+        suffix = PROMPT_PARTS["suffix"]["cot"].replace("{{TEXT_SEGMENT}}", "{{input}}")
 
         instructions = MetaPrompt(
             [
-                Paragraph(self.system_prompt),
+                Paragraph(self.system_prompt, reference_id="system"),
                 Paragraph("\n\n"),
                 Paragraph(
                     GUIDELINE_CONFIGS["medium"]["text"], reference_id="guideline"
@@ -276,7 +266,12 @@ def main():
     mutation_operators = BagOfMutators(
         InitialPromptCandidates(d_train, system_prompt),
         InduceInstructions("#guideline", d_train),
+        Paraphrase("#system"),
         Paraphrase("#guideline"),
+        Rewrite(
+            "#system",
+            "Rewrite this system prompt to better steer the model toward accurate visual descriptiveness ratings while staying concise:\n\n{{{{text}}}}",
+        ),
         Rewrite(
             "#suffix",
             "Rewrite this prompt suffix to be clearer and more concise:\n\n{{{{text}}}}",

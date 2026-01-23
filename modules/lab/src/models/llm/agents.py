@@ -164,6 +164,10 @@ LOCAL_MODELS = [
     ),
 ]
 
+AVAILABLE_MODELS = EINFRA_MODELS + LOCAL_MODELS
+MODEL_BY_ID = {model.id: model for model in AVAILABLE_MODELS}
+MODEL_BY_NAME = {model.name: model for model in AVAILABLE_MODELS}
+
 
 class ModelAgent(ABC):
     """Abstract base class for model agents."""

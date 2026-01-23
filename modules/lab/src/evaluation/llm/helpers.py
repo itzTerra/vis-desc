@@ -1,12 +1,16 @@
 import json
 from pathlib import Path
 from typing import Optional
+import re
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
+from adjustText import adjust_text
 
 from utils import DATA_DIR
+from evaluation.llm.interface import compute_metrics_from_llm_data
 
 
 def load_metric_file(filepath: Path) -> dict:
@@ -113,6 +117,7 @@ def extract_model_metrics(
     For each model result in the file:
     - Load the corresponding dataset
     - Calculate correlation with true labels
+    - Calculate RMSE and accuracy
     - Calculate error rate
     - Extract throughput
 
@@ -128,6 +133,8 @@ def extract_model_metrics(
         - throughput: Samples per second
         - error_rate: Percentage of failed predictions
         - correlation: Pearson correlation with true labels
+        - rmse: Root mean squared error
+        - accuracy: Classification accuracy
         - output_errors: Count of output parsing errors
         - num_samples: Total number of samples evaluated
         - latency_mean: Mean latency in ms
@@ -150,9 +157,25 @@ def extract_model_metrics(
         dataset_df = load_dataset(dataset_name, data_dir)
         true_labels = dataset_df["label"].tolist()
 
-        # Calculate metrics
+        # Calculate correlation
         correlation = calculate_correlation(predictions, true_labels, method="pearson")
         error_rate = calculate_error_rate(predictions, len(true_labels))
+
+        # Calculate RMSE and accuracy from valid predictions
+        rmse = None
+        accuracy = None
+        valid_pairs = [
+            (pred, true)
+            for pred, true in zip(predictions, true_labels)
+            if pred is not None
+        ]
+        if valid_pairs:
+            preds_arr = np.asarray([p for p, _ in valid_pairs], dtype=float)
+            labels_arr = np.asarray([lab for _, lab in valid_pairs], dtype=float)
+            computed_metrics = compute_metrics_from_llm_data(preds_arr, labels_arr)
+            rmse = np.sqrt(computed_metrics["mse"])
+            accuracy = computed_metrics["accuracy"]
+
         throughput = performance.get("throughput", 0)
         latency_mean = performance.get("latency_mean", 0)
         latency_std = performance.get("latency_std", 0)
@@ -167,6 +190,8 @@ def extract_model_metrics(
                 "throughput": throughput,
                 "error_rate": error_rate,
                 "correlation": correlation,
+                "rmse": rmse,
+                "accuracy": accuracy,
                 "output_errors": output_errors,
                 "num_samples": len(true_labels),
                 "latency_mean": latency_mean,
@@ -184,7 +209,7 @@ def load_metric_files(files: list[Path]) -> list[dict]:
         files: List of paths to metric JSON files
 
     Returns:
-        List of dictionaries from loaded files, with 'config_id' added
+        List of dictionaries from loaded files, with 'config_id' and 'prompt_id' added
     """
     data = []
     for i, fp in enumerate(files):
@@ -192,6 +217,7 @@ def load_metric_files(files: list[Path]) -> list[dict]:
             with open(fp, "r", encoding="utf-8") as f:
                 obj = json.load(f)
             obj["config_id"] = i
+            obj["prompt_id"] = fp.stem.rsplit("_", 1)[0]
             data.append(obj)
         except Exception as e:
             print(f"Skip {fp}: {e}")
@@ -322,3 +348,299 @@ def to_llm_score_data(
         )
 
     return score_data_list
+
+
+def extract_model_size(model_name: str) -> int:
+    """Extract numeric suffix from model name (e.g., 'gpt-4-70b' -> 70).
+
+    Args:
+        model_name: Name of the model
+
+    Returns:
+        Extracted model size, or 50 if no match found
+    """
+    match = re.search(r"-(\d+)(?:b)?$", model_name)
+    return int(match.group(1)) if match else 50
+
+
+def model_size_to_bubble_size(size: int) -> float:
+    """Convert model size to bubble size for scatter plots.
+
+    Args:
+        size: Model size in billions of parameters
+
+    Returns:
+        Bubble size for matplotlib scatter plot
+    """
+    return size / 3 + 30
+
+
+def map_prompt_to_complexity(token_count: int) -> tuple[int, str]:
+    """Map prompt token count to complexity category and label.
+
+    Args:
+        token_count: Number of tokens in the prompt
+
+    Returns:
+        Tuple of (category_index, label_string)
+    """
+    if token_count <= 200:
+        return 0, "Low (120)"
+    elif token_count <= 900:
+        return 1, "Medium (634)"
+    else:
+        return 2, "High (1851)"
+
+
+def plot_model_metrics_scatter(
+    df: pd.DataFrame,
+    metric_column: str,
+    ylabel: str,
+    min_threshold: float = 0.1,
+    y_padding: float = 0.05,
+    figsize: tuple[float, float] = (6, 8),
+    shorten_model_names: bool = False,
+) -> None:
+    """Create a scatter plot of model metrics vs prompt complexity.
+
+    Creates a bubble chart where:
+    - X-axis: Prompt complexity (Low/Medium/High)
+    - Y-axis: Specified metric (e.g., correlation or accuracy)
+    - Bubble size: Model size (from model name)
+    - Color: Different prompts
+
+    Args:
+        df: DataFrame with columns: model_name, prompt, prompt_token_count, and metric_column
+        metric_column: Name of the metric column to plot (e.g., 'correlation', 'accuracy')
+        ylabel: Label for the y-axis
+        min_threshold: Minimum metric value to include in plot
+        y_padding: Padding for y-axis limits as fraction of range
+        figsize: Figure size as (width, height)
+        shorten_model_names: Whether to shorten model names for display
+    """
+    df_filtered = df[df[metric_column] > min_threshold]
+
+    if df_filtered.empty:
+        print(
+            f"Skip {metric_column} scatter plot: no data above threshold {min_threshold}."
+        )
+        return
+
+    unique_prompts = df_filtered["prompt"].unique()
+    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_prompts)))
+    prompt_color_map = {prompt: colors[i] for i, prompt in enumerate(unique_prompts)}
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    offset_map = {}
+
+    for prompt in unique_prompts:
+        prompt_data = df_filtered[df_filtered["prompt"] == prompt].sort_values(
+            metric_column
+        )
+
+        x_positions = []
+        y_values = []
+        bubble_sizes = []
+
+        for idx, (row_idx, row) in enumerate(prompt_data.iterrows()):
+            x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])
+            model_size = extract_model_size(row["model_name"])
+
+            offset = 0.08 if idx % 2 == 0 else -0.08
+            offset_map[row_idx] = offset
+            x_positions.append(x_pos + offset)
+            y_values.append(row[metric_column])
+            bubble_sizes.append(model_size_to_bubble_size(model_size))
+
+        ax.scatter(
+            x_positions,
+            y_values,
+            s=bubble_sizes,
+            alpha=0.7,
+            color=prompt_color_map[prompt],
+            edgecolors="black",
+            linewidth=1.5,
+        )
+
+    texts = []
+    for row_idx, row in df_filtered.iterrows():
+        x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])
+        model_name = row["model_name"]
+
+        if shorten_model_names:
+            model_name = model_name.split("/")[-1][:20]
+
+        offset = offset_map[row_idx]
+
+        text = ax.text(
+            x_pos + offset,
+            row[metric_column],
+            model_name,
+            fontsize=8,
+            fontweight="bold",
+            alpha=0.85,
+            bbox=dict(
+                boxstyle="round,pad=0.3", facecolor="white", alpha=0.7, edgecolor="gray"
+            ),
+        )
+        texts.append(text)
+
+    adjust_text(
+        texts,
+        arrowprops=dict(arrowstyle="->", color="gray", lw=0.5, alpha=0.5),
+        expand_points=(2.5, 2.5),
+        expand_text=(2.0, 2.0),
+        force_points=(1.0, 1.0),
+        force_text=(1.0, 1.0),
+        ax=ax,
+    )
+
+    ax.set_xticks([0, 1, 2])
+    ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
+    ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
+    ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.set_axisbelow(True)
+    ax.set_ylim(
+        [
+            df_filtered[metric_column].min() - y_padding,
+            df_filtered[metric_column].max() + y_padding,
+        ]
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+
+def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
+    """Build a table of prompt configurations with their evaluation metrics.
+
+    Iterates through COMBINATION_PLANS in canonical order to define row order.
+    For each configuration, generates a Prompt instance, uses its ID to look up
+    the best correlation, RMSE, and accuracy in df_metrics, and builds the table row.
+
+    Args:
+        df_metrics: DataFrame with metric data including 'prompt_id', 'correlation', 'rmse', and 'accuracy' columns
+
+    Returns:
+        DataFrame with columns: #, Task Description, Examples, CoT, Best corr., Best RMSE, Best Acc.
+        Best values in each metric column are formatted in bold for LaTeX output.
+    """
+    from models.llm.prompts import (
+        COMBINATION_PLANS,
+        GUIDELINE_CONFIGS,
+        Prompt,
+        select_examples,
+        select_suffix,
+        PROMPT_PARTS,
+    )
+
+    guideline_display = {"small": "Small", "medium": "Medium", "full": "Large"}
+
+    table_data = []
+    row_idx = 1
+
+    # Track all metric values to find best
+    all_corr_values = []
+    all_rmse_values = []
+    all_acc_values = []
+
+    for plan in COMBINATION_PLANS:
+        for guideline_key in plan["guidelines"]:
+            guideline_config = GUIDELINE_CONFIGS[guideline_key]
+            for cot_option in plan["cot_options"]:
+                suffix_key, suffix_text = select_suffix(
+                    guideline_config["action_bonus"], cot_option
+                )
+                prompt = Prompt(
+                    system=PROMPT_PARTS["system"],
+                    guideline=guideline_config["text"],
+                    examples=select_examples(plan["include_examples"], cot_option),
+                    suffix_key=suffix_key,
+                    suffix=suffix_text,
+                )
+
+                prompt_id = prompt.get_id()
+                config_metrics = df_metrics[
+                    df_metrics["prompt_id"].str.startswith(prompt_id)
+                ]
+
+                best_corr = ""
+                best_rmse = ""
+                best_acc = ""
+
+                if not config_metrics.empty:
+                    corr_val = config_metrics["correlation"].max()
+                    if pd.notna(corr_val):
+                        best_corr = f"{corr_val:.3f}"
+                        all_corr_values.append((row_idx, corr_val))
+
+                    rmse_val = config_metrics["rmse"].min()
+                    if pd.notna(rmse_val):
+                        best_rmse = f"{rmse_val:.3f}"
+                        all_rmse_values.append((row_idx, rmse_val))
+
+                    acc_val = config_metrics["accuracy"].max()
+                    if pd.notna(acc_val):
+                        best_acc = f"{acc_val:.3f}"
+                        all_acc_values.append((row_idx, acc_val))
+
+                examples_val = "yes" if plan["include_examples"] else ""
+                cot_val = cot_option if cot_option != "none" else ""
+
+                table_data.append(
+                    {
+                        "#": row_idx,
+                        "Task Description": guideline_display[guideline_key],
+                        "Examples": examples_val,
+                        "CoT": cot_val,
+                        "Best corr. across models": best_corr,
+                        "Best RMSE across models": best_rmse,
+                        "Best Acc. across models": best_acc,
+                    }
+                )
+                row_idx += 1
+
+    df = pd.DataFrame(table_data)
+
+    # Find best values across all configurations
+    best_corr_row = (
+        max(all_corr_values, key=lambda x: x[1])[0] if all_corr_values else None
+    )
+    best_rmse_row = (
+        min(all_rmse_values, key=lambda x: x[1])[0] if all_rmse_values else None
+    )
+    best_acc_row = (
+        max(all_acc_values, key=lambda x: x[1])[0] if all_acc_values else None
+    )
+
+    # Apply bold formatting to best values
+    for idx, row in df.iterrows():
+        row_num = row["#"]
+        if row_num == best_corr_row and row["Best corr. across models"]:
+            df.at[idx, "Best corr. across models"] = (
+                r"\textbf{" + row["Best corr. across models"] + "}"
+            )
+        if row_num == best_rmse_row and row["Best RMSE across models"]:
+            df.at[idx, "Best RMSE across models"] = (
+                r"\textbf{" + row["Best RMSE across models"] + "}"
+            )
+        if row_num == best_acc_row and row["Best Acc. across models"]:
+            df.at[idx, "Best Acc. across models"] = (
+                r"\textbf{" + row["Best Acc. across models"] + "}"
+            )
+
+    # Apply bold to column headers (for LaTeX output)
+    df.columns = [
+        r"\textbf{" + col + "}"
+        if "Best" in col
+        or col == "#"
+        or col == "Task Description"
+        or col == "Examples"
+        or col == "CoT"
+        else col
+        for col in df.columns
+    ]
+
+    return df

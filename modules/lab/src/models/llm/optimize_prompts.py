@@ -272,7 +272,7 @@ def main():
         Paraphrase("#guideline"),
         Rewrite(
             "#suffix",
-            "Rewrite this prompt suffix to be clearer and more concise:\n\n{{text}}",
+            "Rewrite this prompt suffix to be clearer and more concise:\n\n{{{{text}}}}",
         ),
         sample_for_init_candidates=False,
     )

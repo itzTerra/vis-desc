@@ -59,15 +59,15 @@ class ModelConfig:
 
 EINFRA_MODELS = [
     # "phi4:14b-q8_0", bad
-    # ModelConfig(
-    #     id="gpt-oss-120b",
-    #     name="GPT-oss-120b",
-    #     params=SamplingParams(temperature=1.0),
-    #     system_prefix="<|start|>system<|message|>",
-    #     system_suffix="<|end|>",
-    #     prompt_prefix="<|start|>user<|message|>",
-    #     prompt_suffix="<|end|>\n<|start|>assistant<|message|>",
-    # ),
+    ModelConfig(
+        id="gpt-oss-120b",
+        name="GPT-oss-120b",
+        params=SamplingParams(temperature=1.0),
+        system_prefix="<|start|>system<|message|>",
+        system_suffix="<|end|>",
+        prompt_prefix="<|start|>user<|message|>",
+        prompt_suffix="<|end|>\n<|start|>assistant<|message|>",
+    ),
     # ModelConfig(
     #     id="mistral-small3.2:24b-instruct-2506-q8_0",
     #     name="Mistral-Small3.2-24b",

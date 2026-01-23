@@ -28,6 +28,7 @@ dependencies = [
     "peft>=0.18.0",
     "pymupdf>=1.25.3",
     "regex>=2024.11.6",
+    "sammo>=0.3.3",
     "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
     "semantic-text-splitter>=0.27.0",

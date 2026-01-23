@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 from sammo.base import Runner, EvaluationScore
 from sammo.components import Output
 from sammo.dataformatters import PlainFormatter
@@ -15,6 +16,8 @@ from sammo.data import DataTable
 from models.llm.agents import VLLMAgent, MODEL_BY_NAME
 from models.llm.prompts import PROMPT_PARTS, GUIDELINE_CONFIGS, schema_for_suffix_key
 from utils import DATA_DIR
+
+load_dotenv()
 
 
 class MistralRunner(Runner):

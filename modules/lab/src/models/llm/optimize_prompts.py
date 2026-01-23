@@ -1,11 +1,12 @@
 import argparse
+import asyncio
 import json
 import sys
 from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from sammo.base import Runner, EvaluationScore
+from sammo.base import LLMResult, Runner, EvaluationScore
 from sammo.components import Output
 from sammo.dataformatters import PlainFormatter
 from sammo.instructions import MetaPrompt, Paragraph
@@ -34,7 +35,7 @@ class MistralRunner(Runner):
         randomness: float = 0.0,
         seed: int = 0,
         **kwargs,
-    ) -> str:
+    ) -> LLMResult:
         """Generate text using the Mistral vLLM agent.
 
         Args:
@@ -45,15 +46,23 @@ class MistralRunner(Runner):
             **kwargs: Additional arguments
 
         Returns:
-            Generated text response
+            LLMResult containing generated text response
         """
-        system_prompt, user_prompt = prompt.split("\n\n", 1)
-        return self.agent.generate(
-            system_prompt=system_prompt,
+        system_prompt = kwargs.get("system_prompt")
+        user_prompt = prompt
+
+        if system_prompt is None and "\n\n" in prompt:
+            system_prompt, user_prompt = prompt.split("\n\n", 1)
+
+        response_text = await asyncio.to_thread(
+            self.agent.generate,
             prompt=user_prompt,
+            system_prompt=system_prompt,
             use_structured_outputs=True,
             structured_schema=schema_for_suffix_key("zs_cot"),
         )
+
+        return LLMResult(response_text)
 
 
 def load_train_dataset(data_file: str | None = None) -> tuple[list[str], list[int]]:
@@ -287,6 +296,8 @@ def main():
         mutation_operators,
         metric_fn,
         maximize=maximize,
+        mutations_per_beam=3,
+        depth=4,
     )
 
     print("\n🚀 Running prompt optimization...")

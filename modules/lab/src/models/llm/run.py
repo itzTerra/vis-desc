@@ -16,6 +16,9 @@ import torch
 import torch.distributed as dist
 
 from models.llm.agents import (
+    AVAILABLE_MODELS,
+    MODEL_BY_ID,
+    MODEL_BY_NAME,
     ModelAgent,
     VLLMAgent,
     APIAgent,
@@ -33,10 +36,6 @@ load_dotenv()
 BATCH_SIZE = 16
 METRICS_DIR = DATA_DIR / "metrics" / "llm"
 METRICS_DIR.mkdir(parents=True, exist_ok=True)
-
-AVAILABLE_MODELS = EINFRA_MODELS + LOCAL_MODELS
-MODEL_BY_ID = {model.id: model for model in AVAILABLE_MODELS}
-MODEL_BY_NAME = {model.name: model for model in AVAILABLE_MODELS}
 
 
 def count_tokens(text: str, encoding_name: str = "cl100k_base") -> int:

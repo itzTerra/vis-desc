@@ -3,7 +3,6 @@ import gc
 import os
 import sys
 import time
-from pathlib import Path
 from datetime import datetime
 
 import numpy as np
@@ -119,14 +118,10 @@ def parse_output(response: str) -> tuple[str | None, bool]:
         return value, had_error
 
     def fallback_from_text(text: str) -> tuple[str | None, bool]:
-        # Fallback: take the last integer and last boolean (true/false) in text
+        # Fallback: take the last integer in text
         numbers = re.findall(r"(?<!-)\d+(?!-)", text)
-        bools = re.findall(r"\b(?:true|false)\b", text, flags=re.IGNORECASE)
         if numbers:
             val = int(numbers[-1])
-            bonus_applied = bools and bools[-1].lower() == "true"
-            if bonus_applied:
-                val = max(0, min(5, val + 1))
             return finalize(str(val), False)
         return finalize(None, True)
 
@@ -138,15 +133,11 @@ def parse_output(response: str) -> tuple[str | None, bool]:
             parsed = json.loads(json_str)
 
             rating = parsed.get("rating")
-            if rating is None:
-                rating = parsed.get("rating_without_action_bonus")
 
             if rating is not None:
                 rating = int(rating)
-                if parsed.get("action_bonus_applied") is True:
-                    rating = max(0, min(5, rating + 1))
                 return finalize(str(rating), False)
-            # JSON parsed but no rating fields; try fallback extraction
+            # JSON parsed but no rating field; try fallback extraction
             return fallback_from_text(response)
         # No JSON substring found; try fallback extraction
         return fallback_from_text(response)
@@ -161,6 +152,7 @@ def evaluate_model_on_prompt(
     texts: list[str],
     metrics: "LLMPersistentMetrics",
     dataset_name: str,
+    seed: int,
     debug_parse: bool = False,
     use_structured_outputs: bool = True,
     structured_schema: dict | None = None,
@@ -174,9 +166,10 @@ def evaluate_model_on_prompt(
         texts: List of texts to evaluate
         metrics: LLMPersistentMetrics instance for storing results
         dataset_name: Name of the dataset (train/test)
-        temperature: Sampling temperature
-        max_tokens: Maximum tokens to generate
+        seed: Random seed for model sampling
         debug_parse: If True, pause on parse failures and show raw output
+        use_structured_outputs: Whether to use structured outputs
+        structured_schema: Schema for structured outputs
     """
     time_start = datetime.now().isoformat()
     model_name = agent.model_name if hasattr(agent, "model_name") else "unknown"
@@ -191,6 +184,7 @@ def evaluate_model_on_prompt(
     model_result = {
         "model_name": model_name,
         "dataset": dataset_name,
+        "seed": seed,
         "outputs": all_outputs,
         "output_errors": output_errors,
         "device": device,
@@ -215,6 +209,7 @@ def evaluate_model_on_prompt(
             system_prompt=prompt.system,
             use_structured_outputs=use_structured_outputs,
             structured_schema=structured_schema,
+            seed=seed,
         )
         end = time.perf_counter()
 
@@ -349,13 +344,6 @@ Examples:
         help="Prompt indices to evaluate (0-based). Use -1 for all prompts (default: 0)",
     )
     parser.add_argument(
-        "--data-file",
-        type=str,
-        default=None,
-        help="Path to parquet file with 'text' column. "
-        "Default: DATA_DIR/datasets/small/{dataset}.parquet",
-    )
-    parser.add_argument(
         "--debug-parse",
         action="store_true",
         help="Pause on parse_output failures and show raw model output",
@@ -374,6 +362,13 @@ Examples:
         "--list-prompts",
         action="store_true",
         help="List available prompts and exit",
+    )
+    parser.add_argument(
+        "--seeds",
+        type=int,
+        nargs="+",
+        default=[40, 41, 42],
+        help="Random seeds for model sampling (default: 40 41 42)",
     )
 
     args = parser.parse_args()
@@ -441,10 +436,7 @@ Examples:
 
     datasets = {}
     for dataset_name in datasets_to_eval:
-        if args.data_file:
-            data_path = Path(args.data_file)
-        else:
-            data_path = DATA_DIR / "datasets" / "small" / f"{dataset_name}.parquet"
+        data_path = DATA_DIR / "datasets" / "small" / f"{dataset_name}.parquet"
 
         if not data_path.exists():
             print(f"❌ Error: Dataset file not found at {data_path}")
@@ -463,13 +455,19 @@ Examples:
     models_str = ", ".join([f"{m.name} ({m.id})" for m in models_to_eval])
     print(f"  Models to evaluate: {len(models_to_eval)} - {models_str}")
     print(f"  Prompts to evaluate: {len(prompts_to_eval)} - {prompts_to_eval}")
+    print(f"  Seeds to use: {args.seeds}")
     print(
-        f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)}"
+        f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval) * len(args.seeds)}"
     )
     print(f"  Results will be saved to: {METRICS_DIR}")
     print(f"  Structured outputs: {'OFF' if args.no_structured_outputs else 'ON'}")
 
-    total_evals = len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval)
+    total_evals = (
+        len(datasets_to_eval)
+        * len(models_to_eval)
+        * len(prompts_to_eval)
+        * len(args.seeds)
+    )
     current_eval = 0
     successful_evals = 0
     metrics_files = {}
@@ -495,36 +493,38 @@ Examples:
                 else:
                     metrics = LLMPersistentMetrics(metrics_files[prompt_idx])
 
-                for dataset_name in datasets_to_eval:
-                    current_eval += 1
-                    dataset_data = datasets[dataset_name]
+                for seed in args.seeds:
+                    for dataset_name in datasets_to_eval:
+                        current_eval += 1
+                        dataset_data = datasets[dataset_name]
 
-                    print(
-                        f"\n  [{current_eval}/{total_evals}] Evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} set..."
-                    )
-                    print(f"      Prompt ID: {prompt.get_id()}")
-
-                    try:
-                        evaluate_model_on_prompt(
-                            agent,
-                            prompt,
-                            dataset_data["texts"],
-                            metrics,
-                            dataset_name,
-                            args.debug_parse,
-                            use_structured_outputs=(not args.no_structured_outputs),
-                            structured_schema=schema_for_prompt(prompt),
-                        )
-                        print("      ✓ Metrics updated and persisted")
-                        successful_evals += 1
-
-                    except Exception as e:
                         print(
-                            f"      ❌ Error evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name}: {e}"
+                            f"\n  [{current_eval}/{total_evals}] Evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} set (seed={seed})..."
                         )
-                        import traceback
+                        print(f"      Prompt ID: {prompt.get_id()}")
 
-                        traceback.print_exc()
+                        try:
+                            evaluate_model_on_prompt(
+                                agent,
+                                prompt,
+                                dataset_data["texts"],
+                                metrics,
+                                dataset_name,
+                                seed,
+                                args.debug_parse,
+                                use_structured_outputs=(not args.no_structured_outputs),
+                                structured_schema=schema_for_prompt(prompt),
+                            )
+                            print("      ✓ Metrics updated and persisted")
+                            successful_evals += 1
+
+                        except Exception as e:
+                            print(
+                                f"      ❌ Error evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} (seed={seed}): {e}"
+                            )
+                            import traceback
+
+                            traceback.print_exc()
 
         except Exception as e:
             print(f"❌ Error loading model {model_config.name}: {e}")

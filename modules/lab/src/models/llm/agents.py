@@ -217,18 +217,30 @@ class VLLMAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> str:
-        chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
+        chosen_schema = _choose_schema(structured_schema, "cot")
 
-        sampling_params = self.model_config.params
+        base_params = self.model_config.params
+        sampling_kwargs = {
+            "temperature": base_params.temperature,
+            "max_tokens": MAX_TOKENS,
+            "top_p": base_params.top_p,
+            "top_k": base_params.top_k,
+            "min_p": base_params.min_p,
+            "repetition_penalty": base_params.repetition_penalty,
+        }
+
+        if seed is not None:
+            sampling_kwargs["seed"] = seed
+
         if use_structured_outputs and chosen_schema:
-            sampling_params = SamplingParams(
-                temperature=sampling_params.temperature,
-                max_tokens=MAX_TOKENS,
-                top_p=sampling_params.top_p,
-                structured_outputs=StructuredOutputsParams(json=chosen_schema),
+            sampling_kwargs["structured_outputs"] = StructuredOutputsParams(
+                json=chosen_schema
             )
+
+        sampling_params = SamplingParams(**sampling_kwargs)
 
         full_prompt = prompt
         if self.model_config.system_prefix and system_prompt:
@@ -245,18 +257,30 @@ class VLLMAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> list[str]:
-        chosen_schema = _choose_schema(structured_schema, "cot_action_bonus")
+        chosen_schema = _choose_schema(structured_schema, "cot")
 
-        sampling_params = self.model_config.params
+        base_params = self.model_config.params
+        sampling_kwargs = {
+            "temperature": base_params.temperature,
+            "max_tokens": MAX_TOKENS,
+            "top_p": base_params.top_p,
+            "top_k": base_params.top_k,
+            "min_p": base_params.min_p,
+            "repetition_penalty": base_params.repetition_penalty,
+        }
+
+        if seed is not None:
+            sampling_kwargs["seed"] = seed
+
         if use_structured_outputs and chosen_schema:
-            sampling_params = SamplingParams(
-                temperature=sampling_params.temperature,
-                max_tokens=MAX_TOKENS,
-                top_p=sampling_params.top_p,
-                structured_outputs=StructuredOutputsParams(json=chosen_schema),
+            sampling_kwargs["structured_outputs"] = StructuredOutputsParams(
+                json=chosen_schema
             )
+
+        sampling_params = SamplingParams(**sampling_kwargs)
 
         full_prompts = []
         for prompt in prompts:
@@ -291,15 +315,22 @@ class APIAgent(ModelAgent):
         )
 
     @_create_retry_decorator()
-    def _call_chat_completions(self, messages: list, response_format=None) -> str:
+    def _call_chat_completions(
+        self, messages: list, response_format=None, seed: int | None = None
+    ) -> str:
         """Call chat completions API with automatic retry on transient errors."""
-        response = self.client.chat.completions.create(
-            model=self.model_id,
-            temperature=self.model_config.params.temperature,
-            max_tokens=MAX_TOKENS,
-            messages=messages,
-            response_format=response_format,
-        )
+        kwargs = {
+            "model": self.model_id,
+            "temperature": self.model_config.params.temperature,
+            "max_tokens": MAX_TOKENS,
+            "messages": messages,
+        }
+        if response_format is not None:
+            kwargs["response_format"] = response_format
+        if seed is not None:
+            kwargs["seed"] = seed
+
+        response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
         return content.strip() if content else ""
 
@@ -309,6 +340,7 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> str:
         messages = []
@@ -321,15 +353,14 @@ class APIAgent(ModelAgent):
                 "type": "json_schema",
                 "json_schema": {
                     "name": "LLMRating",
-                    "schema": _choose_schema(structured_schema, "cot_action_bonus"),
+                    "schema": _choose_schema(structured_schema, "cot"),
                 },
             }
-            if use_structured_outputs
-            and _choose_schema(structured_schema, "cot_action_bonus")
+            if use_structured_outputs and _choose_schema(structured_schema, "cot")
             else None
         )
 
-        return self._call_chat_completions(messages, response_format)
+        return self._call_chat_completions(messages, response_format, seed=seed)
 
     def generate_batch(
         self,
@@ -337,6 +368,7 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> list[str]:
         if self.use_batch_api:
@@ -345,6 +377,7 @@ class APIAgent(ModelAgent):
                 system_prompt,
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
+                seed=seed,
             )
         else:
             return self._generate_batch_sequential(
@@ -352,6 +385,7 @@ class APIAgent(ModelAgent):
                 system_prompt,
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
+                seed=seed,
             )
 
     def _generate_batch_sequential(
@@ -360,6 +394,7 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
     ) -> list[str]:
         """Process prompts sequentially using individual API calls."""
         responses = []
@@ -374,15 +409,14 @@ class APIAgent(ModelAgent):
                     "type": "json_schema",
                     "json_schema": {
                         "name": "LLMRating",
-                        "schema": _choose_schema(structured_schema, "cot_action_bonus"),
+                        "schema": _choose_schema(structured_schema, "cot"),
                     },
                 }
-                if use_structured_outputs
-                and _choose_schema(structured_schema, "cot_action_bonus")
+                if use_structured_outputs and _choose_schema(structured_schema, "cot")
                 else None
             )
 
-            content = self._call_chat_completions(messages, response_format)
+            content = self._call_chat_completions(messages, response_format, seed=seed)
             responses.append(content)
         return responses
 
@@ -392,6 +426,7 @@ class APIAgent(ModelAgent):
         system_prompt: str | None = None,
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
+        seed: int | None = None,
     ) -> list[str]:
         """Process prompts using OpenAI Batch API (asynchronous, discounted pricing)."""
         requests = []
@@ -401,31 +436,35 @@ class APIAgent(ModelAgent):
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
 
+            body = {
+                "model": self.model_id,
+                "messages": messages,
+                "temperature": self.model_config.params.temperature,
+                "max_tokens": MAX_TOKENS,
+            }
+
+            response_format = (
+                {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "LLMRating",
+                        "schema": _choose_schema(structured_schema, "cot"),
+                    },
+                }
+                if use_structured_outputs and _choose_schema(structured_schema, "cot")
+                else None
+            )
+            if response_format is not None:
+                body["response_format"] = response_format
+            if seed is not None:
+                body["seed"] = seed
+
             requests.append(
                 {
                     "custom_id": str(i),
                     "method": "POST",
                     "url": "/v1/chat/completions",
-                    "body": {
-                        "model": self.model_id,
-                        "messages": messages,
-                        "temperature": self.model_config.params.temperature,
-                        "max_tokens": MAX_TOKENS,
-                        "response_format": (
-                            {
-                                "type": "json_schema",
-                                "json_schema": {
-                                    "name": "LLMRating",
-                                    "schema": _choose_schema(
-                                        structured_schema, "cot_action_bonus"
-                                    ),
-                                },
-                            }
-                            if use_structured_outputs
-                            and _choose_schema(structured_schema, "cot_action_bonus")
-                            else None
-                        ),
-                    },
+                    "body": body,
                 }
             )
 

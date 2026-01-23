@@ -254,7 +254,7 @@ def main():
     vllm_agent = VLLMAgent(model_config=model_config)
     runner = MistralRunner(vllm_agent)
 
-    texts, ratings = load_train_dataset(args.data_file)
+    texts, ratings = load_train_dataset()
 
     d_train = DataTable.from_records(
         [{"input": text, "output": str(rating)} for text, rating in zip(texts, ratings)]

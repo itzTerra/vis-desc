@@ -349,8 +349,11 @@ class InitialPromptCandidates:
                 Paragraph("\n\n"),
                 Paragraph(output_format, reference_id="output_format"),
                 Paragraph("\n\n"),
-                Paragraph("## Input\nRate the following text segment:\n\n"),
-                Paragraph(InputData(), reference_id="input"),
+                Paragraph(
+                    "## Input\nRate the following text segment:\n\n",
+                    reference_id="input",
+                ),
+                Paragraph(InputData()),
             ],
             render_as="raw",
             data_formatter=formatter,
@@ -398,14 +401,20 @@ def main():
     parser.add_argument(
         "--mutations-per-beam",
         type=int,
-        default=3,
-        help="Number of mutations per beam in the search (default: 3)",
+        default=6,
+        help="Number of mutations per beam in the search (default: 6)",
     )
     parser.add_argument(
         "--depth",
         type=int,
-        default=3,
-        help="Search depth for beam search optimization (default: 3)",
+        default=4,
+        help="Search depth for beam search optimization (default: 4)",
+    )
+    parser.add_argument(
+        "--beam-width",
+        type=int,
+        default=4,
+        help="Beam width for beam search optimization (default: 4)",
     )
 
     args = parser.parse_args()
@@ -474,7 +483,9 @@ def main():
         InitialPromptCandidates(d_train, system_prompt),
         Paraphrase("#system"),
         Paraphrase("#guideline"),
+        Paraphrase("#examples"),
         Paraphrase("#output_format"),
+        Paraphrase("#input"),
         Rewrite(
             "#system",
             "Rewrite this system prompt to better steer the model toward accurate visual descriptiveness ratings while staying concise:\n\n{{{{text}}}}",
@@ -482,6 +493,10 @@ def main():
         Rewrite(
             "#guideline",
             "Rewrite this guideline to be clearer and more concise for rating visual descriptiveness:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#examples",
+            "Rewrite these examples to be clearer and more concise while illustrating rating visual descriptiveness:\n\n{{{{text}}}}",
         ),
         Rewrite(
             "#output_format",
@@ -502,6 +517,7 @@ def main():
         maximize=maximize,
         mutations_per_beam=args.mutations_per_beam,
         depth=args.depth,
+        beam_width=args.beam_width,
     )
 
     print("\n🚀 Running prompt optimization...")

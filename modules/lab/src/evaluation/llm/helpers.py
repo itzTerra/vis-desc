@@ -1072,6 +1072,10 @@ def plot_metrics_vs_prompt_token_count(
     df_metrics: pd.DataFrame,
     items: list[dict],
     figsize: tuple[float, float] = (12, 7),
+    metrics_to_plot: list[str] | None = None,
+    normalize_throughput: bool = True,
+    y_label: str = "Metric Value",
+    show_legend: bool = True,
 ) -> tuple:
     """Plot metrics (correlation, accuracy, RMSE, throughput) vs prompt token count.
 
@@ -1082,6 +1086,12 @@ def plot_metrics_vs_prompt_token_count(
         df_metrics: DataFrame with columns: prompt_id, correlation, rmse, accuracy, throughput
         items: List of metric items with prompt_id and prompt_token_count
         figsize: Figure size as (width, height)
+        metrics_to_plot: Optional list of metrics to plot. Supported values:
+            ["correlation", "rmse", "accuracy", "throughput"].
+            Throughput is plotted normalized to its max when normalize_throughput=True.
+        normalize_throughput: Whether to normalize throughput to [0, 1] scale
+        y_label: Label for the y-axis
+        show_legend: Whether to display the legend
 
     Returns:
         Tuple of (fig, ax, df_grouped) where df_grouped contains the aggregated metrics
@@ -1116,69 +1126,52 @@ def plot_metrics_vs_prompt_token_count(
 
     fig, ax = plt.subplots(figsize=figsize)
 
-    line3 = ax.plot(
-        df_grouped["prompt_token_count"],
-        df_grouped["rmse"],
-        marker="^",
-        linewidth=1.5,
-        linestyle="--",
-        label="RMSE ↓",
-        markersize=8,
-    )[0]
-    color3 = line3.get_color()
-    line3.set_alpha(0.6)
-    line3.set_markerfacecolor(mcolors.to_rgba(color3, alpha=1.0))
-    line3.set_markeredgecolor(mcolors.to_rgba(color3, alpha=1.0))
+    # Determine which metrics to plot
+    allowed_metrics = {"correlation", "rmse", "accuracy", "throughput"}
+    if metrics_to_plot is None:
+        metrics_to_plot = ["correlation", "rmse", "accuracy", "throughput"]
+    metrics_to_plot = [m for m in metrics_to_plot if m in allowed_metrics]
 
-    line1 = ax.plot(
-        df_grouped["prompt_token_count"],
-        df_grouped["correlation"],
-        marker="o",
-        linewidth=1.5,
-        linestyle="--",
-        label="Correlation ↑",
-        markersize=8,
-    )[0]
-    color1 = line1.get_color()
-    line1.set_alpha(0.6)
-    line1.set_markerfacecolor(mcolors.to_rgba(color1, alpha=1.0))
-    line1.set_markeredgecolor(mcolors.to_rgba(color1, alpha=1.0))
+    styles = {
+        "rmse": {"marker": "^", "label": "RMSE ↓"},
+        "correlation": {"marker": "o", "label": "Correlation ↑"},
+        "accuracy": {"marker": "s", "label": "Accuracy ↑"},
+        # Label for throughput is set dynamically below based on normalize_throughput
+        "throughput": {"marker": "D", "label": "Throughput ↑"},
+    }
 
-    line2 = ax.plot(
-        df_grouped["prompt_token_count"],
-        df_grouped["accuracy"],
-        marker="s",
-        linewidth=1.5,
-        linestyle="--",
-        label="Accuracy ↑",
-        markersize=8,
-    )[0]
-    color2 = line2.get_color()
-    line2.set_alpha(0.6)
-    line2.set_markerfacecolor(mcolors.to_rgba(color2, alpha=1.0))
-    line2.set_markeredgecolor(mcolors.to_rgba(color2, alpha=1.0))
+    for metric in metrics_to_plot:
+        if metric == "throughput":
+            if normalize_throughput:
+                max_val = df_grouped["throughput"].max()
+                if max_val <= 0:
+                    continue
+                y_values = df_grouped["throughput"] / max_val
+                styles["throughput"]["label"] = "Throughput (normalized) ↑"
+            else:
+                y_values = df_grouped["throughput"]
+                styles["throughput"]["label"] = "Throughput ↑"
+        else:
+            y_values = df_grouped[metric]
 
-    if df_grouped["throughput"].max() > 0:
-        throughput_normalized = (
-            df_grouped["throughput"] / df_grouped["throughput"].max()
-        )
-        line4 = ax.plot(
+        line = ax.plot(
             df_grouped["prompt_token_count"],
-            throughput_normalized,
-            marker="D",
+            y_values,
+            marker=styles[metric]["marker"],
             linewidth=1.5,
             linestyle="--",
-            label="Throughput (normalized) ↑",
+            label=styles[metric]["label"],
             markersize=8,
         )[0]
-        color4 = line4.get_color()
-        line4.set_alpha(0.6)
-        line4.set_markerfacecolor(mcolors.to_rgba(color4, alpha=1.0))
-        line4.set_markeredgecolor(mcolors.to_rgba(color4, alpha=1.0))
+        color = line.get_color()
+        line.set_alpha(0.6)
+        line.set_markerfacecolor(mcolors.to_rgba(color, alpha=1.0))
+        line.set_markeredgecolor(mcolors.to_rgba(color, alpha=1.0))
 
     ax.set_xlabel("Prompt Token Count", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Metric Value", fontsize=12, fontweight="bold")
-    ax.legend(loc="best")
+    ax.set_ylabel(y_label, fontsize=12, fontweight="bold")
+    if show_legend:
+        ax.legend(loc="best")
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
 

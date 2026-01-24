@@ -572,6 +572,34 @@ def main():
             "#output_format",
             "Rewrite this prompt output format to be clearer and more concise:\n\n{{{{text}}}}",
         ),
+        Rewrite(
+            "#guideline",
+            "Rewrite this guideline to explicitly describe the rating scale boundaries (1-5) and clarify what makes text low vs high visual descriptiveness:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#examples",
+            "Expand these examples to show more diverse cases covering the full rating scale spectrum:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#system",
+            "Rewrite this system prompt to emphasize careful analysis of concrete details, sensory language, and imagery:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#guideline",
+            "Rewrite this guideline to focus on specific linguistic markers that indicate visual descriptiveness (adjectives, concrete nouns, sensory verbs):\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#examples",
+            "Rewrite these examples to highlight the specific features that justify each rating decision:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#output_format",
+            "Rewrite this output format to encourage confidence scoring:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#guideline",
+            "Rewrite this guideline to address edge cases like abstract vs concrete language, figurative language, and technical descriptions:\n\n{{{{text}}}}",
+        ),
         sample_for_init_candidates=False,
     )
 

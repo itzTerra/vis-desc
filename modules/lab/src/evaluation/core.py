@@ -168,9 +168,9 @@ def plot_confusion_matrix(
         return
 
     if show_proportional:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
     else:
-        fig, ax1 = plt.subplots(1, 1, figsize=(8, 6))
+        fig, ax1 = plt.subplots(1, 1, figsize=(3, 3))
         ax2 = None
 
     sns.heatmap(
@@ -181,7 +181,7 @@ def plot_confusion_matrix(
         ax=ax1,
         linewidths=0.5,
         linecolor="gray",
-        cbar_kws={"label": "Count"},
+        cbar=False,
     )
     if show_title:
         ax1.set_title(
@@ -194,7 +194,7 @@ def plot_confusion_matrix(
     if class_mode == "relaxed":
         labels = ["0/1", "2/3", "4/5"]
     else:
-        labels = [f"Label {i}" for i in range(6)]
+        labels = [f"{i}" for i in range(6)]
     ax1.set_xticklabels(labels[: cm.shape[1]])
     ax1.set_yticklabels(labels[: cm.shape[0]])
 
@@ -212,7 +212,7 @@ def plot_confusion_matrix(
             ax=ax2,
             linewidths=0.5,
             linecolor="gray",
-            cbar_kws={"label": "Proportion"},
+            cbar=False,
             vmin=0,
             vmax=1,
         )
@@ -352,26 +352,29 @@ def vis_specific_model_conf_matrices(
     class_mode: str = "full",
 ) -> None:
     """Visualize confusion matrices for train/val/test datasets."""
-    print("=" * 80)
-    print("TRAIN SET CONFUSION MATRIX")
-    print("=" * 80)
-    plot_confusion_matrix(
-        metrics_data, "train", show_proportional, show_title, class_mode=class_mode
-    )
+    if metrics_data.train is not None:
+        print("=" * 80)
+        print("TRAIN SET CONFUSION MATRIX")
+        print("=" * 80)
+        plot_confusion_matrix(
+            metrics_data, "train", show_proportional, show_title, class_mode=class_mode
+        )
 
-    print("\n" + "=" * 80)
-    print("CROSS-VALIDATION CONFUSION MATRIX")
-    print("=" * 80)
-    plot_confusion_matrix(
-        metrics_data, "val", show_proportional, show_title, class_mode=class_mode
-    )
+    if metrics_data.val is not None:
+        print("\n" + "=" * 80)
+        print("CROSS-VALIDATION CONFUSION MATRIX")
+        print("=" * 80)
+        plot_confusion_matrix(
+            metrics_data, "val", show_proportional, show_title, class_mode=class_mode
+        )
 
-    print("\n" + "=" * 80)
-    print("TEST SET CONFUSION MATRIX")
-    print("=" * 80)
-    plot_confusion_matrix(
-        metrics_data, "test", show_proportional, show_title, class_mode=class_mode
-    )
+    if metrics_data.test is not None:
+        print("\n" + "=" * 80)
+        print("TEST SET CONFUSION MATRIX")
+        print("=" * 80)
+        plot_confusion_matrix(
+            metrics_data, "test", show_proportional, show_title, class_mode=class_mode
+        )
 
 
 def vis_all_models_plots(

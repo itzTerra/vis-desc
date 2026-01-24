@@ -16,9 +16,9 @@ from models.encoder.common import (
     PersistentMetrics,
     device,
     CustomDataset,
-    calculate_metrics,
     SEED,
 )
+from utils import calculate_metrics
 
 BATCH_SIZE = 64
 MAX_EPOCHS = 40

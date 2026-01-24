@@ -12,7 +12,7 @@ from sammo.base import LLMResult, Runner, EvaluationScore
 from sammo.components import Output
 from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
-from sammo.extractors import LambdaExtractor, StripWhitespace
+from sammo.extractors import Extractor, StripWhitespace
 from sammo.instructions import InputData, MetaPrompt, Paragraph
 from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
 from sammo.search import BeamSearch
@@ -49,6 +49,14 @@ class _BatchRequest:
     schema_key: str
 
 
+class RatingExtractor(Extractor):
+    """Extract parsed rating from model output."""
+
+    def _extract_from_single_value(self, text: str):
+        rating, _ = parse_output(str(text))
+        return [rating] if rating is not None else [None]
+
+
 class TextSegmentFormatter(DataFormatter):
     """Format inputs and parse model outputs for prompt optimization."""
 
@@ -65,9 +73,8 @@ class TextSegmentFormatter(DataFormatter):
         return "\n".join(segments)
 
     def get_extractor(self, child, on_error="raise"):
-        return LambdaExtractor(
+        return RatingExtractor(
             StripWhitespace(child),
-            "lambda text: parse_output(text)[0]",
             on_error=on_error,
         )
 

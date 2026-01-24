@@ -4,6 +4,7 @@ import sys
 import time
 from abc import ABC, abstractmethod
 
+import torch
 from openai import OpenAI, RateLimitError, APIError, APIConnectionError
 from tenacity import (
     retry,
@@ -82,7 +83,7 @@ EINFRA_MODELS = [
     #     name="Llama4-Scout-17b",
     #     enable_thinking=False,
     #     params=SamplingParams(temperature=1.0),
-    #     system_prefix="<|header_start|>system<|header_end|>\n\n",
+    #     system_prefix="<|begin_of_text|><|header_start|>system<|header_end|>\n\n",
     #     system_suffix="<|eot|>",
     #     prompt_prefix="<|header_start|>user<|header_end|>\n\n",
     #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
@@ -167,7 +168,7 @@ LOCAL_MODELS = [
         name="Llama4-Scout-17b",
         enable_thinking=False,
         params=SamplingParams(temperature=0.7, top_p=0.8),
-        system_prefix="<|header_start|>system<|header_end|>\n\n",
+        system_prefix="<|begin_of_text|><|header_start|>system<|header_end|>\n\n",
         system_suffix="<|eot|>",
         prompt_prefix="<|header_start|>user<|header_end|>\n\n",
         prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
@@ -206,12 +207,14 @@ class VLLMAgent(ModelAgent):
     def __init__(
         self,
         model_config: "ModelConfig",
-        tensor_parallel_size: int = 1,
-        gpu_memory_utilization: float = 0.9,
+        tensor_parallel_size: int | None = None,
+        gpu_memory_utilization: float = 1,
         max_model_len: int = 4096,
     ):
         self.model_config = model_config
         self.model_name = model_config.name
+        if tensor_parallel_size is None:
+            tensor_parallel_size = torch.cuda.device_count()
         self.llm = LLM(
             model=model_config.id,
             tensor_parallel_size=tensor_parallel_size,

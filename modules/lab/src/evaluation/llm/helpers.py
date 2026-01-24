@@ -584,6 +584,193 @@ def plot_model_metrics_scatter(
     plt.show()
 
 
+def plot_model_metrics_combined_scatter(
+    df: pd.DataFrame,
+    min_threshold: float = 0.1,
+    y_padding: float = 0.05,
+    figsize: tuple[float, float] = (8, 10),
+    shorten_model_names: bool = False,
+    show_labels: bool = False,
+) -> None:
+    """Plot correlation, RMSE, and accuracy in a single scatter plot.
+
+    Creates a combined bubble chart where:
+    - X-axis: Prompt complexity (Low/Medium/High) with small metric-specific offsets
+    - Y-axis: Metric value (raw values for correlation, RMSE, accuracy)
+    - Bubble size: Model size inferred from name
+    - Color: Prompt identifier
+    - Shape: Metric type (circle=corr, triangle=rmse, square=acc) with legend
+
+    Args:
+        df: DataFrame with columns: model_name, prompt, prompt_token_count,
+            correlation, rmse, accuracy
+        min_threshold: Minimum value to include for correlation/accuracy
+        y_padding: Padding around min/max for y-axis limits
+        figsize: Figure size
+        shorten_model_names: Whether to truncate long model names in labels
+        show_labels: Whether to render model name text labels (can get crowded)
+    """
+    required_cols = {
+        "model_name",
+        "prompt",
+        "prompt_token_count",
+        "correlation",
+        "rmse",
+        "accuracy",
+    }
+    missing = required_cols - set(df.columns)
+    if missing:
+        print(f"Skip combined scatter: missing columns {sorted(missing)}")
+        return
+
+    # Filter rows that have at least one metric present and meet thresholds where applicable
+    df_nonnull = df.copy()
+    df_nonnull = df_nonnull[
+        (
+            pd.notna(df_nonnull["correlation"])
+            & (df_nonnull["correlation"] > min_threshold)
+        )
+        | (pd.notna(df_nonnull["rmse"]))
+        | (pd.notna(df_nonnull["accuracy"]) & (df_nonnull["accuracy"] > min_threshold))
+    ]
+
+    if df_nonnull.empty:
+        print("Skip combined scatter: no data to plot after filtering.")
+        return
+
+    unique_prompts = df_nonnull["prompt"].unique()
+    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_prompts)))
+    prompt_color_map = {prompt: colors[i] for i, prompt in enumerate(unique_prompts)}
+
+    # Metric-specific marker styles and x-offsets to reduce overlap
+    metric_styles = {
+        "correlation": {"marker": "o", "label": "Correlation", "offset": -0.15},
+        "rmse": {"marker": "^", "label": "RMSE", "offset": 0.0},
+        "accuracy": {"marker": "s", "label": "Accuracy", "offset": 0.15},
+    }
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Track y-limits across all plotted points
+    all_y_values = []
+
+    # Plot for each prompt and metric
+    for prompt in unique_prompts:
+        prompt_df = df_nonnull[df_nonnull["prompt"] == prompt]
+
+        for metric_name, style in metric_styles.items():
+            series_df = prompt_df[pd.notna(prompt_df[metric_name])]
+            if metric_name in {"correlation", "accuracy"}:
+                series_df = series_df[series_df[metric_name] > min_threshold]
+            if series_df.empty:
+                continue
+
+            x_positions = []
+            y_values = []
+            sizes = []
+
+            # Alternate micro-jitter to reduce exact overlap within same metric/prompt
+            for idx, (_, row) in enumerate(
+                series_df.sort_values(metric_name).iterrows()
+            ):
+                x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])  # 0/1/2
+                jitter = 0.06 if (idx % 2 == 0) else -0.06
+                x_positions.append(x_pos + style["offset"] + jitter)
+                y_values.append(row[metric_name])
+                sizes.append(
+                    model_size_to_bubble_size(extract_model_size(row["model_name"]))
+                )
+                all_y_values.append(row[metric_name])
+
+            ax.scatter(
+                x_positions,
+                y_values,
+                s=sizes,
+                alpha=0.7,
+                color=prompt_color_map[prompt],
+                edgecolors="black",
+                linewidth=1.2,
+                marker=style["marker"],
+            )
+
+            if show_labels:
+                # Place labels slightly above points, then adjust to reduce overlaps
+                if "_texts" not in locals():
+                    _texts = []
+                for x, y, (_, row) in zip(
+                    x_positions, y_values, series_df.sort_values(metric_name).iterrows()
+                ):
+                    name = row["model_name"]
+                    if shorten_model_names:
+                        name = name.split("/")[-1][:20]
+                    txt = ax.text(
+                        x,
+                        y,
+                        name,
+                        fontsize=7,
+                        fontweight="bold",
+                        alpha=0.9,
+                        bbox=dict(
+                            boxstyle="round,pad=0.25",
+                            facecolor="white",
+                            alpha=0.7,
+                            edgecolor="gray",
+                        ),
+                    )
+                    _texts.append(txt)
+
+    # Axes formatting
+    ax.set_xticks([0, 1, 2])
+    ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
+    ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
+    ax.set_ylabel("Metric Value", fontsize=12, fontweight="bold")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.set_axisbelow(True)
+
+    if all_y_values:
+        y_min = min(all_y_values) - y_padding
+        y_max = max(all_y_values) + y_padding
+        ax.set_ylim([y_min, y_max])
+
+    # If labels were drawn, nudge them to avoid overlaps and add arrows
+    if show_labels and "_texts" in locals() and _texts:
+        adjust_text(
+            _texts,
+            arrowprops=dict(arrowstyle="->", color="gray", lw=0.6, alpha=0.6),
+            force_static=(1.5, 3.5),
+            force_text=(1.8, 2),
+            force_explode=(1.2, 1.2),
+            ax=ax,
+        )
+
+    # Legends: one for metrics (shapes), one for prompts (colors)
+    from matplotlib.lines import Line2D
+
+    metric_legend = [
+        Line2D(
+            [0],
+            [0],
+            marker=style["marker"],
+            color="grey",
+            label=style["label"],
+            markerfacecolor="grey",
+            markersize=8,
+            linestyle="None",
+        )
+        for style in metric_styles.values()
+    ]
+
+    leg1 = ax.legend(
+        metric_legend,
+        [s["label"] for s in metric_styles.values()],
+        title="Metric",
+        loc="upper left",
+    )
+    ax.add_artist(leg1)
+    plt.tight_layout()
+    plt.show()
+
+
 def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     """Build a table of prompt configurations with their evaluation metrics.
 

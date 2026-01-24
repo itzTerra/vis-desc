@@ -269,7 +269,7 @@ class InitialPromptCandidates:
         """
         example_formatter = PlainFormatter()
 
-        task_description = PROMPT_PARTS["task_description"][
+        task_description = PROMPT_PARTS["task_descriptions"][
             INITIAL_PROMPT_TASK_DESCRIPTION_KEY
         ]
         examples = PROMPT_PARTS["examples"][INITIAL_PROMPT_EXAMPLES_KEY]

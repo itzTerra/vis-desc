@@ -9,10 +9,13 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from sammo.base import LLMResult, Runner, EvaluationScore
-from sammo.instructions import MetaPrompt, Paragraph
+from sammo.components import Output
+from sammo.data import DataTable
+from sammo.dataformatters import DataFormatter
+from sammo.extractors import LambdaExtractor, StripWhitespace
+from sammo.instructions import InputData, MetaPrompt, Paragraph
 from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
 from sammo.search import BeamSearch
-from sammo.data import DataTable
 
 from models.llm.agents import VLLMAgent, MODEL_BY_NAME
 from models.llm.prompts import PROMPT_PARTS, schema_for_suffix_key
@@ -44,6 +47,29 @@ class _BatchRequest:
     seed: int | None
     future: asyncio.Future
     schema_key: str
+
+
+class TextSegmentFormatter(DataFormatter):
+    """Format inputs and parse model outputs for prompt optimization."""
+
+    def __init__(self):
+        super().__init__(flatten_1d_dicts=True, include_ids=False, orient="item")
+
+    def _dump(self, records):
+        grouped = records.group_by(self._orient)
+        segments = []
+        for _, items in grouped:
+            segments.extend(
+                f"<text_segment>{item['value']}</text_segment>" for item in items
+            )
+        return "\n".join(segments)
+
+    def get_extractor(self, child, on_error="raise"):
+        return LambdaExtractor(
+            StripWhitespace(child),
+            "lambda text: parse_output(text)[0]",
+            on_error=on_error,
+        )
 
 
 class VLLMBatchedRunner(Runner):
@@ -303,7 +329,8 @@ class InitialPromptCandidates:
         ]
         examples = PROMPT_PARTS["examples"][INITIAL_PROMPT_EXAMPLES_KEY]
         output_format = PROMPT_PARTS["output_format"][INITIAL_PROMPT_OUTPUT_FORMAT_KEY]
-        input_part = PROMPT_PARTS["input"].replace("{{TEXT_SEGMENT}}", "{{input}}")
+
+        formatter = TextSegmentFormatter()
 
         instructions = MetaPrompt(
             [
@@ -315,12 +342,18 @@ class InitialPromptCandidates:
                 Paragraph("\n\n"),
                 Paragraph(output_format, reference_id="output_format"),
                 Paragraph("\n\n"),
-                Paragraph(input_part, reference_id="input"),
+                Paragraph("## Input\nRate the following text segment:\n\n"),
+                Paragraph(InputData(), reference_id="input"),
             ],
             render_as="raw",
+            data_formatter=formatter,
         )
 
-        return instructions
+        return Output(
+            instructions.with_extractor("raise"),
+            minibatch_size=1,
+            on_error="raise",
+        )
 
 
 def main():

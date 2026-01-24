@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import logging
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,13 @@ from utils import DATA_DIR
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
+STRUCTURED_OUTPUTS_ENABLED = True
+STRUCTURED_SCHEMA_SUFFIX = "base"
+INITIAL_PROMPT_EXAMPLES_KEY = "base"
+INITIAL_PROMPT_OUTPUT_FORMAT_KEY = "base"
+
 
 @dataclass
 class _BatchRequest:
@@ -39,13 +47,17 @@ class VLLMBatchedRunner(Runner):
     def __init__(
         self,
         vllm_agent: VLLMAgent,
-        batch_size: int = 8,
+        batch_size: int = 16,
         max_batch_delay: float = 0.05,
+        use_structured_outputs: bool = STRUCTURED_OUTPUTS_ENABLED,
+        structured_schema_suffix: str = STRUCTURED_SCHEMA_SUFFIX,
     ):
         super().__init__()
         self.agent = vllm_agent
         self.batch_size = batch_size
         self.max_batch_delay = max_batch_delay
+        self.use_structured_outputs = use_structured_outputs
+        self.structured_schema = schema_for_suffix_key(structured_schema_suffix)
         self._queue: list[_BatchRequest] = []
         self._queue_lock = asyncio.Lock()
         self._flush_task: asyncio.Task | None = None
@@ -64,10 +76,6 @@ class VLLMBatchedRunner(Runner):
         if system_prompt is None and "\n\n" in prompt:
             system_prompt, user_prompt = prompt.split("\n\n", 1)
 
-        use_structured_outputs = kwargs.get("use_structured_outputs", True)
-        structured_schema = kwargs.get("structured_schema") or schema_for_suffix_key(
-            "cot"
-        )
         seed = kwargs.get("seed", seed)
 
         loop = asyncio.get_running_loop()
@@ -75,12 +83,12 @@ class VLLMBatchedRunner(Runner):
         request = _BatchRequest(
             prompt=user_prompt,
             system_prompt=system_prompt,
-            use_structured_outputs=use_structured_outputs,
-            structured_schema=structured_schema,
+            use_structured_outputs=self.use_structured_outputs,
+            structured_schema=self.structured_schema,
             seed=seed,
             future=future,
-            schema_key=json.dumps(structured_schema, sort_keys=True)
-            if structured_schema
+            schema_key=json.dumps(self.structured_schema, sort_keys=True)
+            if self.structured_schema
             else "",
         )
 
@@ -249,15 +257,19 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
         return None
 
     errors = []
-    for y_p, y_t in zip(y_pred_values, y_true_values):
+    for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
         try:
             pred_rating = _extract_rating(y_p)
             if pred_rating is not None:
                 error = pred_rating - int(y_t)
                 errors.append(error * error)
             else:
+                logger.debug(
+                    f"Failed to parse rating from prediction {i}: {y_p!r} (true: {y_t})"
+                )
                 errors.append(25.0)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logger.debug(f"Error parsing prediction {i}: {y_p!r} (true: {y_t}) - {e}")
             errors.append(25.0)
 
     mse = sum(errors) / len(errors) if errors else 25.0
@@ -279,8 +291,8 @@ class InitialPromptCandidates:
         """
         example_formatter = PlainFormatter()
 
-        examples = PROMPT_PARTS["examples"]["base"]
-        output_format = PROMPT_PARTS["output_format"]["base"]
+        examples = PROMPT_PARTS["examples"][INITIAL_PROMPT_EXAMPLES_KEY]
+        output_format = PROMPT_PARTS["output_format"][INITIAL_PROMPT_OUTPUT_FORMAT_KEY]
         input_part = PROMPT_PARTS["input"].replace("{{TEXT_SEGMENT}}", "{{input}}")
 
         instructions = MetaPrompt(

@@ -9,7 +9,7 @@ from sammo.base import LLMResult, Runner, EvaluationScore
 from sammo.components import Output
 from sammo.dataformatters import PlainFormatter
 from sammo.instructions import MetaPrompt, Paragraph
-from sammo.mutators import BagOfMutators, InduceInstructions, Paraphrase, Rewrite
+from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
 from sammo.search import BeamSearch
 from sammo.data import DataTable
 
@@ -194,7 +194,8 @@ class InitialPromptCandidates:
         example_formatter = PlainFormatter()
 
         examples = PROMPT_PARTS["examples"]["cot"]
-        suffix = PROMPT_PARTS["suffix"]["cot"].replace("{{TEXT_SEGMENT}}", "{{input}}")
+        output_format = PROMPT_PARTS["output_format"]["cot"]
+        input_part = PROMPT_PARTS["input"].replace("{{TEXT_SEGMENT}}", "{{input}}")
 
         instructions = MetaPrompt(
             [
@@ -204,9 +205,11 @@ class InitialPromptCandidates:
                     GUIDELINE_CONFIGS["medium"]["text"], reference_id="guideline"
                 ),
                 Paragraph("\n\n"),
-                Paragraph(examples),
+                Paragraph(examples, reference_id="examples"),
                 Paragraph("\n\n"),
-                Paragraph(suffix, reference_id="suffix"),
+                Paragraph(output_format, reference_id="output_format"),
+                Paragraph("\n\n"),
+                Paragraph(input_part, reference_id="input"),
             ],
             render_as="raw",
             data_formatter=example_formatter,
@@ -265,16 +268,20 @@ def main():
 
     mutation_operators = BagOfMutators(
         InitialPromptCandidates(d_train, system_prompt),
-        InduceInstructions("#guideline", d_train),
         Paraphrase("#system"),
         Paraphrase("#guideline"),
+        Paraphrase("#output_format"),
         Rewrite(
             "#system",
             "Rewrite this system prompt to better steer the model toward accurate visual descriptiveness ratings while staying concise:\n\n{{{{text}}}}",
         ),
         Rewrite(
-            "#suffix",
-            "Rewrite this prompt suffix to be clearer and more concise:\n\n{{{{text}}}}",
+            "#guideline",
+            "Rewrite this guideline to be clearer and more concise for rating visual descriptiveness:\n\n{{{{text}}}}",
+        ),
+        Rewrite(
+            "#output_format",
+            "Rewrite this prompt output format to be clearer and more concise:\n\n{{{{text}}}}",
         ),
         sample_for_init_candidates=False,
     )
@@ -290,7 +297,7 @@ def main():
         metric_fn,
         maximize=maximize,
         mutations_per_beam=3,
-        depth=4,
+        depth=3,
     )
 
     print("\n🚀 Running prompt optimization...")

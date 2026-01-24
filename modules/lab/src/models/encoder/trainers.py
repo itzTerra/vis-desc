@@ -18,7 +18,7 @@ from catboost import CatBoostRegressor
 from tqdm.auto import tqdm
 import onnxruntime as rt
 from models.encoder.modernbert_finetune_nn import BATCH_SIZE
-from utils import DATA_DIR
+from utils import DATA_DIR, average_metrics, calculate_metrics
 from sklearn.kernel_approximation import Nystroem
 from sklearn.linear_model import SGDRegressor
 from skl2onnx import convert_sklearn
@@ -30,8 +30,6 @@ from models.encoder.common import (
     SEED,
     ModelNamer,
     PersistentMetrics,
-    average_metrics,
-    calculate_metrics,
     device,
     CustomDataset,
     CachedOptimizationContext,

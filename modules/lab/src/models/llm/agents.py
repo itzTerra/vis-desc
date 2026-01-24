@@ -77,16 +77,16 @@ EINFRA_MODELS = [
     #     prompt_prefix="[INST]",
     #     prompt_suffix="[/INST]",
     # ),
-    ModelConfig(
-        id="llama-4-scout-17b-16e-instruct",
-        name="Llama4-Scout-17b",
-        enable_thinking=False,
-        params=SamplingParams(temperature=1.0),
-        system_prefix="<|header_start|>system<|header_end|>\n\n",
-        system_suffix="<|eot|>",
-        prompt_prefix="<|header_start|>user<|header_end|>\n\n",
-        prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
-    ),
+    # ModelConfig(
+    #     id="llama-4-scout-17b-16e-instruct",
+    #     name="Llama4-Scout-17b",
+    #     enable_thinking=False,
+    #     params=SamplingParams(temperature=1.0),
+    #     system_prefix="<|header_start|>system<|header_end|>\n\n",
+    #     system_suffix="<|eot|>",
+    #     prompt_prefix="<|header_start|>user<|header_end|>\n\n",
+    #     prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
+    # ),
 ]
 
 LOCAL_MODELS = [
@@ -161,6 +161,16 @@ LOCAL_MODELS = [
         system_suffix="[/SYSTEM_PROMPT]",
         prompt_prefix="[INST]",
         prompt_suffix="[/INST]",
+    ),
+    ModelConfig(
+        id="RedHatAI/Llama-4-Scout-17B-16E-Instruct-quantized.w4a16",
+        name="Llama4-Scout-17b",
+        enable_thinking=False,
+        params=SamplingParams(temperature=0.7, top_p=0.8),
+        system_prefix="<|header_start|>system<|header_end|>\n\n",
+        system_suffix="<|eot|>",
+        prompt_prefix="<|header_start|>user<|header_end|>\n\n",
+        prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
     ),
 ]
 

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
 from adjustText import adjust_text
+from utils import calculate_metrics
 
 from utils import DATA_DIR
 from evaluation.llm.interface import compute_metrics_from_llm_data
@@ -121,6 +122,9 @@ def extract_model_metrics(
     - Calculate error rate
     - Extract throughput
 
+    If a model appears multiple times (different seeds), compute metrics separately
+    for each seed and then average them.
+
     Args:
         metrics_file: Path to metrics JSON file
         data_dir: Directory containing datasets
@@ -130,21 +134,21 @@ def extract_model_metrics(
         - model_name: Name of the model
         - prompt: Prompt ID/description
         - dataset: 'train' or 'test'
-        - throughput: Samples per second
-        - error_rate: Percentage of failed predictions
-        - correlation: Pearson correlation with true labels
-        - rmse: Root mean squared error
-        - accuracy: Classification accuracy
-        - output_errors: Count of output parsing errors
+        - throughput: Samples per second (averaged across seeds)
+        - error_rate: Percentage of failed predictions (averaged across seeds)
+        - correlation: Pearson correlation with true labels (averaged across seeds)
+        - rmse: Root mean squared error (averaged across seeds)
+        - accuracy: Classification accuracy (averaged across seeds)
+        - output_errors: Count of output parsing errors (summed across seeds)
         - num_samples: Total number of samples evaluated
-        - latency_mean: Mean latency in ms
-        - latency_std: Std dev of latency in ms
+        - latency_mean: Mean latency in ms (averaged across seeds)
+        - latency_std: Std dev of latency in ms (averaged across seeds)
     """
     metrics = load_metric_file(metrics_file)
     prompt_id = metrics_file.stem
     prompt = metrics.get("prompt", "")
 
-    results = []
+    model_results_by_name = {}
 
     for model_result in metrics.get("models", []):
         model_name = model_result.get("model_name", "unknown")
@@ -180,24 +184,91 @@ def extract_model_metrics(
         latency_mean = performance.get("latency_mean", 0)
         latency_std = performance.get("latency_std", 0)
 
-        results.append(
-            {
-                "model_name": model_name,
-                "prompt_id": prompt_id,
-                "prompt": prompt,
-                "prompt_token_count": metrics.get("prompt_token_count"),
-                "dataset": dataset_name,
-                "throughput": throughput,
-                "error_rate": error_rate,
-                "correlation": correlation,
-                "rmse": rmse,
-                "accuracy": accuracy,
-                "output_errors": output_errors,
-                "num_samples": len(true_labels),
-                "latency_mean": latency_mean,
-                "latency_std": latency_std,
-            }
-        )
+        seed_metrics = {
+            "dataset": dataset_name,
+            "throughput": throughput,
+            "error_rate": error_rate,
+            "correlation": correlation,
+            "rmse": rmse,
+            "accuracy": accuracy,
+            "output_errors": output_errors,
+            "num_samples": len(true_labels),
+            "latency_mean": latency_mean,
+            "latency_std": latency_std,
+        }
+
+        if model_name not in model_results_by_name:
+            model_results_by_name[model_name] = []
+        model_results_by_name[model_name].append(seed_metrics)
+
+    results = []
+
+    for model_name, seed_metrics_list in model_results_by_name.items():
+        if len(seed_metrics_list) == 1:
+            metric = seed_metrics_list[0]
+            results.append(
+                {
+                    "model_name": model_name,
+                    "prompt_id": prompt_id,
+                    "prompt": prompt,
+                    "prompt_token_count": metrics.get("prompt_token_count"),
+                    "dataset": metric["dataset"],
+                    "throughput": metric["throughput"],
+                    "error_rate": metric["error_rate"],
+                    "correlation": metric["correlation"],
+                    "rmse": metric["rmse"],
+                    "accuracy": metric["accuracy"],
+                    "output_errors": metric["output_errors"],
+                    "num_samples": metric["num_samples"],
+                    "latency_mean": metric["latency_mean"],
+                    "latency_std": metric["latency_std"],
+                }
+            )
+        else:
+            valid_metrics = [
+                m
+                for m in seed_metrics_list
+                if m["correlation"] is not None or m["rmse"] is not None
+            ]
+            if valid_metrics:
+                correlations = [
+                    m["correlation"]
+                    for m in valid_metrics
+                    if m["correlation"] is not None
+                ]
+                rmses = [m["rmse"] for m in valid_metrics if m["rmse"] is not None]
+                accuracies = [
+                    m["accuracy"] for m in valid_metrics if m["accuracy"] is not None
+                ]
+                error_rates = [m["error_rate"] for m in seed_metrics_list]
+                throughputs = [m["throughput"] for m in seed_metrics_list]
+                latency_means = [m["latency_mean"] for m in seed_metrics_list]
+                latency_stds = [m["latency_std"] for m in seed_metrics_list]
+
+                avg_correlation = np.mean(correlations) if correlations else None
+                avg_rmse = np.mean(rmses) if rmses else None
+                avg_accuracy = np.mean(accuracies) if accuracies else None
+
+                results.append(
+                    {
+                        "model_name": model_name,
+                        "prompt_id": prompt_id,
+                        "prompt": prompt,
+                        "prompt_token_count": metrics.get("prompt_token_count"),
+                        "dataset": seed_metrics_list[0]["dataset"],
+                        "throughput": np.mean(throughputs) if throughputs else 0,
+                        "error_rate": np.mean(error_rates) if error_rates else 0,
+                        "correlation": avg_correlation,
+                        "rmse": avg_rmse,
+                        "accuracy": avg_accuracy,
+                        "output_errors": sum(
+                            m["output_errors"] for m in seed_metrics_list
+                        ),
+                        "num_samples": seed_metrics_list[0]["num_samples"],
+                        "latency_mean": np.mean(latency_means) if latency_means else 0,
+                        "latency_std": np.mean(latency_stds) if latency_stds else 0,
+                    }
+                )
 
     return results
 
@@ -642,3 +713,160 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     ]
 
     return df
+
+
+def compute_optimization_comparison_table(
+    df_current: pd.DataFrame,
+    df_pre_optim: pd.DataFrame,
+    selected_config_idx: int,
+    config_names: list[str],
+    selected_model_name: str,
+) -> pd.DataFrame:
+    """Compute optimization comparison table showing pre vs post optimization metrics.
+
+    Creates a table with the selected model and average of other models, showing:
+    - Current metrics (CORR, RMSE, ACC)
+    - Delta metrics (Δ CORR, Δ RMSE, Δ ACC) as signed differences from pre-optimization
+
+    Args:
+        df_current: DataFrame with current metrics
+        df_pre_optim: DataFrame with pre-optimization metrics
+        selected_config_idx: Index of selected configuration
+        config_names: List of configuration names
+        selected_model_name: Name of the selected model
+
+    Returns:
+        DataFrame with columns: Model, CORR, Δ CORR, RMSE, Δ RMSE, ACC, Δ ACC
+    """
+    config_name = config_names[selected_config_idx]
+
+    # Filter metrics for selected configuration
+    pre_optim_config_data = df_pre_optim[
+        df_pre_optim["prompt_id"].str.startswith(config_name)
+    ].reset_index(drop=True)
+
+    current_config_data = df_current[
+        df_current["prompt_id"].str.startswith(config_name)
+    ].reset_index(drop=True)
+
+    # Get metrics for selected model
+    selected_model_pre = pre_optim_config_data[
+        pre_optim_config_data["model_name"] == selected_model_name
+    ]
+    selected_model_current = current_config_data[
+        current_config_data["model_name"] == selected_model_name
+    ]
+
+    # Calculate averages of other models
+    other_models_pre = pre_optim_config_data[
+        pre_optim_config_data["model_name"] != selected_model_name
+    ]
+    other_models_current = current_config_data[
+        current_config_data["model_name"] != selected_model_name
+    ]
+
+    comparison_data = []
+
+    if not selected_model_current.empty and not selected_model_pre.empty:
+        sel_curr = selected_model_current.iloc[0]
+        sel_pre = selected_model_pre.iloc[0]
+
+        row = {
+            "Model": selected_model_name,
+            "CORR": sel_curr["correlation"],
+            "Δ CORR": sel_curr["correlation"] - sel_pre["correlation"],
+            "RMSE": sel_curr["rmse"],
+            "Δ RMSE": sel_curr["rmse"] - sel_pre["rmse"],
+            "ACC": sel_curr["accuracy"],
+            "Δ ACC": sel_curr["accuracy"] - sel_pre["accuracy"],
+        }
+        comparison_data.append(row)
+
+    if not other_models_current.empty and not other_models_pre.empty:
+        avg_corr_curr = other_models_current["correlation"].mean()
+        avg_corr_pre = other_models_pre["correlation"].mean()
+        avg_rmse_curr = other_models_current["rmse"].mean()
+        avg_rmse_pre = other_models_pre["rmse"].mean()
+        avg_acc_curr = other_models_current["accuracy"].mean()
+        avg_acc_pre = other_models_pre["accuracy"].mean()
+
+        row = {
+            "Model": "Avg-of-Others",
+            "CORR": avg_corr_curr,
+            "Δ CORR": avg_corr_curr - avg_corr_pre,
+            "RMSE": avg_rmse_curr,
+            "Δ RMSE": avg_rmse_curr - avg_rmse_pre,
+            "ACC": avg_acc_curr,
+            "Δ ACC": avg_acc_curr - avg_acc_pre,
+        }
+        comparison_data.append(row)
+
+    return pd.DataFrame(comparison_data)
+
+
+def compute_scale_comparison_table(
+    score_data, to_int_0_5_func, llm_metrics_to_core_func
+):
+    """Compute comparison table of metrics for Normal vs Relaxed scale on test set.
+
+    Args:
+        score_data: ScoreData object with test_scores and y_test
+        to_int_0_5_func: Function to convert scores to 0-5 scale
+        llm_metrics_to_core_func: Function to convert metrics to core format
+
+    Returns:
+        Tuple of (df_comparison: DataFrame, metrics_dict: dict with normal and relaxed metrics)
+    """
+    if (
+        score_data.test_scores is None
+        or score_data.test_scores.size == 0
+        or score_data.y_test is None
+    ):
+        return None, None
+
+    test_predictions = to_int_0_5_func(score_data.test_scores)
+    test_labels = score_data.y_test
+
+    normal_model = llm_metrics_to_core_func(
+        predictions=None,
+        labels=None,
+        test_predictions=test_predictions,
+        test_labels=test_labels,
+        model_name=score_data.model_name,
+    )
+
+    normal_rmse = normal_model.test.rmse if normal_model.test else None
+    normal_acc = normal_model.test.accuracy if normal_model.test else None
+
+    relaxed_rmse = None
+    relaxed_acc = None
+
+    if normal_model.test and normal_model.test.predictions is not None:
+        test_preds_relaxed = np.array(normal_model.test.predictions) // 2
+        test_labels_relaxed = np.array(normal_model.test.labels) // 2
+        relaxed_metrics = calculate_metrics(test_preds_relaxed, test_labels_relaxed)
+        relaxed_rmse = relaxed_metrics["rmse"]
+        relaxed_acc = relaxed_metrics["accuracy"]
+
+    comparison_data = {
+        "Scale": ["Normal", "Relaxed"],
+        "RMSE": [
+            f"{normal_rmse:.4f}" if normal_rmse is not None else "N/A",
+            f"{relaxed_rmse:.4f}" if relaxed_rmse is not None else "N/A",
+        ],
+        "Accuracy": [
+            f"{normal_acc:.4f}" if normal_acc is not None else "N/A",
+            f"{relaxed_acc:.4f}" if relaxed_acc is not None else "N/A",
+        ],
+    }
+
+    df_comparison = pd.DataFrame(comparison_data)
+
+    metrics_dict = {
+        "normal_rmse": normal_rmse,
+        "normal_acc": normal_acc,
+        "relaxed_rmse": relaxed_rmse,
+        "relaxed_acc": relaxed_acc,
+    }
+
+    return df_comparison, metrics_dict

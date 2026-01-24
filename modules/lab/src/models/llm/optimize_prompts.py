@@ -297,7 +297,7 @@ class InitialPromptCandidates:
         """Build initial candidate prompts using guideline and suffix variations.
 
         Returns:
-            Output component with MetaPrompt structure
+            MetaPrompt structure to be executed by the runner
         """
         task_description = PROMPT_PARTS["task_descriptions"][
             INITIAL_PROMPT_TASK_DESCRIPTION_KEY
@@ -318,14 +318,10 @@ class InitialPromptCandidates:
                 Paragraph("\n\n"),
                 Paragraph(input_part, reference_id="input"),
             ],
-            render_as="raw",
+            render_as="text",
         )
 
-        return Output(
-            instructions,
-            minibatch_size=1,
-            on_error="raise",
-        )
+        return instructions
 
 
 def main():
@@ -423,8 +419,14 @@ def main():
 
     system_prompt = PROMPT_PARTS["system"]
 
+    initial_candidates = InitialPromptCandidates(d_train, system_prompt)
+
     mutation_operators = BagOfMutators(
-        InitialPromptCandidates(d_train, system_prompt),
+        lambda: Output(
+            initial_candidates(),
+            minibatch_size=1,
+            on_error="raise",
+        ),
         Paraphrase("#system"),
         Paraphrase("#guideline"),
         Paraphrase("#output_format"),

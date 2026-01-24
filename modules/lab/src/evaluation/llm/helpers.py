@@ -821,12 +821,12 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     all_acc_values = []
 
     for plan in COMBINATION_PLANS:
-        for task_descr_key, task_descr in plan["task_descriptions"].items():
+        for task_descr_key in plan["task_descriptions"]:
             for cot_option in plan["cot_options"]:
                 suffix_key, suffix_text = select_suffix(cot_option)
                 prompt = Prompt(
                     system=PROMPT_PARTS["system"],
-                    guideline=task_descr,
+                    guideline=PROMPT_PARTS["task_descriptions"][task_descr_key],
                     examples=select_examples(plan["include_examples"], cot_option),
                     suffix_key=suffix_key,
                     suffix=suffix_text,

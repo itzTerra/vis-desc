@@ -313,12 +313,12 @@ def schema_for_prompt(prompt: Prompt) -> dict:
 
 PROMPTS: list[Prompt] = []
 for plan in COMBINATION_PLANS:
-    for task_descr in plan["task_descriptions"].values():
+    for task_descr_key in plan["task_descriptions"]:
         for cot_option in plan["cot_options"]:
             PROMPTS.append(
                 Prompt(
                     system=PROMPT_PARTS["system"],
-                    guideline=task_descr,
+                    guideline=PROMPT_PARTS["task_descriptions"][task_descr_key],
                     examples=select_examples(plan["include_examples"], cot_option),
                     suffix_key=select_suffix(cot_option)[0],
                     suffix=select_suffix(cot_option)[1],

@@ -9,7 +9,6 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from sammo.base import LLMResult, Runner, EvaluationScore
-from sammo.components import Output
 from sammo.instructions import MetaPrompt, Paragraph
 from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
 from sammo.search import BeamSearch
@@ -297,7 +296,7 @@ class InitialPromptCandidates:
         """Build initial candidate prompts using guideline and suffix variations.
 
         Returns:
-            MetaPrompt structure to be executed by the runner
+            MetaPrompt structure to be wrapped in Output by BagOfMutators
         """
         task_description = PROMPT_PARTS["task_descriptions"][
             INITIAL_PROMPT_TASK_DESCRIPTION_KEY
@@ -318,7 +317,7 @@ class InitialPromptCandidates:
                 Paragraph("\n\n"),
                 Paragraph(input_part, reference_id="input"),
             ],
-            render_as="text",
+            render_as="raw",
         )
 
         return instructions
@@ -419,14 +418,8 @@ def main():
 
     system_prompt = PROMPT_PARTS["system"]
 
-    initial_candidates = InitialPromptCandidates(d_train, system_prompt)
-
     mutation_operators = BagOfMutators(
-        lambda: Output(
-            initial_candidates(),
-            minibatch_size=1,
-            on_error="raise",
-        ),
+        InitialPromptCandidates(d_train, system_prompt),
         Paraphrase("#system"),
         Paraphrase("#guideline"),
         Paraphrase("#output_format"),

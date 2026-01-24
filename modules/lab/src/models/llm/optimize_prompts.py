@@ -24,6 +24,9 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+DEBUG_MODE = False
+DEBUG_LOG_PATH: Path | None = None
+
 STRUCTURED_OUTPUTS_ENABLED = True
 STRUCTURED_SCHEMA_SUFFIX = "base"
 INITIAL_PROMPT_EXAMPLES_KEY = "base"
@@ -76,6 +79,11 @@ class VLLMBatchedRunner(Runner):
 
         if system_prompt is None and "\n\n" in prompt:
             system_prompt, user_prompt = prompt.split("\n\n", 1)
+
+        if DEBUG_MODE and DEBUG_LOG_PATH:
+            logger.debug(
+                f"[Model Input]\nSystem prompt: {system_prompt}\nUser prompt: {user_prompt}"
+            )
 
         seed = kwargs.get("seed", seed)
 
@@ -138,6 +146,15 @@ class VLLMBatchedRunner(Runner):
         ), requests in grouped.items():
             prompts = [r.prompt for r in requests]
             schema = requests[0].structured_schema if requests else None
+
+            if DEBUG_MODE and DEBUG_LOG_PATH:
+                for idx, (sys_p, user_p) in enumerate(
+                    zip([system_prompt] * len(prompts), prompts)
+                ):
+                    logger.debug(
+                        f"[Batch Input {idx}]\nSystem prompt: {sys_p}\nUser prompt: {user_p}"
+                    )
+
             try:
                 responses = await asyncio.to_thread(
                     self.agent.generate_batch,
@@ -206,8 +223,12 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     y_pred_values = y_pred.outputs.normalized_values()
 
     n_correct = 0
-    for y_p, y_t in zip(y_pred_values, y_true_values):
+    for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
         parsed_rating, _ = parse_output(str(y_p))
+        if DEBUG_MODE and DEBUG_LOG_PATH:
+            logger.debug(
+                f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t}"
+            )
         try:
             if parsed_rating is not None and int(parsed_rating) == int(y_t):
                 n_correct += 1
@@ -215,6 +236,10 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
             continue
 
     accuracy = n_correct / len(y_true_values) if y_true_values else 0.0
+    if DEBUG_MODE and DEBUG_LOG_PATH:
+        logger.debug(
+            f"Accuracy metric: {accuracy:.4f} ({n_correct}/{len(y_true_values)})"
+        )
     return EvaluationScore(accuracy)
 
 
@@ -240,6 +265,10 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             if parsed_rating is not None:
                 error = int(parsed_rating) - int(y_t)
                 errors.append(error * error)
+                if DEBUG_MODE and DEBUG_LOG_PATH:
+                    logger.debug(
+                        f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t} | Error: {error}"
+                    )
             else:
                 logger.debug(
                     f"Failed to parse rating from prediction {i}: {y_p!r} (true: {y_t})"
@@ -250,6 +279,8 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             errors.append(25.0)
 
     mse = sum(errors) / len(errors) if errors else 25.0
+    if DEBUG_MODE and DEBUG_LOG_PATH:
+        logger.debug(f"MSE metric: {mse:.4f}")
     return EvaluationScore(mse)
 
 
@@ -322,8 +353,37 @@ def main():
     parser.add_argument(
         "--seed", type=int, default=42, help="Random seed for sampling (default: 42)"
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging of raw model inputs, outputs, and parsed values",
+    )
 
     args = parser.parse_args()
+
+    global DEBUG_MODE, DEBUG_LOG_PATH
+    DEBUG_MODE = args.debug
+
+    if DEBUG_MODE:
+        debug_log_dir = DATA_DIR / "output" / "debug_logs"
+        debug_log_dir.mkdir(parents=True, exist_ok=True)
+        DEBUG_LOG_PATH = debug_log_dir / "optimization_debug.log"
+
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler(DEBUG_LOG_PATH),
+                logging.StreamHandler(sys.stdout),
+            ],
+        )
+        logger.info(f"Debug logging enabled. Logs will be written to: {DEBUG_LOG_PATH}")
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(message)s",
+            handlers=[logging.StreamHandler(sys.stdout)],
+        )
 
     model_config = MODEL_BY_NAME.get(args.model)
     if not model_config:
@@ -380,8 +440,8 @@ def main():
         mutation_operators,
         metric_fn,
         maximize=maximize,
-        mutations_per_beam=3,
-        depth=3,
+        mutations_per_beam=2,
+        depth=2,
     )
 
     print("\n🚀 Running prompt optimization...")
@@ -403,6 +463,9 @@ def main():
     with open(output_path, "w") as f:
         f.write(str(prompt_optimizer.best_prompt))
     print(f"\n✓ Best prompt saved to: {output_path}")
+
+    if DEBUG_MODE and DEBUG_LOG_PATH:
+        print(f"✓ Debug logs saved to: {DEBUG_LOG_PATH}")
 
 
 if __name__ == "__main__":

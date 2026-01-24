@@ -395,6 +395,18 @@ def main():
         action="store_true",
         help="Enable debug logging of raw model inputs, outputs, and parsed values",
     )
+    parser.add_argument(
+        "--mutations-per-beam",
+        type=int,
+        default=3,
+        help="Number of mutations per beam in the search (default: 3)",
+    )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=3,
+        help="Search depth for beam search optimization (default: 3)",
+    )
 
     args = parser.parse_args()
 
@@ -488,8 +500,8 @@ def main():
         mutation_operators,
         metric_fn,
         maximize=maximize,
-        mutations_per_beam=2,
-        depth=2,
+        mutations_per_beam=args.mutations_per_beam,
+        depth=args.depth,
     )
 
     print("\n🚀 Running prompt optimization...")

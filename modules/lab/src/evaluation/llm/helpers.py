@@ -443,10 +443,12 @@ def model_size_to_bubble_size(size: int) -> float:
     Returns:
         Bubble size for matplotlib scatter plot
     """
-    return size / 3 + 30
+    return size / 2 + 60
 
 
-def map_prompt_to_complexity(token_count: int) -> tuple[int, str]:
+def map_prompt_to_complexity(
+    token_count: int, x_positions: list[float]
+) -> tuple[int, str]:
     """Map prompt token count to complexity category and label.
 
     Args:
@@ -456,11 +458,20 @@ def map_prompt_to_complexity(token_count: int) -> tuple[int, str]:
         Tuple of (category_index, label_string)
     """
     if token_count <= 200:
-        return 0, "Low (120)"
+        return x_positions[0], "Low (120)"
     elif token_count <= 900:
-        return 1, "Medium (634)"
+        return x_positions[1], "Medium (634)"
     else:
-        return 2, "High (1851)"
+        return x_positions[2], "High (1851)"
+
+
+def three_state_jitter(index: int, magnitude: float) -> float:
+    remainder = index % 3
+    if remainder == 0:
+        return -magnitude
+    if remainder == 1:
+        return 0.0
+    return magnitude
 
 
 def plot_model_metrics_scatter(
@@ -504,6 +515,7 @@ def plot_model_metrics_scatter(
     fig, ax = plt.subplots(figsize=figsize)
 
     offset_map = {}
+    X_POSITIONS = [0, 1, 2]  # Low, Medium, High complexity
 
     for prompt in unique_prompts:
         prompt_data = df_filtered[df_filtered["prompt"] == prompt].sort_values(
@@ -515,10 +527,10 @@ def plot_model_metrics_scatter(
         bubble_sizes = []
 
         for idx, (row_idx, row) in enumerate(prompt_data.iterrows()):
-            x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])
+            x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"], X_POSITIONS)
             model_size = extract_model_size(row["model_name"])
 
-            offset = 0.08 if idx % 2 == 0 else -0.08
+            offset = three_state_jitter(idx, 0.12)
             offset_map[row_idx] = offset
             x_positions.append(x_pos + offset)
             y_values.append(row[metric_column])
@@ -536,7 +548,7 @@ def plot_model_metrics_scatter(
 
     texts = []
     for row_idx, row in df_filtered.iterrows():
-        x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])
+        x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"], X_POSITIONS)
         model_name = row["model_name"]
 
         if shorten_model_names:
@@ -548,7 +560,7 @@ def plot_model_metrics_scatter(
             x_pos + offset,
             row[metric_column],
             model_name,
-            fontsize=8,
+            fontsize=9,
             fontweight="bold",
             alpha=0.85,
             bbox=dict(
@@ -567,7 +579,7 @@ def plot_model_metrics_scatter(
         ax=ax,
     )
 
-    ax.set_xticks([0, 1, 2])
+    ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
     ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
     ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
@@ -644,15 +656,17 @@ def plot_model_metrics_combined_scatter(
 
     # Metric-specific marker styles and x-offsets to reduce overlap
     metric_styles = {
-        "correlation": {"marker": "o", "label": "Correlation", "offset": -0.15},
-        "rmse": {"marker": "^", "label": "RMSE", "offset": 0.0},
-        "accuracy": {"marker": "s", "label": "Accuracy", "offset": 0.15},
+        "rmse": {"marker": "^", "label": "RMSE ↓", "offset": 0},
+        "correlation": {"marker": "o", "label": "Correlation ↑", "offset": 0},
+        "accuracy": {"marker": "s", "label": "Accuracy ↑", "offset": 0},
     }
 
     fig, ax = plt.subplots(figsize=figsize)
 
     # Track y-limits across all plotted points
     all_y_values = []
+
+    X_POSITIONS = [0.4, 1, 1.6]  # Low, Medium, High complexity
 
     # Plot for each prompt and metric
     for prompt in unique_prompts:
@@ -673,8 +687,10 @@ def plot_model_metrics_combined_scatter(
             for idx, (_, row) in enumerate(
                 series_df.sort_values(metric_name).iterrows()
             ):
-                x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"])  # 0/1/2
-                jitter = 0.06 if (idx % 2 == 0) else -0.06
+                x_pos, _ = map_prompt_to_complexity(
+                    row["prompt_token_count"], X_POSITIONS
+                )
+                jitter = three_state_jitter(idx, 0.12)
                 x_positions.append(x_pos + style["offset"] + jitter)
                 y_values.append(row[metric_name])
                 sizes.append(
@@ -702,12 +718,12 @@ def plot_model_metrics_combined_scatter(
                 ):
                     name = row["model_name"]
                     if shorten_model_names:
-                        name = name.split("/")[-1][:20]
+                        name = name.rsplit("-", 1)[0]
                     txt = ax.text(
                         x,
                         y,
                         name,
-                        fontsize=7,
+                        fontsize=9,
                         fontweight="bold",
                         alpha=0.9,
                         bbox=dict(
@@ -720,8 +736,9 @@ def plot_model_metrics_combined_scatter(
                     _texts.append(txt)
 
     # Axes formatting
-    ax.set_xticks([0, 1, 2])
+    ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
+    ax.set_xlim([0, 2])
     ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
     ax.set_ylabel("Metric Value", fontsize=12, fontweight="bold")
     ax.grid(True, alpha=0.3, linestyle="--")
@@ -737,9 +754,9 @@ def plot_model_metrics_combined_scatter(
         adjust_text(
             _texts,
             arrowprops=dict(arrowstyle="->", color="gray", lw=0.6, alpha=0.6),
-            force_static=(1.5, 3.5),
-            force_text=(1.8, 2),
-            force_explode=(1.2, 1.2),
+            force_static=(7, 7),
+            force_text=(5.2, 5.2),
+            force_explode=(2.1, 2.1),
             ax=ax,
         )
 
@@ -794,7 +811,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
         PROMPT_PARTS,
     )
 
-    guideline_display = {"small": "Small", "medium": "Medium", "full": "Large"}
+    guideline_display = {"small": "Short", "medium": "Expanded", "full": "Full"}
 
     table_data = []
     row_idx = 1
@@ -848,12 +865,12 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                 table_data.append(
                     {
                         "#": row_idx,
-                        "Task Description": guideline_display[guideline_key],
+                        "Task Descr.": guideline_display[guideline_key],
                         "Examples": examples_val,
                         "CoT": cot_val,
-                        "Best corr. across models": best_corr,
-                        "Best RMSE across models": best_rmse,
-                        "Best Acc. across models": best_acc,
+                        "CORR": best_corr,
+                        "RMSE": best_rmse,
+                        "ACC": best_acc,
                     }
                 )
                 row_idx += 1
@@ -874,23 +891,17 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     # Apply bold formatting to best values
     for idx, row in df.iterrows():
         row_num = row["#"]
-        if row_num == best_corr_row and row["Best corr. across models"]:
-            df.at[idx, "Best corr. across models"] = (
-                r"\textbf{" + row["Best corr. across models"] + "}"
-            )
-        if row_num == best_rmse_row and row["Best RMSE across models"]:
-            df.at[idx, "Best RMSE across models"] = (
-                r"\textbf{" + row["Best RMSE across models"] + "}"
-            )
-        if row_num == best_acc_row and row["Best Acc. across models"]:
-            df.at[idx, "Best Acc. across models"] = (
-                r"\textbf{" + row["Best Acc. across models"] + "}"
-            )
+        if row_num == best_corr_row and row["CORR"]:
+            df.at[idx, "CORR"] = r"\textbf{" + row["CORR"] + "}"
+        if row_num == best_rmse_row and row["RMSE"]:
+            df.at[idx, "RMSE"] = r"\textbf{" + row["RMSE"] + "}"
+        if row_num == best_acc_row and row["ACC"]:
+            df.at[idx, "ACC"] = r"\textbf{" + row["ACC"] + "}"
 
     # Apply bold to column headers (for LaTeX output)
     df.columns = [
         r"\textbf{" + col + "}"
-        if "Best" in col
+        if col.isupper()
         or col == "#"
         or col == "Task Description"
         or col == "Examples"

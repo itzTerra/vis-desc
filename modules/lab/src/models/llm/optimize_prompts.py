@@ -238,7 +238,7 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
         y_pred: DataTable with predicted ratings
 
     Returns:
-        EvaluationScore with negative MSE (for maximization)
+        EvaluationScore with MSE
     """
     y_true_values = y_true.outputs.values
     y_pred_values = y_pred.outputs.normalized_values()
@@ -273,7 +273,7 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             errors.append(25.0)
 
     mse = sum(errors) / len(errors) if errors else 25.0
-    return EvaluationScore(-mse)
+    return EvaluationScore(mse)
 
 
 class InitialPromptCandidates:

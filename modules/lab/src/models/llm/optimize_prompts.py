@@ -193,17 +193,15 @@ class InitialPromptCandidates:
         """
         example_formatter = PlainFormatter()
 
-        examples = PROMPT_PARTS["examples"]["cot"]
-        output_format = PROMPT_PARTS["output_format"]["cot"]
+        examples = PROMPT_PARTS["examples"]["base"]
+        output_format = PROMPT_PARTS["output_format"]["base"]
         input_part = PROMPT_PARTS["input"].replace("{{TEXT_SEGMENT}}", "{{input}}")
 
         instructions = MetaPrompt(
             [
                 Paragraph(self.system_prompt, reference_id="system"),
                 Paragraph("\n\n"),
-                Paragraph(
-                    GUIDELINE_CONFIGS["medium"]["text"], reference_id="guideline"
-                ),
+                Paragraph(GUIDELINE_CONFIGS["full"]["text"], reference_id="guideline"),
                 Paragraph("\n\n"),
                 Paragraph(examples, reference_id="examples"),
                 Paragraph("\n\n"),

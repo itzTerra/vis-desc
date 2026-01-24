@@ -255,17 +255,6 @@ class Prompt:
         return f"{example_part}_{cot_part}_{self.guideline[:10].replace(' ', '-')}"
 
 
-GUIDELINE_CONFIGS = {
-    "small": {
-        "text": PROMPT_PARTS["task_descriptions"]["small"],
-    },
-    "medium": {
-        "text": PROMPT_PARTS["task_descriptions"]["medium"],
-    },
-    "full": {"text": PROMPT_PARTS["task_descriptions"]["full"]},
-}
-
-
 COMBINATION_PLANS = [
     {
         "task_descriptions": ("small",),
@@ -324,13 +313,12 @@ def schema_for_prompt(prompt: Prompt) -> dict:
 
 PROMPTS: list[Prompt] = []
 for plan in COMBINATION_PLANS:
-    for guideline_key in plan["task_descriptions"]:
-        guideline_config = GUIDELINE_CONFIGS[guideline_key]
+    for task_descr in plan["task_descriptions"].values():
         for cot_option in plan["cot_options"]:
             PROMPTS.append(
                 Prompt(
                     system=PROMPT_PARTS["system"],
-                    guideline=guideline_config["text"],
+                    guideline=task_descr,
                     examples=select_examples(plan["include_examples"], cot_option),
                     suffix_key=select_suffix(cot_option)[0],
                     suffix=select_suffix(cot_option)[1],

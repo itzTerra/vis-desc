@@ -17,7 +17,8 @@ from sammo.search import BeamSearch
 from sammo.data import DataTable
 
 from models.llm.agents import VLLMAgent, MODEL_BY_NAME
-from models.llm.prompts import PROMPT_PARTS, GUIDELINE_CONFIGS, schema_for_suffix_key
+from models.llm.prompts import PROMPT_PARTS, schema_for_suffix_key
+from models.llm.run import parse_output
 from utils import DATA_DIR
 
 load_dotenv()
@@ -28,6 +29,7 @@ STRUCTURED_OUTPUTS_ENABLED = True
 STRUCTURED_SCHEMA_SUFFIX = "base"
 INITIAL_PROMPT_EXAMPLES_KEY = "base"
 INITIAL_PROMPT_OUTPUT_FORMAT_KEY = "base"
+INITIAL_PROMPT_TASK_DESCRIPTION_KEY = "full"
 
 
 @dataclass
@@ -191,7 +193,7 @@ def load_train_dataset(data_file: str | None = None) -> tuple[list[str], list[in
 def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     """Calculate accuracy metric for rating predictions.
 
-    Extracts integer ratings from predictions (looking for digits 0-5)
+    Extracts integer ratings from predictions using parse_output
     and compares with ground truth.
 
     Args:
@@ -204,24 +206,11 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     y_true_values = y_true.outputs.values
     y_pred_values = y_pred.outputs.normalized_values()
 
-    def _extract_rating(value) -> int | None:
-        try:
-            obj = json.loads(str(value))
-            if isinstance(obj, dict):
-                if "rating" in obj and isinstance(obj["rating"], int):
-                    return obj["rating"]
-        except Exception:
-            pass
-        for char in str(value):
-            if char in "012345":
-                return int(char)
-        return None
-
     n_correct = 0
     for y_p, y_t in zip(y_pred_values, y_true_values):
-        pred_rating = _extract_rating(y_p)
+        parsed_rating, _ = parse_output(str(y_p))
         try:
-            if pred_rating is not None and pred_rating == int(y_t):
+            if parsed_rating is not None and int(parsed_rating) == int(y_t):
                 n_correct += 1
         except (ValueError, TypeError):
             continue
@@ -233,6 +222,8 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
 def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     """Calculate mean squared error for rating predictions.
 
+    Uses parse_output to extract ratings from predictions.
+
     Args:
         y_true: DataTable with ground truth ratings
         y_pred: DataTable with predicted ratings
@@ -243,25 +234,12 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
     y_true_values = y_true.outputs.values
     y_pred_values = y_pred.outputs.normalized_values()
 
-    def _extract_rating(value) -> int | None:
-        try:
-            obj = json.loads(str(value))
-            if isinstance(obj, dict):
-                if "rating" in obj and isinstance(obj["rating"], int):
-                    return obj["rating"]
-        except Exception:
-            pass
-        for char in str(value):
-            if char in "012345":
-                return int(char)
-        return None
-
     errors = []
     for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
         try:
-            pred_rating = _extract_rating(y_p)
-            if pred_rating is not None:
-                error = pred_rating - int(y_t)
+            parsed_rating, _ = parse_output(str(y_p))
+            if parsed_rating is not None:
+                error = int(parsed_rating) - int(y_t)
                 errors.append(error * error)
             else:
                 logger.debug(
@@ -291,6 +269,9 @@ class InitialPromptCandidates:
         """
         example_formatter = PlainFormatter()
 
+        task_description = PROMPT_PARTS["task_description"][
+            INITIAL_PROMPT_TASK_DESCRIPTION_KEY
+        ]
         examples = PROMPT_PARTS["examples"][INITIAL_PROMPT_EXAMPLES_KEY]
         output_format = PROMPT_PARTS["output_format"][INITIAL_PROMPT_OUTPUT_FORMAT_KEY]
         input_part = PROMPT_PARTS["input"].replace("{{TEXT_SEGMENT}}", "{{input}}")
@@ -299,7 +280,7 @@ class InitialPromptCandidates:
             [
                 Paragraph(self.system_prompt, reference_id="system"),
                 Paragraph("\n\n"),
-                Paragraph(GUIDELINE_CONFIGS["full"]["text"], reference_id="guideline"),
+                Paragraph(task_description, reference_id="guideline"),
                 Paragraph("\n\n"),
                 Paragraph(examples, reference_id="examples"),
                 Paragraph("\n\n"),
@@ -399,7 +380,7 @@ def main():
         metric_fn,
         maximize=maximize,
         mutations_per_beam=3,
-        depth=2,
+        depth=3,
     )
 
     print("\n🚀 Running prompt optimization...")

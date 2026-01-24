@@ -804,7 +804,6 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     """
     from models.llm.prompts import (
         COMBINATION_PLANS,
-        GUIDELINE_CONFIGS,
         Prompt,
         select_examples,
         select_suffix,
@@ -822,13 +821,12 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     all_acc_values = []
 
     for plan in COMBINATION_PLANS:
-        for guideline_key in plan["task_descriptions"]:
-            guideline_config = GUIDELINE_CONFIGS[guideline_key]
+        for task_descr_key, task_descr in plan["task_descriptions"].items():
             for cot_option in plan["cot_options"]:
                 suffix_key, suffix_text = select_suffix(cot_option)
                 prompt = Prompt(
                     system=PROMPT_PARTS["system"],
-                    guideline=guideline_config["text"],
+                    guideline=task_descr,
                     examples=select_examples(plan["include_examples"], cot_option),
                     suffix_key=suffix_key,
                     suffix=suffix_text,
@@ -865,7 +863,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                 table_data.append(
                     {
                         "#": row_idx,
-                        "Task Descr.": guideline_display[guideline_key],
+                        "Task Descr.": guideline_display[task_descr_key],
                         "Examples": examples_val,
                         "CoT": cot_val,
                         "CORR": best_corr,
@@ -1068,3 +1066,122 @@ def compute_scale_comparison_table(
     }
 
     return df_comparison, metrics_dict
+
+
+def plot_metrics_vs_prompt_token_count(
+    df_metrics: pd.DataFrame,
+    items: list[dict],
+    figsize: tuple[float, float] = (12, 7),
+) -> tuple:
+    """Plot metrics (correlation, accuracy, RMSE, throughput) vs prompt token count.
+
+    Creates a line plot showing how model performance metrics vary with prompt complexity
+    (measured by token count). All metrics are plotted on the same scale for comparison.
+
+    Args:
+        df_metrics: DataFrame with columns: prompt_id, correlation, rmse, accuracy, throughput
+        items: List of metric items with prompt_id and prompt_token_count
+        figsize: Figure size as (width, height)
+
+    Returns:
+        Tuple of (fig, ax, df_grouped) where df_grouped contains the aggregated metrics
+    """
+    import matplotlib.colors as mcolors
+
+    prompt_to_token_count = {}
+    for item in items:
+        prompt_id = item.get("prompt_id", "unknown")
+        prompt_token_count = item.get("prompt_token_count", None)
+        if prompt_id and prompt_token_count is not None:
+            prompt_to_token_count[prompt_id] = int(prompt_token_count)
+
+    def find_token_count(df_id):
+        for item_id, token_count in prompt_to_token_count.items():
+            if df_id.startswith(item_id):
+                return token_count
+        return None
+
+    df_metrics["prompt_token_count"] = df_metrics["prompt_id"].apply(find_token_count)
+
+    df_grouped = (
+        df_metrics.dropna(subset=["prompt_token_count"])
+        .groupby("prompt_token_count")[
+            ["correlation", "rmse", "accuracy", "throughput"]
+        ]
+        .mean()
+        .reset_index()
+    )
+
+    df_grouped = df_grouped.sort_values("prompt_token_count")
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    line3 = ax.plot(
+        df_grouped["prompt_token_count"],
+        df_grouped["rmse"],
+        marker="^",
+        linewidth=1.5,
+        linestyle="--",
+        label="RMSE ↓",
+        markersize=8,
+    )[0]
+    color3 = line3.get_color()
+    line3.set_alpha(0.6)
+    line3.set_markerfacecolor(mcolors.to_rgba(color3, alpha=1.0))
+    line3.set_markeredgecolor(mcolors.to_rgba(color3, alpha=1.0))
+
+    line1 = ax.plot(
+        df_grouped["prompt_token_count"],
+        df_grouped["correlation"],
+        marker="o",
+        linewidth=1.5,
+        linestyle="--",
+        label="Correlation ↑",
+        markersize=8,
+    )[0]
+    color1 = line1.get_color()
+    line1.set_alpha(0.6)
+    line1.set_markerfacecolor(mcolors.to_rgba(color1, alpha=1.0))
+    line1.set_markeredgecolor(mcolors.to_rgba(color1, alpha=1.0))
+
+    line2 = ax.plot(
+        df_grouped["prompt_token_count"],
+        df_grouped["accuracy"],
+        marker="s",
+        linewidth=1.5,
+        linestyle="--",
+        label="Accuracy ↑",
+        markersize=8,
+    )[0]
+    color2 = line2.get_color()
+    line2.set_alpha(0.6)
+    line2.set_markerfacecolor(mcolors.to_rgba(color2, alpha=1.0))
+    line2.set_markeredgecolor(mcolors.to_rgba(color2, alpha=1.0))
+
+    if df_grouped["throughput"].max() > 0:
+        throughput_normalized = (
+            df_grouped["throughput"] / df_grouped["throughput"].max()
+        )
+        line4 = ax.plot(
+            df_grouped["prompt_token_count"],
+            throughput_normalized,
+            marker="D",
+            linewidth=1.5,
+            linestyle="--",
+            label="Throughput (normalized) ↑",
+            markersize=8,
+        )[0]
+        color4 = line4.get_color()
+        line4.set_alpha(0.6)
+        line4.set_markerfacecolor(mcolors.to_rgba(color4, alpha=1.0))
+        line4.set_markeredgecolor(mcolors.to_rgba(color4, alpha=1.0))
+
+    ax.set_xlabel("Prompt Token Count", fontsize=12, fontweight="bold")
+    ax.set_ylabel("Metric Value", fontsize=12, fontweight="bold")
+    ax.legend(loc="best")
+    ax.grid(True, alpha=0.3, linestyle="--")
+    ax.set_axisbelow(True)
+
+    plt.tight_layout()
+
+    return fig, ax, df_grouped

@@ -1,6 +1,8 @@
 import argparse
+import asyncio
 import json
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
@@ -20,12 +22,33 @@ from utils import DATA_DIR
 load_dotenv()
 
 
-class MistralRunner(Runner):
-    """SAMMO Runner implementation using Mistral-Small3.2 via vLLM."""
+@dataclass
+class _BatchRequest:
+    prompt: str
+    system_prompt: str | None
+    use_structured_outputs: bool
+    structured_schema: dict | None
+    seed: int | None
+    future: asyncio.Future
+    schema_key: str
 
-    def __init__(self, vllm_agent: VLLMAgent):
-        self.agent = vllm_agent
+
+class VLLMBatchedRunner(Runner):
+    """SAMMO Runner that micro-batches requests before hitting vLLM."""
+
+    def __init__(
+        self,
+        vllm_agent: VLLMAgent,
+        batch_size: int = 8,
+        max_batch_delay: float = 0.05,
+    ):
         super().__init__()
+        self.agent = vllm_agent
+        self.batch_size = batch_size
+        self.max_batch_delay = max_batch_delay
+        self._queue: list[_BatchRequest] = []
+        self._queue_lock = asyncio.Lock()
+        self._flush_task: asyncio.Task | None = None
 
     async def generate_text(
         self,
@@ -35,32 +58,95 @@ class MistralRunner(Runner):
         seed: int = 0,
         **kwargs,
     ) -> LLMResult:
-        """Generate text using the Mistral vLLM agent.
-
-        Args:
-            prompt: Input prompt text
-            max_tokens: Maximum tokens to generate (not used, agent has default)
-            randomness: Temperature for sampling (not used, agent config has default)
-            seed: Random seed (not used in vLLM calls)
-            **kwargs: Additional arguments
-
-        Returns:
-            LLMResult containing generated text response
-        """
         system_prompt = kwargs.get("system_prompt")
         user_prompt = prompt
 
         if system_prompt is None and "\n\n" in prompt:
             system_prompt, user_prompt = prompt.split("\n\n", 1)
 
-        response_text = self.agent.generate(
+        use_structured_outputs = kwargs.get("use_structured_outputs", True)
+        structured_schema = kwargs.get("structured_schema") or schema_for_suffix_key(
+            "cot"
+        )
+        seed = kwargs.get("seed", seed)
+
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future = loop.create_future()
+        request = _BatchRequest(
             prompt=user_prompt,
             system_prompt=system_prompt,
-            use_structured_outputs=True,
-            structured_schema=schema_for_suffix_key("cot"),
+            use_structured_outputs=use_structured_outputs,
+            structured_schema=structured_schema,
+            seed=seed,
+            future=future,
+            schema_key=json.dumps(structured_schema, sort_keys=True)
+            if structured_schema
+            else "",
         )
 
-        return LLMResult(response_text)
+        async with self._queue_lock:
+            self._queue.append(request)
+            if len(self._queue) >= self.batch_size:
+                if self._flush_task and not self._flush_task.done():
+                    self._flush_task.cancel()
+                await self._flush_locked()
+            elif self._flush_task is None or self._flush_task.done():
+                self._flush_task = asyncio.create_task(self._delayed_flush())
+
+        return await future
+
+    async def _delayed_flush(self) -> None:
+        try:
+            await asyncio.sleep(self.max_batch_delay)
+            async with self._queue_lock:
+                if self._queue:
+                    await self._flush_locked()
+        finally:
+            self._flush_task = None
+
+    async def _flush_locked(self) -> None:
+        if not self._queue:
+            return
+
+        pending = self._queue
+        self._queue = []
+
+        grouped: dict[tuple, list[_BatchRequest]] = {}
+        for req in pending:
+            key = (
+                req.system_prompt,
+                req.use_structured_outputs,
+                req.schema_key,
+                req.seed,
+            )
+            grouped.setdefault(key, []).append(req)
+
+        for (
+            system_prompt,
+            use_structured_outputs,
+            _,
+            seed,
+        ), requests in grouped.items():
+            prompts = [r.prompt for r in requests]
+            schema = requests[0].structured_schema if requests else None
+            try:
+                responses = await asyncio.to_thread(
+                    self.agent.generate_batch,
+                    prompts,
+                    system_prompt=system_prompt,
+                    use_structured_outputs=use_structured_outputs,
+                    structured_schema=schema,
+                    seed=seed,
+                )
+            except Exception as exc:  # noqa: BLE001
+                for req in requests:
+                    if not req.future.done():
+                        req.future.set_exception(exc)
+                continue
+
+            for response_text, req in zip(responses, requests):
+                if not req.future.done():
+                    req.future.set_result(LLMResult(response_text))
 
 
 def load_train_dataset(data_file: str | None = None) -> tuple[list[str], list[int]]:
@@ -239,18 +325,24 @@ def main():
         help="Metric to optimize (accuracy or mse) (default: mse)",
     )
     parser.add_argument(
+        "--model",
+        type=str,
+        default="Llama4-Scout-17b",
+        help="Model name from MODEL_BY_NAME (default: Llama4-Scout-17b)",
+    )
+    parser.add_argument(
         "--seed", type=int, default=42, help="Random seed for sampling (default: 42)"
     )
 
     args = parser.parse_args()
 
-    model_config = MODEL_BY_NAME.get("Mistral-Small3.2-24b")
+    model_config = MODEL_BY_NAME.get(args.model)
     if not model_config:
-        print("❌ Error: Mistral-Small3.2-24b not found in available models")
+        print(f"❌ Error: {args.model} not found in available models")
         sys.exit(1)
 
     vllm_agent = VLLMAgent(model_config=model_config)
-    runner = MistralRunner(vllm_agent)
+    runner = VLLMBatchedRunner(vllm_agent)
 
     texts, ratings = load_train_dataset()
 
@@ -295,7 +387,7 @@ def main():
         metric_fn,
         maximize=maximize,
         mutations_per_beam=3,
-        depth=3,
+        depth=2,
     )
 
     print("\n🚀 Running prompt optimization...")

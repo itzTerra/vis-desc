@@ -49,7 +49,7 @@ class VLLMBatchedRunner(Runner):
     def __init__(
         self,
         vllm_agent: VLLMAgent,
-        batch_size: int = 16,
+        batch_size: int = 32,
         max_batch_delay: float = 0.05,
         use_structured_outputs: bool = STRUCTURED_OUTPUTS_ENABLED,
         structured_schema_suffix: str = STRUCTURED_SCHEMA_SUFFIX,
@@ -339,13 +339,18 @@ def main():
 
     texts, ratings = load_train_dataset()
 
+    if args.n_samples is not None and args.n_samples < len(texts):
+        df = pd.DataFrame({"text": texts, "rating": ratings})
+        df_sampled = df.sample(
+            n=args.n_samples, stratify=df["rating"], random_state=args.seed
+        )
+        texts = df_sampled["text"].tolist()
+        ratings = df_sampled["rating"].tolist()
+        print(f"✓ Using {len(texts)} samples for optimization (stratified by rating)")
+
     d_train = DataTable.from_records(
         [{"input": text, "output": str(rating)} for text, rating in zip(texts, ratings)]
     )
-
-    if args.n_samples is not None and args.n_samples < len(d_train):
-        d_train = d_train.sample(args.n_samples, seed=args.seed)
-        print(f"✓ Using {len(d_train)} samples for optimization")
 
     system_prompt = PROMPT_PARTS["system"]
 

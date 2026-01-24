@@ -10,7 +10,6 @@ import pandas as pd
 from dotenv import load_dotenv
 from sammo.base import LLMResult, Runner, EvaluationScore
 from sammo.components import Output
-from sammo.dataformatters import PlainFormatter
 from sammo.instructions import MetaPrompt, Paragraph
 from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
 from sammo.search import BeamSearch
@@ -267,8 +266,6 @@ class InitialPromptCandidates:
         Returns:
             Output component with MetaPrompt structure
         """
-        example_formatter = PlainFormatter()
-
         task_description = PROMPT_PARTS["task_descriptions"][
             INITIAL_PROMPT_TASK_DESCRIPTION_KEY
         ]
@@ -289,13 +286,12 @@ class InitialPromptCandidates:
                 Paragraph(input_part, reference_id="input"),
             ],
             render_as="raw",
-            data_formatter=example_formatter,
         )
 
         return Output(
             instructions.with_extractor("raise"),
             minibatch_size=1,
-            on_error="empty_result",
+            on_error="raise",
         )
 
 

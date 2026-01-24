@@ -23,9 +23,11 @@ from utils import DATA_DIR
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+logging.getLogger().setLevel(logging.DEBUG)
 
 DEBUG_MODE = False
 DEBUG_LOG_PATH: Path | None = None
+DEBUG_LOG_HANDLER: logging.FileHandler | None = None
 
 STRUCTURED_OUTPUTS_ENABLED = True
 STRUCTURED_SCHEMA_SUFFIX = "base"
@@ -361,29 +363,40 @@ def main():
 
     args = parser.parse_args()
 
-    global DEBUG_MODE, DEBUG_LOG_PATH
+    global DEBUG_MODE, DEBUG_LOG_PATH, DEBUG_LOG_HANDLER
     DEBUG_MODE = args.debug
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
 
     if DEBUG_MODE:
         debug_log_dir = DATA_DIR / "output" / "debug_logs"
         debug_log_dir.mkdir(parents=True, exist_ok=True)
         DEBUG_LOG_PATH = debug_log_dir / "optimization_debug.log"
 
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            handlers=[
-                logging.FileHandler(DEBUG_LOG_PATH),
-                logging.StreamHandler(sys.stdout),
-            ],
+        file_handler = logging.FileHandler(DEBUG_LOG_PATH, mode="w")
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
         )
+        DEBUG_LOG_HANDLER = file_handler
+
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG)
+        console_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+
+        root_logger.setLevel(logging.DEBUG)
+        root_logger.addHandler(file_handler)
+        root_logger.addHandler(console_handler)
         logger.info(f"Debug logging enabled. Logs will be written to: {DEBUG_LOG_PATH}")
     else:
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(message)s",
-            handlers=[logging.StreamHandler(sys.stdout)],
-        )
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(logging.Formatter("%(message)s"))
+        root_logger.setLevel(logging.INFO)
+        root_logger.addHandler(console_handler)
 
     model_config = MODEL_BY_NAME.get(args.model)
     if not model_config:
@@ -466,6 +479,10 @@ def main():
 
     if DEBUG_MODE and DEBUG_LOG_PATH:
         print(f"✓ Debug logs saved to: {DEBUG_LOG_PATH}")
+
+    for handler in logging.root.handlers:
+        handler.flush()
+    logging.shutdown()
 
 
 if __name__ == "__main__":

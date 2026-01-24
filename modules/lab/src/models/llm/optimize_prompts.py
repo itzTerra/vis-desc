@@ -289,7 +289,7 @@ class InitialPromptCandidates:
         )
 
         return Output(
-            instructions.with_extractor("raise"),
+            instructions,
             minibatch_size=1,
             on_error="raise",
         )

@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import json
+import math
 import logging
 import sys
 from dataclasses import dataclass
@@ -318,6 +319,75 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
     return EvaluationScore(mse)
 
 
+def accuracy_rmse_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
+    """Blend accuracy and RMSE into a single score (higher is better)."""
+
+    y_true_values = y_true.outputs.values
+    y_pred_values = y_pred.outputs.normalized_values()
+
+    n_correct = 0
+    squared_errors: list[float] = []
+
+    for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
+        try:
+            true_rating = int(y_t)
+        except (ValueError, TypeError) as exc:
+            logger.debug(f"Error parsing ground truth for sample {i}: {y_t!r} - {exc}")
+            squared_errors.append(25.0)
+            continue
+
+        parsed_rating, _ = parse_output(str(y_p))
+        if DEBUG_MODE and DEBUG_LOG_PATH:
+            logger.debug(
+                f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {true_rating}"
+            )
+
+        if parsed_rating is None:
+            logger.debug(
+                f"Failed to parse rating from prediction {i}: {y_p!r} (true: {true_rating})"
+            )
+            squared_errors.append(25.0)
+            continue
+
+        try:
+            pred_rating = int(parsed_rating)
+        except (ValueError, TypeError) as exc:
+            logger.debug(
+                f"Error casting prediction {i}: {parsed_rating!r} (raw: {y_p!r}) - {exc}"
+            )
+            squared_errors.append(25.0)
+            continue
+
+        if pred_rating == true_rating:
+            n_correct += 1
+
+        error = pred_rating - true_rating
+        squared_errors.append(error * error)
+
+    sample_count = len(y_true_values)
+    mse = sum(squared_errors) / sample_count if sample_count else 25.0
+    rmse = math.sqrt(mse)
+
+    rating_range = 5.0
+
+    normalized_rmse = rmse / rating_range
+    normalized_rmse = max(0.0, min(1.0, normalized_rmse))
+
+    accuracy = n_correct / sample_count if sample_count else 0.0
+    score = 0.5 * accuracy + 1 * (1 - normalized_rmse)
+
+    if DEBUG_MODE and DEBUG_LOG_PATH:
+        logger.debug(
+            "Combined metric -> accuracy: %.4f | rmse: %.4f | normalized_rmse: %.4f | score: %.4f",
+            accuracy,
+            rmse,
+            normalized_rmse,
+            score,
+        )
+
+    return EvaluationScore(score)
+
+
 class InitialPromptCandidates:
     """Callable to generate initial prompt candidates for SAMMO search."""
 
@@ -380,9 +450,9 @@ def main():
     parser.add_argument(
         "--metric",
         type=str,
-        choices=["accuracy", "mse"],
-        default="mse",
-        help="Metric to optimize (accuracy or mse) (default: mse)",
+        choices=["accuracy", "mse", "accuracy_rmse"],
+        default="accuracy_rmse",
+        help="Metric to optimize (accuracy, mse, or accuracy_rmse) (default: accuracy_rmse)",
     )
     parser.add_argument(
         "--model",
@@ -505,10 +575,15 @@ def main():
         sample_for_init_candidates=False,
     )
 
-    metric_fn = (
-        accuracy_metric if args.metric == "accuracy" else mean_squared_error_metric
-    )
-    maximize = args.metric == "accuracy"
+    if args.metric == "accuracy":
+        metric_fn = accuracy_metric
+        maximize = True
+    elif args.metric == "accuracy_rmse":
+        metric_fn = accuracy_rmse_metric
+        maximize = True
+    else:
+        metric_fn = mean_squared_error_metric
+        maximize = False
 
     prompt_optimizer = BeamSearch(
         runner,

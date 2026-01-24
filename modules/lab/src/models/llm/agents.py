@@ -172,7 +172,7 @@ LOCAL_MODELS = [
         system_suffix="<|eot|>",
         prompt_prefix="<|header_start|>user<|header_end|>\n\n",
         prompt_suffix="<|eot|>\n<|header_start|>assistant<|header_end|>\n\n",
-    ),
+    ),  # too large even for 2 L40S
 ]
 
 AVAILABLE_MODELS = EINFRA_MODELS + LOCAL_MODELS
@@ -208,7 +208,7 @@ class VLLMAgent(ModelAgent):
         self,
         model_config: "ModelConfig",
         tensor_parallel_size: int | None = None,
-        gpu_memory_utilization: float = 1,
+        gpu_memory_utilization: float = 0.95,
         max_model_len: int = 4096,
     ):
         self.model_config = model_config

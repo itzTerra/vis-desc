@@ -224,9 +224,7 @@ Provide your answer as a JSON object. You must not answer with anything other th
     "input": """## Input
 Rate the following text segment:
 
-<text_segment>
-{{TEXT_SEGMENT}}
-</text_segment>""",
+<text_segment>{{TEXT_SEGMENT}}</text_segment>""",
 }
 
 

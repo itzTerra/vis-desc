@@ -607,7 +607,14 @@ def main():
             self._iteration_count = 0
             self._candidate_count = 0
 
-        def _evaluate_candidates(self, candidates, data):
+        async def evaluate(
+            self,
+            candidates: list[Output],
+            runner,
+            objective,
+            dataset: DataTable,
+            colbar=None,
+        ) -> list[dict]:
             if DEBUG_MODE and DEBUG_LOG_PATH:
                 logger.info("\n" + "=" * 80)
                 logger.info(
@@ -622,22 +629,9 @@ def main():
                     )
                     logger.info(f"Prompt preview:\n{str(candidate)}")
 
-            results = super()._evaluate_candidates(candidates, data)
-
-            if DEBUG_MODE and DEBUG_LOG_PATH:
-                logger.info("\n" + "-" * 80)
-                logger.info(f"[ITERATION {self._iteration_count}] Evaluation results:")
-                for i, (candidate, result) in enumerate(zip(candidates, results)):
-                    score_val = (
-                        result.score.value
-                        if hasattr(result.score, "value")
-                        else result.score
-                    )
-                    logger.info(f"  Candidate {i}: Score = {score_val:.4f}")
-                logger.info("-" * 80)
-
-            self._iteration_count += 1
-            return results
+            return await super().evaluate(
+                candidates, runner, objective, dataset, colbar
+            )
 
     prompt_optimizer = DebugBeamSearch(
         runner,

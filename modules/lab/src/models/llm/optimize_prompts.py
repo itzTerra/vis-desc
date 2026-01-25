@@ -110,22 +110,23 @@ class VLLMBatchedRunner(Runner):
         seed: int = 0,
         **kwargs,
     ) -> LLMResult:
-        system_prompt = kwargs.get("system_prompt")
+        seed = kwargs.get("seed", seed)
+        is_mutation_request = any(
+            keyword in prompt.lower() for keyword in ["rewrite", "paraphrase"]
+        )
+
         user_prompt = prompt
 
-        if system_prompt is None and "\n\n" in prompt:
-            system_prompt, user_prompt = prompt.split("\n\n", 1)
+        if not is_mutation_request:
+            system_prompt = kwargs.get("system_prompt")
+            if system_prompt is None and "\n\n" in prompt:
+                system_prompt, user_prompt = prompt.split("\n\n", 1)
 
         # if DEBUG_MODE and DEBUG_LOG_PATH:
         #     logger.debug(
         #         f"[Model Input]\nSystem prompt: {system_prompt}\nUser prompt: {user_prompt}"
         #     )
 
-        seed = kwargs.get("seed", seed)
-
-        is_mutation_request = any(
-            keyword in user_prompt.lower() for keyword in ["rewrite", "paraphrase"]
-        )
         use_structured = self.use_structured_outputs and not is_mutation_request
         schema = self.structured_schema if use_structured else None
 

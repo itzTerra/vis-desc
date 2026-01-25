@@ -117,8 +117,8 @@ class VLLMBatchedRunner(Runner):
 
         user_prompt = prompt
 
+        system_prompt = kwargs.get("system_prompt")
         if not is_mutation_request:
-            system_prompt = kwargs.get("system_prompt")
             if system_prompt is None and "\n\n" in prompt:
                 system_prompt, user_prompt = prompt.split("\n\n", 1)
 

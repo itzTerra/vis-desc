@@ -46,6 +46,7 @@ class _BatchRequest:
     use_structured_outputs: bool
     structured_schema: dict | None
     seed: int | None
+    randomness: float
     future: asyncio.Future
     schema_key: str
 
@@ -122,18 +123,23 @@ class VLLMBatchedRunner(Runner):
 
         seed = kwargs.get("seed", seed)
 
+        is_mutation_request = any(
+            keyword in user_prompt.lower() for keyword in ["rewrite", "paraphrase"]
+        )
+        use_structured = self.use_structured_outputs and not is_mutation_request
+        schema = self.structured_schema if use_structured else None
+
         loop = asyncio.get_running_loop()
         future: asyncio.Future = loop.create_future()
         request = _BatchRequest(
             prompt=user_prompt,
             system_prompt=system_prompt,
-            use_structured_outputs=self.use_structured_outputs,
-            structured_schema=self.structured_schema,
+            use_structured_outputs=use_structured,
+            structured_schema=schema,
             seed=seed,
+            randomness=randomness,
             future=future,
-            schema_key=json.dumps(self.structured_schema, sort_keys=True)
-            if self.structured_schema
-            else "",
+            schema_key=json.dumps(schema, sort_keys=True) if schema else "",
         )
 
         async with self._queue_lock:
@@ -180,6 +186,7 @@ class VLLMBatchedRunner(Runner):
             seed,
         ), requests in grouped.items():
             prompts = [r.prompt for r in requests]
+            randomness = requests[0].randomness if requests else 0.0
             schema = requests[0].structured_schema if requests else None
 
             # if DEBUG_MODE and DEBUG_LOG_PATH:
@@ -198,7 +205,7 @@ class VLLMBatchedRunner(Runner):
                     use_structured_outputs=use_structured_outputs,
                     structured_schema=schema,
                     seed=seed,
-                    temperature=0.0,
+                    temperature=randomness,
                 )
             except Exception as exc:  # noqa: BLE001
                 for req in requests:

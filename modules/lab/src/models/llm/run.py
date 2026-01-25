@@ -25,7 +25,7 @@ from models.llm.agents import (
     EINFRA_MODELS,
     LOCAL_MODELS,
 )
-from models.llm.prompts import PROMPTS, Prompt, schema_for_prompt
+from models.llm.prompts import PROMPTS, OPTIMIZED_PROMPTS, Prompt, schema_for_prompt
 from utils import DATA_DIR, PersistentDict, get_device_name
 from huggingface_hub import login
 from dotenv import load_dotenv
@@ -318,6 +318,9 @@ Examples:
   # Evaluate models by ID
   python run.py --dataset train --models unsloth/Ministral-3-14B-Instruct-2512-FP8
 
+  # Use optimized prompt set
+  python run.py --dataset train --models Ministral3-14b --prompt-set optimized
+
   # Use custom data file
   python run.py --dataset train --data-file /path/to/custom.parquet --models Ministral3-14b
         """,
@@ -342,6 +345,13 @@ Examples:
         nargs="+",
         default=[0],
         help="Prompt indices to evaluate (0-based). Use -1 for all prompts (default: 0)",
+    )
+    parser.add_argument(
+        "--prompt-set",
+        type=str,
+        choices=["standard", "optimized"],
+        default="standard",
+        help="Which prompt set to use: 'standard' for PROMPTS (14 variants) or 'optimized' for OPTIMIZED_PROMPTS (default: standard)",
     )
     parser.add_argument(
         "--debug-parse",
@@ -384,8 +394,10 @@ Examples:
         sys.exit(0)
 
     if args.list_prompts:
-        print(f"Available prompts ({len(PROMPTS)} total):")
-        for i, prompt in enumerate(PROMPTS):
+        print(f"📋 Prompt Set: {args.prompt_set}")
+        prompts = OPTIMIZED_PROMPTS if args.prompt_set == "optimized" else PROMPTS
+        print(f"Available prompts ({len(prompts)} total):")
+        for i, prompt in enumerate(prompts):
             print(f"  {i}. {prompt.get_id()}")
         sys.exit(0)
 
@@ -398,6 +410,8 @@ Examples:
         parser.error(
             "--models is required unless using --list-models or --list-prompts"
         )
+
+    selected_prompts = OPTIMIZED_PROMPTS if args.prompt_set == "optimized" else PROMPTS
 
     if "all" in args.models:
         models_to_eval = AVAILABLE_MODELS
@@ -419,13 +433,13 @@ Examples:
                 sys.exit(1)
 
     if -1 in args.prompts:
-        prompts_to_eval = list(range(len(PROMPTS)))
+        prompts_to_eval = list(range(len(selected_prompts)))
     else:
         prompts_to_eval = args.prompts
         for idx in prompts_to_eval:
-            if idx < 0 or idx >= len(PROMPTS):
+            if idx < 0 or idx >= len(selected_prompts):
                 print(
-                    f"❌ Error: Invalid prompt index {idx} (valid range: 0-{len(PROMPTS) - 1})"
+                    f"❌ Error: Invalid prompt index {idx} (valid range: 0-{len(selected_prompts) - 1})"
                 )
                 sys.exit(1)
 
@@ -454,6 +468,7 @@ Examples:
     )
     models_str = ", ".join([f"{m.name} ({m.id})" for m in models_to_eval])
     print(f"  Models to evaluate: {len(models_to_eval)} - {models_str}")
+    print(f"  Prompt set: {args.prompt_set}")
     print(f"  Prompts to evaluate: {len(prompts_to_eval)} - {prompts_to_eval}")
     print(f"  Seeds to use: {args.seeds}")
     print(
@@ -485,7 +500,7 @@ Examples:
             print("✓ Model loaded successfully")
 
             for prompt_idx in prompts_to_eval:
-                prompt = PROMPTS[prompt_idx]
+                prompt = selected_prompts[prompt_idx]
 
                 if prompt_idx not in metrics_files:
                     metrics = LLMPersistentMetrics.create_for_prompt(prompt)

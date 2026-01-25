@@ -198,6 +198,7 @@ class VLLMBatchedRunner(Runner):
                     use_structured_outputs=use_structured_outputs,
                     structured_schema=schema,
                     seed=seed,
+                    temperature=0.0,
                 )
             except Exception as exc:  # noqa: BLE001
                 for req in requests:
@@ -273,7 +274,7 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     accuracy = n_correct / len(y_true_values) if y_true_values else 0.0
     if DEBUG_MODE and DEBUG_LOG_PATH:
         logger.debug(
-            f"Accuracy metric: {accuracy:.4f} ({n_correct}/{len(y_true_values)})"
+            f"[METRIC] Accuracy: {accuracy:.4f} ({n_correct}/{len(y_true_values)})"
         )
     return EvaluationScore(accuracy)
 
@@ -315,7 +316,7 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
 
     mse = sum(errors) / len(errors) if errors else 25.0
     if DEBUG_MODE and DEBUG_LOG_PATH:
-        logger.debug(f"MSE metric: {mse:.4f}")
+        logger.debug(f"[METRIC] MSE: {mse:.4f}")
     return EvaluationScore(mse)
 
 
@@ -378,7 +379,7 @@ def accuracy_rmse_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScor
 
     if DEBUG_MODE and DEBUG_LOG_PATH:
         logger.debug(
-            "Combined metric -> accuracy: %.4f | rmse: %.4f | normalized_rmse: %.4f | score: %.4f",
+            "[METRIC] Combined -> accuracy: %.4f | rmse: %.4f | normalized_rmse: %.4f | score: %.4f",
             accuracy,
             rmse,
             normalized_rmse,
@@ -613,7 +614,47 @@ def main():
         metric_fn = mean_squared_error_metric
         maximize = False
 
-    prompt_optimizer = BeamSearch(
+    class DebugBeamSearch(BeamSearch):
+        """Beam search with debug logging."""
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._iteration_count = 0
+            self._candidate_count = 0
+
+        def _evaluate_candidates(self, candidates, data):
+            if DEBUG_MODE and DEBUG_LOG_PATH:
+                logger.info("\n" + "=" * 80)
+                logger.info(
+                    f"[ITERATION {self._iteration_count}] Evaluating {len(candidates)} candidate(s)"
+                )
+                logger.info("=" * 80)
+
+                for i, candidate in enumerate(candidates):
+                    self._candidate_count += 1
+                    logger.info(
+                        f"\n--- Candidate {self._candidate_count} (Iteration {self._iteration_count}, Index {i}) ---"
+                    )
+                    logger.info(f"Prompt preview:\n{str(candidate)}")
+
+            results = super()._evaluate_candidates(candidates, data)
+
+            if DEBUG_MODE and DEBUG_LOG_PATH:
+                logger.info("\n" + "-" * 80)
+                logger.info(f"[ITERATION {self._iteration_count}] Evaluation results:")
+                for i, (candidate, result) in enumerate(zip(candidates, results)):
+                    score_val = (
+                        result.score.value
+                        if hasattr(result.score, "value")
+                        else result.score
+                    )
+                    logger.info(f"  Candidate {i}: Score = {score_val:.4f}")
+                logger.info("-" * 80)
+
+            self._iteration_count += 1
+            return results
+
+    prompt_optimizer = DebugBeamSearch(
         runner,
         mutation_operators,
         metric_fn,

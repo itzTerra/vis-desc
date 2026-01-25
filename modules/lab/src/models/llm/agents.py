@@ -271,13 +271,16 @@ class VLLMAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
         **kwargs,
     ) -> list[str]:
         chosen_schema = _choose_schema(structured_schema, "cot")
 
         base_params = self.model_config.params
         sampling_kwargs = {
-            "temperature": base_params.temperature,
+            "temperature": temperature
+            if temperature is not None
+            else base_params.temperature,
             "max_tokens": MAX_TOKENS,
             "top_p": base_params.top_p,
             "top_k": base_params.top_k,

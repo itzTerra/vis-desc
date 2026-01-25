@@ -115,10 +115,10 @@ class VLLMBatchedRunner(Runner):
         if system_prompt is None and "\n\n" in prompt:
             system_prompt, user_prompt = prompt.split("\n\n", 1)
 
-        if DEBUG_MODE and DEBUG_LOG_PATH:
-            logger.debug(
-                f"[Model Input]\nSystem prompt: {system_prompt}\nUser prompt: {user_prompt}"
-            )
+        # if DEBUG_MODE and DEBUG_LOG_PATH:
+        #     logger.debug(
+        #         f"[Model Input]\nSystem prompt: {system_prompt}\nUser prompt: {user_prompt}"
+        #     )
 
         seed = kwargs.get("seed", seed)
 
@@ -182,13 +182,13 @@ class VLLMBatchedRunner(Runner):
             prompts = [r.prompt for r in requests]
             schema = requests[0].structured_schema if requests else None
 
-            if DEBUG_MODE and DEBUG_LOG_PATH:
-                for idx, (sys_p, user_p) in enumerate(
-                    zip([system_prompt] * len(prompts), prompts)
-                ):
-                    logger.debug(
-                        f"[Batch Input {idx}]\nSystem prompt: {sys_p}\nUser prompt: {user_p}"
-                    )
+            # if DEBUG_MODE and DEBUG_LOG_PATH:
+            #     for idx, (sys_p, user_p) in enumerate(
+            #         zip([system_prompt] * len(prompts), prompts)
+            #     ):
+            #         logger.debug(
+            #             f"[Batch Input {idx}]\nSystem prompt: {sys_p}\nUser prompt: {user_p}"
+            #         )
 
             try:
                 responses = await asyncio.to_thread(
@@ -272,10 +272,6 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
             continue
 
     accuracy = n_correct / len(y_true_values) if y_true_values else 0.0
-    if DEBUG_MODE and DEBUG_LOG_PATH:
-        logger.debug(
-            f"[METRIC] Accuracy: {accuracy:.4f} ({n_correct}/{len(y_true_values)})"
-        )
     return EvaluationScore(accuracy)
 
 
@@ -315,8 +311,6 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             errors.append(25.0)
 
     mse = sum(errors) / len(errors) if errors else 25.0
-    if DEBUG_MODE and DEBUG_LOG_PATH:
-        logger.debug(f"[METRIC] MSE: {mse:.4f}")
     return EvaluationScore(mse)
 
 
@@ -338,10 +332,10 @@ def accuracy_rmse_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScor
             continue
 
         parsed_rating, _ = parse_output(str(y_p))
-        if DEBUG_MODE and DEBUG_LOG_PATH:
-            logger.debug(
-                f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {true_rating}"
-            )
+        # if DEBUG_MODE and DEBUG_LOG_PATH:
+        #     logger.debug(
+        #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {true_rating}"
+        #     )
 
         if parsed_rating is None:
             logger.debug(
@@ -376,15 +370,6 @@ def accuracy_rmse_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScor
 
     accuracy = n_correct / sample_count if sample_count else 0.0
     score = 0.5 * accuracy + 1 * (1 - normalized_rmse)
-
-    if DEBUG_MODE and DEBUG_LOG_PATH:
-        logger.debug(
-            "[METRIC] Combined -> accuracy: %.4f | rmse: %.4f | normalized_rmse: %.4f | score: %.4f",
-            accuracy,
-            rmse,
-            normalized_rmse,
-            score,
-        )
 
     return EvaluationScore(score)
 

@@ -10,7 +10,11 @@ import seaborn as sns
 import matplotlib.cm as cm
 
 sys.path.append(str(Path(__file__).resolve().parents[3]))
-from evaluation.core import get_confusion_matrix, print_per_label_metrics
+from evaluation.core import (
+    LABEL_FONT_SIZE,
+    get_confusion_matrix,
+    print_per_label_metrics,
+)
 from utils import DATA_DIR
 from models.encoder.common import (
     average_metrics,
@@ -636,8 +640,8 @@ def plot_confusion_matrix(
             fontsize=14,
             fontweight="bold",
         )
-    ax1.set_xlabel("Predicted Label", fontsize=12)
-    ax1.set_ylabel("True Label", fontsize=12)
+    ax1.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
+    ax1.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
     ax1.set_xticklabels([f"Label {i}" for i in range(6)])
     ax1.set_yticklabels([f"Label {i}" for i in range(6)])
 
@@ -666,8 +670,8 @@ def plot_confusion_matrix(
                 fontsize=14,
                 fontweight="bold",
             )
-        ax2.set_xlabel("Predicted Label", fontsize=12)
-        ax2.set_ylabel("True Label", fontsize=12)
+        ax2.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
+        ax2.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
         ax2.set_xticklabels([f"Label {i}" for i in range(6)])
         ax2.set_yticklabels([f"Label {i}" for i in range(6)])
 
@@ -792,8 +796,8 @@ def plot_train_val_runs(
         _plot_series(run.get("train"), "train")
         _plot_series(run.get("val"), "val")
 
-    ax.set_xlabel(x_label, fontsize=12)
-    ax.set_ylabel(y_label, fontsize=12)
+    ax.set_xlabel(x_label, fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE)
     ax.set_title(title, fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
 

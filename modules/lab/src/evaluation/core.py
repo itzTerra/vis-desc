@@ -10,6 +10,8 @@ import matplotlib.colors as mcolors
 import seaborn as sns
 from pathlib import Path
 
+LABEL_FONT_SIZE = 10
+
 
 @dataclass
 class DatasetMetrics:
@@ -173,11 +175,15 @@ def plot_confusion_matrix(
         fig, ax1 = plt.subplots(1, 1, figsize=(3, 3))
         ax2 = None
 
+    # Use distinct colormaps to visually differentiate relaxed vs full-class plots
+    raw_cmap = "Blues" if class_mode != "relaxed" else "Oranges"
+    norm_cmap = "RdYlGn" if class_mode != "relaxed" else "PuBuGn"
+
     sns.heatmap(
         cm,
         annot=True,
         fmt=".0f",
-        cmap="Blues",
+        cmap=raw_cmap,
         ax=ax1,
         linewidths=0.5,
         linecolor="gray",
@@ -189,8 +195,8 @@ def plot_confusion_matrix(
             fontsize=14,
             fontweight="bold",
         )
-    ax1.set_xlabel("Predicted Label", fontsize=12)
-    ax1.set_ylabel("True Label", fontsize=12)
+    ax1.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
+    ax1.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
     if class_mode == "relaxed":
         labels = ["0/1", "2/3", "4/5"]
     else:
@@ -208,7 +214,7 @@ def plot_confusion_matrix(
             cm_normalized,
             annot=True,
             fmt=".2f",
-            cmap="RdYlGn",
+            cmap=norm_cmap,
             ax=ax2,
             linewidths=0.5,
             linecolor="gray",
@@ -222,8 +228,8 @@ def plot_confusion_matrix(
                 fontsize=14,
                 fontweight="bold",
             )
-        ax2.set_xlabel("Predicted Label", fontsize=12)
-        ax2.set_ylabel("True Label", fontsize=12)
+        ax2.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
+        ax2.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
         ax2.set_xticklabels(labels[: cm.shape[1]])
         ax2.set_yticklabels(labels[: cm.shape[0]])
 
@@ -435,7 +441,12 @@ def vis_all_models_plots(
         md_map = {emb: md for emb, md in base_to_models[base]}
         base_to_models[base] = [(emb, md_map[emb]) for emb in ordered_embeds]
 
-    cmap = plt.cm.get_cmap("tab10" if len(ordered_bases) <= 10 else "tab20")
+    # Use a different qualitative palette for relaxed plots to distinguish visually
+    if class_mode == "relaxed":
+        palette = "Dark2" if len(ordered_bases) <= 8 else "tab20"
+    else:
+        palette = "tab10" if len(ordered_bases) <= 10 else "tab20"
+    cmap = plt.cm.get_cmap(palette)
     base_colors = {
         base: mcolors.rgb2hex(cmap(i / max(len(ordered_bases) - 1, 1)))
         for i, base in enumerate(ordered_bases)
@@ -515,8 +526,8 @@ def vis_all_models_plots(
                             zorder=10,
                         )
 
-        ax.set_xlabel("Label", fontsize=12)
-        ax.set_ylabel(metric_name, fontsize=12)
+        ax.set_xlabel("Label", fontsize=LABEL_FONT_SIZE)
+        ax.set_ylabel(metric_name, fontsize=LABEL_FONT_SIZE)
         ax.set_title(
             f"{metric_name} Across Models ({dataset.replace('_', ' ').title()} Dataset)",
             fontsize=14,
@@ -635,7 +646,9 @@ def vis_all_models_plots(
                     )
 
         ax.set_title(title, fontsize=14, fontweight="bold")
-        ax.set_ylabel(y_label if y_label else metric_key.title(), fontsize=12)
+        ax.set_ylabel(
+            y_label if y_label else metric_key.title(), fontsize=LABEL_FONT_SIZE
+        )
         ax.grid(axis="y", alpha=0.3)
         if ylim:
             ax.set_ylim(*ylim)
@@ -703,7 +716,7 @@ def vis_all_models_plots(
         fontsize=14,
         fontweight="bold",
     )
-    ax.set_ylabel("Macro-F1", fontsize=12)
+    ax.set_ylabel("Macro-F1", fontsize=LABEL_FONT_SIZE)
     ax.set_ylim(0, 1.0)
     ax.grid(axis="y", alpha=0.3)
     ax.set_xticks(variant_positions)

@@ -15,7 +15,7 @@ class NLIConfig:
         return f"labels={self.candidate_labels} | template={self.hypothesis_template}"
 
 
-def probs_to_scores(probs: list[float]) -> float:
+def probs_to_score(probs: list[float]) -> float:
     """Interpolate a probability vector to a regression score in [0, 1].
 
     Assumes candidate labels correspond to uniformly spaced points across the
@@ -51,7 +51,7 @@ def probs_to_scores(probs: list[float]) -> float:
 
 
 def get_corrs(probs_list: list[list[float]], labels: list[float]) -> float:
-    scores = [probs_to_scores(probs) for probs in probs_list]
+    scores = [probs_to_score(probs) for probs in probs_list]
     # Calculate correlation between scores and true labels
     correlation, _ = pearsonr(scores, labels)
     return correlation

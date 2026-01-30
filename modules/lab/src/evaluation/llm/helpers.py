@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
 from adjustText import adjust_text
+from evaluation.core import LABEL_FONT_SIZE
 from utils import calculate_metrics
 
 from utils import DATA_DIR
@@ -581,8 +582,8 @@ def plot_model_metrics_scatter(
 
     ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
-    ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
-    ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
+    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_ylabel(ylabel, fontsize=LABEL_FONT_SIZE, fontweight="bold")
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
     ax.set_ylim(
@@ -739,8 +740,8 @@ def plot_model_metrics_combined_scatter(
     ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
     ax.set_xlim([0, 2])
-    ax.set_xlabel("Prompt Complexity", fontsize=12, fontweight="bold")
-    ax.set_ylabel("Metric Value", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_ylabel("Metric Value", fontsize=LABEL_FONT_SIZE, fontweight="bold")
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
 
@@ -968,7 +969,7 @@ def compute_optimization_comparison_table(
         sel_pre = selected_model_pre.iloc[0]
 
         row = {
-            "Model": selected_model_name,
+            "Model": "Optimized",
             "CORR": sel_curr["correlation"],
             "Δ CORR": sel_curr["correlation"] - sel_pre["correlation"],
             "RMSE": sel_curr["rmse"],
@@ -1031,17 +1032,17 @@ def compute_scale_comparison_table(
         model_name=score_data.model_name,
     )
 
-    normal_rmse = normal_model.test.rmse if normal_model.test else None
+    normal_rmse = np.sqrt(normal_model.test.mse) if normal_model.test else None
     normal_acc = normal_model.test.accuracy if normal_model.test else None
 
     relaxed_rmse = None
     relaxed_acc = None
 
-    if normal_model.test and normal_model.test.predictions is not None:
-        test_preds_relaxed = np.array(normal_model.test.predictions) // 2
-        test_labels_relaxed = np.array(normal_model.test.labels) // 2
+    if test_predictions is not None and test_labels is not None:
+        test_preds_relaxed = np.array(test_predictions) // 2
+        test_labels_relaxed = np.array(test_labels) // 2
         relaxed_metrics = calculate_metrics(test_preds_relaxed, test_labels_relaxed)
-        relaxed_rmse = relaxed_metrics["rmse"]
+        relaxed_rmse = np.sqrt(relaxed_metrics["mse"])
         relaxed_acc = relaxed_metrics["accuracy"]
 
     comparison_data = {
@@ -1066,6 +1067,125 @@ def compute_scale_comparison_table(
     }
 
     return df_comparison, metrics_dict
+
+
+def generate_scale_comparison_output(
+    filtered_score_data: list,
+    config_idx: int,
+    to_int_0_5_func,
+    llm_metrics_to_core_func,
+) -> tuple[pd.DataFrame | None, dict | None, str]:
+    """Generate scale comparison table and LaTeX output for selected configuration.
+
+    Filters score data by configuration index, computes scale comparison metrics,
+    and formats output with bold headers.
+
+    Args:
+        filtered_score_data: List of ScoreData objects to filter
+        config_idx: Configuration index to select
+        to_int_0_5_func: Function to convert scores to 0-5 scale
+        llm_metrics_to_core_func: Function to convert metrics to core format
+
+    Returns:
+        Tuple of (df_comparison: DataFrame with bold headers, metrics_dict: dict, model_name: str)
+        Returns (None, None, "") if no data found
+    """
+    filtered_score_data_comparison = [
+        sd for sd in filtered_score_data if sd.config_id == config_idx
+    ]
+
+    if not filtered_score_data_comparison:
+        return None, None, ""
+
+    sd_comparison = filtered_score_data_comparison[0]
+
+    df_comparison, metrics = compute_scale_comparison_table(
+        sd_comparison, to_int_0_5_func, llm_metrics_to_core_func
+    )
+
+    if df_comparison is None:
+        return None, None, sd_comparison.model_name
+
+    df_comparison_bold = df_comparison.rename(columns=lambda col: f"\\textbf{{{col}}}")
+
+    return df_comparison_bold, metrics, sd_comparison.model_name
+
+
+def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> str:
+    """Format optimization comparison table as LaTeX with colored delta columns.
+
+    All numeric columns are formatted to 3 decimal places.
+    Colors delta columns based on whether the metric improved:
+    - Δ CORR: green if positive (improvement), red if negative (worse)
+    - Δ RMSE: green if negative (improvement), red if positive (worse)
+    - Δ ACC: green if positive (improvement), red if negative (worse)
+
+    Args:
+        df_comparison_table: DataFrame with comparison metrics and deltas
+
+    Returns:
+        LaTeX formatted table string
+    """
+    df_latex = df_comparison_table.copy()
+
+    for idx, row in df_latex.iterrows():
+        # Format regular metric columns to 3 decimal places
+        if "CORR" in df_latex.columns:
+            corr = row["CORR"]
+            if pd.notna(corr):
+                df_latex.at[idx, "CORR"] = f"{corr:.3f}"
+
+        if "RMSE" in df_latex.columns:
+            rmse = row["RMSE"]
+            if pd.notna(rmse):
+                df_latex.at[idx, "RMSE"] = f"{rmse:.3f}"
+
+        if "ACC" in df_latex.columns:
+            acc = row["ACC"]
+            if pd.notna(acc):
+                df_latex.at[idx, "ACC"] = f"{acc:.3f}"
+
+        # Format and color delta columns
+        if "Δ CORR" in df_latex.columns:
+            delta_corr = row["Δ CORR"]
+            if pd.notna(delta_corr) and delta_corr != 0:
+                if delta_corr > 0:
+                    df_latex.at[idx, "Δ CORR"] = (
+                        f"\\textcolor{{green!70!black}}{{{delta_corr:+.3f}}}"
+                    )
+                else:
+                    df_latex.at[idx, "Δ CORR"] = (
+                        f"\\textcolor{{red}}{{{delta_corr:+.3f}}}"
+                    )
+
+        if "Δ RMSE" in df_latex.columns:
+            delta_rmse = row["Δ RMSE"]
+            if pd.notna(delta_rmse) and delta_rmse != 0:
+                if delta_rmse < 0:
+                    df_latex.at[idx, "Δ RMSE"] = (
+                        f"\\textcolor{{green!70!black}}{{{delta_rmse:+.3f}}}"
+                    )
+                else:
+                    df_latex.at[idx, "Δ RMSE"] = (
+                        f"\\textcolor{{red}}{{{delta_rmse:+.3f}}}"
+                    )
+
+        if "Δ ACC" in df_latex.columns:
+            delta_acc = row["Δ ACC"]
+            if pd.notna(delta_acc) and delta_acc != 0:
+                if delta_acc > 0:
+                    df_latex.at[idx, "Δ ACC"] = (
+                        f"\\textcolor{{green!70!black}}{{{delta_acc:+.3f}}}"
+                    )
+                else:
+                    df_latex.at[idx, "Δ ACC"] = (
+                        f"\\textcolor{{red}}{{{delta_acc:+.3f}}}"
+                    )
+
+    header_bold_table = df_latex.rename(columns=lambda col: f"\\textbf{{{col}}}")
+    latex_table = header_bold_table.to_latex(index=False, escape=False, bold_rows=False)
+
+    return latex_table
 
 
 def plot_metrics_vs_prompt_token_count(
@@ -1168,8 +1288,8 @@ def plot_metrics_vs_prompt_token_count(
         line.set_markerfacecolor(mcolors.to_rgba(color, alpha=1.0))
         line.set_markeredgecolor(mcolors.to_rgba(color, alpha=1.0))
 
-    ax.set_xlabel("Prompt Token Count", fontsize=12, fontweight="bold")
-    ax.set_ylabel(y_label, fontsize=12, fontweight="bold")
+    ax.set_xlabel("Prompt Token Count", fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE, fontweight="bold")
     if show_legend:
         ax.legend(loc="best")
     ax.grid(True, alpha=0.3, linestyle="--")

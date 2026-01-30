@@ -17,7 +17,7 @@ from models.nli.common import (
     METRICS_DIR,
     NLIConfig,
     get_corrs,
-    probs_to_scores,
+    probs_to_score,
 )
 from utils import DATA_DIR, PersistentDict, get_device_name
 
@@ -458,7 +458,7 @@ def evaluate_model_on_config(
             batch_latency_ms = (end - start) * 1000 / len(batch)
             all_latencies.extend([batch_latency_ms] * len(batch))
 
-    scores = [probs_to_scores(probs) for probs in all_probabilities]
+    scores = [probs_to_score(probs) for probs in all_probabilities]
     corr = get_corrs(all_probabilities, labels)
     perf = calculate_performance_metrics(all_latencies)
     time_end = datetime.now().isoformat()

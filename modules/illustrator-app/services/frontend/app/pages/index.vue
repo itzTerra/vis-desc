@@ -12,7 +12,7 @@
             data-help-target="file"
             @change="handleFileUpload"
           >
-          <ModelSelect v-model="modelSelect" data-help-target="model" />
+          <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
         </div>
         <EvalProgress
           data-help-target="progress"
@@ -67,16 +67,29 @@
       </NuxtLink>
     </div>
     <HelpOverlay v-if="showHelp" :help-steps="helpSteps" @cancel="toggleHelp(false)" />
+    <ModelManager
+      ref="modelManagerRef"
+      v-model:pending-model="pendingModel"
+      v-model:is-expanded="modelManagerExpanded"
+      @model-ready="onModelReady"
+    />
+    <ModelDownloadDialog
+      v-if="pendingModel && pendingModel.transformersConfig"
+      :is-open="showModelDownloadDialog"
+      :model-info="pendingModel"
+      @confirm="confirmModelDownload"
+      @cancel="cancelModelDownload"
+    />
     <BackToTop />
     <Alert />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Highlight } from "~/types/common";
+import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
+import type { ModelManager } from "#components";
 
-type Segment = { text: string, score: number };
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
 const SCORE_THRESHOLD = 0.95;
@@ -85,7 +98,8 @@ const { $api: call, callHook, $config } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
-const modelSelect = ref<ModelValue>(MODELS.filter(model => !model.disabled)[0].value);
+const modelSelect = ref<ModelId>(MODELS.filter(model => !model.disabled)[0].id);
+const pendingModel = ref<TModelInfo | null>(null);
 // Holds start timestamp (ms) when loading begins; null when idle
 const isLoading = ref<number | null>(null);
 const isCancelled = ref(false);
@@ -96,6 +110,9 @@ const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.v
 const showHelp = ref(false);
 const seenHelpOnce = useLocalStorage("seenHelpOnce", false);
 const highlightsHelpBackup: Highlight[] = [];
+const showModelDownloadDialog = ref(false);
+const modelManagerRef = ref<InstanceType<typeof ModelManager> | null>(null);
+const modelManagerExpanded = ref(false);
 
 function toggleHelp(toValue?: boolean) {
   showHelp.value = toValue !== undefined ? toValue : !showHelp.value;
@@ -211,19 +228,35 @@ const handleFileUpload = async (event: any) => {
   const formData = new FormData();
   formData.append("pdf", file, file.name);
   formData.append("model", modelSelect.value);
-  call("/api/process/pdf", {
+  const modelInfo = getModelById(modelSelect.value);
+
+  if (!modelInfo || !modelInfo.apiUrl || modelInfo.disabled) {
+    useNotifier().error("Selected model is not available.");
+    isLoading.value = null;
+    return;
+  }
+
+  const canContinue = handleModelDownloadRequest(modelSelect.value);
+  if (!canContinue) {
+    isLoading.value = null;
+    return;
+  }
+
+  call(modelInfo.apiUrl, {
     method: "POST",
     body: formData as any
-  }).then((data) => {
+  }).then((data: any) => {
     // collect initial aligned segments with polygons if provided
-    if (Array.isArray(data.segments)) {
+    if (data?.segments && Array.isArray(data.segments)) {
       highlights.splice(0, highlights.length, ...data.segments);
     }
-    socket.open();
-    socket.send(JSON.stringify({ ws_key: data.ws_key }));
+
+    modelInfo.onSuccess?.(data, modelInfo, socket, scoreSegment);
+    // socket.open();
+    // socket.send(JSON.stringify({ ws_key: data.ws_key }));
   }).catch((error) => {
-    console.error("Failed to process PDF:", error);
     isLoading.value = null;
+    console.error("Failed to process PDF:", error);
     useNotifier().error("Failed to process document. Please try again.");
   });
 };
@@ -276,8 +309,12 @@ function cancelSegmentLoading() {
     return;
   }
   isCancelled.value = true;
-  socket.close();
-  onDisconnected();
+  isLoading.value = null;
+
+  const modelInfo = getModelById(modelSelect.value);
+  modelInfo?.onCancel?.(modelInfo);
+  // socket.close();
+  // onDisconnected();
 }
 
 function scoreSegment(segment: Segment) {
@@ -304,6 +341,47 @@ function fullReset() {
   selectedHighlights.clear();
   highlights.length = 0;
   pdfUrl.value = null;
+}
+
+function handleModelDownloadRequest(modelId: ModelId): boolean {
+  const modelInfo = getModelById(modelId);
+  if (!modelInfo || !("transformersConfig" in modelInfo) || !modelInfo.transformersConfig) {
+    return true;
+  }
+
+  const { getModelCacheStatus } = useModelLoader();
+  const status = getModelCacheStatus(modelInfo as TModelInfo);
+
+  if (status === "cached") {
+    return true;
+  }
+
+  if (status === "downloading") {
+    useNotifier().info(`Model "${modelInfo.label}" is already downloading.`);
+    modelManagerExpanded.value = true;
+    return false;
+  }
+
+  pendingModel.value = modelInfo as TModelInfo;
+  showModelDownloadDialog.value = true;
+  return false;
+}
+
+function onModelReady(modelId: ModelId) {
+  useNotifier().success(`${getModelById(modelId).label} is now ready to use`);
+}
+
+function confirmModelDownload() {
+  if (!pendingModel.value) return;
+
+  modelManagerRef.value?.queueDownload(pendingModel.value);
+  showModelDownloadDialog.value = false;
+  pendingModel.value = null;
+}
+
+function cancelModelDownload() {
+  showModelDownloadDialog.value = false;
+  pendingModel.value = null;
 }
 </script>
 <style scoped>

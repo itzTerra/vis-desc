@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/process/seg/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Pdf Segments Only */
+        post: operations["core_api_process_pdf_segments_only"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/process/pdf": {
         parameters: {
             query?: never;
@@ -76,6 +93,36 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ProcessPdfSegmentsOnlyResponse */
+        ProcessPdfSegmentsOnlyResponse: {
+            /** Segment Count */
+            segment_count: number;
+            /** Segments */
+            segments: components["schemas"]["SegmentWithPos"][];
+        };
+        /** SegmentWithPos */
+        SegmentWithPos: {
+            /** Id */
+            id: number;
+            /** Text */
+            text: string;
+            /** Polygons */
+            polygons: {
+                [key: string]: [
+                    number,
+                    number
+                ][];
+            };
+        };
+        /**
+         * Evaluator
+         * @enum {string}
+         */
+        Evaluator: "minilm_svm" | "nli_roberta" | "random";
+        /** ProcessPdfBody */
+        ProcessPdfBody: {
+            model: components["schemas"]["Evaluator"];
+        };
         /** ProcessPdfResponse */
         ProcessPdfResponse: {
             /** Ws Key */
@@ -84,6 +131,8 @@ export interface components {
             expires_in: number;
             /** Segment Count */
             segment_count: number;
+            /** Segments */
+            segments: components["schemas"]["SegmentWithPos"][];
         };
         /** TextBody */
         TextBody: {
@@ -117,6 +166,41 @@ export interface operations {
             };
         };
     };
+    core_api_process_pdf_segments_only: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Pdf
+                     * Format: binary
+                     */
+                    pdf: string;
+                    /**
+                     * Evaluator
+                     * @enum {string}
+                     */
+                    model: "minilm_svm" | "nli_roberta" | "random";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessPdfSegmentsOnlyResponse"];
+                };
+            };
+        };
+    };
     core_api_process_pdf: {
         parameters: {
             query?: never;
@@ -128,10 +212,15 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     /**
-                     * Pdf File
+                     * Pdf
                      * Format: binary
                      */
-                    pdf_file: string;
+                    pdf: string;
+                    /**
+                     * Evaluator
+                     * @enum {string}
+                     */
+                    model: "minilm_svm" | "nli_roberta" | "random";
                 };
             };
         };

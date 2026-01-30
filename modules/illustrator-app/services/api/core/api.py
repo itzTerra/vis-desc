@@ -3,7 +3,12 @@ from ninja import File, Form, NinjaAPI, UploadedFile
 from django.http import HttpResponse
 from django.conf import settings
 import uuid
-from core.schemas import ProcessPdfBody, ProcessPdfResponse, TextBody
+from core.schemas import (
+    ProcessPdfBody,
+    ProcessPdfResponse,
+    ProcessPdfSegmentsOnlyResponse,
+    TextBody,
+)
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
 from core.tools.text2image import Provider, get_image_url, get_image_bytes
@@ -19,18 +24,34 @@ pdf_preprocessor = PdfBookPreprocessor(
 text_segmenter = TextSegmenter((settings.SEGMENT_CHARS_MIN, settings.SEGMENT_CHARS_MAX))
 
 
+def get_segments_with_boxes(pdf: UploadedFile) -> tuple[list[str], list[dict]]:
+    book_text = pdf_preprocessor.extract_from_memory(pdf)
+    segments = text_segmenter.segment_text(book_text)
+    segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments)
+    return segments, segments_with_pos
+
+
 @api.get("/health")
 def health(request):
     return "ok"
+
+
+@api.post("/process/seg/pdf", response=ProcessPdfSegmentsOnlyResponse)
+def process_pdf_segments_only(
+    request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]
+):
+    segments, segments_with_pos = get_segments_with_boxes(pdf)
+    return {
+        "segment_count": len(segments),
+        "segments": segments_with_pos,
+    }
 
 
 @api.post("/process/pdf", response=ProcessPdfResponse)
 def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     ws_key = str(uuid.uuid4())
 
-    book_text = pdf_preprocessor.extract_from_memory(pdf)
-    segments = text_segmenter.segment_text(book_text)
-    segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments)
+    segments, segments_with_pos = get_segments_with_boxes(pdf)
 
     redis_client.set(
         f"ws_key:{ws_key}",

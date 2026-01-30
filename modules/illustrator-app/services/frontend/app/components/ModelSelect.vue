@@ -6,7 +6,7 @@
       class="btn btn-ghost btn-sm w-auto text-nowrap ps-2"
     >
       <Icon name="lucide:component" />
-      {{ MODELS.find(m => m.value === modelValue)?.label ?? "??" }}
+      {{ MODELS.find(m => m.id === modelValue)?.label ?? "??" }}
     </div>
     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-96 ml-[-1px]">
       <li class="menu-title">
@@ -16,7 +16,7 @@
           <span>Quality</span>
         </div>
       </li>
-      <li v-for="model in MODELS" :key="model.value" class="border-t border-base-content/10" :class="{ 'menu-disabled': model.disabled }">
+      <li v-for="model in MODELS" :key="model.id" class="border-t border-base-content/10" :class="{ 'menu-disabled': model.disabled }">
         <a
           :title="model.description"
           class="block"
@@ -41,11 +41,21 @@
 </template>
 
 <script setup lang="ts">
-const modelValue = defineModel<ModelValue>({ required: true });
+const modelValue = defineModel<ModelId>({ required: true });
 
-function selectModel(model: Model) {
-  if (!model.disabled) {
-    modelValue.value = model.value;
+const emit = defineEmits<{
+  requestModelDownload: [modelId: ModelId];
+}>();
+
+function selectModel(model: ModelInfo) {
+  if (model.disabled) {
+    return;
+  }
+
+  if ("transformersConfig" in model && model.transformersConfig) {
+    emit("requestModelDownload", model.id);
+  } else {
+    modelValue.value = model.id;
   }
   (document.activeElement as HTMLElement)?.blur();
 }

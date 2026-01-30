@@ -14,7 +14,7 @@ export default defineNuxtConfig({
   },
   ssr: false,
   compatibilityDate: "2024-11-01",
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   runtimeConfig: {
     public: {
       // can be overridden by NUXT_PUBLIC_* environment variables

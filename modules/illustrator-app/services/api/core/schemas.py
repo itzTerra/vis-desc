@@ -25,6 +25,11 @@ class SegmentWithPos(Schema):
     ]  # page: polygon (list of [x,y] points normalized)
 
 
+class ProcessPdfSegmentsOnlyResponse(Schema):
+    segment_count: int
+    segments: list[SegmentWithPos]
+
+
 class ProcessPdfResponse(Schema):
     ws_key: str
     expires_in: int

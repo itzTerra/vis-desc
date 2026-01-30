@@ -6,7 +6,7 @@
           <Icon name="lucide:chevron-down" class="swap-on" />
           <Icon name="lucide:chevron-right" class="swap-off" />
         </div>
-        <label class="input input-ghost join-item">
+        <label class="input input-ghost join-item" @click.stop>
           <input
             v-model="searchInput"
             type="text"
@@ -16,7 +16,7 @@
           >
           <span class="label">{{ currentSearchSet.length === 0 ? 0 : currentIndex + 1 }}/{{ currentSearchSet.length }}</span>
         </label>
-        <div class="join-item flex flex-row">
+        <div class="join-item flex flex-row" @click.stop>
           <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Previous Segment" @click.stop="onPrev">
             <Icon name="lucide:chevron-up" size="20px" />
           </button>

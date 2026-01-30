@@ -1,3 +1,5 @@
+export type Segment = { text: string, score: number };
+
 export type TextMapping = {
   start: number;
   end: number;

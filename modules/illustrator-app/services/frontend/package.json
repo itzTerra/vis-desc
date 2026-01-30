@@ -7,9 +7,10 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "gen-types": "npx openapi-typescript http://api:8000/api/openapi.json -o ./types/schema.d.ts"
+    "gen-types": "npx openapi-typescript http://api:8000/api/openapi.json -o ./app/types/schema.d.ts"
   },
   "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
     "@nuxt/icon": "2.0.0",
     "@tailwindcss/vite": "^4.0.12",
     "@vueuse/nuxt": "^13.9.0",

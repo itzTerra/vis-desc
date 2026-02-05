@@ -45,8 +45,9 @@ export const MODELS: ModelInfo[] = [
       workerName: "booknlp",
     },
     apiUrl: "/api/process/seg/pdf",
-    onSuccess: async (data: SegmentResponse, model, socket, scoreSegment) => {
+    onSuccess: async (_data: SegmentResponse, model, _socket, _scoreSegment) => {
       const { getOrLoadWorker, terminateWorker } = useModelLoader();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const worker = await getOrLoadWorker(model as TModelInfo);
       // const segments = (data as any).segments.map((seg: any) => seg.text);
       // const nliClassifier = NLI_CLASSIFIERS[model.id];
@@ -89,7 +90,7 @@ export const MODELS: ModelInfo[] = [
       workerName: "nli",
     },
     apiUrl: "/api/process/seg/pdf",
-    onSuccess: async (data: SegmentResponse, model, socket, scoreSegment) => {
+    onSuccess: async (data: SegmentResponse, model, _socket, scoreSegment) => {
       const { getOrLoadWorker, terminateWorker } = useModelLoader();
       const worker = await getOrLoadWorker(model as TModelInfo);
       const segments = (data as any).segments.map((seg: any) => seg.text);

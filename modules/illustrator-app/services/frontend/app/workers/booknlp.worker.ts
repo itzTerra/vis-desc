@@ -7,7 +7,7 @@ env.useBrowserCache = true;
 
 // const loadedPipeline: Pipeline | null = null;
 
-async function loadModel(config: LoadMessage["payload"]) {
+async function loadModel(_config: LoadMessage["payload"]) {
   try {
     // loadedPipeline = await pipeline(
     //   config.pipeline,
@@ -28,6 +28,7 @@ async function loadModel(config: LoadMessage["payload"]) {
     //   }
     // ) as any;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const onnxSession = (await PreTrainedModel.from_pretrained("Terraa/entities_google_bert_uncased_L-4_H-256_A-4-v1.0-ONNX", {
         subfolder: "onnx",
         dtype: "fp16",

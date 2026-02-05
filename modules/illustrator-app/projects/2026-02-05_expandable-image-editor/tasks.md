@@ -61,7 +61,7 @@ This document maps user stories to specific implementation tasks, organized by p
 
 ## Phase 1: Data Model & Types
 
-### Task 1.1: Update Highlight Type (Remove Image State)
+- [x] Task 1.1: Update Highlight Type (Remove Image State)
 **User Story**: All (foundational architecture change)
 **Depends on**: Nothing
 **Effort**: 10 min
@@ -90,7 +90,7 @@ export type Highlight = {
 
 ---
 
-### Task 1.2: Define Editor Types
+- [x] Task 1.2: Define Editor Types
 **User Story**: All (state and history are foundational)
 **Depends on**: Task 1.1
 **Effort**: 20 min
@@ -124,7 +124,7 @@ export type EditorState = {
 
 ---
 
-### Task 1.3: Add Backend Schema for Enhance Endpoint
+- [ ] Task 1.3: Add Backend Schema for Enhance Endpoint
 **User Story**: User Enhances Prompt Text
 **Depends on**: Nothing
 **Effort**: 20 min
@@ -147,7 +147,7 @@ class EnhanceTextResponse(Schema):
 
 ## Phase 2: Backend API Setup
 
-### Task 2.1: Implement Enhance Endpoint (Stub)
+- [ ] Task 2.1: Implement Enhance Endpoint (Stub)
 **User Story**: User Enhances Prompt Text
 **Depends on**: Task 1.3
 **Effort**: 30 min
@@ -176,7 +176,7 @@ def enhance_text(request, body: EnhanceTextBody):
 
 ## Phase 3: Frontend Composables
 
-### Task 3.1: Create useEditorHistory Composable
+- [ ] Task 3.1: Create useEditorHistory Composable
 **User Story**: User Navigates Editor History (Story 4)
 **Depends on**: Task 1.1, Task 1.2
 **Effort**: 1.5 hours
@@ -263,7 +263,7 @@ export function useEditorHistory() {
 
 ## Phase 4: Component Structure
 
-### Task 4.1: Create ImageEditor Component Shell
+- [ ] Task 4.1: Create ImageEditor Component Shell
 **User Story**: User Expands Editor for Existing Generated Image (Story 1)
 **Depends on**: Task 1.2, Task 3.1
 **Effort**: 1 hour
@@ -460,7 +460,7 @@ function loadHistoryItem() {
 
 ---
 
-### Task 4.2: Implement Enhance Handler
+- [ ] Task 4.2: Implement Enhance Handler
 **User Story**: User Enhances Prompt Text (Story 2)
 **Depends on**: Task 4.1, Task 2.1
 **Effort**: 1 hour
@@ -509,7 +509,7 @@ async function handleEnhance() {
 
 ---
 
-### Task 4.3: Implement Generate Handler
+- [ ] Task 4.3: Implement Generate Handler
 **User Story**: User Generates Image from Prompt (Story 3)
 **Depends on**: Task 4.1, Task 2.1 (existing endpoint)
 **Effort**: 1 hour
@@ -563,7 +563,7 @@ async function handleGenerate() {
 
 ## Phase 5: Parent Component Integration
 
-### Task 5.1: Render ImageEditor Components in ImageLayer's Template (Complete Replacement)
+- [ ] Task 5.1: Render ImageEditor Components in ImageLayer's Template (Complete Replacement)
 **User Story**: All (integration point)
 **Depends on**: Task 4.1, Task 4.2, Task 4.3
 **Effort**: 1.5 hours
@@ -697,7 +697,7 @@ function getEditorPositionStyle(highlightId: number) {
 
 ---
 
-### Task 5.2: Connect HighlightLayer to ImageEditor Opener
+- [ ] Task 5.2: Connect HighlightLayer to ImageEditor Opener
 **User Story**: User Expands Editor for Existing Generated Image (Story 1)
 **Depends on**: Task 5.1
 **Effort**: 1 hour
@@ -750,7 +750,7 @@ Update PdfViewer to listen:
 
 ## Phase 6: UI Polish & Accessibility
 
-### Task 6.1: Add Responsive Layout & Styling
+- [ ] Task 6.1: Add Responsive Layout & Styling
 **User Story**: All (UX polish)
 **Depends on**: Task 4.1
 **Effort**: 45 min
@@ -798,7 +798,7 @@ Update ImageEditor.vue styles and layout:
 
 ---
 
-### Task 6.2: Accessibility Audit
+- [ ] Task 6.2: Accessibility Audit
 **User Story**: All (a11y compliance)
 **Depends on**: Task 4.1
 **Effort**: 30 min

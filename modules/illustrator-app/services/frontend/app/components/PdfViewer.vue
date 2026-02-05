@@ -20,6 +20,7 @@
               width: `${pdfWidthScaled}px`,
               height: `${pdfPageHeight}px`,
             }"
+            @rendered="$emit('pdf:rendered')"
           />
           <div
             v-else
@@ -112,6 +113,11 @@ watch(() => props.pdfUrl, () => {
 
 const highlights = defineModel<Highlight[]>("highlights", { required: true });
 const selectedHighlights = defineModel<Set<number>>("selectedHighlights", { required: true });
+
+defineEmits<{
+  (e: "pdf:rendered"): void;
+}>();
+
 const pdfUrlComputed = computed(() => props.pdfUrl);
 
 const nuxtApp = useNuxtApp();
@@ -265,8 +271,14 @@ async function genImage(highlightId: number) {
     method: "POST",
     body: { text: realHighlight.text }
   });
+  if (!res) {
+    realHighlight.imageLoading = false;
+    useNotifier().error("Failed to generate image");
+    return;
+  }
   const blob = new Blob([res as any], { type: "image/png" });
   const url = URL.createObjectURL(blob);
+  console.log("Image URL:", url);
   realHighlight.imageUrl = url;
   realHighlight.imageLoading = false;
   imageLayer.value?.bringImageToFront(realHighlight);

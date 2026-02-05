@@ -21,6 +21,12 @@ const getModelKey = (modelInfo: TModelInfo): string => {
   return modelInfo.transformersConfig.huggingFaceId;
 };
 
+const getWorkerUrl = (workerName: string): URL => {
+  const basePath = "../workers";
+  const fileName = `${workerName}.worker.ts`;
+  return new URL(`${basePath}/${fileName}`, import.meta.url);
+};
+
 const getModelState = (modelInfo: TModelInfo): ModelLoadState => {
   const modelsState = useModelsState();
   const key = getModelKey(modelInfo);
@@ -235,10 +241,8 @@ const getOrLoadWorker = async (
   state.error = null;
 
   try {
-    const worker = new Worker(
-      new URL("~/utils/nli.worker.ts", import.meta.url),
-      { type: "module" }
-    );
+    const workerUrl = getWorkerUrl(config.workerName);
+    const worker = new Worker(workerUrl, { type: "module" });
 
     await loadModelInWorker(modelInfo, worker, options?.onProgress);
 

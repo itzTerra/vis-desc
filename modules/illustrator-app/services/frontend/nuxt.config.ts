@@ -25,9 +25,12 @@ export default defineNuxtConfig({
       wsBaseUrl: process.env.VITE_API_WS_BASE_URL || "ws://localhost:8000",
       openFetch: {
         api: {
-          baseURL: "http://localhost:8000",
+          baseURL: process.env.VITE_API_BASE_URL || "http://localhost:8000",
         },
       },
+    },
+    app: {
+      baseURL: "/"
     }
   },
   vite: {
@@ -35,7 +38,7 @@ export default defineNuxtConfig({
     server: {
       proxy: {
         "/api": {
-          target: process.env.VITE_API_BASE_URL,
+          target: process.env.VITE_API_BASE_URL || "http://localhost:8000",
           changeOrigin: true,
         },
       },

@@ -73,6 +73,5 @@ def gen_image(request, body: TextBody):
 
 @api.post("/gen-image-bytes")
 def gen_image_bytes(request, body: TextBody):
-    return HttpResponse(
-        get_image_bytes(body.text, Provider.POLLINATIONS), content_type="image/png"
-    )
+    image_bytes = get_image_bytes(body.text, Provider.POLLINATIONS)
+    return HttpResponse(image_bytes, content_type="image/png")

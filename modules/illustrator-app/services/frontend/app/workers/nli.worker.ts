@@ -1,34 +1,9 @@
-import { pipeline, env, type Pipeline, type PipelineType } from "@huggingface/transformers";
+import { pipeline, env, type Pipeline } from "@huggingface/transformers";
+import type { EvaluateMessage, LoadMessage, WorkerMessage } from "~/types/workers";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
-
-type MessageType = "load" | "evaluate" | "ready" | "progress" | "complete" | "error";
-
-interface WorkerMessage {
-  type: MessageType;
-  payload?: any;
-}
-
-interface LoadMessage extends WorkerMessage {
-  type: "load";
-  payload: {
-    huggingFaceId: string;
-    modelFileName?: string;
-    pipeline: PipelineType;
-  };
-}
-
-interface EvaluateMessage extends WorkerMessage {
-  type: "evaluate";
-  payload: {
-    segments: string[];
-    candidateLabels: string[];
-    hypothesisTemplate: string;
-    batchSize: number;
-  };
-}
 
 let loadedPipeline: Pipeline | null = null;
 
@@ -82,6 +57,7 @@ async function loadModel(config: LoadMessage["payload"]) {
           }
         },
         dtype: "q8",
+        device: "wasm"
       }
     ) as any;
 
@@ -131,6 +107,7 @@ async function evaluateSegments(data: EvaluateMessage["payload"]) {
         text: segment,
         score: scores[index]
       }));
+      console.log("BATCH RESULTS:", JSON.stringify(batchResults));
 
       self.postMessage({
         type: "progress",

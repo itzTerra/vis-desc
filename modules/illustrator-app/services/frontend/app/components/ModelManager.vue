@@ -2,7 +2,7 @@
   <div>
     <div
       v-if="!isExpanded"
-      class="fixed bottom-0 right-[160px] z-50 pb-2"
+      class="fixed bottom-0 right-[190px] z-50 pb-2"
     >
       <!-- No download in progress -->
       <div v-if="!hasActiveDownload">

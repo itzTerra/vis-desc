@@ -9,6 +9,7 @@ export type TransformersModelConfig = {
   modelFileName?: string;
   pipeline: PipelineType;
   sizeMb: number;
+  workerName: string;
 }
 
 export type ModelInfo = {
@@ -34,8 +35,36 @@ export const MODELS: ModelInfo[] = [
     label: "MiniLM-CatBoost",
     speed: 4,
     quality: 3,
-    disabled: true,
+    disabled: false,
     description: "A fast model with medium quality for general use.",
+    transformersConfig: {
+      huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
+      modelFileName: "model_quantized.onnx",
+      pipeline: "zero-shot-classification",
+      sizeMb: 130,
+      workerName: "booknlp",
+    },
+    apiUrl: "/api/process/seg/pdf",
+    onSuccess: async (data: SegmentResponse, model, socket, scoreSegment) => {
+      const { getOrLoadWorker, terminateWorker } = useModelLoader();
+      const worker = await getOrLoadWorker(model as TModelInfo);
+      // const segments = (data as any).segments.map((seg: any) => seg.text);
+      // const nliClassifier = NLI_CLASSIFIERS[model.id];
+      // if (!nliClassifier) {
+      //   return;
+      // }
+      // await nliClassifier.evaluateSegmentsWithWorker(worker, segments, (batchIndex, totalBatches, batchResults) => {
+      //   console.log(`NLI batch ${batchIndex + 1}/${totalBatches} completed.`);
+      //   for (const result of batchResults) {
+      //     scoreSegment(result);
+      //   }
+      // });
+      terminateWorker(model as TModelInfo);
+    },
+    onCancel: (model) => {
+      const { terminateWorker } = useModelLoader();
+      terminateWorker(model as TModelInfo);
+    }
   },
   {
     id: "modernbert_finetuned",
@@ -57,6 +86,7 @@ export const MODELS: ModelInfo[] = [
       modelFileName: "model_quantized.onnx",
       pipeline: "zero-shot-classification",
       sizeMb: 130,
+      workerName: "nli",
     },
     apiUrl: "/api/process/seg/pdf",
     onSuccess: async (data: SegmentResponse, model, socket, scoreSegment) => {

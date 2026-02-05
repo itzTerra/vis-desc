@@ -18,7 +18,7 @@ SEGMENT_DIR = ROOT_DIR / "data" / "segments"
 PROCESSED_BOOKS_PATH = ROOT_DIR / "data" / "processed_books.json"
 TO_ANNOTATE_DIR = ROOT_DIR / "data" / "to-annotate"
 DATA_DIR = ROOT_DIR / "data"
-IMAG_DATA_DIR = DATA_DIR / "datasets" / "concreteness"
+IMAG_DATA_DIR = DATA_DIR / "features" / "concreteness"
 
 
 # https://stackoverflow.com/questions/1229068/with-python-can-i-keep-a-persistent-dictionary-and-modify-it

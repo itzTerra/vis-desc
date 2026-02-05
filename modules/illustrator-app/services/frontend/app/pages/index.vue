@@ -431,7 +431,7 @@ onMounted(() => {
         useNotifier().error("Failed to load example data");
       }
     },
-    "Load example PDF and segments for testing"
+    "Load example PDF and segments"
   );
 });
 </script>

@@ -545,8 +545,3 @@ async function handleGenerate() {
 - ✅ **History display with prev/next** - Complete history UI with navigation
 - ✅ **Edit from history** - Ability to resume editing from any history point
 
-### Testing
-- E2E tests and integration tests marked as "nice-to-have" (no existing test infrastructure)
-- Manual testing and component-level verification is the primary approach
-- Accessibility checks and keyboard navigation still required
-

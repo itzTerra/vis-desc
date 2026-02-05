@@ -35,11 +35,11 @@ When given a project folder path, this is a **project implementation review**:
 
 ## Core Review Responsibilities
 
-**Project Guidelines Compliance**: Verify adherence to explicit project rules, including import patterns, framework conventions, language-specific style, function declarations, error handling, logging, testing practices, platform compatibility, and naming conventions.
+**Project Guidelines Compliance**: Verify adherence to explicit project rules, including import patterns, framework conventions, language-specific style, function declarations, error handling, logging, platform compatibility, and naming conventions.
 
 **Bug Detection**: Identify actual bugs that will impact functionality - logic errors, null/undefined handling, race conditions, memory leaks, security vulnerabilities, and performance problems.
 
-**Code Quality**: Evaluate significant issues like missing critical error handling, accessibility problems, and inadequate test coverage. Note: prefer Locality of Behaviour and Focused Behaviour over DRY. Only flag code duplication outside polymorphic contexts - separate functions for different types are intentional (see .claude/rules/polymorphism.md).
+**Code Quality**: Evaluate significant issues like missing critical error handling and accessibility problems. Note: prefer Locality of Behaviour and Focused Behaviour over DRY. Only flag code duplication outside polymorphic contexts - separate functions for different types are intentional (see .claude/rules/polymorphism.md).
 
 ## Confidence Scoring
 

@@ -20,10 +20,9 @@ Projects live in `projects/<date>_<project-name>/` with two files:
 
 ### Features & Improvements
 
-1. **Domain**: Migrate database, build queries, algorithms, and serializers, write domain tests
+1. **Domain**: Migrate database, build queries, algorithms, and serializers
 2. **Components**: Build necessary UI components and their Storybook stories
 3. **Routes**: Build new app routes and adjust existing routes
-4. **E2E Tests**: Implement Playwright tests for new/edited app routes
 
 **Migrations**: Batch all schema changes within a project into a single migration file when possible.
 
@@ -73,7 +72,7 @@ Brief description of the project and its value.
 
 ## User Stories
 
-User stories drive E2E test coverage. Every user story should map to one or more Playwright tests.
+User stories drive acceptance criteria. Every user story should map to one or more clear outcomes.
 
 ### As a [role], I want [action] so that [benefit]
 
@@ -141,8 +140,8 @@ Implementation checklist. The implementor ticks these off as they work.
 ## Domain
 
 - [ ] Database migration
-- [ ] Queries with tests
-- [ ] Mutations with tests
+- [ ] Queries
+- [ ] Mutations
 
 ## Components
 
@@ -151,11 +150,6 @@ Implementation checklist. The implementor ticks these off as they work.
 ## Routes
 
 - [ ] Route implementation
-
-## E2E Tests
-
-- [ ] User story 1: test scenarios
-- [ ] User story 2: test scenarios
 
 ## Cleanup
 
@@ -168,6 +162,6 @@ Tasks should be:
 - **Actionable**: Clear what "done" means
 - **Ordered**: Dependencies respected
 - **Sized**: Each task ~15-60 min of work
-- **Testable**: Can verify completion
+- **Verifiable**: Can confirm completion
 
-**IMPORTANT**: Code and its related tests (query tests, mutation tests, route tests, etc.) must always be in the same commit. Functionality and its test are one atomic unit - never commit code without its test or vice versa.
+**IMPORTANT**: Keep changes atomic and scoped. Functionality should land in coherent, reviewable units.

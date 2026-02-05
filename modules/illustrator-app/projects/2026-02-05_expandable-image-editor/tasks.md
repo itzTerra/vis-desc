@@ -165,12 +165,12 @@ def enhance_text(request, body: EnhanceTextBody):
 **Verification**:
 - Endpoint responds to `POST /api/enhance` with `{ text: string }`
 - Response matches schema
-- Can be tested with curl or Postman
-- Response text contains the input text (for testing deduplication)
+- Can be verified with curl or Postman
+- Response text contains the input text to support deduplication checks
 
 **Notes**:
 - This is a stub. Real implementation would use LLM or other text processing
-- For testing purposes, can modify to return exact same text to test deduplication
+- If needed, return the exact same text to confirm deduplication behavior
 
 ---
 
@@ -258,13 +258,6 @@ export function useEditorHistory() {
 - History properly deduplicates on text match
 - Navigation works at boundaries
 - History truncation works when resuming from mid-history point
-
-**E2E Test Scenario**:
-- User enters text → added to history
-- User enters same text again → NOT added (deduplication)
-- User navigates previous → shows last item
-- User navigates to end then next → returns to edit mode
-- User clicks [Edit] at history[2] → can resume editing, truncates forward history
 
 ---
 
@@ -465,14 +458,6 @@ function loadHistoryItem() {
 - History section displays when history has entries
 - All content positioned on RIGHT side of screen
 
-**E2E Test Scenario**:
-- Mount component with highlight without image
-- Collapse button visible on LEFT edge of editor
-- Click expand → textarea and buttons visible on RIGHT side
-- Generate image → image appears INSIDE editor below buttons
-- Click collapse → editor content hidden, but collapse button + generated image still visible
-- Click delete → 'delete' event emitted
-
 ---
 
 ### Task 4.2: Implement Enhance Handler
@@ -521,15 +506,6 @@ async function handleEnhance() {
 - Error handling shows notification
 - Loading state managed correctly
 - Textarea updated with enhanced text
-
-**E2E Test Scenario**:
-- User enters "A beautiful sunset"
-- Clicks Enhance
-- Loading state shown
-- Request sent to backend
-- Response received, textarea updated
-- History now has 2 items: input and output
-- Clicking enhance again with same text → history count stays at 2 (deduplication)
 
 ---
 
@@ -582,16 +558,6 @@ async function handleGenerate() {
 - Loading state managed on both editor and highlight
 - Prompt area hides automatically after success (via hasImage computed)
 - Error notifications show properly
-
-**E2E Test Scenario**:
-- User has enhanced prompt "sunset [enhanced]"
-- Clicks Generate
-- Loading spinner shows
-- Request sent to backend
-- Image received and displayed in sidebar
-- History now has 3 items (input, output, generate)
-- Textarea area hidden (hasImage = true)
-- User can expand and see history, click [Edit] to resume
 
 ---
 
@@ -782,7 +748,7 @@ Update PdfViewer to listen:
 
 ---
 
-## Phase 6: UI Polish & Testing
+## Phase 6: UI Polish & Accessibility
 
 ### Task 6.1: Add Responsive Layout & Styling
 **User Story**: All (UX polish)
@@ -832,81 +798,7 @@ Update ImageEditor.vue styles and layout:
 
 ---
 
-### Task 6.2: Write E2E Tests for Complete Flow (Nice-to-Have)
-**User Story**: All (comprehensive validation)
-**Depends on**: All previous tasks
-**Effort**: 2 hours
-**Priority**: Low (no existing test infrastructure in project)
-
-Create [services/frontend/tests/image-editor.spec.ts](../../services/frontend/tests/image-editor.spec.ts):
-
-```typescript
-import { test, expect } from '@playwright/test'
-
-test.describe('Image Editor', () => {
-  test('should expand and collapse editor', async ({ page }) => {
-    // Navigate to page with highlight
-    // Click expand button
-    // Verify textarea and buttons visible
-    // Click collapse button
-    // Verify content hidden but expand button still visible
-  })
-
-  test('should enhance prompt text and track history', async ({ page }) => {
-    // Open editor
-    // Enter prompt "a sunset"
-    // Click Enhance
-    // Verify backend called with correct text
-    // Verify response text appears in textarea
-    // Verify history has 2 items
-    // Verify deduplication: enhance with same text doesn't add new item
-  })
-
-  test('should generate image from prompt', async ({ page }) => {
-    // Open editor
-    // Enter prompt
-    // Click Generate
-    // Verify loading state shown
-    // Verify image appears in sidebar
-    // Verify prompt area hides automatically
-    // Verify history records generation
-  })
-
-  test('should navigate history correctly', async ({ page }) => {
-    // Build history with multiple items
-    // Click Prev button
-    // Verify navigation to previous item
-    // Click Next button
-    // Verify navigation to next item
-    // Verify navigation disabled at boundaries
-  })
-
-  test('should delete editor without affecting highlight', async ({ page }) => {
-    // Open editor
-    // Click Delete
-    // Verify editor removed from UI
-    // Verify highlight still exists in document
-    // Verify image still visible
-  })
-
-  test('should maintain independent state for multiple editors', async ({ page }) => {
-    // Open 2 editors for different highlights
-    // Edit text in editor 1
-    // Verify editor 2 state unchanged
-    // Generate image in editor 1
-    // Verify editor 2 unaffected
-  })
-})
-```
-
-**Verification**:
-- All E2E tests pass
-- Each user story has at least one test scenario
-- Tests cover happy path and edge cases (empty text, already-expanded, history boundaries)
-
----
-
-### Task 6.3: Accessibility Audit
+### Task 6.2: Accessibility Audit
 **User Story**: All (a11y compliance)
 **Depends on**: Task 4.1
 **Effort**: 30 min
@@ -941,98 +833,6 @@ Update component:
 
 ---
 
-## Phase 7: Integration Testing
-
-### Task 7.1: Integration Test - API Enhance Endpoint
-**User Story**: User Enhances Prompt Text (Story 2)
-**Depends on**: Task 2.1, Task 4.2 (formerly Task 4.3)
-**Effort**: 30 min
-
-Create [services/api/core/tests/test_enhance.py](../../services/api/core/tests/test_enhance.py):
-
-```python
-from django.test import TestCase, Client
-
-class EnhanceTextTestCase(TestCase):
-    def setUp(self):
-        self.client = Client()
-
-    def test_enhance_text_endpoint(self):
-        response = self.client.post('/api/enhance', {
-            'text': 'a beautiful sunset'
-        }, content_type='application/json')
-        
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn('text', data)
-        self.assertIsInstance(data['text'], str)
-        self.assertTrue(len(data['text']) > 0)
-
-    def test_enhance_empty_text(self):
-        response = self.client.post('/api/enhance', {
-            'text': ''
-        }, content_type='application/json')
-        
-        # Should handle gracefully
-        self.assertIn(response.status_code, [200, 400])
-```
-
-**Verification**:
-- Endpoint test passes
-- Response structure matches expected schema
-- Error cases handled
-
----
-
-### Task 7.2: Integration Test - ImageEditor with Real Highlight (Nice-to-Have)
-**User Story**: All (real-world scenario)
-**Depends on**: Task 5.1, Task 6.2
-**Effort**: 1 hour
-**Priority**: Low (no existing test infrastructure in project)
-
-Create [services/frontend/tests/image-editor-integration.spec.ts](../../services/frontend/tests/image-editor-integration.spec.ts):
-
-```typescript
-import { test, expect } from '@playwright/test'
-
-test.describe('Image Editor Integration', () => {
-  test('should handle complete workflow: enhance → generate → history navigation', async ({ page }) => {
-    // Navigate to app
-    // Load a PDF with highlights
-    // Open image editor for a highlight
-    // 
-    // Step 1: Enter original prompt
-    const prompt1 = 'a sunset over mountains'
-    // await page.fill('textarea', prompt1)
-    //
-    // Step 2: Enhance (call /api/enhance)
-    // await page.click('button:has-text("Enhance")')
-    // const response = await page.waitForResponse(r => r.url().includes('/api/enhance'))
-    // const enhanced = await response.json()
-    //
-    // Step 3: Generate image (call /api/gen-image-bytes)
-    // await page.click('button:has-text("Generate")')
-    // Check image appears in sidebar
-    //
-    // Step 4: Navigate history
-    // Verify prev/next buttons work
-    // Click [Edit] to resume from history item
-    // Generate new image from historical text
-    //
-    // Step 5: Delete editor
-    // Verify highlight and image remain
-  })
-})
-```
-
-**Verification**:
-- Complete user workflow executes without errors
-- API calls succeed
-- UI state updates correctly at each step
-- Highlight data persists after editor deletion
-
----
-
 ## Summary of Dependencies
 
 ```
@@ -1052,49 +852,26 @@ Task 1.3 (Schema) ──→ Task 2.1 (Enhance Endpoint)
                           ↓
                        Task 5.2 (HighlightLayer Connection)
                           ↓
-                       Task 6.1 (Styling)
-                       Task 6.2 (Keyboard Nav)
-                       Task 6.3 (E2E Tests)
-                       Task 6.4 (Accessibility)
-                          ↓
-                       Task 7.1 (API Tests)
-                       Task 7.2 (Integration Tests)
+                        Task 6.1 (Styling)
+                        Task 6.2 (Accessibility)
 ```
-
----
-
-## Testing Checklist
-
-- [ ] Unit tests: useEditorHistory composable
-- [ ] Unit tests: History deduplication logic
-- [ ] Component tests: ImageEditor expand/collapse
-- [ ] Component tests: Textarea input and button interactions
-- [ ] Component tests: Loading states (enhanceLoading vs generateLoading)
-- [ ] E2E tests (nice-to-have): Complete enhance → generate flow
-- [ ] E2E tests (nice-to-have): History navigation and loading items
-- [ ] E2E tests (nice-to-have): Multiple editors open simultaneously
-- [ ] E2E tests (nice-to-have): Delete editor without affecting highlight
-- [ ] Integration tests (nice-to-have): /api/enhance endpoint
-- [ ] Integration tests (nice-to-have): Image generation with existing endpoint
-- [ ] Accessibility: Screen reader support
-- [ ] Performance: Large history (50+ items) doesn't lag UI
 
 ---
 
 ## Rollout Strategy
 
 1. **Phase 1-2**: Types & Backend (no UI changes) - safe to merge early
-2. **Phase 3**: Composables (isolated, testable) - can be tested independently
+2. **Phase 3**: Composables (isolated, self-contained) - can be verified independently
 3. **Phase 4**: Component (with feature flag initially?)
 4. **Phase 5**: Integration (connects components together)
-5. **Phase 6-7**: Polish & Tests (before production release)
+5. **Phase 6**: Polish & Accessibility (before production release)
 
-For early testing, expose `openImageEditor` via a manual button or console API:
+For early validation, expose `openImageEditor` via a manual button or console API:
 
 ```typescript
 // In PdfViewer or app-level composable
 useNuxtApp().$editorDebug = { openImageEditor }
 ```
 
-Then testers can call `window.__nuxt__.$editorDebug.openImageEditor(highlightId)` in console.
+Then developers can call `window.__nuxt__.$editorDebug.openImageEditor(highlightId)` in console.
 

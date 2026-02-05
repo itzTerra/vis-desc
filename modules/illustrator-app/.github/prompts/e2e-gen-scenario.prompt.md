@@ -1,5 +1,5 @@
 ---
 agent: agent
 ---
-Generate a Playwright test for the following scenario:
+Generate a scenario outline for the following flow:
 1. navigate to

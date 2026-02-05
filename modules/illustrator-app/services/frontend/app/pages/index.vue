@@ -35,6 +35,7 @@
       v-model:highlights="highlights"
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
+      @pdf:rendered="onPdfRendered"
     />
     <Hero v-else @file-selected="handleFileUpload" />
     <div class="bottom-bar">
@@ -53,6 +54,9 @@
       </div>
       <button v-else class="btn btn-circle btn-sm btn-info text-lg" title="Help" @click="toggleHelp(true)">
         ?
+      </button>
+      <button class="btn btn-circle btn-sm btn-neutral" title="Debug" @click="$debugPanel.toggle()">
+        <Icon name="uil:bug" size="20px" />
       </button>
       <NuxtLink
         :href="$config.public.githubUrl"
@@ -94,10 +98,11 @@ type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "e
 
 const SCORE_THRESHOLD = 0.95;
 
-const { $api: call, callHook, $config } = useNuxtApp();
+const { $api: call, callHook, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
+const pdfRenderedQueue = [] as (() => void)[];
 const modelSelect = ref<ModelId>(MODELS.filter(model => !model.disabled)[0].id);
 const pendingModel = ref<TModelInfo | null>(null);
 // Holds start timestamp (ms) when loading begins; null when idle
@@ -130,8 +135,8 @@ function toggleHelp(toValue?: boolean) {
   }
 }
 
-const helpPdfUrl = `${runtimeConfig.app.baseURL}/sample.pdf`;
-const helpImageUrl = `${runtimeConfig.app.baseURL}/sample.jpg`;
+const helpPdfUrl = `${runtimeConfig.app.baseURL}sample.pdf`;
+const helpImageUrl = `${runtimeConfig.app.baseURL}sample.jpg`;
 const helpSteps: Step[] = [
   // > Open model menu
   {
@@ -383,6 +388,52 @@ function cancelModelDownload() {
   showModelDownloadDialog.value = false;
   pendingModel.value = null;
 }
+
+function onPdfRendered() {
+  while (pdfRenderedQueue.length > 0) {
+    const fn = pdfRenderedQueue.shift();
+    fn?.();
+  }
+}
+
+onMounted(() => {
+  $debugPanel.addAction(
+    "📋 Print Highlights",
+    () => {
+      console.log("Current highlights:", highlights);
+      console.table(highlights.map(h => ({
+        id: h.id,
+        score: h.score,
+        selected: selectedHighlights.has(h.id),
+        text: h.text.slice(0, 50) + (h.text.length > 50 ? "..." : "")
+      })));
+    },
+    "Print current highlights to console"
+  );
+
+  $debugPanel.addAction(
+    "📄 Load Example PDF",
+    async () => {
+      try {
+        // Load example PDF
+        pdfUrl.value = `${runtimeConfig.app.baseURL}example.pdf`;
+
+        // Load example segments JSON after PDF is rendered
+        pdfRenderedQueue.push(async () => {
+          const segments = (await import("~/assets/data/example-segments.json").then(m => m.default || m)) as Highlight[];
+          highlights.splice(0, highlights.length, ...segments);
+
+          useNotifier().success("Example PDF and segments loaded successfully");
+          console.log("Loaded example with", highlights.length, "segments");
+        });
+      } catch (error) {
+        console.error("Failed to load example data:", error);
+        useNotifier().error("Failed to load example data");
+      }
+    },
+    "Load example PDF and segments for testing"
+  );
+});
 </script>
 <style scoped>
 .bottom-bar {
@@ -394,5 +445,6 @@ function cancelModelDownload() {
   align-items: center;
   justify-content: end;
   gap: 0.5rem;
+  z-index: 100;
 }
 </style>

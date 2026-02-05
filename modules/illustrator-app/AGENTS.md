@@ -221,20 +221,6 @@ git commit -m "..." --no-verify
 - TypeScript strict mode enabled
 - Vue 3 Composition API with TypeScript setup
 
-**Linting & Formatting**:
-```bash
-# Run ESLint (from root or frontend)
-pnpm lint
-
-# ESLint config: eslint.config.mjs
-# Rules enforce:
-  - Double quotes
-  - Semicolons
-  - 2-space indentation
-  - Vue multi-word component names allowed
-  - Custom TypeScript rules via @typescript-eslint
-```
-
 **Import patterns**:
 - Use absolute imports with `@/` alias
 - ESLint plugin-import-x configured for TypeScript resolution

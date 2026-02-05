@@ -13,12 +13,20 @@ interface DebugPanelItem {
 	last?: any;
 }
 
+interface DebugPanelAction {
+  label: string;
+  action: () => void;
+  title?: string;
+}
+
 interface DebugPanelApi {
 	add: (name: string, getter: () => any) => void;
 	track: (name: string, source: Ref<any> | ComputedRef<any> | Record<string, any>) => void;
 	remove: (name: string) => void;
 	clear: () => void;
 	list: () => string[];
+  addAction: (label: string, action: () => void, title?: string) => void;
+  removeAction: (label: string) => void;
 	show: () => void;
 	hide: () => void;
 	toggle: () => void;
@@ -30,8 +38,10 @@ const REFRESH_INTERVAL_MS = 500;
 
 function createPanel(): { api: DebugPanelApi } {
   const items: DebugPanelItem[] = [];
+  const actions: DebugPanelAction[] = [];
   let container: HTMLDivElement | null = null;
   let tableBody: HTMLTableSectionElement | null = null;
+  let actionsContainer: HTMLDivElement | null = null;
   let visible = false;
   let timer: number | null = null;
 
@@ -79,10 +89,9 @@ function createPanel(): { api: DebugPanelApi } {
     header.appendChild(btnHide);
     container.appendChild(header);
 
-    const info = document.createElement("div");
-    info.style.cssText = "font-size:10px;margin:0 0 4px;opacity:.7;";
-    info.textContent = "Register vars with $debugPanel.add/track().";
-    container.appendChild(info);
+    actionsContainer = document.createElement("div");
+    actionsContainer.style.cssText = "display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;";
+    container.appendChild(actionsContainer);
 
     const table = document.createElement("table");
     table.style.cssText = "width:100%;border-collapse:collapse;";
@@ -113,6 +122,25 @@ function createPanel(): { api: DebugPanelApi } {
     });
 
     document.body.appendChild(container);
+  };
+
+  const renderActions = () => {
+    if (!actionsContainer) return;
+    actionsContainer.innerHTML = "";
+    for (const actionItem of actions) {
+      const btn = document.createElement("button");
+      btn.textContent = actionItem.label;
+      if (actionItem.title) btn.title = actionItem.title;
+      btn.style.cssText = "background:#2a5a8a;border:1px solid #3a7ac0;color:#fff;padding:3px 8px;cursor:pointer;border-radius:3px;font-size:11px;";
+      btn.onclick = () => {
+        try {
+          actionItem.action();
+        } catch (e: any) {
+          console.error("Debug panel action error:", e);
+        }
+      };
+      actionsContainer.appendChild(btn);
+    }
   };
 
   const render = () => {
@@ -206,11 +234,26 @@ function createPanel(): { api: DebugPanelApi } {
     list() {
       return items.map(i => i.name);
     },
+    addAction(label, action, title) {
+      if (actions.find(a => a.label === label)) {
+        const idx = actions.findIndex(a => a.label === label);
+        actions[idx] = { label, action, title };
+      } else {
+        actions.push({ label, action, title });
+      }
+      if (visible) renderActions();
+    },
+    removeAction(label) {
+      const i = actions.findIndex(a => a.label === label);
+      if (i >= 0) actions.splice(i, 1);
+      if (visible) renderActions();
+    },
     show() {
       if (visible) return;
       ensureDom();
       visible = true;
 			container!.style.display = "block";
+			renderActions();
 			startTimer();
 			refreshNow(true);
     },

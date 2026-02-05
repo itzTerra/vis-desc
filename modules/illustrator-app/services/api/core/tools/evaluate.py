@@ -2,7 +2,7 @@ from core.schemas import Evaluator
 from core.tools.evaluators.base import BaseEvaluator
 
 EVALUATOR_TO_BATCH_SIZE: dict[Evaluator, int] = {
-    Evaluator.minilm_svm: 32,
+    Evaluator.minilm_catboost: 32,
     Evaluator.nli_roberta: 32,
     Evaluator.random: 256,
 }

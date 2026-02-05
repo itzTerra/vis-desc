@@ -1,32 +1,33 @@
 <template>
   <div
     ref="imagesContainer"
-    class="relative w-[512px] border-l border-base-300 overflow-hidden select-none"
-    :style="{ height: pageHeight + 'px', minHeight: '90dvh' }"
+    class="w-[512px] border-l border-base-300 select-none"
   >
-    <figure
-      v-for="(highlight, index) in highlights.filter(h => h.imageUrl || h.imageLoading)"
-      :key="index"
-      :style="(getHighlightImageStyle(highlight) as StyleValue)"
-      :title="highlight.text"
-      class="group shadow-sm rounded bg-base-200/30 backdrop-blur-sm hover:shadow cursor-grab active:cursor-grabbing transition"
-      @pointerdown="(e) => onImagePointerDown(e, highlight)"
-    >
-      <div v-if="highlight.imageUrl" class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition pointer-events-auto image-controls z-50">
-        <button class="btn btn-xs btn-circle btn-primary" title="Bring to front" @click.stop="bringImageToFront(highlight)">
-          <Icon name="lucide:arrow-up" class="w-3 h-3" />
-        </button>
-        <button class="btn btn-xs btn-circle btn-error" title="Delete image" @click.stop="deleteImage(highlight)">
-          <Icon name="lucide:x" class="w-3 h-3" />
-        </button>
-      </div>
-      <Transition>
-        <div v-if="highlight.imageLoading" class="flex justify-center items-center w-[512px] h-[512px] pointer-events-none select-none">
-          <div class="loading loading-spinner loading-md" />
+    <div class="relative">
+      <figure
+        v-for="(highlight, index) in highlights.filter(h => h.imageUrl || h.imageLoading)"
+        :key="index"
+        :style="(getHighlightImageStyle(highlight) as StyleValue)"
+        :title="highlight.text"
+        class="group shadow-sm rounded bg-base-200/30 backdrop-blur-sm hover:shadow cursor-grab active:cursor-grabbing transition"
+        @pointerdown="(e) => onImagePointerDown(e, highlight)"
+      >
+        <div v-if="highlight.imageUrl" class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition pointer-events-auto image-controls z-50">
+          <button class="btn btn-xs btn-circle btn-primary" title="Bring to front" @click.stop="bringImageToFront(highlight)">
+            <Icon name="lucide:arrow-up" class="w-3 h-3" />
+          </button>
+          <button class="btn btn-xs btn-circle btn-error" title="Delete image" @click.stop="deleteImage(highlight)">
+            <Icon name="lucide:x" class="w-3 h-3" />
+          </button>
         </div>
-        <img v-else :src="highlight.imageUrl" alt="ai-illustration" draggable="false" class="pointer-events-none select-none">
-      </Transition>
-    </figure>
+        <Transition>
+          <div v-if="highlight.imageLoading" class="flex justify-center items-center w-[512px] h-[512px] pointer-events-none select-none">
+            <div class="loading loading-spinner loading-md" />
+          </div>
+          <img v-else :src="highlight.imageUrl" alt="ai-illustration" draggable="false" class="pointer-events-none select-none">
+        </Transition>
+      </figure>
+    </div>
   </div>
 </template>
 

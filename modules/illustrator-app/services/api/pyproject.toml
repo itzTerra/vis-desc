@@ -33,6 +33,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "debugpy>=1.8.16",
+    "ruff>=0.14.14",
 ]
 
 [tool.uv.sources]

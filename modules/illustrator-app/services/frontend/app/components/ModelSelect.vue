@@ -54,9 +54,9 @@ function selectModel(model: ModelInfo) {
 
   if ("transformersConfig" in model && model.transformersConfig) {
     emit("requestModelDownload", model.id);
-  } else {
-    modelValue.value = model.id;
   }
+
+  modelValue.value = model.id;
   (document.activeElement as HTMLElement)?.blur();
 }
 </script>

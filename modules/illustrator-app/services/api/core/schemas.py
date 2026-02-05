@@ -7,7 +7,7 @@ class TextBody(Schema):
 
 
 class Evaluator(str, Enum):
-    minilm_svm = "minilm_svm"
+    minilm_catboost = "minilm_catboost"
     nli_roberta = "nli_roberta"
     random = "random"
 

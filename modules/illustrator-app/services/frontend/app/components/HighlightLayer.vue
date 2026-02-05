@@ -38,8 +38,7 @@
           </svg>
         </div>
         <div
-          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box z-1 p-2 shadow-sm"
-          :class="{'w-64': !highlight.imageLoading, 'w-72': highlight.imageLoading}"
+          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box z-1 p-2 shadow-sm w-32"
           v-on="highlight.hasSiblings ? {
             mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
             mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),
@@ -48,21 +47,23 @@
           <div class="hidden">
             {{ highlight.text }}
           </div>
-          <div v-if="highlight.score" class="flex">
-            <div class="stat p-2">
+          <div v-if="highlight.score" class="flex-col">
+            <div class="stat">
               <div class="stat-value">
                 {{ (highlight.score * 100).toFixed(0) }}
               </div>
-              <div class="stat-figure text-secondary">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block h-8 w-8 stroke-current">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+              <div class="stat-figure text-secondary flex items-center">
+                <Icon :name="getSparkleIndex(highlight.score) >= 5 ? 'lucide:sparkles' : 'lucide:sparkle'" size="26" class="self-center" /> <!-- 0 0-19, 5 95-100 sparkles -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 1" name="lucide:sparkle" size="18" class="self-end" /> <!-- 1 20-39 -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 2" name="lucide:sparkle" size="22" class="self-start" /> <!-- 2 40-59 -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 3" name="lucide:sparkle" size="12" class="self-end ms-[-4px]" /> <!-- 3 60-79 -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 4" name="lucide:sparkle" size="10" class="self-start ms-[-8px]" /> <!-- 4 80-94 -->
               </div>
-              <button class="btn btn-sm btn-primary ms-auto" :disabled="!highlight.text" @click="$emit('genImage', highlight.id)">
-                <span v-if="highlight.imageLoading" class="loading loading-spinner loading-sm" />
-                Generate image <Icon name="lucide:chevron-right" size="24" />
-              </button>
             </div>
+            <button class="btn btn-sm btn-primary w-full" :disabled="!highlight.text" @click="$emit('genImage', highlight.id)">
+              <span v-if="highlight.imageLoading" class="loading loading-spinner loading-sm" />
+              <Icon name="lucide:book-image" size="22" /> Illustrate
+            </button>
           </div>
         </div>
       </div>
@@ -100,6 +101,16 @@ interface HighlightRenderData {
   score?: number;
   imageLoading?: boolean;
   imageUrl?: string;
+}
+
+function getSparkleIndex(score: number): number {
+  const normalized = Math.round(score * 100);
+  if (normalized < 20) return 0;
+  if (normalized < 40) return 1;
+  if (normalized < 60) return 2;
+  if (normalized < 80) return 3;
+  if (normalized < 95) return 4;
+  return 5;
 }
 
 type PageMap = Map<number, { width: number; height: number; highlights: HighlightRenderData[] }>;

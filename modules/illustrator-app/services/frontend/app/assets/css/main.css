@@ -98,11 +98,14 @@ input[type=number] {
 } */
 
 .stat {
-  padding-inline: 0.25rem;
-  padding-block: 0.1rem;
+  /* padding-inline: 0.25rem; */
+  /* padding-block: 0.1rem; */
   display: flex;
   column-gap: 0.1rem;
-  align-items: center;
+  align-items: stretch;
+  padding: 0;
+  border-block-end: none;
+  border-inline-end: none;
 
   & > .stat-value {
     font-size: 1.75rem;

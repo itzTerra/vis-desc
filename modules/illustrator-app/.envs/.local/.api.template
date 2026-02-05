@@ -4,3 +4,6 @@ DJANGO_SETTINGS_MODULE=api.settings.local
 DJANGO_ALLOWED_HOSTS=localhost:8000,localhost:3000,api,frontend,localhost,0.0.0.0,127.0.0.1
 DJANGO_SUPERUSER_USERNAME=super_admin
 DJANGO_SUPERUSER_PASSWORD=default_superuser_password
+
+# Provide yours
+POLLINATIONS_API_KEY=

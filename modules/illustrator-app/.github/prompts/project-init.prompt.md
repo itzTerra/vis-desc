@@ -1,7 +1,17 @@
 ---
-allowed-tools: Task, Read, Edit, Glob, Grep, AskUserQuestion
-argument-hint: [feature description]
+name: project-init
 description: Create a project from a text feature description
+argument-hint: feature-description
+tools:
+  - 'search/fileSearch'
+  - 'search/textSearch'
+  - 'read/readFile'
+  - 'edit/editFiles'
+  - 'edit/editNotebook'
+  - 'edit/createFile'
+  - 'edit/createDirectory'
+  - 'web/fetch'
+  - 'agent/runSubagent'
 ---
 
 ## Your task
@@ -10,7 +20,7 @@ Create a comprehensive project specification from a feature description by explo
 
 ### Phase 1: Parse the Feature Description
 
-1. Parse the feature description provided in $ARGUMENTS
+1. Parse the feature description provided as your argument
 2. Extract key information: feature name, goals, key requirements, context
 
 ### Phase 2: Codebase Exploration
@@ -34,7 +44,7 @@ Tailor each prompt to the specific feature content.
 ### Phase 4: Specification Creation
 
 Launch `project-specifier` subagent with:
-- The full ticket details
+- The full feature description details
 - Synthesized context from exploration phase
 - List of key files discovered
 
@@ -70,12 +80,11 @@ Launch 3 `spec-reviewer` subagents (in parallel if possible) to review the specs
 
 If any reviewer returns NEEDS CHANGES or BLOCKING:
 1. Summarize the issues found to the user
-2. **IMPORTANT**: For non-obvious issues or design decisions that need user input, ask the user using the `AskUserQuestion` tool BEFORE proceeding
+2. **IMPORTANT**: For non-obvious issues or design decisions that need user input, ask the user before proceeding
 3. Once user has clarified their preferences, use the `project-specifier` agent to address the feedback and update the spec files
 4. Re-run the failing reviewers until all return APPROVED
 5. Present final summary to the user
 
 ### Phase 6: User Approval
 
-Ask the user to confirm the specification is ready for implementation using the `AskUserQuestion` tool.
-Only proceed to mark the project as ready once the user approves.
+Ask the user to confirm the specification is ready for implementation. Only proceed to mark the project as ready once the user approves.

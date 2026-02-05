@@ -173,17 +173,6 @@ Options:
 
 The main API container runs this automatically with 1 process and 1 thread. Adjust for development workloads as needed.
 
-## Testing Instructions
-
-### Frontend Tests
-Currently no dedicated test command; coverage using Vue component testing or E2E tests would go here.
-
-### API Tests
-```bash
-# Run Django tests (if configured)
-docker compose run --rm api python manage.py test
-```
-
 ### Pre-commit Validation
 
 Pre-commit runs linting and formatting checks:
@@ -424,7 +413,7 @@ docker compose logs frontend   # Frontend only
 3. Make changes to frontend/API
 4. Frontend auto-reloads on file changes
 5. Sync types if API changes: `docker compose run --rm frontend pnpm gen-types`
-6. Test via API client or frontend UI
+6. Verify via API client or frontend UI
 7. Run `pre-commit run --all-files` before committing
 8. Push and create PR
 

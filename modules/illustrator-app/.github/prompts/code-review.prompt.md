@@ -22,7 +22,6 @@ Launch 4 `code-reviewer` subagents (in parallel if possible), each with a specif
 - **Simplicity Reviewer**: "Review the staged changes (`git diff --staged`). Focus exclusively on simplicity, unnecessary abstractions, and code elegance. Question every line - can it be removed or simplified? Be ruthlessly critical."
 - **Correctness Reviewer**: "Review the staged changes (`git diff --staged`). Focus exclusively on bugs, logic errors, edge cases, null/undefined handling, and functional correctness. Will this code work correctly in all scenarios? Be ruthlessly critical."
 - **Conventions Reviewer**: "Review the staged changes (`git diff --staged`). Focus exclusively on project conventions (check CLAUDE.md), established patterns, naming, file organization, and proper use of existing abstractions. Does this follow codebase standards? Be ruthlessly critical."
-- **Test Reviewer**: "Review the staged changes (`git diff --staged`). Focus exclusively on test coverage. Domain work (queries, mutations, serializers) must have unit tests. Route changes should have Playwright E2E tests. Are tests present, correct, and covering edge cases? Be ruthlessly critical."
 
 ### Phase 3: Consolidate Feedback
 

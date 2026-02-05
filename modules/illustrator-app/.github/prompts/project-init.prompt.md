@@ -65,11 +65,11 @@ The subagent will:
 - Decisions made during clarification
 
 **tasks.md** (actionable battleplan):
-- Ordered implementation checklist
-- Grouped by phase: Database → Domain → Components → Routes → E2E Tests → Cleanup
+- Ordered implementation checklist using markdown task lists (`- [ ]`)
+- Grouped by phase: Database → Domain → Components → Routes → Cleanup
 - Each task is atomic (single logical unit)
 - Each chunk of atomic tasks should be <200 LoC for easy review
-- Tests co-located with functionality they test
+- Keep tasks scoped to single logical changes
 
 ### Phase 5: Specification Review
 

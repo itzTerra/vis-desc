@@ -35,7 +35,6 @@ const emit = defineEmits<{
 
 const imagesContainer = ref<HTMLElement | null>(null);
 const EDITOR_WIDTH = 512;
-const PDF_COORDINATE_HEIGHT = 850; // Typical PDF coordinate height from polygon data.
 
 function getHighlightText(highlightId: number): string {
   const highlight = props.highlights.find(h => h.id === highlightId);
@@ -46,12 +45,12 @@ function getEditorPositionStyle(highlightId: number) {
   const highlight = props.highlights.find(h => h.id === highlightId);
   if (!highlight) return {};
 
-  const polygons = highlight.polygons[props.currentPage];
+  const polygons = highlight.polygons[props.currentPage - 1];
   if (!polygons || !polygons[0]) return {};
 
   // Vertical position: align with highlight's Y coordinate (minimum Y of all polygon points)
   const minY = Math.min(...polygons.map(p => p[1]));
-  const topOffset = (minY / PDF_COORDINATE_HEIGHT) * props.pageHeight;
+  const topOffset = minY * props.pageHeight;
 
   return {
     top: `${topOffset}px`,

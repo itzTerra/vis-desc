@@ -60,9 +60,9 @@
                 <Icon v-if="getSparkleIndex(highlight.score) >= 4" name="lucide:sparkle" size="10" class="self-start ms-[-8px]" /> <!-- 4 80-94 -->
               </div>
             </div>
-            <button class="btn btn-sm btn-primary w-full" :disabled="!highlight.text" @click="$emit('genImage', highlight.id)">
-              <span v-if="highlight.imageLoading" class="loading loading-spinner loading-sm" />
-              <Icon name="lucide:book-image" size="22" /> Illustrate
+            <button class="btn btn-sm btn-primary w-full" :disabled="!highlight.text" @click="$emit('open-editor', highlight.id)">
+              <Icon name="lucide:pencil" />
+              Enhance with AI
             </button>
           </div>
         </div>
@@ -84,7 +84,7 @@ const props = defineProps<{
 
 defineEmits<{
   select: [index: number],
-  genImage: [highlightId: number],
+  "open-editor": [highlightId: number],
 }>();
 
 const highlightRefs = ref<HTMLElement[]>([]);
@@ -99,8 +99,6 @@ interface HighlightRenderData {
   hasSiblings: boolean;
   text: string;
   score?: number;
-  imageLoading?: boolean;
-  imageUrl?: string;
 }
 
 function getSparkleIndex(score: number): number {
@@ -124,8 +122,6 @@ const pageMap = computed<PageMap>(() => {
     hasSiblings: boolean;
     text: string;
     score?: number;
-    imageLoading?: boolean;
-    imageUrl?: string;
   }[]> = {};
   for (const seg of props.highlights) {
     for (const [page, poly] of Object.entries(seg.polygons)) {

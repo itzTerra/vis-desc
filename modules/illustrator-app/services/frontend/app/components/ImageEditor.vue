@@ -47,9 +47,9 @@
         </template>
 
         <!-- Generated Image Display (INSIDE editor) -->
-        <div v-if="hasImage" class="border rounded p-2">
+        <div v-if="hasImage || generateLoading" class="border rounded p-2">
           <img v-if="imageUrl" :src="imageUrl" class="w-full h-auto" alt="Generated image">
-          <div v-if="imageLoading" class="flex justify-center items-center h-32">
+          <div v-if="generateLoading" class="flex justify-center items-center h-32">
             <Icon name="lucide:loader" class="animate-spin" size="32" />
           </div>
         </div>
@@ -108,7 +108,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
 import { useEditorHistory } from "~/composables/useEditorHistory";
 
 const props = defineProps<{
@@ -125,7 +124,6 @@ const currentPrompt = ref(props.initialText);
 
 // Editor owns image state
 const imageUrl = ref<string | null>(null);
-const imageLoading = ref(false);
 const enhanceLoading = ref(false);
 const generateLoading = ref(false);
 
@@ -135,12 +133,31 @@ const {
   currentHistoryItem,
   isAtStart,
   isAtEnd,
+  addToHistory: _addToHistory,
   navigatePrevious,
   navigateNext,
   clearHistory,
 } = useEditorHistory();
 
 const hasImage = computed(() => !!imageUrl.value);
+
+watch(currentHistoryItem, (item) => {
+  if (item) {
+    currentPrompt.value = item.text;
+  }
+});
+
+watch(imageUrl, (newUrl, oldUrl) => {
+  if (oldUrl?.startsWith("blob:")) {
+    URL.revokeObjectURL(oldUrl);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (imageUrl.value?.startsWith("blob:")) {
+    URL.revokeObjectURL(imageUrl.value);
+  }
+});
 
 function handleEnhance() {
   // Implemented in Task 4.2

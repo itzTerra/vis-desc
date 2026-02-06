@@ -61,8 +61,7 @@
               </div>
             </div>
             <button class="btn btn-sm btn-primary w-full" :disabled="!highlight.text" @click="$emit('open-editor', highlight.id)">
-              <Icon name="lucide:pencil" />
-              Enhance with AI
+              <Icon name="lucide:book-image" size="22" /> Illustrate
             </button>
           </div>
         </div>
@@ -134,8 +133,6 @@ const pageMap = computed<PageMap>(() => {
         hasSiblings: Object.keys(seg.polygons).length > 1,
         text: seg.text,
         score: seg.score,
-        imageLoading: seg.imageLoading,
-        imageUrl: seg.imageUrl,
       });
     }
   }
@@ -167,8 +164,6 @@ const pageMap = computed<PageMap>(() => {
         hasSiblings: p.hasSiblings,
         text: p.text,
         score: p.score,
-        imageLoading: p.imageLoading,
-        imageUrl: p.imageUrl,
       });
     }
   }

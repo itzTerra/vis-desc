@@ -133,7 +133,7 @@ const {
   currentHistoryItem,
   isAtStart,
   isAtEnd,
-  addToHistory: _addToHistory,
+  addToHistory,
   navigatePrevious,
   navigateNext,
   clearHistory,
@@ -159,12 +159,67 @@ onBeforeUnmount(() => {
   }
 });
 
-function handleEnhance() {
-  // Implemented in Task 4.2
+async function handleEnhance() {
+  if (!currentPrompt.value.trim()) return;
+
+  enhanceLoading.value = true;
+
+  try {
+    const { $api: call } = useNuxtApp();
+    
+    const res = await call("/api/enhance", {
+      method: "POST",
+      body: { text: currentPrompt.value },
+    });
+
+    if (!res || !res.text) {
+      useNotifier().error("Enhance failed");
+      return;
+    }
+
+    currentPrompt.value = res.text;
+    addToHistory(currentPrompt.value);
+    
+    useNotifier().success("Prompt enhanced");
+  } catch (error) {
+    useNotifier().error("Enhance request failed");
+    console.error(error);
+  } finally {
+    enhanceLoading.value = false;
+  }
 }
 
-function handleGenerate() {
-  // Implemented in Task 4.3
+async function handleGenerate() {
+  if (!currentPrompt.value.trim()) return;
+
+  generateLoading.value = true;
+
+  try {
+    const { $api: call } = useNuxtApp();
+
+    const res = await call("/api/gen-image-bytes", {
+      method: "POST",
+      body: { text: currentPrompt.value },
+    });
+
+    if (!res) {
+      useNotifier().error("Image generation failed");
+      return;
+    }
+
+    const blob = new Blob([res as any], { type: "image/png" });
+    const url = URL.createObjectURL(blob);
+
+    imageUrl.value = url;
+    addToHistory(currentPrompt.value, url);
+
+    useNotifier().success("Image generated");
+  } catch (error) {
+    useNotifier().error("Image generation failed");
+    console.error(error);
+  } finally {
+    generateLoading.value = false;
+  }
 }
 
 function handleDelete() {

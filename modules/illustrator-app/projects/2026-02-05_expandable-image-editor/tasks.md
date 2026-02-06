@@ -893,9 +893,17 @@ Then developers can call `window.__nuxt__.$editorDebug.openImageEditor(highlight
   - `isExpanded`: toggle for expand/collapse
   - `currentPrompt`: current textarea value
   - `imageUrl`: ref to generated image URL
-  - `imageLoading`: loading state for image rendering
   - `enhanceLoading`: Enhance button loading state
   - `generateLoading`: Generate button loading state
+
+**Critical Fixes Applied** (Post-Implementation):
+- ✅ Removed explicit Vue imports (`import { computed, ref } from "vue"`) - Nuxt auto-imports these
+- ✅ Added `addToHistory` to `useEditorHistory()` destructuring (prefixed with `_` for future use in Tasks 4.2-4.3)
+- ✅ Removed unnecessary `imageLoading` ref - replaced with `generateLoading` state
+- ✅ Updated image display to show during loading: `v-if="hasImage || generateLoading"`
+- ✅ Added history text synchronization: `watch(currentHistoryItem)` updates textarea when navigating history
+- ✅ Fixed memory leak: Added watchers to revoke blob URLs on change and component unmount
+- ✅ TypeScript compiles without errors, ESLint passes all checks
 
 **Component Features**:
 - **Expanded view**: Shows textarea, Enhance/Generate buttons, image display, history navigation, delete button
@@ -906,7 +914,7 @@ Then developers can call `window.__nuxt__.$editorDebug.openImageEditor(highlight
 - **Placeholder methods**: `handleEnhance()` and `handleGenerate()` ready for Tasks 4.2-4.3
 
 **Verification Checklist**:
-- ✅ TypeScript compilation: No errors, unused imports removed
+- ✅ TypeScript compilation: No errors
 - ✅ ESLint validation: Passes all checks
 - ✅ Component renders with collapse button visible on LEFT edge
 - ✅ Collapse button positioned with negative left value (left: -20px)
@@ -919,9 +927,12 @@ Then developers can call `window.__nuxt__.$editorDebug.openImageEditor(highlight
 - ✅ All content positioned on RIGHT side of screen (component width: 100%)
 - ✅ Styles apply correctly with DaisyUI classes
 - ✅ Transition effects for slide animation
+- ✅ No explicit Vue imports (uses Nuxt auto-imports)
+- ✅ Memory leak prevention: blob URLs revoked properly
+- ✅ History navigation updates textarea content
 
 **Architecture Decisions**:
-- Image state (`imageUrl`, `imageLoading`) owned by ImageEditor component, not highlight
+- Image state (`imageUrl`) owned by ImageEditor component, not highlight
 - History state managed independently by each editor via composable
 - No parent state management required for individual editors
 - Multiple editors can coexist without state conflicts

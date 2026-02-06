@@ -18,3 +18,14 @@
   name: "light";
   default: false;
 }
+
+/* Hide Tailwind outline on buttons and inputs */
+* {
+  @apply appearance-none outline-none;
+}
+*:focus {
+  @apply appearance-none outline-none;
+}
+
+@import "~/assets/css/main.css";
+@import "~/assets/css/transitions.css";

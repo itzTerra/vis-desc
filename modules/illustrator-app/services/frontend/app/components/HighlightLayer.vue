@@ -4,7 +4,7 @@
       v-for="[pageNum, page] in pageMap.entries().filter(([pageNum]) => (pageNum + 1) in pageVisibility && pageVisibility[pageNum + 1])"
       :key="pageNum"
       :data-page="pageNum + 1"
-      style="position: absolute; z-index: 5;"
+      style="position: absolute;"
       :style="getHighlightPageStyle(pageNum)"
     >
       <div
@@ -38,7 +38,7 @@
           </svg>
         </div>
         <div
-          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box z-1 p-2 shadow-sm w-32"
+          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box p-2 shadow-sm w-32"
           v-on="highlight.hasSiblings ? {
             mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
             mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),
@@ -60,7 +60,12 @@
                 <Icon v-if="getSparkleIndex(highlight.score) >= 4" name="lucide:sparkle" size="10" class="self-start ms-[-8px]" /> <!-- 4 80-94 -->
               </div>
             </div>
-            <button class="btn btn-sm btn-primary w-full" :disabled="!highlight.text" @click="$emit('open-editor', highlight.id)">
+            <button
+              class="btn btn-sm btn-primary w-full"
+              :disabled="!highlight.text"
+              @mousedown.prevent
+              @click="$emit('open-editor', highlight.id)"
+            >
               <Icon name="lucide:book-image" size="22" /> Illustrate
             </button>
           </div>

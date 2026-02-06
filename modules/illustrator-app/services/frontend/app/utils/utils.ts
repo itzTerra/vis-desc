@@ -140,4 +140,8 @@ async function scrollIntoView(
   });
 }
 
-export { easeInExpo, assertIsDefined, scrollIntoView };
+function clamp(v: number, min: number, max: number) {
+  return v < min ? min : (v > max ? max : v);
+}
+
+export { easeInExpo, assertIsDefined, scrollIntoView, clamp };

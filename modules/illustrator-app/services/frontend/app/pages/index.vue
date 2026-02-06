@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col sm:flex-row gap-3 justify-between sm:items-center sticky top-0 z-10 h-[114px] sm:h-[58px]"
+      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col sm:flex-row gap-3 justify-between sm:items-center sticky top-0 z-50 h-[114px] sm:h-[58px]"
     >
       <div class="flex items-center flex-grow-1 w-100">
         <div class="flex items-end gap-4 flex-grow-1">

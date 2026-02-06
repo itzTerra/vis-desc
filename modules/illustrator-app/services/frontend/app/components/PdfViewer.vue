@@ -49,6 +49,7 @@
     </ClientOnly>
     <ImageLayer
       ref="imageLayer"
+      :pdf-embed-wrapper="pdfEmbedWrapper"
       :highlights="highlights"
       :open-editor-ids="openEditorIds"
       :page-aspect-ratio="pageAspectRatio"

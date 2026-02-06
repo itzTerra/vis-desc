@@ -25,7 +25,7 @@
           </button>
         </div>
       </summary>
-      <div class="menu dropdown-content bg-base-300 rounded-b-box z-1 w-full p-2 shadow flex flex-col gap-2 max-h-[90vh]">
+      <div class="menu dropdown-content bg-base-300 rounded-b-box w-full p-2 shadow flex flex-col gap-2 max-h-[90vh]">
         <label class="label space-x-1">
           <input v-model="filterSelectedOnly" type="checkbox" class="toggle toggle-sm toggle-primary">
           <span>Selected only</span>

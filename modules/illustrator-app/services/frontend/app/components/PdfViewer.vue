@@ -43,19 +43,21 @@
           :page-visibility="pageVisibility"
           :default-page-size="{ width: pdfWidthScaled, height: pdfPageHeight }"
           @select="toggleHighlightSelection"
-          @gen-image="genImage"
+          @open-editor="openImageEditor"
         />
       </div>
     </ClientOnly>
     <ImageLayer
       ref="imageLayer"
       :highlights="highlights"
+      :open-editor-ids="openEditorIds"
       :page-aspect-ratio="pageAspectRatio"
-      :pdf-embed-wrapper="pdfEmbedWrapper"
       :page-refs="pageRefs"
       :page-height="pdfPageHeight"
+      :current-page="currentPage"
       :style="{ width: IMAGES_WIDTH + 'px' }"
       data-help-target="images"
+      @close-editor="closeImageEditor"
     />
     <div class="fixed bottom-0 left-0 flex justify-center z-200">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">
@@ -121,7 +123,6 @@ defineEmits<{
 const pdfUrlComputed = computed(() => props.pdfUrl);
 
 const nuxtApp = useNuxtApp();
-const call = nuxtApp.$api;
 const highlightLayer = ref<InstanceType<typeof import("~/components/HighlightLayer.vue").default> | null>(null);
 const imageLayer = ref<InstanceType<typeof import("~/components/ImageLayer.vue").default> | null>(null);
 const pdfEmbedWrapper = ref<HTMLElement | null>(null);
@@ -132,6 +133,16 @@ const pdfScale = ref(1);
 const pdfWidth = ref<number>(800);
 const pdfWidthScaled = computed(() => pdfWidth.value * pdfScale.value);
 const textLayerEnabled = ref(false);
+
+const openEditorIds = ref(new Set<number>());
+
+function openImageEditor(highlightId: number) {
+  openEditorIds.value.add(highlightId);
+}
+
+function closeImageEditor(highlightId: number) {
+  openEditorIds.value.delete(highlightId);
+}
 
 async function setPdfScale(scale: number) {
   if (isNaN(scale)) return;
@@ -260,29 +271,6 @@ function toggleHighlightSelection(id: number) {
   } else {
     selectedHighlights.value.add(id);
   }
-}
-
-async function genImage(highlightId: number) {
-  const realHighlight = highlights.value.find(h => h.id === highlightId);
-  if (!realHighlight) return;
-
-  realHighlight.imageLoading = true;
-  const res = await call("/api/gen-image-bytes", {
-    method: "POST",
-    body: { text: realHighlight.text }
-  });
-  if (!res) {
-    realHighlight.imageLoading = false;
-    useNotifier().error("Failed to generate image");
-    return;
-  }
-  const blob = new Blob([res as any], { type: "image/png" });
-  const url = URL.createObjectURL(blob);
-  console.log("Image URL:", url);
-  realHighlight.imageUrl = url;
-  realHighlight.imageLoading = false;
-  imageLayer.value?.bringImageToFront(realHighlight);
-  return { blob, url };
 }
 
 function reset() {

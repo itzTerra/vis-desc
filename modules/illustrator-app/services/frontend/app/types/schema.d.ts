@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/enhance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enhance Text */
+        post: operations["core_api_enhance_text"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -118,7 +135,7 @@ export interface components {
          * Evaluator
          * @enum {string}
          */
-        Evaluator: "minilm_svm" | "nli_roberta" | "random";
+        Evaluator: "minilm_catboost" | "nli_roberta" | "random";
         /** ProcessPdfBody */
         ProcessPdfBody: {
             model: components["schemas"]["Evaluator"];
@@ -136,6 +153,16 @@ export interface components {
         };
         /** TextBody */
         TextBody: {
+            /** Text */
+            text: string;
+        };
+        /** EnhanceTextResponse */
+        EnhanceTextResponse: {
+            /** Text */
+            text: string;
+        };
+        /** EnhanceTextBody */
+        EnhanceTextBody: {
             /** Text */
             text: string;
         };
@@ -185,7 +212,7 @@ export interface operations {
                      * Evaluator
                      * @enum {string}
                      */
-                    model: "minilm_svm" | "nli_roberta" | "random";
+                    model: "minilm_catboost" | "nli_roberta" | "random";
                 };
             };
         };
@@ -220,7 +247,7 @@ export interface operations {
                      * Evaluator
                      * @enum {string}
                      */
-                    model: "minilm_svm" | "nli_roberta" | "random";
+                    model: "minilm_catboost" | "nli_roberta" | "random";
                 };
             };
         };
@@ -277,6 +304,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    core_api_enhance_text: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnhanceTextBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnhanceTextResponse"];
+                };
             };
         };
     };

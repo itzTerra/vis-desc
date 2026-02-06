@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.conf import settings
 import uuid
 from core.schemas import (
+    EnhanceTextBody,
+    EnhanceTextResponse,
     ProcessPdfBody,
     ProcessPdfResponse,
     ProcessPdfSegmentsOnlyResponse,
@@ -75,3 +77,9 @@ def gen_image(request, body: TextBody):
 def gen_image_bytes(request, body: TextBody):
     image_bytes = get_image_bytes(body.text, Provider.POLLINATIONS)
     return HttpResponse(image_bytes, content_type="image/png")
+
+
+@api.post("/enhance", response=EnhanceTextResponse)
+def enhance_text(request, body: EnhanceTextBody):
+    enhanced_text = f"{body.text} [enhanced]"
+    return {"text": enhanced_text}

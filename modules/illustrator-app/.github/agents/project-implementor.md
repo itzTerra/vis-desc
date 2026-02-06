@@ -2,15 +2,7 @@
 name: project-implementor
 description: Implements projects (features, refactors, improvements) from specifications in `./projects/` following codebase patterns
 tools:
-  - 'read/readFile'
-  - 'edit/editFiles'
-  - 'edit/editNotebook'
-  - 'edit/createFile'
-  - 'edit/createDirectory'
-  - 'execute/runInTerminal'
-  - 'search/textSearch'
-  - 'search/fileSearch'
-  - 'todo'
+  ['vscode/askQuestions', 'execute/runInTerminal', 'read/readFile', 'edit/createDirectory', 'edit/createFile', 'edit/editFiles', 'edit/editNotebook', 'search/fileSearch', 'search/textSearch', 'todo']
 ---
 
 You are a Project Implementation Specialist. You implement projects (features, refactors, improvements) from specifications in `./projects/` following codebase patterns.

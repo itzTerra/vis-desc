@@ -5,13 +5,14 @@ export function useEditorHistory() {
   const history = ref<EditorHistoryItem[]>([]);
   const historyIndex = ref(-1);
 
-  const currentHistoryItem = computed(() => {
-    if (historyIndex.value === -1) return null;
-    return history.value[historyIndex.value] || null;
-  });
+  const currentHistoryItem = computed(() =>
+    historyIndex.value === -1 ? null : history.value[historyIndex.value]
+  );
 
   const isAtStart = computed(() => historyIndex.value <= 0);
-  const isAtEnd = computed(() => historyIndex.value >= history.value.length - 1);
+  const isAtEnd = computed(() =>
+    historyIndex.value === -1 || historyIndex.value >= history.value.length - 1
+  );
 
   function addToHistory(text: string, imageUrl?: string) {
     // Deduplication: skip if text matches immediately previous entry
@@ -41,6 +42,11 @@ export function useEditorHistory() {
   }
 
   function navigateNext() {
+    // Edit mode is a terminal state for forward navigation
+    if (historyIndex.value === -1) {
+      return;
+    }
+
     if (historyIndex.value < history.value.length - 1) {
       historyIndex.value++;
     } else if (historyIndex.value === history.value.length - 1) {

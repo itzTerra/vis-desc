@@ -124,7 +124,7 @@ export type EditorState = {
 
 ---
 
-- [ ] Task 1.3: Add Backend Schema for Enhance Endpoint
+- [x] Task 1.3: Add Backend Schema for Enhance Endpoint
 **User Story**: User Enhances Prompt Text
 **Depends on**: Nothing
 **Effort**: 20 min
@@ -147,7 +147,7 @@ class EnhanceTextResponse(Schema):
 
 ## Phase 2: Backend API Setup
 
-- [ ] Task 2.1: Implement Enhance Endpoint (Stub)
+- [x] Task 2.1: Implement Enhance Endpoint (Stub)
 **User Story**: User Enhances Prompt Text
 **Depends on**: Task 1.3
 **Effort**: 30 min

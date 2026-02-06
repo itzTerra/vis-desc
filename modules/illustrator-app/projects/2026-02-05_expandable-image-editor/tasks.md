@@ -460,7 +460,7 @@ function loadHistoryItem() {
 
 ---
 
-- [ ] Task 4.2: Implement Enhance Handler
+- [x] Task 4.2: Implement Enhance Handler
 **User Story**: User Enhances Prompt Text (Story 2)
 **Depends on**: Task 4.1, Task 2.1
 **Effort**: 1 hour
@@ -509,7 +509,7 @@ async function handleEnhance() {
 
 ---
 
-- [ ] Task 4.3: Implement Generate Handler
+- [x] Task 4.3: Implement Generate Handler
 **User Story**: User Generates Image from Prompt (Story 3)
 **Depends on**: Task 4.1, Task 2.1 (existing endpoint)
 **Effort**: 1 hour
@@ -563,7 +563,7 @@ async function handleGenerate() {
 
 ## Phase 5: Parent Component Integration
 
-- [ ] Task 5.1: Render ImageEditor Components in ImageLayer's Template (Complete Replacement)
+- [x] Task 5.1: Render ImageEditor Components in ImageLayer's Template (Complete Replacement)
 **User Story**: All (integration point)
 **Depends on**: Task 4.1, Task 4.2, Task 4.3
 **Effort**: 1.5 hours
@@ -697,7 +697,7 @@ function getEditorPositionStyle(highlightId: number) {
 
 ---
 
-- [ ] Task 5.2: Connect HighlightLayer to ImageEditor Opener
+- [x] Task 5.2: Connect HighlightLayer to ImageEditor Opener
 **User Story**: User Expands Editor for Existing Generated Image (Story 1)
 **Depends on**: Task 5.1
 **Effort**: 1 hour

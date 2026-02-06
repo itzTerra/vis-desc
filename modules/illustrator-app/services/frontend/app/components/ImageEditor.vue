@@ -165,9 +165,7 @@ async function handleEnhance() {
   enhanceLoading.value = true;
 
   try {
-    const { $api: call } = useNuxtApp();
-    
-    const res = await call("/api/enhance", {
+    const res = await useNuxtApp().$api("/api/enhance", {
       method: "POST",
       body: { text: currentPrompt.value },
     });
@@ -195,9 +193,7 @@ async function handleGenerate() {
   generateLoading.value = true;
 
   try {
-    const { $api: call } = useNuxtApp();
-
-    const res = await call("/api/gen-image-bytes", {
+    const res = await useNuxtApp().$api("/api/gen-image-bytes", {
       method: "POST",
       body: { text: currentPrompt.value },
     });

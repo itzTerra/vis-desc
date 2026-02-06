@@ -176,7 +176,7 @@ def enhance_text(request, body: EnhanceTextBody):
 
 ## Phase 3: Frontend Composables
 
-- [ ] Task 3.1: Create useEditorHistory Composable
+- [x] Task 3.1: Create useEditorHistory Composable
 **User Story**: User Navigates Editor History (Story 4)
 **Depends on**: Task 1.1, Task 1.2
 **Effort**: 1.5 hours

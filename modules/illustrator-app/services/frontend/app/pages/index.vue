@@ -22,13 +22,15 @@
           @cancel="cancelSegmentLoading"
         />
       </div>
-      <HighlightNav
-        ref="highlightNav"
-        data-help-target="nav"
-        :highlights="highlights"
-        :selected-highlights="selectedHighlights"
-      />
-      <ThemeToggle data-help-target="theme" />
+      <div class="flex items-center gap-3 self-end">
+        <HighlightNav
+          ref="highlightNav"
+          data-help-target="nav"
+          :highlights="highlights"
+          :selected-highlights="selectedHighlights"
+        />
+        <ThemeToggle data-help-target="theme" />
+      </div>
     </div>
     <PdfViewer
       v-if="pdfUrl || showHelp"
@@ -136,7 +138,7 @@ function toggleHelp(toValue?: boolean) {
 }
 
 const helpPdfUrl = `${runtimeConfig.app.baseURL}sample.pdf`;
-const helpImageUrl = `${runtimeConfig.app.baseURL}sample.jpg`;
+// const helpImageUrl = `${runtimeConfig.app.baseURL}sample.jpg`;
 const helpSteps: Step[] = [
   // > Open model menu
   {
@@ -198,20 +200,21 @@ const helpSteps: Step[] = [
       firstHighlightEl?.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
     }
   },
+  // TODO update
   // > Show a static image
-  {
-    selector: "[data-help-target=\"images\"]",
-    title: "Image Viewer",
-    message: "View images generated from segments. Move generated images by holding left-click and dragging. Delete images by clicking on the x icon.",
-    position: "left",
-    onEnter: () => {
-      highlights[1].imageLoading = true;
-      setTimeout(() => {
-        highlights[1].imageUrl = helpImageUrl;
-        highlights[1].imageLoading = false;
-      }, 1000);
-    },
-  },
+  // {
+  //   selector: "[data-help-target=\"images\"]",
+  //   title: "Image Viewer",
+  //   message: "View images generated from segments. Move generated images by holding left-click and dragging. Delete images by clicking on the x icon.",
+  //   position: "left",
+  //   onEnter: () => {
+  //     highlights[1].imageLoading = true;
+  //     setTimeout(() => {
+  //       highlights[1].imageUrl = helpImageUrl;
+  //       highlights[1].imageLoading = false;
+  //     }, 1000);
+  //   },
+  // },
   {
     selector: "[data-help-target=\"theme\"]",
     title: "Theme Switch",

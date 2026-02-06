@@ -1,5 +1,5 @@
 <template>
-  <div class="image-editor relative bg-base-100 border-l border-base-300 flex flex-col h-full" style="width: 100%;">
+  <div class="image-editor relative bg-base-100 border-l border-base-300 flex flex-col" style="width: 100%;">
     <!-- Collapse Button (protrudes LEFT into PDF viewer area) -->
     <button
       class="btn btn-sm btn-circle absolute top-2 z-10"
@@ -100,13 +100,6 @@
           <div v-if="currentHistoryItem" class="bg-base-200 p-2 rounded text-xs mb-2 max-h-20 overflow-auto">
             {{ currentHistoryItem.text }}
           </div>
-          <button
-            class="btn btn-xs btn-outline w-full"
-            aria-label="Clear all history"
-            @click="clearHistory"
-          >
-            Clear History
-          </button>
         </div>
 
         <!-- Delete Button -->
@@ -139,6 +132,8 @@ const emit = defineEmits<{
   delete: [];
 }>();
 
+const { $api } = useNuxtApp();
+
 const isExpanded = ref(false);
 const currentPrompt = ref(props.initialText);
 
@@ -156,7 +151,6 @@ const {
   addToHistory,
   navigatePrevious,
   navigateNext,
-  clearHistory,
 } = useEditorHistory();
 
 const hasImage = computed(() => !!imageUrl.value);
@@ -193,7 +187,7 @@ async function handleEnhance() {
   enhanceLoading.value = true;
 
   try {
-    const res = await useNuxtApp().$api("/api/enhance", {
+    const res = await $api("/api/enhance", {
       method: "POST",
       body: { text: currentPrompt.value },
     });
@@ -221,7 +215,7 @@ async function handleGenerate() {
   generateLoading.value = true;
 
   try {
-    const res = await useNuxtApp().$api("/api/gen-image-bytes", {
+    const res = await $api("/api/gen-image-bytes", {
       method: "POST",
       body: { text: currentPrompt.value },
     });

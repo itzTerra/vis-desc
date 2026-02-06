@@ -274,7 +274,7 @@ function toggleHighlightSelection(id: number) {
 }
 
 function reset() {
-  imageLayer.value?.reset();
+  openEditorIds.value.clear();
   pageVisibility.value = {};
   pageIntersectionRatios.clear();
   currentPage.value = 1;

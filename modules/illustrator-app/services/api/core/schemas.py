@@ -39,3 +39,11 @@ class ProcessPdfResponse(Schema):
 
 class ProcessPdfBody(Schema):
     model: Evaluator
+
+
+class EnhanceTextBody(Schema):
+    text: str
+
+
+class EnhanceTextResponse(Schema):
+    text: str

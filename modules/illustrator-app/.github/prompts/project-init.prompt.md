@@ -12,6 +12,7 @@ tools:
   - 'edit/createDirectory'
   - 'web/fetch'
   - 'agent/runSubagent'
+  - 'vscode/askQuestions'
 ---
 
 ## Your task

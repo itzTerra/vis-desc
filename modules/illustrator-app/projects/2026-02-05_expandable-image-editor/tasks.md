@@ -263,7 +263,7 @@ export function useEditorHistory() {
 
 ## Phase 4: Component Structure
 
-- [ ] Task 4.1: Create ImageEditor Component Shell
+- [x] Task 4.1: Create ImageEditor Component Shell
 **User Story**: User Expands Editor for Existing Generated Image (Story 1)
 **Depends on**: Task 1.2, Task 3.1
 **Effort**: 1 hour
@@ -874,4 +874,62 @@ useNuxtApp().$editorDebug = { openImageEditor }
 ```
 
 Then developers can call `window.__nuxt__.$editorDebug.openImageEditor(highlightId)` in console.
+
+---
+
+## Review
+
+### Completed Tasks
+
+#### Task 4.1: Create ImageEditor Component Shell ✅
+
+**What was implemented**:
+- Created `services/frontend/app/components/ImageEditor.vue` with full Vue 3 Composition API implementation
+- Component receives `highlightId` and `initialText` as props
+- Emits `delete` event when delete button is clicked
+- Uses `useEditorHistory` composable for history management
+- Collapse button positioned with `left: -20px` to protrude into PDF viewer area
+- Component state includes:
+  - `isExpanded`: toggle for expand/collapse
+  - `currentPrompt`: current textarea value
+  - `imageUrl`: ref to generated image URL
+  - `imageLoading`: loading state for image rendering
+  - `enhanceLoading`: Enhance button loading state
+  - `generateLoading`: Generate button loading state
+
+**Component Features**:
+- **Expanded view**: Shows textarea, Enhance/Generate buttons, image display, history navigation, delete button
+- **Collapsed view**: Shows collapse button + generated image (if exists)
+- **Image display**: Images render INSIDE the editor component below buttons
+- **History section**: Displays when `history.length > 0` with previous/next navigation
+- **Deduplication**: Managed by `useEditorHistory` composable
+- **Placeholder methods**: `handleEnhance()` and `handleGenerate()` ready for Tasks 4.2-4.3
+
+**Verification Checklist**:
+- ✅ TypeScript compilation: No errors, unused imports removed
+- ✅ ESLint validation: Passes all checks
+- ✅ Component renders with collapse button visible on LEFT edge
+- ✅ Collapse button positioned with negative left value (left: -20px)
+- ✅ Click expand/collapse toggles `isExpanded` visibility
+- ✅ Textarea visible when no image exists (`!hasImage`)
+- ✅ Generated image displays INSIDE editor (below textarea/buttons)
+- ✅ When collapsed with image: only collapse button + image visible
+- ✅ Delete button shows when expanded
+- ✅ History section displays when history has entries
+- ✅ All content positioned on RIGHT side of screen (component width: 100%)
+- ✅ Styles apply correctly with DaisyUI classes
+- ✅ Transition effects for slide animation
+
+**Architecture Decisions**:
+- Image state (`imageUrl`, `imageLoading`) owned by ImageEditor component, not highlight
+- History state managed independently by each editor via composable
+- No parent state management required for individual editors
+- Multiple editors can coexist without state conflicts
+- Ready for integration with PdfViewer (Task 5.1) and HighlightLayer (Task 5.2)
+
+**Next Tasks**:
+- Task 4.2: Implement Enhance handler (`handleEnhance()`)
+- Task 4.3: Implement Generate handler (`handleGenerate()`)
+- Task 5.1: Integrate with PdfViewer to manage `openEditorIds`
+- Task 5.2: Update HighlightLayer to render ImageEditor components
 

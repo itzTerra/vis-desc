@@ -18,9 +18,10 @@
 
 ## Routes
 
-- [ ] Confirm export flow works within the existing index page without new routes.
+- [x] Confirm export flow works within the existing index page without new routes.
 
 ## Cleanup
 
 - [ ] Update help copy or guidance text to mention the HTML export.
 - [ ] Manual verification: export with and without images, lazy loading behavior, modal image preview size, offline usage.
+- [ ] **Known Limitation**: Current implementation loads pdfjs-dist main library from CDN for optimal file size. To achieve true offline single-file export, the entire pdfjs-dist library would need to be bundled inline, significantly increasing export file size. Consider using service worker caching or alternative lighter PDF viewers for future iterations.

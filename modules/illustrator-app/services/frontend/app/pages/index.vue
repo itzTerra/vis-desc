@@ -17,6 +17,7 @@
             v-if="pdfUrl"
             class="btn btn-sm btn-outline"
             title="Export as HTML"
+            data-help-target="export"
             :disabled="isLoading !== null || highlights.length === 0"
             @click="showExportDialog = true"
           >
@@ -236,6 +237,12 @@ const helpSteps: Step[] = [
   //     }, 1000);
   //   },
   // },
+  {
+    selector: "[data-help-target=\"export\"]",
+    title: "Export as HTML",
+    message: "Export your PDF and generated images as a single standalone HTML file. The exported file includes your PDF with all pages lazy-loaded for performance, and a gallery of generated images that can be viewed in a modal. The HTML export works offline without external dependencies.",
+    position: "bottom"
+  },
   {
     selector: "[data-help-target=\"theme\"]",
     title: "Theme Switch",

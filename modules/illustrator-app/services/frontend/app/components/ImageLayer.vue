@@ -7,6 +7,7 @@
       <ImageEditor
         v-for="editorId in openEditorIds"
         :key="editorId"
+        ref="editorRefs"
         :highlight-id="editorId"
         :initial-text="getHighlightText(editorId)"
         :style="getEditorPositionStyle(editorId)"
@@ -254,5 +255,25 @@ function bringImageToFront(highlightId: number) {
 function closeImageEditor(highlightId: number) {
   emit("close-editor", highlightId);
 }
+
+const editorRefs = ref<Array<InstanceType<typeof ImageEditor> | null>>([]);
+
+function getExportImages(): Record<number, Blob> {
+  const result: Record<number, Blob> = {};
+  
+  for (const editor of editorRefs.value) {
+    if (!editor) continue;
+    const exportData = editor.getExportImage();
+    if (exportData) {
+      result[exportData.highlightId] = exportData.imageBlob;
+    }
+  }
+  
+  return result;
+}
+
+defineExpose({
+  getExportImages
+});
 </script>
 

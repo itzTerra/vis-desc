@@ -22,6 +22,7 @@ export type Highlight = {
 export type EditorHistoryItem = {
   text: string;
   imageUrl?: string;
+  imageBlob?: Blob;
 };
 
 export type EditorState = {

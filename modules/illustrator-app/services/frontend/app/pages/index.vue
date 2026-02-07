@@ -13,6 +13,16 @@
             @change="handleFileUpload"
           >
           <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
+          <button
+            v-if="pdfUrl"
+            class="btn btn-sm btn-outline"
+            title="Export as HTML"
+            :disabled="isLoading !== null || highlights.length === 0"
+            @click="showExportDialog = true"
+          >
+            <Icon name="lucide:download" size="18" />
+            Export
+          </button>
         </div>
         <EvalProgress
           data-help-target="progress"
@@ -34,6 +44,7 @@
     </div>
     <PdfViewer
       v-if="pdfUrl || showHelp"
+      ref="pdfViewer"
       v-model:highlights="highlights"
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
@@ -86,6 +97,12 @@
       @confirm="confirmModelDownload"
       @cancel="cancelModelDownload"
     />
+    <ExportDialog
+      :is-open="showExportDialog"
+      :image-count="exportedImageCount"
+      @confirm="handleExportConfirm"
+      @cancel="showExportDialog = false"
+    />
     <BackToTop />
     <Alert />
   </div>
@@ -121,6 +138,9 @@ const highlightsHelpBackup: Highlight[] = [];
 const showModelDownloadDialog = ref(false);
 const modelManagerRef = ref<InstanceType<typeof ModelManager> | null>(null);
 const modelManagerExpanded = ref(false);
+const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
+const showExportDialog = ref(false);
+const { confirmExport } = useExport();
 
 function toggleHelp(toValue?: boolean) {
   showHelp.value = toValue !== undefined ? toValue : !showHelp.value;
@@ -355,6 +375,51 @@ function fullReset() {
   }
   pdfUrl.value = null;
   pdfFile.value = null;
+}
+
+const exportedImageCount = computed(() => {
+  if (!pdfViewer.value) return 0;
+  const imageLayer = pdfViewer.value.$refs.imageLayer;
+  if (!imageLayer || typeof imageLayer.getExportImages !== "function") return 0;
+  const images = imageLayer.getExportImages();
+  return Object.keys(images || {}).length;
+});
+
+async function handleExportConfirm(filename: string) {
+  try {
+    if (!pdfFile.value) {
+      useNotifier().error("PDF file is required for export");
+      return;
+    }
+
+    if (!pdfViewer.value) {
+      useNotifier().error("PDF viewer is not ready");
+      return;
+    }
+
+    const imageLayer = pdfViewer.value.$refs.imageLayer;
+    if (!imageLayer || typeof imageLayer.getExportImages !== "function") {
+      useNotifier().error("Image layer is not ready");
+      return;
+    }
+
+    const imageBlobs = imageLayer.getExportImages() || {};
+    const pageCount = pdfViewer.value.getPageCount?.() || 1;
+
+    await confirmExport(
+      pdfFile.value,
+      highlights,
+      imageBlobs,
+      pageCount,
+      filename
+    );
+
+    showExportDialog.value = false;
+    useNotifier().success("PDF exported successfully");
+  } catch (error) {
+    console.error("Export failed:", error);
+    useNotifier().error("Failed to export PDF");
+  }
 }
 
 function handleModelDownloadRequest(modelId: ModelId): boolean {

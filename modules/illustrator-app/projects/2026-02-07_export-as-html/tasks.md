@@ -5,16 +5,16 @@
 - [x] Retain the uploaded PDF bytes in app state for export (File or ArrayBuffer alongside `pdfUrl`).
 - [x] Extend editor history to store the latest generated image `Blob` for export.
 - [x] Expose `ImageEditor` getters via `defineExpose` and collect refs in `ImageLayer` to return `{ highlightId -> imageBlob }` for open editors.
-- [ ] Define the export data snapshot (PDF bytes + collected image blob map, convert blobs to data URLs at export time).
+- [x] Define the export data snapshot (PDF bytes + collected image blob map, convert blobs to data URLs at export time).
 - [x] Add `pdfjs-dist` as a frontend dependency and document the bundled version used for export.
-- [ ] Create the HTML export template that embeds data, loads `pdfjs-dist`, configures offline-friendly assets (system fonts, no `cMapUrl`), wires inline worker setup, and lazy page rendering.
-- [ ] Implement lazy loading in the exported HTML using IntersectionObserver.
+- [x] Create the HTML export template that embeds data, loads `pdfjs-dist`, configures offline-friendly assets (system fonts, no `cMapUrl`), wires inline worker setup, and lazy page rendering.
+- [x] Implement lazy loading in the exported HTML using IntersectionObserver.
 
 ## Components
 
-- [ ] Add an export action entry point in the viewer/top bar that opens an OS file modal.
-- [ ] Ensure export logic only includes image buttons for highlights whose current editor history item has an `imageUrl`.
-- [ ] Add exported HTML UI elements: image buttons and a responsive modal overlay viewer (max 512x512).
+- [x] Add an export action entry point in the viewer/top bar that opens an OS file modal.
+- [x] Ensure export logic only includes image buttons for highlights whose current editor history item has an `imageUrl`.
+- [x] Add exported HTML UI elements: image buttons and a responsive modal overlay viewer (max 512x512).
 
 ## Routes
 

@@ -14,7 +14,7 @@ export function useEditorHistory() {
     historyIndex.value >= history.value.length - 1
   );
 
-  function addToHistory(text: string, imageUrl?: string) {
+  function addToHistory(text: string, imageUrl?: string, imageBlob?: Blob) {
     // Deduplication: skip if text matches immediately previous entry
     const lastItem = history.value[history.value.length - 1];
     if (lastItem && lastItem.text === text && (lastItem.imageUrl === imageUrl || !imageUrl)) {
@@ -22,12 +22,13 @@ export function useEditorHistory() {
     }
 
     if (lastItem && lastItem.text === text && !lastItem.imageUrl && imageUrl) {
-      // If only imageUrl is new, update the last entry instead of adding a new one
+      // If only imageUrl and imageBlob are new, update the last entry instead of adding a new one
       lastItem.imageUrl = imageUrl;
+      lastItem.imageBlob = imageBlob;
       return;
     }
 
-    const newItem: EditorHistoryItem = { text, imageUrl };
+    const newItem: EditorHistoryItem = { text, imageUrl, imageBlob };
 
     history.value.push(newItem);
     historyIndex.value = history.value.length - 1;

@@ -215,7 +215,7 @@ async function handleGenerate() {
     const blob = new Blob([res as any], { type: "image/png" });
     const url = URL.createObjectURL(blob);
 
-    addToHistory(prompt, url);
+    addToHistory(prompt, url, blob);
 
     useNotifier().success("Image generated");
   } catch (error) {
@@ -229,6 +229,19 @@ async function handleGenerate() {
 function handleDelete() {
   emit("delete");
 }
+
+function getExportImage() {
+  const item = currentHistoryItem.value;
+  if (!item?.imageBlob) return null;
+  return {
+    highlightId: props.highlightId,
+    imageBlob: item.imageBlob
+  };
+}
+
+defineExpose({
+  getExportImage
+});
 
 onBeforeUnmount(() => {
   if (imageUrl.value?.startsWith("blob:")) {

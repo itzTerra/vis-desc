@@ -104,6 +104,7 @@ const { $api: call, callHook, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
+const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
 const modelSelect = ref<ModelId>(MODELS.filter(model => !model.disabled)[0].id);
 const pendingModel = ref<TModelInfo | null>(null);
@@ -232,6 +233,7 @@ const handleFileUpload = async (event: any) => {
   fullReset();
 
   isLoading.value = Date.now();
+  pdfFile.value = file;
   pdfUrl.value = URL.createObjectURL(file);
   const formData = new FormData();
   formData.append("pdf", file, file.name);
@@ -348,7 +350,11 @@ function fullReset() {
   highlightNav.value?.reset();
   selectedHighlights.clear();
   highlights.length = 0;
+  if (pdfUrl.value) {
+    URL.revokeObjectURL(pdfUrl.value);
+  }
   pdfUrl.value = null;
+  pdfFile.value = null;
 }
 
 function handleModelDownloadRequest(modelId: ModelId): boolean {
@@ -418,8 +424,14 @@ onMounted(() => {
     "📄 Load Example PDF",
     async () => {
       try {
-        // Load example PDF
-        pdfUrl.value = `${runtimeConfig.app.baseURL}example.pdf`;
+        const response = await fetch(`${runtimeConfig.app.baseURL}example.pdf`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch example PDF: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const file = new File([blob], "example.pdf", { type: "application/pdf" });
+        pdfFile.value = file;
+        pdfUrl.value = URL.createObjectURL(file);
 
         // Load example segments JSON after PDF is rendered
         pdfRenderedQueue.push(async () => {

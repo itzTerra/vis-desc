@@ -260,7 +260,7 @@ const editorRefs = ref<Array<InstanceType<typeof ImageEditor> | null>>([]);
 
 function getExportImages(): Record<number, Blob> {
   const result: Record<number, Blob> = {};
-  
+
   for (const editor of editorRefs.value) {
     if (!editor) continue;
     const exportData = editor.getExportImage();
@@ -268,7 +268,7 @@ function getExportImages(): Record<number, Blob> {
       result[exportData.highlightId] = exportData.imageBlob;
     }
   }
-  
+
   return result;
 }
 

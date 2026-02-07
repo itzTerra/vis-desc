@@ -316,4 +316,9 @@ onBeforeUnmount(() => {
     clearTimeout(virtualScrollDebounce);
   }
 });
+
+defineExpose({
+  getPageCount: () => pageNums.value.length,
+  imageLayer,
+});
 </script>

@@ -17,8 +17,7 @@ export function useExport() {
   async function exportPdf(
     pdfFile: File | null,
     highlights: Highlight[],
-    imageBlobs: Record<number, Blob>,
-    pageCount: number
+    imageBlobs: Record<number, Blob>
   ): Promise<ExportResult> {
     if (!pdfFile) {
       throw new Error("PDF file is required for export");
@@ -30,8 +29,7 @@ export function useExport() {
       const snapshot = await createExportSnapshot(
         pdfFile,
         highlights,
-        imageBlobs,
-        pageCount
+        imageBlobs
       );
 
       const html = generateExportHtml(snapshot);
@@ -46,14 +44,12 @@ export function useExport() {
     pdfFile: File | null,
     highlights: Highlight[],
     imageBlobs: Record<number, Blob>,
-    pageCount: number,
     filename: string
   ): Promise<void> {
     const result = await exportPdf(
       pdfFile,
       highlights,
-      imageBlobs,
-      pageCount
+      imageBlobs
     );
     await downloadExport(result.html, filename);
   }

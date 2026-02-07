@@ -382,7 +382,7 @@ const exportedImageCount = computed(() => {
   const imageLayer = pdfViewer.value.$refs.imageLayer;
   if (!imageLayer || typeof imageLayer.getExportImages !== "function") return 0;
   const images = imageLayer.getExportImages();
-  return Object.keys(images || {}).length;
+  return Object.keys(images).length;
 });
 
 async function handleExportConfirm(filename: string) {
@@ -403,14 +403,12 @@ async function handleExportConfirm(filename: string) {
       return;
     }
 
-    const imageBlobs = imageLayer.getExportImages() || {};
-    const pageCount = pdfViewer.value.getPageCount?.() || 1;
+    const imageBlobs = imageLayer.getExportImages();
 
     await confirmExport(
       pdfFile.value,
       highlights,
       imageBlobs,
-      pageCount,
       filename
     );
 

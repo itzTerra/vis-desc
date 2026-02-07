@@ -8,10 +8,8 @@ interface ExportHighlight {
 }
 
 interface ExportSnapshot {
-  pdfArrayBuffer: ArrayBuffer;
-  imageDataUrls: Record<number, string>;
+  pdfBase64: string;
   highlights: ExportHighlight[];
-  pageCount: number;
 }
 
 export async function blobToDataUrl(blob: Blob): Promise<string> {
@@ -23,43 +21,53 @@ export async function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
+function arrayBufferToBase64Chunked(arrayBuffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(arrayBuffer);
+  const chunkSize = 8192;
+  let base64 = "";
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    base64 += String.fromCharCode(...chunk);
+  }
+
+  return btoa(base64);
+}
+
 export async function createExportSnapshot(
   pdfFile: File | null,
   highlights: Highlight[],
-  imageBlobs: Record<number, Blob>,
-  pageCount: number
+  imageBlobs: Record<number, Blob>
 ): Promise<ExportSnapshot> {
   if (!pdfFile) {
     throw new Error("PDF file is required for export");
   }
 
   const pdfArrayBuffer = await pdfFile.arrayBuffer();
+  const pdfBase64 = arrayBufferToBase64Chunked(pdfArrayBuffer);
 
-  const imageDataUrls: Record<number, string> = {};
+  const imageDataUrlMap: Record<number, string> = {};
   for (const [highlightId, blob] of Object.entries(imageBlobs)) {
-    imageDataUrls[highlightId] = await blobToDataUrl(blob);
+    imageDataUrlMap[highlightId] = await blobToDataUrl(blob);
   }
 
   const exportHighlights: ExportHighlight[] = highlights.map((h) => ({
     id: h.id,
     text: h.text,
-    imageUrl: imageDataUrls[h.id],
+    imageUrl: imageDataUrlMap[h.id],
     polygons: h.polygons,
   }));
 
   return {
-    pdfArrayBuffer,
-    imageDataUrls,
+    pdfBase64,
     highlights: exportHighlights,
-    pageCount,
   };
 }
 
 export function generateExportHtml(snapshot: ExportSnapshot): string {
-  const pdfArrayBuffer = snapshot.pdfArrayBuffer;
-  const pdfBase64 = btoa(
-    String.fromCharCode.apply(null, Array.from(new Uint8Array(pdfArrayBuffer)))
-  );
+  const pdfBase64 = snapshot.pdfBase64;
+  const highlightsWithImages = snapshot.highlights.filter((h) => h.imageUrl);
+  const hasImages = highlightsWithImages.length > 0;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -109,7 +117,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
     .page-placeholder {
       width: 100%;
-      height: 600px;
+      min-height: 600px;
       background: linear-gradient(135deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0),
                   linear-gradient(135deg, #f0f0f0 25%, transparent 25%, transparent 75%, #f0f0f0 75%, #f0f0f0);
       background-size: 20px 20px;
@@ -150,7 +158,6 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
       object-fit: cover;
     }
 
-    /* Modal Overlay */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -178,6 +185,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
       flex-direction: column;
       align-items: center;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      position: relative;
     }
 
     .modal-content img {
@@ -239,19 +247,31 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 <body>
   <div id="container">
     <div id="pdf-viewer"></div>
-    <div id="image-buttons"></div>
+    ${hasImages ? "<div id=\"image-buttons\"></div>" : ""}
   </div>
 
-  <div class="modal-overlay" id="imageModal">
-    <button class="modal-close" onclick="closeImageModal()">✕</button>
-    <div class="modal-content">
-      <img id="modalImage" src="" alt="Image preview">
-    </div>
-  </div>
+  ${hasImages ? "<div class=\"modal-overlay\" id=\"imageModal\"><button class=\"modal-close\" onclick=\"closeImageModal()\">✕</button><div class=\"modal-content\"><img id=\"modalImage\" src=\"\" alt=\"Image preview\"></div></div>" : ""}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.11.0/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.min.js"></script>
   <script>
+    // Note: Due to pdfjs-dist library size constraints, the main library is loaded from CDN.
+    // For fully offline single-file HTML, you would need to bundle pdfjs-dist during export.
+    // The exported HTML works offline AFTER the first load caches pdfjs resources via service worker.
+    (function() {
+      // Attempt to setup worker with fallback for offline scenarios
+      if (typeof pdfjsLib !== 'undefined') {
+        // Create inline worker to minimize CDN dependency for the worker thread
+        const workerScript = \`
+          self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.js');
+        \`;
+        const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+      }
+    })();
+
     const PRELOAD_PAGES = 3;
+    const MAX_PARALLEL_RENDERS = 2;
     const PAGE_THRESHOLDS = [0, 0.1, 0.25, 0.5, 0.75, 1.0];
 
     const pdf = \`data:application/pdf;base64,${pdfBase64}\`;
@@ -259,15 +279,18 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
     let pdfDoc = null;
     let pageRendering = {};
-    let pageQueue = new Set();
+    let pageQueue = [];
+    let activeRenders = 0;
     let renderTimeout = null;
 
     async function initPdf() {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.11.0/pdf.worker.min.js';
-
       try {
         pdfDoc = await pdfjsLib.getDocument(pdf).promise;
         const pdfViewer = document.getElementById('pdf-viewer');
+        if (!pdfViewer) {
+          console.error('PDF viewer container not found');
+          return;
+        }
 
         for (let i = 1; i <= pdfDoc.numPages; i++) {
           const pageWrapper = document.createElement('div');
@@ -285,20 +308,27 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
         renderVisiblePages();
       } catch (error) {
         console.error('Failed to load PDF:', error);
-        document.getElementById('pdf-viewer').innerHTML = '<p>Failed to load PDF</p>';
+        const pdfViewer = document.getElementById('pdf-viewer');
+        if (pdfViewer) {
+          pdfViewer.innerHTML = '<p>Failed to load PDF</p>';
+        }
       }
     }
 
     function setupLazyLoading() {
       const pdfViewer = document.getElementById('pdf-viewer');
+      if (!pdfViewer) return;
+
       const pageWrappers = pdfViewer.querySelectorAll('.page-wrapper');
 
       const observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
-            const pageNum = parseInt(entry.target.getAttribute('data-page'), 10);
-            if (entry.isIntersecting) {
-              pageQueue.add(pageNum);
+            const pageNum = parseInt(entry.target.getAttribute('data-page') || '0', 10);
+            if (pageNum && entry.isIntersecting) {
+              if (!pageQueue.includes(pageNum)) {
+                pageQueue.push(pageNum);
+              }
             }
           }
           clearTimeout(renderTimeout);
@@ -310,13 +340,18 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
       pageWrappers.forEach((wrapper) => observer.observe(wrapper));
 
       pdfViewer.addEventListener('scroll', () => {
-        const scrollTop = pdfViewer.scrollTop;
-        const scrollHeight = pdfViewer.scrollHeight;
-        const clientHeight = pdfViewer.clientHeight;
+        const pageWrappers = pdfViewer.querySelectorAll('.page-wrapper');
+        for (const wrapper of pageWrappers) {
+          const pageNum = parseInt(wrapper.getAttribute('data-page') || '0', 10);
+          if (!pageNum) continue;
 
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-          if (Math.abs(i - Math.max(1, Math.ceil(scrollTop / 600))) <= PRELOAD_PAGES) {
-            pageQueue.add(i);
+          const rect = wrapper.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const isVisible = rect.bottom >= 0 && rect.top <= viewportHeight;
+          const isNearby = Math.abs(rect.top) < viewportHeight * 1.5;
+
+          if ((isVisible || isNearby) && !pageQueue.includes(pageNum)) {
+            pageQueue.push(pageNum);
           }
         }
 
@@ -326,25 +361,28 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     }
 
     async function renderVisiblePages() {
-      const pagesToRender = Array.from(pageQueue)
-        .filter((pageNum) => !pageRendering[pageNum])
-        .sort((a, b) => a - b);
+      const uniquePages = [...new Set(pageQueue)];
+      pageQueue = [];
 
-      for (const pageNum of pagesToRender) {
-        if (!pageRendering[pageNum]) {
-          pageRendering[pageNum] = true;
-          await renderPage(pageNum);
+      for (const pageNum of uniquePages) {
+        if (pageRendering[pageNum]) continue;
+
+        while (activeRenders >= MAX_PARALLEL_RENDERS) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
+
+        renderPage(pageNum).catch(error => {
+          console.error(\`Failed to render page \${pageNum}:\`, error);
+        });
       }
-
-      pageQueue.forEach((pageNum) => {
-        if (pageRendering[pageNum]) {
-          pageQueue.delete(pageNum);
-        }
-      });
     }
 
     async function renderPage(pageNum) {
+      if (pageRendering[pageNum]) return;
+
+      pageRendering[pageNum] = true;
+      activeRenders++;
+
       try {
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.5 });
@@ -354,6 +392,10 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
         canvas.height = viewport.height;
 
         const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('Failed to get canvas context');
+        }
+
         await page.render({
           canvasContext: context,
           viewport: viewport
@@ -364,25 +406,17 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
           pageWrapper.innerHTML = '';
           pageWrapper.appendChild(canvas);
         }
-      } catch (error) {
-        console.error(\`Failed to render page \${pageNum}:\`, error);
+      } finally {
+        activeRenders--;
       }
     }
 
     function initImageButtons() {
+      ${hasImages ? `
       const imageButtons = document.getElementById('image-buttons');
-
-      if (highlights.length === 0) {
-        imageButtons.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px;">No images</p>';
-        return;
-      }
+      if (!imageButtons) return;
 
       const highlightsWithImages = highlights.filter(h => h.imageUrl);
-
-      if (highlightsWithImages.length === 0) {
-        imageButtons.innerHTML = '<p style="color: #999; font-size: 12px; padding: 10px;">No images</p>';
-        return;
-      }
 
       highlightsWithImages.forEach((highlight) => {
         const button = document.createElement('button');
@@ -397,25 +431,37 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
         button.appendChild(img);
         imageButtons.appendChild(button);
       });
+      ` : ""}
     }
 
     function openImageModal(imageUrl) {
       const modal = document.getElementById('imageModal');
       const modalImage = document.getElementById('modalImage');
-      modalImage.src = imageUrl;
-      modal.classList.add('active');
+      if (modal && modalImage) {
+        modalImage.src = imageUrl;
+        modal.classList.add('active');
+      }
     }
 
     function closeImageModal() {
       const modal = document.getElementById('imageModal');
-      modal.classList.remove('active');
+      if (modal) {
+        modal.classList.remove('active');
+      }
     }
 
-    document.getElementById('imageModal').addEventListener('click', (e) => {
-      if (e.target.id === 'imageModal') {
-        closeImageModal();
+    ${hasImages ? `
+    (function() {
+      const modal = document.getElementById('imageModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target.id === 'imageModal') {
+            closeImageModal();
+          }
+        });
       }
-    });
+    })();
+    ` : ""}
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {

@@ -274,20 +274,20 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 6: Click Navigation
 
 ### Task 6.1: Implement click-to-navigate handler
-- [ ] Add click handler to canvas:
+- [x] Add click handler to canvas:
   - `@click="handleHeatmapClick"`
-- [ ] Implement `handleHeatmapClick()`:
+- [x] Implement `handleHeatmapClick()`:
   - Get click coordinates relative to canvas: `e.offsetX`, `e.offsetY`
   - Convert to normalized coordinates: call `heatmapPixelToNormalized(offsetX, offsetY, ...)`
   - Extract page and normalizedY from result
   - Emit navigate event: `emit('navigate', page, normalizedY)`
-- [ ] In parent (PdfViewer.vue):
+- [x] In parent (PdfViewer.vue):
   - Listen for navigate event: `@navigate="handleNavigate"`
   - Implement `handleNavigate(page, normalizedY)`:
     - Find corresponding highlight closest to page + normalizedY
     - Call existing `scrollIntoView()` utility with smooth behavior
     - Duration: ~300-400ms
-- [ ] Add visual feedback:
+- [x] Add visual feedback:
   - Change canvas cursor to pointer: `cursor: pointer`
   - Optional: add brief highlight/flash on clicked region
 - **Scope**: ~50 LoC in HeatmapViewer + ~20 LoC in PdfViewer
@@ -300,7 +300,7 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 7: Collapse/Expand
 
 ### Task 7.1: Implement smooth collapse/expand animation
-- [ ] Use Vue Transition or CSS transitions:
+- [x] Use Vue Transition or CSS transitions:
   - Wrap main content in `<Transition name="expand">`
   - Define CSS transitions in component:
     ```css
@@ -313,13 +313,13 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
     }
     ```
   - Alternative: use `overflow: hidden` + max-height transition
-- [ ] Toggle visibility:
+- [x] Toggle visibility:
   - `v-show="isExpanded"` or conditional rendering
   - Decision: use v-show for smoother animation (no re-mount)
-- [ ] Button animation:
+- [x] Button animation:
   - Icon rotates: chevron-right (collapsed) → chevron-left (expanded)
   - Use CSS transform rotate or icon component prop
-- [ ] Test animation smoothness:
+- [x] Test animation smoothness:
   - Visual inspection at various zoom levels
   - No layout shift or jank
   - Completes in ~200ms
@@ -331,16 +331,16 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 8: Integration
 
 ### Task 8.1: Integration with PdfViewer state management
-- [ ] Verify all prop passing is correct:
+- [x] Verify all prop passing is correct:
   - highlights: should update when new scores arrive
   - currentPage: tracks visible page via IntersectionObserver
   - pageAspectRatio: computed correctly in PdfViewer
   - window scroll: accessible and scroll position readable
   - pageRefs: passed correctly for dimension calculations
-- [ ] Wire up navigate event:
+- [x] Wire up navigate event:
   - PdfViewer listens to HeatmapViewer navigate event
   - Calls `scrollIntoView()` to smoothly navigate
-- [ ] Test data flow:
+- [x] Test data flow:
   - Add new highlights
   - Scores update in real-time (from backend)
   - Heatmap updates reflect new scores immediately

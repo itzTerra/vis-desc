@@ -16,54 +16,61 @@
       aria-label="Toggle heatmap"
       @click="isExpanded = !isExpanded"
     >
-      <Icon :name="isExpanded ? 'lucide:chevron-left' : 'lucide:chevron-right'" size="18" aria-hidden="true" />
-    </button>
-    <div class="relative h-full w-full overflow-hidden">
-      <canvas
-        ref="canvasElement"
-        :width="HEATMAP_WIDTH"
-        :height="canvasHeight"
-        class="heatmap-canvas cursor-pointer"
-        :class="isExpanded ? 'block' : 'hidden'"
+      <Icon
+        name="lucide:chevron-left"
+        size="18"
+        class="heatmap-toggle-icon"
+        :class="{ 'heatmap-toggle-icon--collapsed': !isExpanded }"
+        aria-hidden="true"
       />
-      <svg
-        v-if="isExpanded"
-        :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
-        class="absolute inset-0 h-full w-full"
-        role="img"
-        aria-label="Heatmap image indicators"
-      >
-        <rect
-          :x="0"
-          :y="viewportY"
+    </button>
+    <Transition name="heatmap-expand">
+      <div v-show="isExpanded" class="relative h-full w-full overflow-hidden">
+        <canvas
+          ref="canvasElement"
           :width="HEATMAP_WIDTH"
-          :height="viewportRectHeight"
-          class="viewport-rect"
-          :class="{ 'viewport-rect--dragging': isDragging }"
-          @pointerdown="startDrag"
+          :height="canvasHeight"
+          class="heatmap-canvas cursor-pointer"
+          @click="handleHeatmapClick"
         />
-        <template v-for="dot in segmentDots" :key="dot.highlightId">
-          <circle
-            v-if="dot.hasImage"
-            :cx="dot.x"
-            :cy="dot.y"
-            r="4.5"
-            class="image-dot image-dot--has pointer-events-none"
-            role="img"
-            :aria-label="`Segment ${dot.highlightId} has image`"
+        <svg
+          :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
+          class="absolute inset-0 h-full w-full"
+          role="img"
+          aria-label="Heatmap image indicators"
+        >
+          <rect
+            :x="0"
+            :y="viewportY"
+            :width="HEATMAP_WIDTH"
+            :height="viewportRectHeight"
+            class="viewport-rect"
+            :class="{ 'viewport-rect--dragging': isDragging }"
+            @pointerdown="startDrag"
           />
-          <circle
-            v-else
-            :cx="dot.x"
-            :cy="dot.y"
-            r="4"
-            class="image-dot image-dot--none pointer-events-none"
-            role="img"
-            :aria-label="`Segment ${dot.highlightId} has no image`"
-          />
-        </template>
-      </svg>
-    </div>
+          <template v-for="dot in segmentDots" :key="dot.highlightId">
+            <circle
+              v-if="dot.hasImage"
+              :cx="dot.x"
+              :cy="dot.y"
+              r="4.5"
+              class="image-dot image-dot--has pointer-events-none"
+              role="img"
+              :aria-label="`Segment ${dot.highlightId} has image`"
+            />
+            <circle
+              v-else
+              :cx="dot.x"
+              :cy="dot.y"
+              r="4"
+              class="image-dot image-dot--none pointer-events-none"
+              role="img"
+              :aria-label="`Segment ${dot.highlightId} has no image`"
+            />
+          </template>
+        </svg>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -74,8 +81,11 @@ import { watchDebounced } from "@vueuse/core";
 import type { EditorState, Highlight } from "~/types/common";
 import {
   createSegmentArray,
+  getFirstPolygonPoints,
+  heatmapPixelToNormalized,
   normalizedToHeatmapPixel,
-  renderHeatmapCanvas
+  renderHeatmapCanvas,
+  type PagePolygons
 } from "~/utils/heatmapUtils";
 import { clamp } from "~/utils/utils";
 
@@ -89,7 +99,7 @@ const props = defineProps<{
   editorStates: EditorState[];
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   navigate: [page: number, normalizedY: number];
 }>();
 
@@ -149,7 +159,7 @@ const viewportY = computed(() => {
 });
 
 const segmentDots = computed<SegmentDot[]>(() => {
-  if (!props.highlights.length) {
+  if (props.highlights.length === 0) {
     return [];
   }
 
@@ -161,13 +171,18 @@ const segmentDots = computed<SegmentDot[]>(() => {
 
   for (const highlight of props.highlights) {
     const pageNums = Object.keys(highlight.polygons).map(Number);
-    if (!pageNums.length) {
+    if (pageNums.length === 0) {
       continue;
     }
 
     const pageNum = Math.min(...pageNums);
-    const pagePoints = highlight.polygons[pageNum];
-    if (!pagePoints.length) {
+    const pagePolygons = highlight.polygons[pageNum] as PagePolygons | undefined;
+    if (pagePolygons === undefined || pagePolygons === null) {
+      continue;
+    }
+
+    const pagePoints = getFirstPolygonPoints(pagePolygons);
+    if (pagePoints === null) {
       continue;
     }
 
@@ -190,7 +205,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
       totalPages.value
     );
 
-    if (!pixel) {
+    if (pixel === undefined) {
       continue;
     }
 
@@ -231,6 +246,32 @@ function renderHeatmap() {
 
   ctx.clearRect(0, 0, canvasElement.value.width, canvasElement.value.height);
   ctx.drawImage(renderedCanvas, 0, 0);
+}
+
+function handleHeatmapClick(event: MouseEvent) {
+  const canvas = canvasElement.value;
+  if (canvas === null) {
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) {
+    return;
+  }
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clickX = (event.clientX - rect.left) * scaleX;
+  const clickY = (event.clientY - rect.top) * scaleY;
+  const normalized = heatmapPixelToNormalized(
+    clickX,
+    clickY,
+    props.pageAspectRatio,
+    canvasHeight.value,
+    totalPages.value
+  );
+
+  emit("navigate", normalized.page, normalized.normalizedY);
 }
 
 function measureLayout() {
@@ -364,6 +405,24 @@ export interface SegmentDot {
 .heatmap-canvas {
   width: 100%;
   height: 100%;
+}
+
+.heatmap-toggle-icon {
+  transition: transform 200ms ease;
+}
+
+.heatmap-toggle-icon--collapsed {
+  transform: rotate(180deg);
+}
+
+.heatmap-expand-enter-active,
+.heatmap-expand-leave-active {
+  transition: opacity 200ms ease;
+}
+
+.heatmap-expand-enter-from,
+.heatmap-expand-leave-to {
+  opacity: 0;
 }
 
 .image-dot {

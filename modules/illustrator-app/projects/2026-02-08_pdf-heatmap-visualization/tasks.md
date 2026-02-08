@@ -22,15 +22,15 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - **Acceptance**: Component mounts without errors, props are typed
 
 ### Task 1.2: Add HeatmapViewer to PdfViewer template
-- [ ] Import HeatmapViewer in [PdfViewer.vue](services/frontend/app/components/PdfViewer.vue#L1)
-- [ ] Do not change existing layout sizing or flex structure
-- [ ] Add HeatmapViewer as a viewport-fixed overlay on the left edge
+- [x] Import HeatmapViewer in [PdfViewer.vue](services/frontend/app/components/PdfViewer.vue#L1)
+- [x] Do not change existing layout sizing or flex structure
+- [x] Add HeatmapViewer as a viewport-fixed overlay on the left edge
   - Positioning: `fixed`, `top` aligned with PDF viewer area
   - Height: match the PDF viewer area height (not full document)
   - Slim semi-transparent banner that can overlay the PDF content
   - Use high z-index to stay above the PDF canvas
-- [ ] Pass required props: `highlights`, `currentPage`, `pageAspectRatio`, `pageRefs`, `editorStates`
-- [ ] Verify layout doesn't break existing functionality
+- [x] Pass required props: `highlights`, `currentPage`, `pageAspectRatio`, `pageRefs`, `editorStates`
+- [x] Verify layout doesn't break existing functionality
 - **Scope**: ~20 LoC modifications
 - **Acceptance**: PdfViewer renders with heatmap overlay on left, PDF and ImageLayer layout unchanged
 

@@ -8,18 +8,18 @@
           <input
             type="file"
             accept="application/pdf"
-            class="file-input"
+            class="file-input file-input-primary"
             data-help-target="file"
             @change="handleFileUpload"
           >
           <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
           <button
             v-if="pdfUrl"
-            class="btn btn-sm btn-outline"
+            class="btn btn-primary btn-outline"
             title="Export as HTML"
             data-help-target="export"
             :disabled="isLoading !== null || highlights.length === 0"
-            @click="showExportDialog = true"
+            @click="handleExportConfirm"
           >
             <Icon name="lucide:download" size="18" />
             Export
@@ -69,7 +69,13 @@
       <button v-else class="btn btn-circle btn-sm btn-info text-lg" title="Help" @click="toggleHelp(true)">
         ?
       </button>
-      <button class="btn btn-circle btn-sm btn-neutral" title="Debug" @click="$debugPanel.toggle()">
+      <ModelManager
+        ref="modelManagerRef"
+        v-model:pending-model="pendingModel"
+        v-model:is-expanded="modelManagerExpanded"
+        @model-ready="onModelReady"
+      />
+      <button class="btn btn-circle btn-sm btn-warning" title="Debug" @click="$debugPanel.toggle()">
         <Icon name="uil:bug" size="20px" />
       </button>
       <NuxtLink
@@ -85,24 +91,12 @@
       </NuxtLink>
     </div>
     <HelpOverlay v-if="showHelp" :help-steps="helpSteps" @cancel="toggleHelp(false)" />
-    <ModelManager
-      ref="modelManagerRef"
-      v-model:pending-model="pendingModel"
-      v-model:is-expanded="modelManagerExpanded"
-      @model-ready="onModelReady"
-    />
     <ModelDownloadDialog
       v-if="pendingModel && pendingModel.transformersConfig"
       :is-open="showModelDownloadDialog"
       :model-info="pendingModel"
       @confirm="confirmModelDownload"
       @cancel="cancelModelDownload"
-    />
-    <ExportDialog
-      :is-open="showExportDialog"
-      :image-count="exportedImageCount"
-      @confirm="handleExportConfirm"
-      @cancel="showExportDialog = false"
     />
     <BackToTop />
     <Alert />
@@ -140,7 +134,6 @@ const showModelDownloadDialog = ref(false);
 const modelManagerRef = ref<InstanceType<typeof ModelManager> | null>(null);
 const modelManagerExpanded = ref(false);
 const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
-const showExportDialog = ref(false);
 const { confirmExport } = useExport();
 
 function toggleHelp(toValue?: boolean) {
@@ -384,15 +377,7 @@ function fullReset() {
   pdfFile.value = null;
 }
 
-const exportedImageCount = computed(() => {
-  if (!pdfViewer.value) return 0;
-  const imageLayer = pdfViewer.value.$refs.imageLayer;
-  if (!imageLayer || typeof imageLayer.getExportImages !== "function") return 0;
-  const images = imageLayer.getExportImages();
-  return Object.keys(images).length;
-});
-
-async function handleExportConfirm(filename: string) {
+async function handleExportConfirm() {
   try {
     if (!pdfFile.value) {
       useNotifier().error("PDF file is required for export");
@@ -405,22 +390,19 @@ async function handleExportConfirm(filename: string) {
     }
 
     const imageLayer = pdfViewer.value.$refs.imageLayer;
-    if (!imageLayer || typeof imageLayer.getExportImages !== "function") {
+    if (!imageLayer || typeof (imageLayer as any).getExportImages !== "function") {
       useNotifier().error("Image layer is not ready");
       return;
     }
 
-    const imageBlobs = imageLayer.getExportImages();
+    const imageBlobs = (imageLayer as any).getExportImages();
 
     await confirmExport(
       pdfFile.value,
       highlights,
       imageBlobs,
-      filename
+      `${pdfFile.value.name.replace(/\.pdf$/i, "")}-export`
     );
-
-    showExportDialog.value = false;
-    useNotifier().success("PDF exported successfully");
   } catch (error) {
     console.error("Export failed:", error);
     useNotifier().error("Failed to export PDF");
@@ -434,7 +416,7 @@ function handleModelDownloadRequest(modelId: ModelId): boolean {
   }
 
   const { getModelCacheStatus } = useModelLoader();
-  const status = getModelCacheStatus(modelInfo as TModelInfo);
+  const status = getModelCacheStatus(modelInfo.transformersConfig);
 
   if (status === "cached") {
     return true;
@@ -530,6 +512,6 @@ onMounted(() => {
   align-items: center;
   justify-content: end;
   gap: 0.5rem;
-  z-index: 100;
+  z-index: 90;
 }
 </style>

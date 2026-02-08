@@ -173,17 +173,18 @@ async function handleEnhance() {
   enhanceLoading.value = true;
 
   try {
-    const res = await $api("/api/enhance", {
-      method: "POST",
-      body: { text: prompt },
-    });
+    // const res = await $api("/api/enhance", {
+    //   method: "POST",
+    //   body: { text: prompt },
+    // });
 
-    if (!res || !res.text) {
-      useNotifier().error("Enhance failed");
-      return;
-    }
+    // if (!res || !res.text) {
+    //   useNotifier().error("Enhance failed");
+    //   return;
+    // }
+    const res = await promptEnhancer.enhance(prompt, PromptBridgeMode.Compress);
 
-    currentPrompt.value = res.text;
+    currentPrompt.value = res;
     addToHistory(currentPrompt.value);
 
     useNotifier().success("Prompt enhanced");

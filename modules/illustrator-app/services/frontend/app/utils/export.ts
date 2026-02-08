@@ -48,7 +48,7 @@ export async function createExportSnapshot(
 
   const imageDataUrlMap: Record<number, string> = {};
   for (const [highlightId, blob] of Object.entries(imageBlobs)) {
-    imageDataUrlMap[highlightId] = await blobToDataUrl(blob);
+    imageDataUrlMap[highlightId as unknown as number] = await blobToDataUrl(blob);
   }
 
   const exportHighlights: ExportHighlight[] = highlights.map((h) => ({
@@ -75,6 +75,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Export</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf_viewer.min.css" integrity="sha512-qbvpAGzPFbd9HG4VorZWXYAkAnbwKIxiLinTA1RW8KGJEZqYK04yjvd+Felx2HOeKPDKVLetAqg8RIJqHewaIg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     * {
       margin: 0;
@@ -84,35 +85,30 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #f5f5f5;
-      color: #333;
     }
 
     #container {
       display: flex;
       height: 100vh;
-      gap: 1px;
-      background: #ddd;
     }
 
     #pdf-viewer {
       flex: 1;
       overflow-y: auto;
-      background: #fff;
-      padding: 20px;
+      overflow-x: auto;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      background-color: #bbb;
     }
 
     .page-wrapper {
-      margin-bottom: 20px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      margin: 0 auto;
     }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: auto;
+    .page-content {
+      position: relative;
     }
 
     .page-placeholder {
@@ -125,31 +121,30 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
       background-color: #fff;
     }
 
-    #image-buttons {
-      width: 160px;
-      overflow-y: auto;
-      background: #fafafa;
-      padding: 10px;
-      border-left: 1px solid #ddd;
+    .page-images {
+      width: 72px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      position: relative;
+      min-height: 1px;
     }
 
     .image-button {
-      display: block;
-      width: 100%;
-      aspect-ratio: 1 / 1;
+      position: absolute;
+      width: 72px;
+      height: 72px;
       border: 2px solid #ddd;
       border-radius: 4px;
       cursor: pointer;
       overflow: hidden;
       background: #fff;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      right: 0;
     }
 
     .image-button:hover {
       border-color: #0066cc;
+      box-shadow: 0 2px 6px rgba(0, 102, 204, 0.2);
     }
 
     .image-button img {
@@ -178,9 +173,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     .modal-content {
       background: #fff;
       border-radius: 8px;
-      padding: 24px;
-      max-width: 90vw;
-      max-height: 90vh;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -189,10 +182,10 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     }
 
     .modal-content img {
-      max-width: 512px;
-      max-height: 512px;
+      max-width: min(512px, 90vw);
+      max-height: min(512px, 90vh);
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: contain;
     }
 
@@ -219,27 +212,13 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     }
 
     @media (max-width: 768px) {
-      #container {
-        flex-direction: column;
-      }
-
-      #image-buttons {
-        width: 100%;
-        height: 150px;
-        flex-direction: row;
-        border-left: none;
-        border-top: 1px solid #ddd;
+      .page-images {
+        width: 48px;
       }
 
       .image-button {
-        width: 140px;
-        height: 140px;
-        flex-shrink: 0;
-      }
-
-      .modal-content img {
-        max-width: 100%;
-        max-height: 100%;
+        width: 48px;
+        height: 48px;
       }
     }
   </style>
@@ -247,28 +226,18 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 <body>
   <div id="container">
     <div id="pdf-viewer"></div>
-    ${hasImages ? "<div id=\"image-buttons\"></div>" : ""}
   </div>
 
   ${hasImages ? "<div class=\"modal-overlay\" id=\"imageModal\"><button class=\"modal-close\" onclick=\"closeImageModal()\">✕</button><div class=\"modal-content\"><img id=\"modalImage\" src=\"\" alt=\"Image preview\"></div></div>" : ""}
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.min.js"></script>
-  <script>
+  <script type="module">
     // Note: Due to pdfjs-dist library size constraints, the main library is loaded from CDN.
     // For fully offline single-file HTML, you would need to bundle pdfjs-dist during export.
     // The exported HTML works offline AFTER the first load caches pdfjs resources via service worker.
-    (function() {
-      // Attempt to setup worker with fallback for offline scenarios
-      if (typeof pdfjsLib !== 'undefined') {
-        // Create inline worker to minimize CDN dependency for the worker thread
-        const workerScript = \`
-          self.importScripts('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.624/pdf.worker.min.js');
-        \`;
-        const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(workerBlob);
-        pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-      }
-    })();
+
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.min.mjs";
+    import { TextLayer } from "https://unpkg.com/pdfjs-dist@5.4.624/legacy/build/pdf.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.4.149/pdf.worker.min.mjs";
 
     const PRELOAD_PAGES = 3;
     const MAX_PARALLEL_RENDERS = 2;
@@ -297,9 +266,23 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
           pageWrapper.className = 'page-wrapper';
           pageWrapper.setAttribute('data-page', i);
 
+          const pageContent = document.createElement('div');
+          pageContent.className = 'page-content';
+
           const placeholder = document.createElement('div');
           placeholder.className = 'page-placeholder';
-          pageWrapper.appendChild(placeholder);
+          pageContent.appendChild(placeholder);
+
+          const textLayer = document.createElement('div');
+          textLayer.className = 'textLayer';
+          pageContent.appendChild(textLayer);
+
+          const imagesContainer = document.createElement('div');
+          imagesContainer.className = 'page-images';
+          imagesContainer.setAttribute('data-page', i);
+
+          pageWrapper.appendChild(pageContent);
+          pageWrapper.appendChild(imagesContainer);
 
           pdfViewer.appendChild(pageWrapper);
         }
@@ -385,11 +368,14 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
       try {
         const page = await pdfDoc.getPage(pageNum);
-        const viewport = page.getViewport({ scale: 1.5 });
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const viewport = page.getViewport({ scale: devicePixelRatio });
 
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        canvas.style.width = (viewport.width / devicePixelRatio) + 'px';
+        canvas.style.height = (viewport.height / devicePixelRatio) + 'px';
 
         const context = canvas.getContext('2d');
         if (!context) {
@@ -403,8 +389,84 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
         const pageWrapper = document.querySelector(\`[data-page="\${pageNum}"]\`);
         if (pageWrapper) {
-          pageWrapper.innerHTML = '';
-          pageWrapper.appendChild(canvas);
+          const pageContent = pageWrapper.querySelector('.page-content');
+          if (pageContent) {
+            pageContent.style.width = canvas.style.width;
+            pageContent.style.height = canvas.style.height;
+
+            const placeholder = pageContent.querySelector('.page-placeholder');
+            if (placeholder) {
+              placeholder.replaceWith(canvas);
+            } else {
+              const existingCanvas = pageContent.querySelector('canvas');
+              if (existingCanvas) {
+                existingCanvas.replaceWith(canvas);
+              } else {
+                pageContent.insertBefore(canvas, pageContent.firstChild);
+              }
+            }
+
+            // Render text layer
+            const textLayerDiv = pageContent.querySelector('.textLayer');
+            if (textLayerDiv) {
+              const textContent = await page.getTextContent();
+              const textLayer = new TextLayer({
+                textContentSource: textContent,
+                container: textLayerDiv,
+                viewport: viewport,
+              });
+              textLayer.render();
+            }
+          }
+        }
+
+        // Add image buttons for highlights on this page
+        const highlightsOnPage = highlights.filter(h => h.imageUrl && h.polygons[\`\${pageNum - 1}\`]);
+        const imagesContainer = document.querySelector(\`[data-page="\${pageNum}"].page-images\`);
+
+        if (imagesContainer && highlightsOnPage.length > 0 && pageWrapper) {
+          const pageContent = pageWrapper.querySelector('.page-content');
+          const canvas = pageContent?.querySelector('canvas');
+          const canvasHeight = canvas?.height || 0;
+
+          // Ensure container is tall enough for positioned buttons
+          if (canvasHeight > 0) {
+            imagesContainer.style.minHeight = (canvasHeight / devicePixelRatio) + 'px';
+          }
+
+          highlightsOnPage.forEach((highlight) => {
+            if (imagesContainer.querySelector(\`[data-highlight="\${highlight.id}"]\`)) return;
+
+            const button = document.createElement('button');
+            button.className = 'image-button';
+            button.setAttribute('data-highlight', highlight.id);
+            button.title = highlight.text.substring(0, 50);
+            button.onclick = () => openImageModal(highlight.imageUrl);
+
+            const img = document.createElement('img');
+            img.src = highlight.imageUrl;
+            img.alt = highlight.text;
+            button.appendChild(img);
+
+            // Position button vertically based on highlight's polygon coordinates
+            if (highlight.polygons[\`\${pageNum - 1}\`] && canvasHeight > 0) {
+              const polygons = highlight.polygons[\`\${pageNum - 1}\`];
+              // Get the minimum Y coordinate from all polygon points
+              let minY = Infinity;
+              polygons.forEach(polygon => {
+                for (let i = 1; i < polygon.length; i += 2) {
+                  minY = Math.min(minY, polygon[i]);
+                }
+              });
+
+              if (minY !== Infinity && minY >= 0) {
+                const topOffset = minY / devicePixelRatio * imagesContainer.clientHeight;
+                button.style.top = Math.max(0, topOffset - 36) + 'px';
+              }
+            }
+
+            imagesContainer.appendChild(button);
+          });
         }
       } finally {
         activeRenders--;
@@ -412,26 +474,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     }
 
     function initImageButtons() {
-      ${hasImages ? `
-      const imageButtons = document.getElementById('image-buttons');
-      if (!imageButtons) return;
-
-      const highlightsWithImages = highlights.filter(h => h.imageUrl);
-
-      highlightsWithImages.forEach((highlight) => {
-        const button = document.createElement('button');
-        button.className = 'image-button';
-        button.title = highlight.text.substring(0, 50);
-        button.onclick = () => openImageModal(highlight.imageUrl);
-
-        const img = document.createElement('img');
-        img.src = highlight.imageUrl;
-        img.alt = highlight.text;
-
-        button.appendChild(img);
-        imageButtons.appendChild(button);
-      });
-      ` : ""}
+      // Image buttons are now added per-page in renderPage() function
     }
 
     function openImageModal(imageUrl) {

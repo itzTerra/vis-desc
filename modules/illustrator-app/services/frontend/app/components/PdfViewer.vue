@@ -60,6 +60,15 @@
       data-help-target="images"
       @close-editor="closeImageEditor"
     />
+    <HeatmapViewer
+      class="z-40"
+      :style="heatmapStyle"
+      :highlights="highlights"
+      :current-page="currentPage"
+      :page-aspect-ratio="pageAspectRatio"
+      :page-refs="pageRefs"
+      :editor-states="editorStates"
+    />
     <div class="fixed bottom-0 left-0 flex justify-center z-200">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">
         <button class="join-item btn btn-sm px-3 me-0" :disabled="currentPage <= 1" title="Previous Page" @click="setCurrentPage(currentPage - 1)">
@@ -94,11 +103,12 @@
 </template>
 
 <script setup lang="ts">
-import type { Highlight } from "~/types/common";
+import type { EditorState, Highlight } from "~/types/common";
 import { debounce } from "lodash-es";
 import "vue-pdf-embed/dist/styles/annotationLayer.css";
 import "vue-pdf-embed/dist/styles/textLayer.css";
 import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
+import HeatmapViewer from "~/components/HeatmapViewer.vue";
 // import { GlobalWorkerOptions } from "vue-pdf-embed/dist/index.essential.mjs";
 // import PdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 // GlobalWorkerOptions.workerSrc = PdfWorker;
@@ -137,6 +147,12 @@ const pdfWidthScaled = computed(() => pdfWidth.value * pdfScale.value);
 const textLayerEnabled = ref(false);
 
 const openEditorIds = ref(new Set<number>());
+const editorStates = ref<EditorState[]>([]);
+const heatmapOffset = ref({ top: 0, height: 0 });
+const heatmapStyle = computed(() => ({
+  top: `${heatmapOffset.value.top}px`,
+  height: `${heatmapOffset.value.height}px`
+}));
 
 function openImageEditor(highlightId: number) {
   openEditorIds.value.add(highlightId);
@@ -292,6 +308,7 @@ nuxtApp.$debugPanel.track("pageVisibility", pageVisibility);
 nuxtApp.$debugPanel.track("pageIntersectionRatios", pageIntersectionRatios);
 
 async function pageResizeHandler() {
+  updateHeatmapOffset();
   if (pdfEmbedWrapper.value) {
     const containerWidth = pdfViewer.value ? pdfViewer.value.clientWidth : window.innerWidth;
     pdfWidth.value = containerWidth - IMAGES_WIDTH;
@@ -305,8 +322,20 @@ async function pageResizeHandler() {
 };
 const pageResizeHandlerDebounced = debounce(pageResizeHandler, 200);
 
+function updateHeatmapOffset() {
+  if (!pdfViewer.value) return;
+  const rect = pdfViewer.value.getBoundingClientRect();
+  const topBarHeight = document.querySelector(".top-bar")?.getBoundingClientRect().height ?? 0;
+  const top = Math.max(rect.top, topBarHeight);
+  heatmapOffset.value = {
+    top,
+    height: Math.max(0, window.innerHeight - top)
+  };
+}
+
 onMounted(() => {
   pageResizeHandlerDebounced();
+  updateHeatmapOffset();
   window.addEventListener("resize", pageResizeHandlerDebounced);
 });
 

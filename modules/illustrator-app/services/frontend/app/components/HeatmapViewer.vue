@@ -25,7 +25,34 @@
         class="heatmap-canvas cursor-pointer"
         :class="isExpanded ? 'block' : 'hidden'"
       />
-      <svg class="absolute inset-0 h-full w-full" />
+      <svg
+        v-if="isExpanded"
+        :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
+        class="absolute inset-0 h-full w-full pointer-events-none"
+        role="img"
+        aria-label="Heatmap image indicators"
+      >
+        <template v-for="dot in segmentDots" :key="dot.highlightId">
+          <circle
+            v-if="dot.hasImage"
+            :cx="dot.x"
+            :cy="dot.y"
+            r="4.5"
+            class="image-dot image-dot--has"
+            role="img"
+            :aria-label="`Segment ${dot.highlightId} has image`"
+          />
+          <circle
+            v-else
+            :cx="dot.x"
+            :cy="dot.y"
+            r="4"
+            class="image-dot image-dot--none"
+            role="img"
+            :aria-label="`Segment ${dot.highlightId} has no image`"
+          />
+        </template>
+      </svg>
     </div>
   </div>
 </template>
@@ -35,7 +62,8 @@ import { ref, computed, onMounted, watchEffect } from "vue";
 import { watchDebounced } from "@vueuse/core";
 
 import type { EditorState, Highlight } from "~/types/common";
-import { renderHeatmapCanvas, createSegmentArray } from "~/utils/heatmapUtils";
+import { createSegmentArray, normalizedToHeatmapPixel, renderHeatmapCanvas } from "~/utils/heatmapUtils";
+import { clamp } from "~/utils/utils";
 
 const HEATMAP_WIDTH = 96;
 
@@ -65,6 +93,67 @@ const totalPages = computed(() => {
 
 const canvasHeight = computed(() => {
   return Math.ceil(totalPages.value * props.pageAspectRatio * HEATMAP_WIDTH);
+});
+
+const segmentDots = computed<SegmentDot[]>(() => {
+  if (!props.highlights.length) {
+    return [];
+  }
+
+  const editorStateById = new Map(
+    props.editorStates.map(state => [state.highlightId, state])
+  );
+  const dots: SegmentDot[] = [];
+  const heatmapHeight = canvasHeight.value;
+
+  for (const highlight of props.highlights) {
+    const pageNums = Object.keys(highlight.polygons).map(Number);
+    if (!pageNums.length) {
+      continue;
+    }
+
+    const pageNum = Math.min(...pageNums);
+    const pagePoints = highlight.polygons[pageNum];
+    if (!pagePoints.length) {
+      continue;
+    }
+
+    let sumX = 0;
+    let sumY = 0;
+    for (const [x, y] of pagePoints) {
+      sumX += x;
+      sumY += y;
+    }
+
+    const normalizedX = clamp(sumX / pagePoints.length, 0, 1);
+    const normalizedY = clamp(sumY / pagePoints.length, 0, 1);
+    const pixel = normalizedToHeatmapPixel(
+      normalizedX,
+      normalizedY,
+      pageNum,
+      props.pageAspectRatio,
+      HEATMAP_WIDTH,
+      heatmapHeight,
+      totalPages.value
+    );
+
+    if (!pixel) {
+      continue;
+    }
+
+    const hasImage = Boolean(editorStateById.get(highlight.id)?.imageUrl);
+    dots.push({
+      highlightId: highlight.id,
+      pageNum,
+      normalizedX,
+      normalizedY,
+      x: pixel.x,
+      y: pixel.y,
+      hasImage,
+    });
+  }
+
+  return dots;
 });
 
 function renderHeatmap() {
@@ -119,6 +208,8 @@ export interface SegmentDot {
   pageNum: number;
   normalizedX: number;
   normalizedY: number;
+  x: number;
+  y: number;
   hasImage: boolean;
 }
 </script>
@@ -127,5 +218,21 @@ export interface SegmentDot {
 .heatmap-canvas {
   width: 100%;
   height: 100%;
+}
+
+.image-dot {
+  opacity: 0.85;
+}
+
+.image-dot--has {
+  fill: #f5c542;
+  stroke: #6b4d00;
+  stroke-width: 1.5px;
+}
+
+.image-dot--none {
+  fill: transparent;
+  stroke: #9ca3af;
+  stroke-width: 1.5px;
 }
 </style>

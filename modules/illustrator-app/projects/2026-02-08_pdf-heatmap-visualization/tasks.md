@@ -145,10 +145,10 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 4: Image Position Indicators
 
 ### Task 4.1: Track image positions from ImageLayer
-- [ ] In HeatmapViewer, derive image state from reactive props
+- [x] In HeatmapViewer, derive image state from reactive props
   - Decision: use `editorStates` prop (array of EditorState) for image presence
   - If props are insufficient, use global state (no direct component querying)
-- [ ] Create computed property `segmentDots()`:
+- [x] Create computed property `segmentDots()`:
   - Input: highlights, editorStates, heatmapWidth
   - For each highlight in highlights:
     - Find editor state by highlightId
@@ -157,7 +157,7 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
     - Transform centroid to heatmap pixel coordinates
     - Add to segmentDots array: `{ highlightId, pageNum, normalizedX, normalizedY, hasImage }`
   - Return array of SegmentDot objects
-- [ ] Add defensive checks:
+- [x] Add defensive checks:
   - Handle undefined polygons (skip segments)
   - Handle empty polygon arrays (skip segments)
   - Clamp normalized coordinates to [0, 1] range
@@ -165,27 +165,27 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - **Acceptance**: Computed property correctly identifies segments with/without images
 
 ### Task 4.2: Render image position dots to SVG
-- [ ] Add SVG element to template:
+- [x] Add SVG element to template:
   ```vue
   <svg v-if="isExpanded" :viewBox="`0 0 ${HEATMAP_WIDTH} ${computedHeight}`" class="absolute inset-0 w-full h-full pointer-events-none">
     <circle v-for="dot in segmentDots" :key="dot.highlightId" :cx="dot.x" :cy="dot.y" r="5" class="image-dot" />
   </svg>
   ```
-- [ ] Transform segmentDots coordinates to SVG pixel space (already in heatmap pixels from Task 4.1)
-- [ ] Style image-dot class:
+- [x] Transform segmentDots coordinates to SVG pixel space (already in heatmap pixels from Task 4.1)
+- [x] Style image-dot class:
 -  - Use different symbols for image vs no-image:
     - With imageUrl: filled circle (gold) with dark stroke
     - Without imageUrl: hollow circle or diamond with lighter stroke
   - Opacity: 0.85 (slightly transparent)
   - Hover: opacity 1.0, larger radius (6px)
-- [ ] Verify dots appear in correct positions on heatmap
-- [ ] Add accessibility: set `aria-label` on dots describing segment/image count
+- [x] Verify dots appear in correct positions on heatmap
+- [x] Add accessibility: set `aria-label` on dots describing segment/image count
 - **Scope**: ~35 LoC
 - **Acceptance**: Dots render visibly on heatmap, positioned correctly
 
 ### Task 4.3: Update dots reactively on imageEditor changes
-- [ ] Reactivity is automatic through `editorStates` prop updates
-- [ ] Test workflow:
+- [x] Reactivity is automatic through `editorStates` prop updates
+- [x] Test workflow:
   - Open PDF, score segments
   - Click ImageEditor button on segment
   - Verify dot appears on heatmap at correct position

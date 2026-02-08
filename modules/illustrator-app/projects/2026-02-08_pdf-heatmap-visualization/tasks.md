@@ -199,69 +199,69 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 5: Viewport Indicator
 
 ### Task 5.1: Render viewport rectangle to SVG
-- [ ] Add SVG rectangle to template:
+- [x] Add SVG rectangle to template:
   ```vue
   <rect v-if="isExpanded" :x="0" :y="viewportY" :width="HEATMAP_WIDTH" :height="viewportHeight" class="viewport-rect" />
   ```
-- [ ] Create computed property `viewportY()`:
+- [x] Create computed property `viewportY()`:
   - Call `getViewportPercentage()` with current scroll position
   - Convert percentage to pixel: `topPercent * computedHeight`
   - Return Y position
-- [ ] Create computed property `viewportHeight()`:
+- [x] Create computed property `viewportHeight()`:
   - Call `getViewportPercentage()` 
   - Convert to pixel: `heightPercent * computedHeight`
   - Add minimum height to ensure visibility (e.g., 20px minimum)
   - Return height
-- [ ] Style viewport-rect:
+- [x] Style viewport-rect:
   - Fill: rgba(74, 144, 226, 0.15) (light blue, 15% opacity)
   - Stroke: 2px #4A90E2 (medium blue)
   - Pointer-events: all (for dragging, handled in Task 5.3)
   - Smooth transition (but disable during drag for responsiveness)
-- [ ] Verify rectangle displays at correct position matching PDF scroll
+- [x] Verify rectangle displays at correct position matching PDF scroll
 - **Scope**: ~40 LoC
 - **Acceptance**: Rectangle visible and positioned correctly
 
 ### Task 5.2: Sync viewport rectangle with scroll events
-- [ ] Add scroll event listener to window:
+- [x] Add scroll event listener to window:
   - Listen for scroll events on window
   - Update viewportY and viewportHeight computed values
   - Use requestAnimationFrame for smooth updates (60 FPS)
   - Store scroll position in reactive state: `scrollY`
   - Derive `viewportHeight` from PDF viewer area height
   - Derive `totalHeight` from cumulative page heights (pageRefs)
-- [ ] Add lifecycle management:
+- [x] Add lifecycle management:
   - `onMounted()`: register scroll listener
   - `onBeforeUnmount()`: remove scroll listener
-- [ ] Optimization:
+- [x] Optimization:
   - Use passive event listener: `{ passive: true }`
   - Utilize requestAnimationFrame callback for natural FPS throttling
   - Avoid excessive state updates with debounce (16ms)
-- [ ] Test:
+- [x] Test:
   - Scroll PDF slowly, verify rectangle follows smoothly
   - Rapid scroll, verify no jank or lag
 - **Scope**: ~45 LoC
 - **Acceptance**: Rectangle updates smoothly on scroll, no main-thread blocking
 
 ### Task 5.3: Implement drag-to-scroll for viewport rectangle
-- [ ] Add pointer event handlers to SVG rect:
+- [x] Add pointer event handlers to SVG rect:
   - `@pointerdown="startDrag"` 
   - Listen for `pointermove` on window during drag
   - Listen for `pointerup` to end drag
-- [ ] Implement `startDrag()`:
+- [x] Implement `startDrag()`:
   - Record initial pointer position: `startY = e.clientY`
   - Record initial rectangle position
   - Set capture: `e.target.setPointerCapture(e.pointerId)`
   - Store dragging state
-- [ ] Implement `onDrag()`:
+- [x] Implement `onDrag()`:
   - Calculate delta: `deltaY = currentClientY - startY`
   - Map to scroll position: `newScrollY = dragStartScrollY + (deltaY / heatmapHeight * totalHeight)`
   - Clamp to valid range: [0, totalScrollableHeight - viewportHeight]
   - Update `window.scrollTo({ top: newScrollY })`
-- [ ] Implement `endDrag()`:
+- [x] Implement `endDrag()`:
   - Release pointer capture
   - Remove listeners
   - Restore smooth scroll behavior
-- [ ] Testing:
+- [x] Testing:
   - Drag rectangle up/down
   - Verify PDF scrolls proportionally
   - Test edge cases (drag at top, bottom, rapid drags)

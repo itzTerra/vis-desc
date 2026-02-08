@@ -8,16 +8,16 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 1: Component Foundation & Structure
 
 ### Task 1.1: Create HeatmapViewer.vue component scaffold
-- [ ] Create file `services/frontend/app/components/HeatmapViewer.vue`
-- [ ] Define props: `highlights`, `currentPage`, `pageAspectRatio`, `pageRefs`, `editorStates`
-- [ ] Define emits: `navigate` event
-- [ ] Set up template with:
+- [x] Create file `services/frontend/app/components/HeatmapViewer.vue`
+- [x] Define props: `highlights`, `currentPage`, `pageAspectRatio`, `pageRefs`, `editorStates`
+- [x] Define emits: `navigate` event
+- [x] Set up template with:
   - Outer container div with fixed width (96px) and fixed positioning
   - Canvas element for heatmap background
   - SVG overlay container for viewport rect + image dots
   - Toggle button (protrudes left with negative left value)
-- [ ] Implement basic Composition API setup with refs for `isExpanded`, `heatmapCanvas`
-- [ ] Add TypeScript types for internal state (HeatmapSegment, SegmentDot interfaces)
+- [x] Implement basic Composition API setup with refs for `isExpanded`, `heatmapCanvas`
+- [x] Add TypeScript types for internal state (HeatmapSegment, SegmentDot interfaces)
 - **Scope**: ~80 LoC, no rendering logic yet
 - **Acceptance**: Component mounts without errors, props are typed
 

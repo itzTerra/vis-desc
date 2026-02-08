@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="containerElement"
     class="heatmap-container fixed left-0 top-0 h-full transition-all duration-200 border-r"
     :class="isExpanded ? 'w-24' : 'w-0'"
     :style="{
@@ -28,17 +29,26 @@
       <svg
         v-if="isExpanded"
         :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
-        class="absolute inset-0 h-full w-full pointer-events-none"
+        class="absolute inset-0 h-full w-full"
         role="img"
         aria-label="Heatmap image indicators"
       >
+        <rect
+          :x="0"
+          :y="viewportY"
+          :width="HEATMAP_WIDTH"
+          :height="viewportRectHeight"
+          class="viewport-rect"
+          :class="{ 'viewport-rect--dragging': isDragging }"
+          @pointerdown="startDrag"
+        />
         <template v-for="dot in segmentDots" :key="dot.highlightId">
           <circle
             v-if="dot.hasImage"
             :cx="dot.x"
             :cy="dot.y"
             r="4.5"
-            class="image-dot image-dot--has"
+            class="image-dot image-dot--has pointer-events-none"
             role="img"
             :aria-label="`Segment ${dot.highlightId} has image`"
           />
@@ -47,7 +57,7 @@
             :cx="dot.x"
             :cy="dot.y"
             r="4"
-            class="image-dot image-dot--none"
+            class="image-dot image-dot--none pointer-events-none"
             role="img"
             :aria-label="`Segment ${dot.highlightId} has no image`"
           />
@@ -58,11 +68,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch, watchEffect } from "vue";
 import { watchDebounced } from "@vueuse/core";
 
 import type { EditorState, Highlight } from "~/types/common";
-import { createSegmentArray, normalizedToHeatmapPixel, renderHeatmapCanvas } from "~/utils/heatmapUtils";
+import {
+  createSegmentArray,
+  normalizedToHeatmapPixel,
+  renderHeatmapCanvas
+} from "~/utils/heatmapUtils";
 import { clamp } from "~/utils/utils";
 
 const HEATMAP_WIDTH = 96;
@@ -80,8 +94,18 @@ defineEmits<{
 }>();
 
 const isExpanded = ref(true);
+const containerElement = ref<HTMLElement | null>(null);
 const canvasElement = ref<HTMLCanvasElement | null>(null);
 const cachedHeatmapCanvas = ref<HTMLCanvasElement | null>(null);
+const scrollOffset = ref(0);
+const totalHeight = ref(0);
+const viewportHeight = ref(0);
+const pageTop = ref(0);
+const isDragging = ref(false);
+const dragStartY = ref(0);
+const dragStartScrollOffset = ref(0);
+const dragTarget = ref<SVGRectElement | null>(null);
+let scrollRafId: number | null = null;
 
 const totalPages = computed(() => {
   const maxPageNum = Math.max(
@@ -93,6 +117,35 @@ const totalPages = computed(() => {
 
 const canvasHeight = computed(() => {
   return Math.ceil(totalPages.value * props.pageAspectRatio * HEATMAP_WIDTH);
+});
+
+const viewportRectHeight = computed(() => {
+  if (totalHeight.value <= 0) {
+    return 20;
+  }
+
+  const rectHeight = (viewportHeight.value / totalHeight.value) * canvasHeight.value;
+  return Math.max(rectHeight, 20);
+});
+
+const trackHeight = computed(() => {
+  return Math.max(0, canvasHeight.value - viewportRectHeight.value);
+});
+
+const scrollableHeight = computed(() => {
+  return Math.max(0, totalHeight.value - viewportHeight.value);
+});
+
+const viewportY = computed(() => {
+  if (scrollableHeight.value <= 0 || trackHeight.value <= 0) {
+    return 0;
+  }
+
+  return clamp(
+    (scrollOffset.value / scrollableHeight.value) * trackHeight.value,
+    0,
+    trackHeight.value
+  );
 });
 
 const segmentDots = computed<SegmentDot[]>(() => {
@@ -180,6 +233,77 @@ function renderHeatmap() {
   ctx.drawImage(renderedCanvas, 0, 0);
 }
 
+function measureLayout() {
+  const pageElements = props.pageRefs;
+  const firstPageRect = pageElements[0]?.getBoundingClientRect();
+  const lastPageRect = pageElements[pageElements.length - 1]?.getBoundingClientRect();
+  const pageTopValue = firstPageRect ? firstPageRect.top + window.scrollY : 0;
+  const totalHeightValue = firstPageRect && lastPageRect
+    ? lastPageRect.bottom - firstPageRect.top
+    : 0;
+  const viewportHeightValue = containerElement.value?.getBoundingClientRect().height ?? window.innerHeight;
+
+  pageTop.value = pageTopValue;
+  totalHeight.value = totalHeightValue;
+  viewportHeight.value = viewportHeightValue;
+  scrollOffset.value = window.scrollY - pageTopValue;
+}
+
+function handleScroll() {
+  if (scrollRafId !== null) {
+    return;
+  }
+
+  scrollRafId = window.requestAnimationFrame(() => {
+    scrollRafId = null;
+    scrollOffset.value = window.scrollY - pageTop.value;
+  });
+}
+
+function startDrag(event: PointerEvent) {
+  if (isDragging.value) {
+    return;
+  }
+
+  dragTarget.value = event.currentTarget as SVGRectElement | null;
+  dragTarget.value?.setPointerCapture(event.pointerId);
+  isDragging.value = true;
+  dragStartY.value = event.clientY;
+  dragStartScrollOffset.value = scrollOffset.value;
+  window.addEventListener("pointermove", onDrag);
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", endDrag);
+}
+
+function onDrag(event: PointerEvent) {
+  if (!isDragging.value) {
+    return;
+  }
+
+  if (trackHeight.value <= 0 || scrollableHeight.value <= 0) {
+    return;
+  }
+
+  const deltaY = event.clientY - dragStartY.value;
+  const scrollDelta = (deltaY / trackHeight.value) * scrollableHeight.value;
+  const nextScrollOffset = clamp(dragStartScrollOffset.value + scrollDelta, 0, scrollableHeight.value);
+
+  window.scrollTo({ top: pageTop.value + nextScrollOffset });
+}
+
+function endDrag(event: PointerEvent) {
+  if (!isDragging.value) {
+    return;
+  }
+
+  dragTarget.value?.releasePointerCapture(event.pointerId);
+  dragTarget.value = null;
+  isDragging.value = false;
+  window.removeEventListener("pointermove", onDrag);
+  window.removeEventListener("pointerup", endDrag);
+  window.removeEventListener("pointercancel", endDrag);
+}
+
 watchDebounced(
   () => props.highlights,
   () => {
@@ -198,10 +322,32 @@ watchEffect(() => {
 });
 
 onMounted(() => {
+  measureLayout();
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  window.addEventListener("resize", measureLayout);
   if (isExpanded.value) {
     renderHeatmap();
   }
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("resize", measureLayout);
+  window.removeEventListener("pointermove", onDrag);
+  window.removeEventListener("pointerup", endDrag);
+  window.removeEventListener("pointercancel", endDrag);
+  if (scrollRafId !== null) {
+    window.cancelAnimationFrame(scrollRafId);
+    scrollRafId = null;
+  }
+});
+
+watch(
+  () => props.pageRefs.length,
+  () => {
+    measureLayout();
+  }
+);
 
 export interface SegmentDot {
   highlightId: number;
@@ -234,5 +380,19 @@ export interface SegmentDot {
   fill: transparent;
   stroke: #9ca3af;
   stroke-width: 1.5px;
+}
+
+.viewport-rect {
+  fill: rgba(74, 144, 226, 0.15);
+  stroke: #4a90e2;
+  stroke-width: 2px;
+  pointer-events: all;
+  cursor: grab;
+  transition: y 120ms linear, height 120ms linear;
+}
+
+.viewport-rect--dragging {
+  cursor: grabbing;
+  transition: none;
 }
 </style>

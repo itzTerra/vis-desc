@@ -14,6 +14,7 @@ from core.schemas import (
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
 from core.tools.text2image import Provider, get_image_url, get_image_bytes
+from core.tools.llm import enhance_text_with_llm
 import json
 
 
@@ -81,5 +82,5 @@ def gen_image_bytes(request, body: TextBody):
 
 @api.post("/enhance", response=EnhanceTextResponse)
 def enhance_text(request, body: EnhanceTextBody):
-    enhanced_text = f"{body.text} [enhanced]"
+    enhanced_text = enhance_text_with_llm(body.text)
     return {"text": enhanced_text}

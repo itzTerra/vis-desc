@@ -53,29 +53,29 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 2: Coordinate System & Utilities
 
 ### Task 2.1: Create heatmapUtils.ts utility file
-- [ ] Create file `services/frontend/app/utils/heatmapUtils.ts`
-- [ ] Export function `normalizedToHeatmapPixel()`
+- [x] Create file `services/frontend/app/utils/heatmapUtils.ts`
+- [x] Export function `normalizedToHeatmapPixel()`
   - Input: normalizedX, normalizedY, pageNum (0-indexed), pageAspectRatio, heatmapWidth, heatmapHeight, totalPageCount
   - Calculate single page height: `pageAspectRatio * heatmapWidth`
   - Calculate cumulative page height: `pageNum * singlePageHeight`
   - Add offset within page: `normalizedY * pageHeight`
   - Return: `{ x: normalizedX * heatmapWidth, y: cumulativeOffset + withinPageOffset }`
   - Handle edge case: return undefined if pageNum >= totalPageCount
-- [ ] Export function `getViewportPercentage()`
+- [x] Export function `getViewportPercentage()`
   - Input: scrollY (from window.scrollY), totalHeight (cumulative page heights), viewportHeight
   - Calculate: `topPercent = scrollY / totalHeight`, `heightPercent = viewportHeight / totalHeight`
   - Return: `{ topPercent, heightPercent, topPixels, heightPixels }`
   - Clamp values to [0, 1]
-- [ ] Export function `heatmapPixelToNormalized()`
+- [x] Export function `heatmapPixelToNormalized()`
   - Inverse of normalizedToHeatmapPixel
   - Input: pixelX, pixelY, pageAspectRatio, heatmapHeight, totalPageCount
   - Calculate: which page from cumulative height, normalized coords within page
   - Return: `{ page (0-indexed), normalizedX, normalizedY }`
-- [ ] Export function `scoreToOpacity()`
+- [x] Export function `scoreToOpacity()`
   - Input: score (0-1 range)
   - Formula: `opacity = 0.15 + (score * 0.75)` (results in range ~0.15-0.9)
   - Clamp result to [0.15, 0.9]
-- [ ] Export function `renderHeatmapCanvas()`
+- [x] Export function `renderHeatmapCanvas()`
   - Input: `segments: HeatmapSegment[]`, `heatmapWidth`, `pageAspectRatio`, `totalPageCount`
   - Create 2D context from HTMLCanvasElement
   - Initialize canvas: dimensions = heatmapWidth × (totalPageCount * pageAspectRatio * heatmapWidth)
@@ -89,12 +89,12 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
   - Return: Canvas element
   - Error handling: catch rendering errors, log warnings, return blank canvas
   - Use ImageData batching if needed for performance
-- [ ] Export function `scoreToBrightness()`
+- [x] Export function `scoreToBrightness()`
   - Input: score (0-1 range)
   - Formula: `brightness = 220 - (score * 180)` (results in range ~40-220)
   - Return brightness value (0-255 integer)
   - Clamp result to [40, 220] to avoid pure black/white
-- [ ] Add helper: `createSegmentArray(highlights: Highlight[]): HeatmapSegment[]`
+- [x] Add helper: `createSegmentArray(highlights: Highlight[]): HeatmapSegment[]`
   - Transform highlights into renderable segments with scores
   - Filter out segments with score === undefined
   - Return sorted array for consistent rendering

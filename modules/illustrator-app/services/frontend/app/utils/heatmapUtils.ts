@@ -27,6 +27,31 @@ export type HeatmapSegment = {
   score: number;
 };
 
+export type PagePolygons = number[][] | number[][][];
+
+export function getFirstPolygonPoints(pagePolygons: PagePolygons): number[][] | null {
+  if (pagePolygons.length === 0) {
+    return null;
+  }
+
+  const firstEntry = pagePolygons[0];
+  if (firstEntry === undefined) {
+    return null;
+  }
+
+  if (typeof firstEntry[0] === "number") {
+    return pagePolygons as number[][];
+  }
+
+  for (const polygon of pagePolygons as number[][][]) {
+    if (polygon.length > 0) {
+      return polygon;
+    }
+  }
+
+  return null;
+}
+
 /**
  * Converts normalized PDF coordinates into heatmap pixel space.
  */

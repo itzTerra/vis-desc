@@ -106,38 +106,39 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Phase 3: Heatmap Rendering
 
 ### Task 3.1: Implement canvas rendering in HeatmapViewer
-- [ ] Add canvas element to template: `<canvas ref="canvasElement" :width="HEATMAP_WIDTH" :height="computedHeight" />`
-- [ ] Add computed property `computedHeight()`: `totalPages * pageAspectRatio * HEATMAP_WIDTH`
-- [ ] Implement `renderHeatmap()` function:
+- [x] Add canvas element to template: `<canvas ref="canvasElement" :width="HEATMAP_WIDTH" :height="computedHeight" />`
+- [x] Add computed property `computedHeight()`: `totalPages * pageAspectRatio * HEATMAP_WIDTH`
+- [x] Implement `renderHeatmap()` function:
   - Call `renderHeatmapCanvas()` from heatmapUtils.ts with normalized highlights
   - Draw result to canvas context: `ctx.drawImage(resultCanvas, 0, 0)`
   - Store reference in state for later reuse
-- [ ] Add watcher on highlights (debounced 200ms):
+- [x] Add watcher on highlights (debounced 200ms):
   - When highlights change, invalidate heatmap cache
   - Trigger re-render if expanded
   - Debounce to avoid thrashing during batch score updates
   - Use `deep: true` so score updates on existing items trigger re-render
-- [ ] Verify canvas displays correctly in expanded state
+- [x] Verify canvas displays correctly in expanded state
 - **Scope**: ~60 LoC
 - **Acceptance**: Heatmap renders visible in UI, updates when scores change
+- **Implementation Notes**: Used watchDebounced from @vueuse/core, proper totalPages calculation accounting for 0-indexed pages
 
 ### Task 3.3: Add background styling and container layout
-- [ ] Style heatmap container:
+- [x] Style heatmap container:
   - Background: light gray with slight transparency (e.g., rgba(245,245,245,0.7)) when collapsed
   - Border: subtle (#D0D0D0) on right edge
--  - Width: fixed 96px
   - Width: fixed 96px
   - Height: match PDF viewer area height
   - Position: fixed (entire component, including toggle)
   - Top offset: align to PDF viewer area top
-- [ ] Style canvas element:
+- [x] Style canvas element:
   - Display: none when collapsed, block when expanded
   - Width/height: 100% fill container
   - Cursor: pointer for interaction feedback
   - Smooth filter transition on hover (optional: slight brightness increase)
-- [ ] Keep the toggle button and heatmap fixed in the viewport
+- [x] Keep the toggle button and heatmap fixed in the viewport
 - **Scope**: ~25 LoC (template + styles)
 - **Acceptance**: Canvas displays with correct dimensions, respects collapse state
+- **Implementation Notes**: Used inline styles for dynamic background color, Tailwind classes for layout and transitions
 
 ---
 

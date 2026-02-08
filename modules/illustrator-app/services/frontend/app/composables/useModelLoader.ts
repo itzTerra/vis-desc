@@ -1,5 +1,5 @@
 import { pipeline, type Pipeline } from "@huggingface/transformers";
-import type { TModelInfo } from "~/utils/models";
+import type { TModelInfo, TransformersModelConfig } from "~/utils/models";
 
 interface ModelLoadState {
   isLoading: boolean;
@@ -17,8 +17,8 @@ const useModelsState = () => useState<Map<string, ModelLoadState>>("models-state
 const pipelinesCache = new Map<string, Pipeline>();
 const workersCache = new Map<string, Worker>();
 
-const getModelKey = (modelInfo: TModelInfo): string => {
-  return modelInfo.transformersConfig.huggingFaceId;
+const getModelKey = (huggingFaceId: string): string => {
+  return huggingFaceId;
 };
 
 const getWorkerUrl = (workerName: string): URL => {
@@ -27,9 +27,9 @@ const getWorkerUrl = (workerName: string): URL => {
   return new URL(`${basePath}/${fileName}`, import.meta.url);
 };
 
-const getModelState = (modelInfo: TModelInfo): ModelLoadState => {
+const getModelState = (huggingFaceId: string): ModelLoadState => {
   const modelsState = useModelsState();
-  const key = getModelKey(modelInfo);
+  const key = getModelKey(huggingFaceId);
 
   if (!modelsState.value.has(key)) {
     modelsState.value.set(key, {
@@ -43,12 +43,12 @@ const getModelState = (modelInfo: TModelInfo): ModelLoadState => {
   return modelsState.value.get(key)!;
 };
 
-const checkModelCached = async (modelInfo: TModelInfo): Promise<boolean> => {
+const checkModelCached = async (huggingFaceId: string): Promise<boolean> => {
   try {
     const cache = await caches.open(TRANSFORMERS_CACHE_NAME);
     const keys = await cache.keys();
     const hasModel = keys.some(request =>
-      request.url.includes(modelInfo.transformersConfig.huggingFaceId)
+      request.url.includes(huggingFaceId)
     );
     return hasModel;
   } catch {
@@ -56,24 +56,23 @@ const checkModelCached = async (modelInfo: TModelInfo): Promise<boolean> => {
   }
 };
 
-const syncCacheState = async (modelInfo: TModelInfo): Promise<boolean> => {
-  const isCached = await checkModelCached(modelInfo);
-  const state = getModelState(modelInfo);
+const syncCacheState = async (huggingFaceId: string): Promise<boolean> => {
+  const isCached = await checkModelCached(huggingFaceId);
+  const state = getModelState(huggingFaceId);
   state.isCached = isCached;
   return isCached;
 };
 
 const downloadModel = async (
-  modelInfo: TModelInfo,
+  config: TransformersModelConfig,
   onProgress?: (progress: number) => void
 ) => {
-  const config = modelInfo.transformersConfig;
   if (!config) {
-    throw new Error(`No transformers.js configuration found for model: ${modelInfo.id}`);
+    throw new Error("No transformers.js configuration found");
   }
 
-  const state = getModelState(modelInfo);
-  const key = getModelKey(modelInfo);
+  const state = getModelState(config.huggingFaceId);
+  const key = getModelKey(config.huggingFaceId);
   state.isLoading = true;
   state.error = null;
 
@@ -103,47 +102,45 @@ const downloadModel = async (
 };
 
 const getOrLoadModel = async (
-  modelInfo: TModelInfo,
+  config: TransformersModelConfig,
   options?: {
     forceDownload?: boolean;
     onProgress?: (progress: number) => void;
     onCacheCheck?: (isCached: boolean) => void;
   }
 ) => {
-  const config = modelInfo.transformersConfig;
   if (!config) {
-    throw new Error(`No transformers.js configuration found for model: ${modelInfo.id}`);
+    throw new Error("No transformers.js configuration found");
   }
 
-  const key = getModelKey(modelInfo);
-  const state = getModelState(modelInfo);
+  const key = getModelKey(config.huggingFaceId);
+  const state = getModelState(config.huggingFaceId);
 
   if (pipelinesCache.has(key) && state.isLoadedInMemory) {
     return pipelinesCache.get(key)!;
   }
 
-  const isCached = !options?.forceDownload && await checkModelCached(modelInfo);
+  const isCached = !options?.forceDownload && await checkModelCached(config.huggingFaceId);
   options?.onCacheCheck?.(isCached);
   state.isCached = isCached;
 
-  return downloadModel(modelInfo, options?.onProgress);
+  return downloadModel(config, options?.onProgress);
 };
 
-const getModelCacheStatus = (modelInfo: TModelInfo): ModelCacheStatus => {
-  const state = getModelState(modelInfo);
+const getModelCacheStatus = (config: TransformersModelConfig): ModelCacheStatus => {
+  const state = getModelState(config.huggingFaceId);
 
   if (state.isLoading) return "downloading";
   if (state.isCached) return "cached";
   return "not-cached";
 };
 
-const clearModelCache = async (modelInfo: TModelInfo) => {
-  const config = modelInfo.transformersConfig;
+const clearModelCache = async (config: TransformersModelConfig) => {
   if (!config) {
-    throw new Error(`No transformers.js configuration found for model: ${modelInfo.id}`);
+    throw new Error("No transformers.js configuration found");
   }
 
-  const key = getModelKey(modelInfo);
+  const key = getModelKey(config.huggingFaceId);
   const modelId = config.huggingFaceId;
 
   try {
@@ -153,7 +150,7 @@ const clearModelCache = async (modelInfo: TModelInfo) => {
 
     await Promise.all(modelKeys.map(key => cache.delete(key)));
 
-    const state = getModelState(modelInfo);
+    const state = getModelState(config.huggingFaceId);
     pipelinesCache.delete(key);
     state.isLoadedInMemory = false;
     state.isCached = false;
@@ -178,11 +175,11 @@ const clearAllCache = async () => {
 
 const syncAllCacheState = async () => {
   const models = MODELS.filter(m => m.transformersConfig) as TModelInfo[];
-  await Promise.all(models.map(m => syncCacheState(m)));
+  await Promise.all(models.map(m => syncCacheState(m.transformersConfig.huggingFaceId)));
 };
 
 const loadModelInWorker = async (
-  modelInfo: TModelInfo,
+  config: TransformersModelConfig,
   worker: Worker,
   onProgress?: (progress: number) => void
 ): Promise<void> => {
@@ -207,7 +204,6 @@ const loadModelInWorker = async (
 
     worker.addEventListener("message", messageHandler);
 
-    const config = modelInfo.transformersConfig;
     worker.postMessage({
       type: "load",
       payload: {
@@ -220,18 +216,17 @@ const loadModelInWorker = async (
 };
 
 const getOrLoadWorker = async (
-  modelInfo: TModelInfo,
+  config: TransformersModelConfig,
   options?: {
     onProgress?: (progress: number) => void;
   }
 ): Promise<Worker> => {
-  const config = modelInfo.transformersConfig;
   if (!config) {
-    throw new Error(`No transformers.js configuration found for model: ${modelInfo.id}`);
+    throw new Error("No transformers.js configuration found");
   }
 
-  const key = getModelKey(modelInfo);
-  const state = getModelState(modelInfo);
+  const key = getModelKey(config.huggingFaceId);
+  const state = getModelState(config.huggingFaceId);
 
   if (workersCache.has(key)) {
     return workersCache.get(key)!;
@@ -244,7 +239,7 @@ const getOrLoadWorker = async (
     const workerUrl = getWorkerUrl(config.workerName);
     const worker = new Worker(workerUrl, { type: "module" });
 
-    await loadModelInWorker(modelInfo, worker, options?.onProgress);
+    await loadModelInWorker(config, worker, options?.onProgress);
 
     workersCache.set(key, worker);
     state.isLoadedInMemory = true;
@@ -258,15 +253,15 @@ const getOrLoadWorker = async (
   }
 };
 
-const terminateWorker = (modelInfo: TModelInfo) => {
-  const key = getModelKey(modelInfo);
+const terminateWorker = (huggingFaceId: string) => {
+  const key = getModelKey(huggingFaceId);
   const worker = workersCache.get(key);
 
   if (worker) {
     worker.terminate();
     workersCache.delete(key);
 
-    const state = getModelState(modelInfo);
+    const state = getModelState(huggingFaceId);
     state.isLoadedInMemory = false;
   }
 };
@@ -276,7 +271,6 @@ export const useModelLoader = () => {
     getOrLoadModel,
     getOrLoadWorker,
     terminateWorker,
-    getModelState,
     getModelCacheStatus,
     clearModelCache,
     clearAllCache,

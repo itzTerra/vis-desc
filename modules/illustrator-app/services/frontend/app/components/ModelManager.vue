@@ -1,12 +1,11 @@
 <template>
-  <div>
+  <div class="z-100">
     <div
       v-if="!isExpanded"
-      class="fixed bottom-0 right-[190px] z-50 pb-2"
     >
       <!-- No download in progress -->
       <div v-if="!hasActiveDownload">
-        <button class="btn btn-sm btn-neutral" title="Manage Downloads" @click="isExpanded = true">
+        <button class="btn btn-sm btn-accent btn-outline" title="Manage Downloads" @click="isExpanded = true">
           <Icon name="lucide:download" class="w-4 h-4 mr-1" />
           Manage Downloads
         </button>
@@ -185,11 +184,11 @@ const currentDownload = computed(() => downloadQueue.value[0] || null);
 const hasActiveDownload = computed(() => downloadQueue.value.length > 0);
 
 const hasCachedModels = computed(() =>
-  transformersModels.value.some(m => getModelCacheStatus(m) === "cached")
+  transformersModels.value.some(m => getModelCacheStatus(m.transformersConfig) === "cached")
 );
 
 function getModelDownloadStatus(model: TModelInfo): "cached" | "downloading" | "queued" | "not-cached" {
-  const cacheStatus = getModelCacheStatus(model);
+  const cacheStatus = getModelCacheStatus(model.transformersConfig);
   if (cacheStatus === "cached") return "cached";
 
   const inQueue = downloadQueue.value.find(item => item.model.id === model.id);
@@ -207,7 +206,7 @@ function getModelProgress(model: TModelInfo): number {
 
 watch(pendingModel, async (modelInfo) => {
   if (modelInfo) {
-    const status = getModelCacheStatus(modelInfo);
+    const status = getModelCacheStatus(modelInfo.transformersConfig);
     if (status === "cached") {
       emit("update:modelsState");
       emit("modelReady", modelInfo.id);
@@ -223,7 +222,7 @@ async function queueDownload(model: TModelInfo) {
 
   await syncAllCacheState();
 
-  if (getModelCacheStatus(model) === "cached") {
+  if (getModelCacheStatus(model.transformersConfig) === "cached") {
     useNotifier().info(`${model.label} is already cached`);
     return;
   }
@@ -246,7 +245,7 @@ async function processQueue() {
     const modelInfo = current.model;
 
     try {
-      await getOrLoadModel(modelInfo, {
+      await getOrLoadModel(modelInfo.transformersConfig, {
         onProgress: (progress: number) => {
           current.progress = Math.round(progress);
         },
@@ -272,7 +271,7 @@ async function removeModelFromCache(model: TModelInfo) {
   }
 
   try {
-    await clearModelCache(model);
+    await clearModelCache(model.transformersConfig);
     useNotifier().success("Model removed from cache");
     emit("update:modelsState");
   } catch (error) {

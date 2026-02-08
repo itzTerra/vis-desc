@@ -1,5 +1,5 @@
 <template>
-  <div class="flex bg-base-100">
+  <div ref="pdfViewer" class="flex bg-base-100 max-w-[1440px] mx-auto">
     <ClientOnly>
       <div ref="pdfEmbedWrapper" class="flex-grow pdf-wrapper bg-base-200" :style="{ width: `${pdfWidth}px`}" data-help-target="viewer">
         <div
@@ -126,6 +126,7 @@ const pdfUrlComputed = computed(() => props.pdfUrl);
 const nuxtApp = useNuxtApp();
 const highlightLayer = ref<InstanceType<typeof import("~/components/HighlightLayer.vue").default> | null>(null);
 const imageLayer = ref<InstanceType<typeof import("~/components/ImageLayer.vue").default> | null>(null);
+const pdfViewer = ref<HTMLElement | null>(null);
 const pdfEmbedWrapper = ref<HTMLElement | null>(null);
 const { doc } = useVuePdfEmbed({ source: pdfUrlComputed });
 const highlightLayerKey = ref(0);
@@ -292,8 +293,8 @@ nuxtApp.$debugPanel.track("pageIntersectionRatios", pageIntersectionRatios);
 
 async function pageResizeHandler() {
   if (pdfEmbedWrapper.value) {
-    const windowWidth = window.innerWidth;
-    pdfWidth.value = windowWidth - IMAGES_WIDTH;
+    const containerWidth = pdfViewer.value ? pdfViewer.value.clientWidth : window.innerWidth;
+    pdfWidth.value = containerWidth - IMAGES_WIDTH;
     console.log(`Setting PDF width to ${pdfWidth.value}px`);
     pdfEmbedWrapper.value.style.width = `${pdfWidth.value}px`;
     await nextTick();

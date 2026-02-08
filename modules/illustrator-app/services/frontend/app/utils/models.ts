@@ -48,7 +48,7 @@ export const MODELS: ModelInfo[] = [
     onSuccess: async (_data: SegmentResponse, model, _socket, _scoreSegment) => {
       const { getOrLoadWorker, terminateWorker } = useModelLoader();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const worker = await getOrLoadWorker(model as TModelInfo);
+      const worker = await getOrLoadWorker(model.transformersConfig!);
       // const segments = (data as any).segments.map((seg: any) => seg.text);
       // const nliClassifier = NLI_CLASSIFIERS[model.id];
       // if (!nliClassifier) {
@@ -60,11 +60,11 @@ export const MODELS: ModelInfo[] = [
       //     scoreSegment(result);
       //   }
       // });
-      terminateWorker(model as TModelInfo);
+      terminateWorker(model.transformersConfig!.huggingFaceId);
     },
     onCancel: (model) => {
       const { terminateWorker } = useModelLoader();
-      terminateWorker(model as TModelInfo);
+      terminateWorker(model.transformersConfig!.huggingFaceId);
     }
   },
   {
@@ -92,7 +92,7 @@ export const MODELS: ModelInfo[] = [
     apiUrl: "/api/process/seg/pdf",
     onSuccess: async (data: SegmentResponse, model, _socket, scoreSegment) => {
       const { getOrLoadWorker, terminateWorker } = useModelLoader();
-      const worker = await getOrLoadWorker(model as TModelInfo);
+      const worker = await getOrLoadWorker(model.transformersConfig!);
       const segments = (data as any).segments.map((seg: any) => seg.text);
       const nliClassifier = NLI_CLASSIFIERS[model.id];
       if (!nliClassifier) {
@@ -104,11 +104,11 @@ export const MODELS: ModelInfo[] = [
           scoreSegment(result);
         }
       });
-      terminateWorker(model as TModelInfo);
+      terminateWorker(model.transformersConfig!.huggingFaceId);
     },
     onCancel: (model) => {
       const { terminateWorker } = useModelLoader();
-      terminateWorker(model as TModelInfo);
+      terminateWorker(model.transformersConfig!.huggingFaceId);
     }
   },
   {
@@ -184,3 +184,65 @@ export class NLIZeroshotClassifier {
 const NLI_CLASSIFIERS: Record<ModelId, NLIZeroshotClassifier> = {
   "nli_roberta": new NLIZeroshotClassifier(["not detailed", "detailed"], "This text is {} in terms of visual details of characters, setting, or environment."),
 };
+
+export enum PromptBridgeMode {
+  Expand = "Expand the prompt.",
+  Compress = "Compress the prompt into keyword format."
+}
+
+class PromptEnhancer {
+  id: string;
+  transformersConfig: TransformersModelConfig;
+
+  constructor(id: string, transformersConfig: TransformersModelConfig) {
+    this.id = id;
+    this.transformersConfig = transformersConfig;
+  }
+
+  async enhance(text: string, mode: PromptBridgeMode = PromptBridgeMode.Expand): Promise<string> {
+    const { getOrLoadWorker } = useModelLoader();
+    const worker = await getOrLoadWorker(this.transformersConfig);
+
+    return new Promise((resolve, reject) => {
+      const messageHandler = (event: MessageEvent) => {
+        const { type, payload } = event.data;
+
+        switch (type) {
+        case "complete":
+          worker.removeEventListener("message", messageHandler);
+          resolve(payload.enhancedText || text);
+          break;
+        case "error":
+          worker.removeEventListener("message", messageHandler);
+          reject(new Error(payload.message));
+          break;
+        }
+      };
+
+      worker.addEventListener("message", messageHandler);
+
+      worker.postMessage({
+        type: "enhance",
+        payload: {
+          text,
+          mode,
+        }
+      });
+    });
+  }
+
+  dispose(): void {
+    const { terminateWorker } = useModelLoader();
+    terminateWorker(this.transformersConfig.huggingFaceId);
+  }
+}
+
+export const promptEnhancer = new PromptEnhancer(
+  "prompt-bridge",
+  {
+    huggingFaceId: "Terraa/prompt-enhancer-gemma-3-270m-it-int4-ONNX",
+    pipeline: "text-generation",
+    sizeMb: 1100,
+    workerName: "prompt-enhancer",
+  }
+);

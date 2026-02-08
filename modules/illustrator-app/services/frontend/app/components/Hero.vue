@@ -11,7 +11,7 @@
         </p>
         <div class="max-w-xl">
           <label
-            class="flex justify-center w-full h-24 px-4 transition border-2 border-dashed rounded-md appearance-none cursor-pointer text-base-content/50 border-base-content/50 hover:border-base-content/30 focus:outline-none hover:bg-primary/10"
+            class="flex justify-center w-full h-24 px-4 transition border-2 border-dashed rounded-md appearance-none cursor-pointer text-primary/70 border-primary/50 hover:text-primary/90 hover:border-primary/70 focus:outline-none hover:bg-primary/10"
           >
             <span class="flex items-center space-x-2 ">
               <Icon name="lucide:upload" />

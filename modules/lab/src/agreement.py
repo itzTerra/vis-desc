@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence
@@ -319,9 +320,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--from-csv",
         dest="from_csv",
+        nargs="?",
+        const="__USE_CSV_PATH__",
+        default=None,
         help=(
             "Path to an existing ratings CSV whose non-empty agreed_rating values should be reused when annotator ratings are not unanimous. "
-            "If ratings become unanimous, the unanimous value overwrites any previous agreed_rating."
+            "If ratings become unanimous, the unanimous value overwrites any previous agreed_rating. "
+            "If provided without a value, uses the same path as --csv."
         ),
     )
     args = parser.parse_args(argv)
@@ -355,9 +360,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.csv_path:
         # Load any existing agreed_rating values if --from-csv was provided.
         existing_agreed: dict[int, str] = {}
-        if args.from_csv:
+        from_csv_path = args.from_csv
+        if from_csv_path == "__USE_CSV_PATH__":
+            from_csv_path = args.csv_path
+        if from_csv_path:
             try:
-                with open(args.from_csv, "r", encoding="utf-8", newline="") as f_in:
+                with open(from_csv_path, "r", encoding="utf-8", newline="") as f_in:
                     reader = csv.reader(f_in, delimiter="\t")
                     header = next(reader, None)
                     # Expect at minimum: segment_id ... agreed_rating
@@ -377,12 +385,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                                     existing_agreed[segment_id] = agreed_val
                     else:
                         print(
-                            f"Warning: from-csv file '{args.from_csv}' missing expected header; ignoring."
+                            f"Warning: from-csv file '{from_csv_path}' missing expected header; ignoring."
                         )
             except FileNotFoundError:
-                print(f"Warning: from-csv file '{args.from_csv}' not found; ignoring.")
+                print(f"Warning: from-csv file '{from_csv_path}' not found; ignoring.")
             except Exception as e:  # pragma: no cover
-                print(f"Warning: failed to read from-csv '{args.from_csv}': {e}")
+                print(f"Warning: failed to read from-csv '{from_csv_path}': {e}")
         task_map: dict[int, lsm.Task] = {t.id: t for t in tasks}
         annotator_ids = sorted({aid for rec in tr for aid in rec.ratings})
         sorted_tr = sorted(tr, key=lambda rec: rec.task_id)
@@ -402,28 +410,55 @@ def main(argv: Sequence[str] | None = None) -> int:
                     )
                     row: List[str | int] = [rec.task_id, text]
                     per_ann_ratings: List[int | str] = []
-                    complete_same: bool = True
                     first_val: int | None = None
                     for aid in annotator_ids:
                         val = rec.ratings.get(aid)
                         per_ann_ratings.append(val if val is not None else "")
-                        if val is None:
-                            complete_same = False
-                        else:
+                        if val is not None:
                             if first_val is None:
                                 first_val = val
-                            elif val != first_val:
-                                complete_same = False
                     row.extend(per_ann_ratings)
                     # Determine agreed rating output.
-                    # 1. If unanimous now, override with unanimous value (even if different from existing agreed rating).
-                    # 2. Else, if existing CSV provided a non-empty agreed rating for this task, carry it forward.
-                    # 3. Else, leave blank.
-                    if complete_same and first_val is not None:
-                        row.append(first_val)
+                    # Fill if at least 2 annotators agree on the same rating.
+                    # For ties, prefer existing agreed rating if it's one of the tied values, otherwise use minimum.
+                    rating_values = [v for v in per_ann_ratings if isinstance(v, int)]
+                    rating_counts = Counter(rating_values)
+
+                    agreed_rating: str | int = ""
+                    if rating_counts:
+                        max_count = max(rating_counts.values())
+                        if max_count >= 2:
+                            candidates = [
+                                r for r, c in rating_counts.items() if c == max_count
+                            ]
+                            if len(candidates) == 1:
+                                agreed_rating = candidates[0]
+                            else:
+                                # Multiple ratings tied for max frequency
+                                prev = existing_agreed.get(rec.task_id)
+                                if prev and prev != "":
+                                    try:
+                                        prev_int = int(prev)
+                                        if prev_int in candidates:
+                                            agreed_rating = prev_int
+                                        else:
+                                            agreed_rating = min(candidates)
+                                    except ValueError:
+                                        agreed_rating = min(candidates)
+                                else:
+                                    agreed_rating = min(candidates)
+                        else:
+                            # No rating appears 2+ times, keep existing if available
+                            prev = existing_agreed.get(rec.task_id)
+                            if prev is not None:
+                                agreed_rating = prev
                     else:
+                        # No ratings at all, keep existing if available
                         prev = existing_agreed.get(rec.task_id)
-                        row.append(prev if prev is not None else "")
+                        if prev is not None:
+                            agreed_rating = prev
+
+                    row.append(agreed_rating)
                     writer.writerow(row)
             print(f"CSV written: {args.csv_path}")
         except Exception as e:  # pragma: no cover

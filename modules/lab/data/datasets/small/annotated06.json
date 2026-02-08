@@ -1,0 +1,2772 @@
+[
+{
+  "text": "I went all the way to the Eastern Mediterranean after him. But I'm very much afraid he isn't going to be a great deal of help to me. To tell you the truth, I'm rather disappointed in his appearance. He doesn't look very intelligent, does he?\" \"No, he doesn't,\" I agreed. \"Ah,\" said the Doctor. \"The sausages are done to a turn. Come along—hold your plate near and let me give you some.\"",
+  "genre": "Fantasy",
+  "length": 386,
+  "book_id": 1154,
+  "book_slug": "the-voyages-of-doctor-dolittle",
+  "segment_id": "1154_117",
+  "id": 1043,
+  "rating": "3",
+  "label": [
+    {
+      "end": 326,
+      "text": "The sausages are done to a turn",
+      "start": 295,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1369,
+  "created_at": "2026-02-07T09:38:58.237863Z",
+  "updated_at": "2026-02-07T09:45:41.323232Z",
+  "lead_time": 301.724
+},
+{
+  "text": "I went all the way to the Eastern Mediterranean after him. But I'm very much afraid he isn't going to be a great deal of help to me. To tell you the truth, I'm rather disappointed in his appearance. He doesn't look very intelligent, does he?\" \"No, he doesn't,\" I agreed. \"Ah,\" said the Doctor. \"The sausages are done to a turn. Come along—hold your plate near and let me give you some.\"",
+  "genre": "Fantasy",
+  "length": 386,
+  "book_id": 1154,
+  "book_slug": "the-voyages-of-doctor-dolittle",
+  "segment_id": "1154_117",
+  "id": 1043,
+  "rating": "4",
+  "annotator": 4,
+  "annotation_id": 1302,
+  "created_at": "2025-11-21T14:54:24.605286Z",
+  "updated_at": "2025-11-21T14:54:24.605299Z",
+  "lead_time": 352.107
+},
+{
+  "text": "Abraham but dusty in his cave? Duke Lot hath a monument less durable than his wicked wife's; and as for Noë, that great admiral, the waters of oblivion have him whom the waters of God might not drown.",
+  "genre": "History",
+  "length": 200,
+  "book_id": 14813,
+  "book_slug": "the-life-and-death-of-richard-yea-and-nay",
+  "segment_id": "14813_789",
+  "id": 1044,
+  "rating": "2",
+  "label": [
+    {
+      "end": 29,
+      "text": "Abraham but dusty in his cave",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "type": "Indoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1370,
+  "created_at": "2026-02-07T09:45:20.200138Z",
+  "updated_at": "2026-02-07T09:45:20.200151Z",
+  "lead_time": 361.61
+},
+{
+  "text": "Abraham but dusty in his cave? Duke Lot hath a monument less durable than his wicked wife's; and as for Noë, that great admiral, the waters of oblivion have him whom the waters of God might not drown.",
+  "genre": "History",
+  "length": 200,
+  "book_id": 14813,
+  "book_slug": "the-life-and-death-of-richard-yea-and-nay",
+  "segment_id": "14813_789",
+  "id": 1044,
+  "rating": "2",
+  "annotator": 4,
+  "annotation_id": 1303,
+  "created_at": "2025-11-21T14:55:32.911558Z",
+  "updated_at": "2025-11-21T14:55:32.911572Z",
+  "lead_time": 67.449
+},
+{
+  "text": "Sullivan raised his handsome, haggard head and looked around at me. \"I've seen you before, haven't I?\" he asked. \"Weren't you an uninvited guest at the Laurels a few days—or nights—ago?",
+  "genre": "Mystery",
+  "length": 185,
+  "book_id": 1869,
+  "book_slug": "the-man-in-lower-ten",
+  "segment_id": "1869_1433",
+  "id": 1045,
+  "rating": "1",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1371,
+  "created_at": "2026-02-07T09:48:05.392212Z",
+  "updated_at": "2026-02-07T09:48:05.392227Z",
+  "lead_time": 34.048
+},
+{
+  "text": "Sullivan raised his handsome, haggard head and looked around at me. \"I've seen you before, haven't I?\" he asked. \"Weren't you an uninvited guest at the Laurels a few days—or nights—ago?",
+  "genre": "Mystery",
+  "length": 185,
+  "book_id": 1869,
+  "book_slug": "the-man-in-lower-ten",
+  "segment_id": "1869_1433",
+  "id": 1045,
+  "rating": "1",
+  "annotator": 4,
+  "annotation_id": 1304,
+  "created_at": "2025-11-21T14:57:23.036442Z",
+  "updated_at": "2025-11-21T14:57:23.036456Z",
+  "lead_time": 109.342
+},
+{
+  "text": "He held his hands high, came forward cautiously. \"I am finished,\" he whispered—\"Done! I don't care what they'll do to me.\" He nodded toward the handmaiden and Larry, now at the end of the bridge and passing on, oblivious of all save each other. He drew closer. His eyes were sunken, burning, mad; his face etched with deep lines, as though a graver's tool had cut down through it. I took a step backward. A grin, like the grimace of a fiend, blasted the Russian's visage.",
+  "genre": "Science Fiction",
+  "length": 471,
+  "book_id": 765,
+  "book_slug": "the-moon-pool",
+  "segment_id": "765_2208",
+  "id": 1046,
+  "rating": "4",
+  "label": [
+    {
+      "end": 22,
+      "text": "He held his hands high",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 194,
+      "text": "He nodded toward the handmaiden and Larry, now at the end of the bridge",
+      "start": 123,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 328,
+      "text": "His eyes were sunken, burning, mad; his face etched with deep lines",
+      "start": 261,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 470,
+      "text": "grin, like the grimace of a fiend, blasted the Russian's visage",
+      "start": 407,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1372,
+  "created_at": "2026-02-07T09:53:13.882248Z",
+  "updated_at": "2026-02-07T09:53:13.882261Z",
+  "lead_time": 298.148
+},
+{
+  "text": "He held his hands high, came forward cautiously. \"I am finished,\" he whispered—\"Done! I don't care what they'll do to me.\" He nodded toward the handmaiden and Larry, now at the end of the bridge and passing on, oblivious of all save each other. He drew closer. His eyes were sunken, burning, mad; his face etched with deep lines, as though a graver's tool had cut down through it. I took a step backward. A grin, like the grimace of a fiend, blasted the Russian's visage.",
+  "genre": "Science Fiction",
+  "length": 471,
+  "book_id": 765,
+  "book_slug": "the-moon-pool",
+  "segment_id": "765_2208",
+  "id": 1046,
+  "rating": "3",
+  "annotator": 4,
+  "annotation_id": 1305,
+  "created_at": "2025-11-21T14:59:24.858326Z",
+  "updated_at": "2025-11-21T14:59:24.858338Z",
+  "lead_time": 120.947
+},
+{
+  "text": "Anson's sudden action then seemed a leap of his whole frame. Wilson, likewise, bent forward eagerly. Beasley glanced at the door—then began to whisper.",
+  "genre": "Western",
+  "length": 151,
+  "book_id": 3457,
+  "book_slug": "the-man-of-the-forest",
+  "segment_id": "3457_35",
+  "id": 1047,
+  "label": [
+    {
+      "end": 128,
+      "text": "Beasley glanced at the door",
+      "start": 101,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 91,
+      "text": "Wilson, likewise, bent forward",
+      "start": 61,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Action",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1373,
+  "created_at": "2026-02-07T09:58:21.585956Z",
+  "updated_at": "2026-02-07T09:58:21.585969Z",
+  "lead_time": 299.961
+},
+{
+  "text": "Anson's sudden action then seemed a leap of his whole frame. Wilson, likewise, bent forward eagerly. Beasley glanced at the door—then began to whisper.",
+  "genre": "Western",
+  "length": 151,
+  "book_id": 3457,
+  "book_slug": "the-man-of-the-forest",
+  "segment_id": "3457_35",
+  "id": 1047,
+  "rating": "2",
+  "annotator": 4,
+  "annotation_id": 1306,
+  "created_at": "2025-11-21T14:59:54.842149Z",
+  "updated_at": "2025-11-21T14:59:54.842163Z",
+  "lead_time": 29.271
+},
+{
+  "text": "\"Oliver is a man—he must apologize. A man, I say, though little more than a boy. And otherwise you would now be pursuing your Art in Paris due to dear kind Mrs.",
+  "genre": "Fiction",
+  "length": 160,
+  "book_id": 8403,
+  "book_slug": "young-people-s-pride-a-novel",
+  "segment_id": "8403_391",
+  "id": 1048,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1374,
+  "created_at": "2026-02-07T10:01:20.393439Z",
+  "updated_at": "2026-02-07T10:01:20.393453Z",
+  "lead_time": 167.567
+},
+{
+  "text": "\"Oliver is a man—he must apologize. A man, I say, though little more than a boy. And otherwise you would now be pursuing your Art in Paris due to dear kind Mrs.",
+  "genre": "Fiction",
+  "length": 160,
+  "book_id": 8403,
+  "book_slug": "young-people-s-pride-a-novel",
+  "segment_id": "8403_391",
+  "id": 1048,
+  "rating": "2",
+  "annotator": 4,
+  "annotation_id": 1307,
+  "created_at": "2025-11-21T15:03:21.321765Z",
+  "updated_at": "2025-11-21T15:03:21.321777Z",
+  "lead_time": 205.582
+},
+{
+  "text": "I crossed myself when I heard that, as if I had heard the devil.\" I looked at the keeper when he put the last question, and I am much mistaken if I did not detect an evil smile on his lips.",
+  "genre": "Mystery",
+  "length": 189,
+  "book_id": 1685,
+  "book_slug": "the-mystery-of-the-yellow-room",
+  "segment_id": "1685_505",
+  "id": 1049,
+  "label": [
+    {
+      "end": 88,
+      "text": "I looked at the keeper",
+      "start": 66,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 188,
+      "text": "detect an evil smile on his lips",
+      "start": 156,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Character",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1375,
+  "created_at": "2026-02-07T10:03:40.070650Z",
+  "updated_at": "2026-02-07T10:03:40.070663Z",
+  "lead_time": 131.8
+},
+{
+  "text": "I crossed myself when I heard that, as if I had heard the devil.\" I looked at the keeper when he put the last question, and I am much mistaken if I did not detect an evil smile on his lips.",
+  "genre": "Mystery",
+  "length": 189,
+  "book_id": 1685,
+  "book_slug": "the-mystery-of-the-yellow-room",
+  "segment_id": "1685_505",
+  "id": 1049,
+  "rating": "3",
+  "annotator": 4,
+  "annotation_id": 1308,
+  "created_at": "2025-11-21T15:03:57.198197Z",
+  "updated_at": "2025-11-21T15:03:57.198209Z",
+  "lead_time": 35.046
+},
+{
+  "text": "Sometime later Bassett got on his horse and rode out to a ledge which commanded a long stretch of trail in the valley below. Far away horsemen were riding along it, one behind the other, small dots that moved on slowly but steadily.",
+  "genre": "Mystery",
+  "length": 232,
+  "book_id": 1601,
+  "book_slug": "the-breaking-point",
+  "segment_id": "1601_1198",
+  "id": 1050,
+  "rating": "4",
+  "label": [
+    {
+      "end": 123,
+      "text": "Bassett got on his horse and rode out to a ledge which commanded a long stretch of trail in the valley below",
+      "start": 15,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 211,
+      "text": "Far away horsemen were riding along it, one behind the other, small dots that moved on",
+      "start": 125,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1376,
+  "created_at": "2026-02-07T10:05:39.982070Z",
+  "updated_at": "2026-02-07T10:05:39.982083Z",
+  "lead_time": 112.193
+},
+{
+  "text": "Sometime later Bassett got on his horse and rode out to a ledge which commanded a long stretch of trail in the valley below. Far away horsemen were riding along it, one behind the other, small dots that moved on slowly but steadily.",
+  "genre": "Mystery",
+  "length": 232,
+  "book_id": 1601,
+  "book_slug": "the-breaking-point",
+  "segment_id": "1601_1198",
+  "id": 1050,
+  "rating": "3",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1327,
+  "created_at": "2026-01-22T16:13:17.087519Z",
+  "updated_at": "2026-01-22T16:13:17.087534Z",
+  "lead_time": 447.666
+},
+{
+  "text": "They will get cold steel and hot lead for their pains, an they venture to molest us, instead of silver or gold.\" \"Very true,\" said Philip, who was as eager as his cousin and endued with full share of Trevlyn courage and impetuosity; \"we can never wait till those sluggards have come up.",
+  "genre": "History",
+  "length": 286,
+  "book_id": 16654,
+  "book_slug": "the-lost-treasure-of-trevlyn-a-story-of-the-days-of-the-gunpowder-plot",
+  "segment_id": "16654_2565",
+  "id": 1051,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1377,
+  "created_at": "2026-02-07T10:08:07.953461Z",
+  "updated_at": "2026-02-07T10:08:07.953503Z",
+  "lead_time": 66.196
+},
+{
+  "text": "They will get cold steel and hot lead for their pains, an they venture to molest us, instead of silver or gold.\" \"Very true,\" said Philip, who was as eager as his cousin and endued with full share of Trevlyn courage and impetuosity; \"we can never wait till those sluggards have come up.",
+  "genre": "History",
+  "length": 286,
+  "book_id": 16654,
+  "book_slug": "the-lost-treasure-of-trevlyn-a-story-of-the-days-of-the-gunpowder-plot",
+  "segment_id": "16654_2565",
+  "id": 1051,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1309,
+  "created_at": "2025-11-26T07:45:08.393650Z",
+  "updated_at": "2025-11-26T07:45:08.393662Z",
+  "lead_time": 195.924
+},
+{
+  "text": "The coiling uprush of smoke streamed across the sky, and through the rare tatters of that red canopy, remote as though they belonged to another universe, shone the little stars.",
+  "genre": "Science Fiction",
+  "length": 177,
+  "book_id": 35,
+  "book_slug": "the-time-machine",
+  "segment_id": "35_597",
+  "id": 1052,
+  "label": [
+    {
+      "end": 176,
+      "text": "The coiling uprush of smoke streamed across the sky, and through the rare tatters of that red canopy, remote as though they belonged to another universe, shone the little stars",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "illsuitable": "Yes",
+  "type": "Outdoor",
+  "rating": "4",
+  "annotator": 1,
+  "annotation_id": 1378,
+  "created_at": "2026-02-07T10:12:29.886819Z",
+  "updated_at": "2026-02-07T10:12:29.886832Z",
+  "lead_time": 251.052
+},
+{
+  "text": "The coiling uprush of smoke streamed across the sky, and through the rare tatters of that red canopy, remote as though they belonged to another universe, shone the little stars.",
+  "genre": "Science Fiction",
+  "length": 177,
+  "book_id": 35,
+  "book_slug": "the-time-machine",
+  "segment_id": "35_597",
+  "id": 1052,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1310,
+  "created_at": "2025-11-26T07:46:46.032265Z",
+  "updated_at": "2025-11-26T07:46:46.032279Z",
+  "lead_time": 96.928
+},
+{
+  "text": "Bill's mount slid on his haunches and spilled his rider from the saddle. Silvermane seemed to be climbing into the air. Then August Naab, darting through the gate in a cloud of dust, shot his lasso, catching the right foreleg. Silvermane landed hard, his hoofs striking fire from the stones; and for an instant strained in convulsive struggle; then fell heaving and groaning. In a twinkling Billy loosened his lasso over a knot, making of it a halter, and tied the end to a cedar stump.",
+  "genre": "Western",
+  "length": 486,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_591",
+  "id": 1053,
+  "label": [
+    {
+      "end": 71,
+      "text": "Bill's mount slid on his haunches and spilled his rider from the saddle",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 118,
+      "text": "Silvermane seemed to be climbing into the air",
+      "start": 73,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 485,
+      "text": "August Naab, darting through the gate in a cloud of dust, shot his lasso, catching the right foreleg. Silvermane landed hard, his hoofs striking fire from the stones; and for an instant strained in convulsive struggle; then fell heaving and groaning. In a twinkling Billy loosened his lasso over a knot, making of it a halter, and tied the end to a cedar stump",
+      "start": 125,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "4",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1379,
+  "created_at": "2026-02-07T10:20:52.733778Z",
+  "updated_at": "2026-02-07T10:20:52.733793Z",
+  "lead_time": 493.152
+},
+{
+  "text": "Bill's mount slid on his haunches and spilled his rider from the saddle. Silvermane seemed to be climbing into the air. Then August Naab, darting through the gate in a cloud of dust, shot his lasso, catching the right foreleg. Silvermane landed hard, his hoofs striking fire from the stones; and for an instant strained in convulsive struggle; then fell heaving and groaning. In a twinkling Billy loosened his lasso over a knot, making of it a halter, and tied the end to a cedar stump.",
+  "genre": "Western",
+  "length": 486,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_591",
+  "id": 1053,
+  "rating": "4",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1311,
+  "created_at": "2025-11-26T07:50:38.472049Z",
+  "updated_at": "2025-11-26T11:17:58.853976Z",
+  "lead_time": 244.28699999999998
+},
+{
+  "text": "She kept to the stones of the creek for a pathway, jumping lightly from those that were moss-grown to those that hid their nakedness in the dark, velvet shadows of early morning, her white feet touching the shallow stream like pale gulls that dipped and skimmed.",
+  "genre": "Western",
+  "length": 262,
+  "book_id": 15573,
+  "book_slug": "judith-of-the-plains",
+  "segment_id": "15573_1270",
+  "id": 1054,
+  "label": [
+    {
+      "end": 221,
+      "text": "She kept to the stones of the creek for a pathway, jumping lightly from those that were moss-grown to those that hid their nakedness in the dark, velvet shadows of early morning, her white feet touching the shallow stream",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "4",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1380,
+  "created_at": "2026-02-07T10:24:34.987109Z",
+  "updated_at": "2026-02-07T10:24:34.987123Z",
+  "lead_time": 113.948
+},
+{
+  "text": "She kept to the stones of the creek for a pathway, jumping lightly from those that were moss-grown to those that hid their nakedness in the dark, velvet shadows of early morning, her white feet touching the shallow stream like pale gulls that dipped and skimmed.",
+  "genre": "Western",
+  "length": 262,
+  "book_id": 15573,
+  "book_slug": "judith-of-the-plains",
+  "segment_id": "15573_1270",
+  "id": 1054,
+  "rating": "4",
+  "annotator": 5,
+  "annotation_id": 1312,
+  "created_at": "2025-11-26T07:51:42.582061Z",
+  "updated_at": "2025-11-26T07:51:42.582074Z",
+  "lead_time": 63.445
+},
+{
+  "text": "\"You'll kill Tull!\" He did not question; he affirmed. \"I promised Jane Withersteen I'd try to avoid Tull. I'll keep my word. But sooner or later Tull and I will meet. As I feel now, if he even looks at me I'll draw!\" \"I reckon so. There'll be hell down there, presently.\" He paused a moment and flicked a sage-brush with his quirt. \"Venters, seein' as you're considerable worked up, tell me Milly Erne's story.\" Venters's agitation stilled to the trace of suppressed eagerness in",
+  "genre": "Western",
+  "length": 479,
+  "book_id": 1300,
+  "book_slug": "riders-of-the-purple-sage",
+  "segment_id": "1300_211",
+  "id": 1055,
+  "label": [
+    {
+      "end": 330,
+      "text": "He paused a moment and flicked a sage-brush with his quirt",
+      "start": 272,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1381,
+  "created_at": "2026-02-07T10:33:01.992641Z",
+  "updated_at": "2026-02-07T10:33:01.992654Z",
+  "lead_time": 498.345
+},
+{
+  "text": "\"You'll kill Tull!\" He did not question; he affirmed. \"I promised Jane Withersteen I'd try to avoid Tull. I'll keep my word. But sooner or later Tull and I will meet. As I feel now, if he even looks at me I'll draw!\" \"I reckon so. There'll be hell down there, presently.\" He paused a moment and flicked a sage-brush with his quirt. \"Venters, seein' as you're considerable worked up, tell me Milly Erne's story.\" Venters's agitation stilled to the trace of suppressed eagerness in",
+  "genre": "Western",
+  "length": 479,
+  "book_id": 1300,
+  "book_slug": "riders-of-the-purple-sage",
+  "segment_id": "1300_211",
+  "id": 1055,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1313,
+  "created_at": "2025-11-26T07:53:36.086464Z",
+  "updated_at": "2025-11-26T07:53:36.086476Z",
+  "lead_time": 112.708
+},
+{
+  "text": "\"That,\" said the Philosopher, \"may be accounted for in three ways—firstly, there is a lack of cerebral continuity: that is, faulty attention; secondly",
+  "genre": "Fiction",
+  "length": 150,
+  "book_id": 1605,
+  "book_slug": "the-crock-of-gold",
+  "segment_id": "1605_243",
+  "id": 1056,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1382,
+  "created_at": "2026-02-07T10:35:18.475136Z",
+  "updated_at": "2026-02-07T10:35:18.475149Z",
+  "lead_time": 21.528
+},
+{
+  "text": "\"That,\" said the Philosopher, \"may be accounted for in three ways—firstly, there is a lack of cerebral continuity: that is, faulty attention; secondly",
+  "genre": "Fiction",
+  "length": 150,
+  "book_id": 1605,
+  "book_slug": "the-crock-of-gold",
+  "segment_id": "1605_243",
+  "id": 1056,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1314,
+  "created_at": "2025-11-26T07:55:05.443711Z",
+  "updated_at": "2025-11-26T07:55:05.443723Z",
+  "lead_time": 87.998
+},
+{
+  "text": "She glanced at him quickly, to see if he had noticed it. \"Why did you say end?\" He saw that her eyes were full of tears and chafed her. \"You ain't thinking of divorcing me, like Mountain Pink done Bosky?\"",
+  "genre": "Western",
+  "length": 204,
+  "book_id": 15573,
+  "book_slug": "judith-of-the-plains",
+  "segment_id": "15573_1591",
+  "id": 1057,
+  "label": [
+    {
+      "end": 119,
+      "text": "her eyes were full of tears",
+      "start": 92,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 134,
+      "text": "He saw that her eyes were full of tears and chafed her",
+      "start": 80,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1383,
+  "created_at": "2026-02-07T10:37:49.003535Z",
+  "updated_at": "2026-02-07T10:37:49.003549Z",
+  "lead_time": 141.584
+},
+{
+  "text": "She glanced at him quickly, to see if he had noticed it. \"Why did you say end?\" He saw that her eyes were full of tears and chafed her. \"You ain't thinking of divorcing me, like Mountain Pink done Bosky?\"",
+  "genre": "Western",
+  "length": 204,
+  "book_id": 15573,
+  "book_slug": "judith-of-the-plains",
+  "segment_id": "15573_1591",
+  "id": 1057,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1315,
+  "created_at": "2025-11-26T07:57:14.062159Z",
+  "updated_at": "2025-11-26T07:57:14.062173Z",
+  "lead_time": 127.133
+},
+{
+  "text": "It is the actions of the past that brought about the present woes, and it is they that must be undone. For their part, the Futurists want to change the present through the future, to go into the future and bring back its completion, in the form of restored RNA cells, which is congruent with their belief that the past is the past and all that matters is that which is yet to come, that which still has the hope of existence.\"",
+  "genre": "Science Fiction",
+  "length": 426,
+  "book_id": 8735,
+  "book_slug": "the-revolutions-of-time",
+  "segment_id": "8735_133",
+  "id": 1058,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1384,
+  "created_at": "2026-02-07T10:39:33.188476Z",
+  "updated_at": "2026-02-07T10:39:33.188489Z",
+  "lead_time": 65.472
+},
+{
+  "text": "It is the actions of the past that brought about the present woes, and it is they that must be undone. For their part, the Futurists want to change the present through the future, to go into the future and bring back its completion, in the form of restored RNA cells, which is congruent with their belief that the past is the past and all that matters is that which is yet to come, that which still has the hope of existence.\"",
+  "genre": "Science Fiction",
+  "length": 426,
+  "book_id": 8735,
+  "book_slug": "the-revolutions-of-time",
+  "segment_id": "8735_133",
+  "id": 1058,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1316,
+  "created_at": "2025-11-26T11:18:31.681921Z",
+  "updated_at": "2025-11-26T11:18:31.681932Z",
+  "lead_time": 26.277
+},
+{
+  "text": "The company was very sorry, of course, that the thing had occurred; but they refused to pay for Keeling unless compelled to do so by the law of the land, and there matters stood.",
+  "genre": "Fiction",
+  "length": 178,
+  "book_id": 9309,
+  "book_slug": "in-a-steamer-chair-and-other-shipboard-stories",
+  "segment_id": "9309_1015",
+  "id": 1059,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1385,
+  "created_at": "2026-02-07T10:40:02.658506Z",
+  "updated_at": "2026-02-07T10:40:02.658647Z",
+  "lead_time": 21.56
+},
+{
+  "text": "The company was very sorry, of course, that the thing had occurred; but they refused to pay for Keeling unless compelled to do so by the law of the land, and there matters stood.",
+  "genre": "Fiction",
+  "length": 178,
+  "book_id": 9309,
+  "book_slug": "in-a-steamer-chair-and-other-shipboard-stories",
+  "segment_id": "9309_1015",
+  "id": 1059,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1317,
+  "created_at": "2025-11-26T11:18:54.055278Z",
+  "updated_at": "2025-11-26T11:18:54.055293Z",
+  "lead_time": 21.673
+},
+{
+  "text": "His voice was soft and calm. His tapering fingers with their carefully manicured nails fondled the roll of parchment, and then unrolled it, and held it so the other could read.",
+  "genre": "Fiction",
+  "length": 176,
+  "book_id": 4747,
+  "book_slug": "the-river-s-end",
+  "segment_id": "4747_975",
+  "id": 1060,
+  "rating": "1",
+  "type": "Action",
+  "visual_action": "true",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1386,
+  "created_at": "2026-02-07T10:41:52.933880Z",
+  "updated_at": "2026-02-07T10:41:52.933895Z",
+  "lead_time": 102.425
+},
+{
+  "text": "His voice was soft and calm. His tapering fingers with their carefully manicured nails fondled the roll of parchment, and then unrolled it, and held it so the other could read.",
+  "genre": "Fiction",
+  "length": 176,
+  "book_id": 4747,
+  "book_slug": "the-river-s-end",
+  "segment_id": "4747_975",
+  "id": 1060,
+  "rating": "1",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1318,
+  "created_at": "2025-11-26T11:22:56.660109Z",
+  "updated_at": "2025-11-26T11:22:56.660122Z",
+  "lead_time": 42.964
+},
+{
+  "text": "When they saw her and shouted down the sound fell as clearly as if they had called from the cabin, yet they had a good half hour's labor between that greeting and the moment they came out on the level before Kate.",
+  "genre": "Western",
+  "length": 213,
+  "book_id": 1897,
+  "book_slug": "the-seventh-man",
+  "segment_id": "1897_401",
+  "id": 1061,
+  "rating": "1",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1387,
+  "created_at": "2026-02-07T10:53:39.259683Z",
+  "updated_at": "2026-02-07T10:53:39.259696Z",
+  "lead_time": 137.588
+},
+{
+  "text": "When they saw her and shouted down the sound fell as clearly as if they had called from the cabin, yet they had a good half hour's labor between that greeting and the moment they came out on the level before Kate.",
+  "genre": "Western",
+  "length": 213,
+  "book_id": 1897,
+  "book_slug": "the-seventh-man",
+  "segment_id": "1897_401",
+  "id": 1061,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1319,
+  "created_at": "2025-11-26T11:24:12.550459Z",
+  "updated_at": "2025-11-26T11:24:12.550473Z",
+  "lead_time": 74.839
+},
+{
+  "text": "She could not divine its meaning. But it was such a driving passion that no man possessing it and free to the violence of war could ever escape death.",
+  "genre": "Fiction",
+  "length": 150,
+  "book_id": 10201,
+  "book_slug": "the-desert-of-wheat",
+  "segment_id": "10201_1328",
+  "id": 1062,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1388,
+  "created_at": "2026-02-07T10:54:18.273968Z",
+  "updated_at": "2026-02-07T10:54:18.273982Z",
+  "lead_time": 26.002
+},
+{
+  "text": "She could not divine its meaning. But it was such a driving passion that no man possessing it and free to the violence of war could ever escape death.",
+  "genre": "Fiction",
+  "length": 150,
+  "book_id": 10201,
+  "book_slug": "the-desert-of-wheat",
+  "segment_id": "10201_1328",
+  "id": 1062,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1320,
+  "created_at": "2025-11-26T11:24:37.192345Z",
+  "updated_at": "2025-11-26T11:24:37.192357Z",
+  "lead_time": 23.307
+},
+{
+  "text": "He told a story full of elaborate detail, and had an answer to everything, except the curious fact that the body couldn't be found; but the judge, who was probably drunk at the time—this was in Restoration days—made nothing of that. The mother and brother denied the accusation.",
+  "genre": "Mystery",
+  "length": 278,
+  "book_id": 2568,
+  "book_slug": "trent-s-last-case",
+  "segment_id": "2568_1592",
+  "id": 1063,
+  "rating": "2",
+  "type": "Indoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1389,
+  "created_at": "2026-02-07T10:56:03.462299Z",
+  "updated_at": "2026-02-07T10:56:03.462313Z",
+  "lead_time": 97.4
+},
+{
+  "text": "He told a story full of elaborate detail, and had an answer to everything, except the curious fact that the body couldn't be found; but the judge, who was probably drunk at the time—this was in Restoration days—made nothing of that. The mother and brother denied the accusation.",
+  "genre": "Mystery",
+  "length": 278,
+  "book_id": 2568,
+  "book_slug": "trent-s-last-case",
+  "segment_id": "2568_1592",
+  "id": 1063,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1321,
+  "created_at": "2025-11-26T11:25:00.703733Z",
+  "updated_at": "2025-11-26T11:25:00.703747Z",
+  "lead_time": 22.299
+},
+{
+  "text": "Thereupon, hauling out his precious snuffbox and rapping upon the lid, he offered a pinch around. Then calling attention to the inscription, he demanded to know whether a man who had behaved so well upon that occasion had need to be afraid of a whole churchful of devils. \"I would,\" he cried, \"offer the Devil a pinch, as I have offered it to you. Then I would bid him read this and tell me whether he dared to say that black was the white of my eye.\"",
+  "genre": "Fiction",
+  "length": 451,
+  "book_id": 10394,
+  "book_slug": "stolen-treasure",
+  "segment_id": "10394_716",
+  "id": 1064,
+  "label": [
+    {
+      "end": 96,
+      "text": "hauling out his precious snuffbox and rapping upon the lid, he offered a pinch around",
+      "start": 11,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Action",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1390,
+  "created_at": "2026-02-07T11:00:31.870908Z",
+  "updated_at": "2026-02-07T11:00:31.870922Z",
+  "lead_time": 260.387
+},
+{
+  "text": "Thereupon, hauling out his precious snuffbox and rapping upon the lid, he offered a pinch around. Then calling attention to the inscription, he demanded to know whether a man who had behaved so well upon that occasion had need to be afraid of a whole churchful of devils. \"I would,\" he cried, \"offer the Devil a pinch, as I have offered it to you. Then I would bid him read this and tell me whether he dared to say that black was the white of my eye.\"",
+  "genre": "Fiction",
+  "length": 451,
+  "book_id": 10394,
+  "book_slug": "stolen-treasure",
+  "segment_id": "10394_716",
+  "id": 1064,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1322,
+  "created_at": "2025-11-26T11:26:27.272193Z",
+  "updated_at": "2025-11-26T11:26:27.272205Z",
+  "lead_time": 85.608
+},
+{
+  "text": "They were in part peculiar indeed, but I have followed them to each last detail as faithfully as I was able. He directed that I remove his body to Virginia without embalming, and that he be laid in an open coffin within a tomb which he previously had had constructed and which, as I later learned, was well ventilated.",
+  "genre": "Science Fiction",
+  "length": 318,
+  "book_id": 62,
+  "book_slug": "a-princess-of-mars",
+  "segment_id": "62_22",
+  "id": 1065,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1391,
+  "created_at": "2026-02-07T11:02:12.208933Z",
+  "updated_at": "2026-02-07T11:02:12.208947Z",
+  "lead_time": 91.15
+},
+{
+  "text": "They were in part peculiar indeed, but I have followed them to each last detail as faithfully as I was able. He directed that I remove his body to Virginia without embalming, and that he be laid in an open coffin within a tomb which he previously had had constructed and which, as I later learned, was well ventilated.",
+  "genre": "Science Fiction",
+  "length": 318,
+  "book_id": 62,
+  "book_slug": "a-princess-of-mars",
+  "segment_id": "62_22",
+  "id": 1065,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1323,
+  "created_at": "2025-11-26T11:29:10.944754Z",
+  "updated_at": "2025-11-26T11:29:10.944770Z",
+  "lead_time": 159.725
+},
+{
+  "text": "He dashed down the stairs, but was late by only the fraction of a second, as a metal hand was just closing the huge door to the Graveyard of Genius. He fumbled at the secret combination, and as he was doing so Eva and Zita joined him.",
+  "genre": "Mystery",
+  "length": 234,
+  "book_id": 16168,
+  "book_slug": "the-master-mystery",
+  "segment_id": "16168_1092",
+  "id": 1066,
+  "label": [
+    {
+      "end": 25,
+      "text": "He dashed down the stairs",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 147,
+      "text": "a metal hand was just closing the huge door to the Graveyard of Genius",
+      "start": 77,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 233,
+      "text": "Eva and Zita joined him",
+      "start": 210,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1392,
+  "created_at": "2026-02-07T11:03:37.298547Z",
+  "updated_at": "2026-02-07T11:03:37.298561Z",
+  "lead_time": 72.716
+},
+{
+  "text": "He dashed down the stairs, but was late by only the fraction of a second, as a metal hand was just closing the huge door to the Graveyard of Genius. He fumbled at the secret combination, and as he was doing so Eva and Zita joined him.",
+  "genre": "Mystery",
+  "length": 234,
+  "book_id": 16168,
+  "book_slug": "the-master-mystery",
+  "segment_id": "16168_1092",
+  "id": 1066,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1324,
+  "created_at": "2025-11-26T11:29:54.164423Z",
+  "updated_at": "2025-11-26T11:29:54.164437Z",
+  "lead_time": 42.269
+},
+{
+  "text": "I wondered); children breaking out of school; grave philosophers debating in the shadow of a cool arcade; a royal person making a progress preceded by runners and surrounded by slaves, and lastly the multitudes of citizens going about the daily business of life.",
+  "genre": "Fantasy",
+  "length": 262,
+  "book_id": 5745,
+  "book_slug": "she-and-allan",
+  "segment_id": "5745_1589",
+  "id": 1067,
+  "label": [
+    {
+      "end": 104,
+      "text": "grave philosophers debating in the shadow of a cool arcade",
+      "start": 46,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Indoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1393,
+  "created_at": "2026-02-07T11:07:41.646217Z",
+  "updated_at": "2026-02-07T11:07:41.646231Z",
+  "lead_time": 235.99
+},
+{
+  "text": "I wondered); children breaking out of school; grave philosophers debating in the shadow of a cool arcade; a royal person making a progress preceded by runners and surrounded by slaves, and lastly the multitudes of citizens going about the daily business of life.",
+  "genre": "Fantasy",
+  "length": 262,
+  "book_id": 5745,
+  "book_slug": "she-and-allan",
+  "segment_id": "5745_1589",
+  "id": 1067,
+  "rating": "3",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1325,
+  "created_at": "2025-11-26T11:31:05.428288Z",
+  "updated_at": "2025-11-26T11:31:05.428301Z",
+  "lead_time": 69.914
+},
+{
+  "text": "Allowing for a few obsolete words, and sundry slight changes of pronunciation, the ordinary Japanese reader to-day can enjoy these early productions of his native muse with about as little difficulty as the English reader finds in studying the poets of the Elizabethan era. Moreover, the refinement and the [pg 28] simple charm of the Manyōshū compositions have never been surpassed, and seldom equaled, by later Japanese poets.",
+  "genre": "Travel",
+  "length": 428,
+  "book_id": 15320,
+  "book_slug": "the-romance-of-the-milky-way-and-other-studies-stories",
+  "segment_id": "15320_121",
+  "id": 1068,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1394,
+  "created_at": "2026-02-07T11:08:37.528936Z",
+  "updated_at": "2026-02-07T11:08:37.528950Z",
+  "lead_time": 47.593
+},
+{
+  "text": "Allowing for a few obsolete words, and sundry slight changes of pronunciation, the ordinary Japanese reader to-day can enjoy these early productions of his native muse with about as little difficulty as the English reader finds in studying the poets of the Elizabethan era. Moreover, the refinement and the [pg 28] simple charm of the Manyōshū compositions have never been surpassed, and seldom equaled, by later Japanese poets.",
+  "genre": "Travel",
+  "length": 428,
+  "book_id": 15320,
+  "book_slug": "the-romance-of-the-milky-way-and-other-studies-stories",
+  "segment_id": "15320_121",
+  "id": 1068,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1326,
+  "created_at": "2025-11-26T11:32:16.259735Z",
+  "updated_at": "2025-11-26T11:33:14.926492Z",
+  "lead_time": 65.714
+},
+{
+  "text": "And when Mrs. Spear tried to stop sobbing long enough to tell him how happy she was, and how grateful, he instead told her what a fine son she had, and that he remembered when Spear used to carry flowers to town for her. And she remembered it, too, and thanked him for the flowers. And he told Spear, when Isaacs & Sons went bankrupt, which at the rate they were giving away their money to the Hebrew Hospital would be very soon,",
+  "genre": "Fiction",
+  "length": 429,
+  "book_id": 16908,
+  "book_slug": "once-upon-a-time",
+  "segment_id": "16908_476",
+  "id": 1069,
+  "label": [
+    {
+      "end": 219,
+      "text": "Spear used to carry flowers to town for her",
+      "start": 176,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Action",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1395,
+  "created_at": "2026-02-07T11:12:36.737253Z",
+  "updated_at": "2026-02-07T11:12:36.737266Z",
+  "lead_time": 231.598
+},
+{
+  "text": "And when Mrs. Spear tried to stop sobbing long enough to tell him how happy she was, and how grateful, he instead told her what a fine son she had, and that he remembered when Spear used to carry flowers to town for her. And she remembered it, too, and thanked him for the flowers. And he told Spear, when Isaacs & Sons went bankrupt, which at the rate they were giving away their money to the Hebrew Hospital would be very soon,",
+  "genre": "Fiction",
+  "length": 429,
+  "book_id": 16908,
+  "book_slug": "once-upon-a-time",
+  "segment_id": "16908_476",
+  "id": 1069,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1328,
+  "created_at": "2026-01-22T16:20:26.917145Z",
+  "updated_at": "2026-01-22T16:20:26.917159Z",
+  "lead_time": 428.964
+},
+{
+  "text": "They trotted across half the intervening distance, and when Florence halted again Madeline was still not satisfied and asked to be taken nearer. This time, before they reined in again, Al Hammond saw them and wheeled his horse in their direction.",
+  "genre": "Western",
+  "length": 246,
+  "book_id": 1095,
+  "book_slug": "the-light-of-the-western-stars",
+  "segment_id": "1095_446",
+  "id": 1070,
+  "label": [
+    {
+      "end": 245,
+      "text": "Al Hammond saw them and wheeled his horse in their direction",
+      "start": 185,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1396,
+  "created_at": "2026-02-07T11:13:58.768096Z",
+  "updated_at": "2026-02-07T11:13:58.768112Z",
+  "lead_time": 72.375
+},
+{
+  "text": "They trotted across half the intervening distance, and when Florence halted again Madeline was still not satisfied and asked to be taken nearer. This time, before they reined in again, Al Hammond saw them and wheeled his horse in their direction.",
+  "genre": "Western",
+  "length": 246,
+  "book_id": 1095,
+  "book_slug": "the-light-of-the-western-stars",
+  "segment_id": "1095_446",
+  "id": 1070,
+  "rating": "2",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1329,
+  "created_at": "2026-01-22T16:21:22.788593Z",
+  "updated_at": "2026-01-22T16:21:22.788606Z",
+  "lead_time": 55.258
+},
+{
+  "text": "Save me! They're after me! Look at 'em; look at 'em!\"",
+  "genre": "Fiction",
+  "length": 53,
+  "book_id": 6119,
+  "book_slug": "an-outback-marriage-a-story-of-australian-life",
+  "segment_id": "6119_1192",
+  "id": 1071,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1397,
+  "created_at": "2026-02-07T11:14:21.582625Z",
+  "updated_at": "2026-02-07T11:14:21.582639Z",
+  "lead_time": 11.369
+},
+{
+  "text": "Save me! They're after me! Look at 'em; look at 'em!\"",
+  "genre": "Fiction",
+  "length": 53,
+  "book_id": 6119,
+  "book_slug": "an-outback-marriage-a-story-of-australian-life",
+  "segment_id": "6119_1192",
+  "id": 1071,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1330,
+  "created_at": "2026-01-22T16:22:09.804579Z",
+  "updated_at": "2026-01-22T16:22:09.804593Z",
+  "lead_time": 46.43
+},
+{
+  "text": "Casita to-night hardly knowing where I was.  A boy took me to that hotel.  There I met an old friend whom I had not seen for years. He belongs to the cavalry stationed here.  He had befriended a Spanish girl—fallen in love with her.  Rojas had killed this girl's father—tried to abduct her.... You know what took place at the hotel.",
+  "genre": "Western",
+  "length": 332,
+  "book_id": 502,
+  "book_slug": "desert-gold",
+  "segment_id": "502_355",
+  "id": 1072,
+  "rating": "2",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1398,
+  "created_at": "2026-02-07T11:16:10.326959Z",
+  "updated_at": "2026-02-07T11:16:10.326971Z",
+  "lead_time": 97.13
+},
+{
+  "text": "Casita to-night hardly knowing where I was.  A boy took me to that hotel.  There I met an old friend whom I had not seen for years. He belongs to the cavalry stationed here.  He had befriended a Spanish girl—fallen in love with her.  Rojas had killed this girl's father—tried to abduct her.... You know what took place at the hotel.",
+  "genre": "Western",
+  "length": 332,
+  "book_id": 502,
+  "book_slug": "desert-gold",
+  "segment_id": "502_355",
+  "id": 1072,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1331,
+  "created_at": "2026-01-22T16:24:10.338318Z",
+  "updated_at": "2026-01-22T16:24:10.338333Z",
+  "lead_time": 119.925
+},
+{
+  "text": "Swinging his bloody horns from side to side the beast cut a wide swath before him straight upward toward our seats.  Before him slaves and gorilla-men fought in mad stampede to escape the menace of the creature's death agonies, for such only could that frightful charge have been. Forgetful of us, our guards joined in the general rush for the exits, many of which pierced the wall of the amphitheater behind us.  Perry,",
+  "genre": "Science Fiction",
+  "length": 420,
+  "book_id": 123,
+  "book_slug": "at-the-earth-s-core",
+  "segment_id": "123_412",
+  "id": 1073,
+  "label": [
+    {
+      "end": 226,
+      "text": "Swinging his bloody horns from side to side the beast cut a wide swath before him straight upward toward our seats. Before him slaves and gorilla-men fought in mad stampede to escape the menace of the creature's death agonies",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 411,
+      "text": "our guards joined in the general rush for the exits, many of which pierced the wall of the amphitheater behind us",
+      "start": 298,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "4",
+  "type": "Action",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1399,
+  "created_at": "2026-02-07T11:18:13.919044Z",
+  "updated_at": "2026-02-07T11:18:13.919057Z",
+  "lead_time": 114.769
+},
+{
+  "text": "Swinging his bloody horns from side to side the beast cut a wide swath before him straight upward toward our seats.  Before him slaves and gorilla-men fought in mad stampede to escape the menace of the creature's death agonies, for such only could that frightful charge have been. Forgetful of us, our guards joined in the general rush for the exits, many of which pierced the wall of the amphitheater behind us.  Perry,",
+  "genre": "Science Fiction",
+  "length": 420,
+  "book_id": 123,
+  "book_slug": "at-the-earth-s-core",
+  "segment_id": "123_412",
+  "id": 1073,
+  "rating": "4",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1332,
+  "created_at": "2026-01-22T16:25:34.117297Z",
+  "updated_at": "2026-01-22T16:25:34.117311Z",
+  "lead_time": 83.162
+},
+{
+  "text": "Near the bell-push a sign was painted in neat letters upon the marble, and the sign read: NO ADMITTANCE EXCEPT ON BUSINESS This did not discourage Dorothy, however, and she rang the bell.",
+  "genre": "Fantasy",
+  "length": 187,
+  "book_id": 517,
+  "book_slug": "the-emerald-city-of-oz",
+  "segment_id": "517_784",
+  "id": 1074,
+  "label": [
+    {
+      "end": 122,
+      "text": "Near the bell-push a sign was painted in neat letters upon the marble, and the sign read: NO ADMITTANCE EXCEPT ON BUSINESS",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 187,
+      "text": "she rang the bell.",
+      "start": 169,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Action",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1400,
+  "created_at": "2026-02-07T11:19:46.699189Z",
+  "updated_at": "2026-02-07T11:19:46.699202Z",
+  "lead_time": 66.86
+},
+{
+  "text": "Near the bell-push a sign was painted in neat letters upon the marble, and the sign read: NO ADMITTANCE EXCEPT ON BUSINESS This did not discourage Dorothy, however, and she rang the bell.",
+  "genre": "Fantasy",
+  "length": 187,
+  "book_id": 517,
+  "book_slug": "the-emerald-city-of-oz",
+  "segment_id": "517_784",
+  "id": 1074,
+  "rating": "1",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1333,
+  "created_at": "2026-01-22T16:26:29.210038Z",
+  "updated_at": "2026-01-22T16:26:29.210052Z",
+  "lead_time": 54.502
+},
+{
+  "text": "Réné having satisfied Has-se that the secret should be kept, the latter continued: \"Know, then, oh my brother, that when my people aided thy people to build this fort of thine, they constructed secretly, and by Micco's own orders, a passage beneath one of its walls, by which they might at any time obtain access to the fort or escape from it, as they might desire.",
+  "genre": "History",
+  "length": 365,
+  "book_id": 15746,
+  "book_slug": "the-flamingo-feather",
+  "segment_id": "15746_491",
+  "id": 1075,
+  "label": [
+    {
+      "end": 265,
+      "text": "passage beneath one of its walls",
+      "start": 233,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "2",
+  "type": "Indoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1401,
+  "created_at": "2026-02-07T11:21:19.186301Z",
+  "updated_at": "2026-02-07T11:21:19.186316Z",
+  "lead_time": 76.555
+},
+{
+  "text": "Réné having satisfied Has-se that the secret should be kept, the latter continued: \"Know, then, oh my brother, that when my people aided thy people to build this fort of thine, they constructed secretly, and by Micco's own orders, a passage beneath one of its walls, by which they might at any time obtain access to the fort or escape from it, as they might desire.",
+  "genre": "History",
+  "length": 365,
+  "book_id": 15746,
+  "book_slug": "the-flamingo-feather",
+  "segment_id": "15746_491",
+  "id": 1075,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1334,
+  "created_at": "2026-01-22T16:27:52.241872Z",
+  "updated_at": "2026-01-22T16:27:52.241888Z",
+  "lead_time": 82.421
+},
+{
+  "text": "Whither had the robber gone? Back into the thin air whence he had come.\nThere was no other solution. No tracks ahead; an absolute and physical impossibility of anything without wings getting up or down the flanking precipices—these were the incontestable facts.",
+  "genre": "Western",
+  "length": 261,
+  "book_id": 16589,
+  "book_slug": "the-killer",
+  "segment_id": "16589_769",
+  "id": 1076,
+  "rating": "1",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1402,
+  "created_at": "2026-02-07T11:24:11.228023Z",
+  "updated_at": "2026-02-07T11:24:11.228045Z",
+  "lead_time": 66.062
+},
+{
+  "text": "Whither had the robber gone? Back into the thin air whence he had come.\nThere was no other solution. No tracks ahead; an absolute and physical impossibility of anything without wings getting up or down the flanking precipices—these were the incontestable facts.",
+  "genre": "Western",
+  "length": 261,
+  "book_id": 16589,
+  "book_slug": "the-killer",
+  "segment_id": "16589_769",
+  "id": 1076,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1335,
+  "created_at": "2026-01-22T16:28:26.397321Z",
+  "updated_at": "2026-01-22T16:28:26.397335Z",
+  "lead_time": 33.579
+},
+{
+  "text": "\"And now I was to see the most weird and horrible thing, I think, of all that I beheld in that future age. This whole space was as bright as day with the reflection of the fire.",
+  "genre": "Science Fiction",
+  "length": 177,
+  "book_id": 35,
+  "book_slug": "the-time-machine",
+  "segment_id": "35_589",
+  "id": 1077,
+  "label": [
+    {
+      "end": 176,
+      "text": "This whole space was as bright as day with the reflection of the fire",
+      "start": 107,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "2",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1403,
+  "created_at": "2026-02-07T11:25:21.045306Z",
+  "updated_at": "2026-02-07T11:25:21.045319Z",
+  "lead_time": 61.036
+},
+{
+  "text": "\"And now I was to see the most weird and horrible thing, I think, of all that I beheld in that future age. This whole space was as bright as day with the reflection of the fire.",
+  "genre": "Science Fiction",
+  "length": 177,
+  "book_id": 35,
+  "book_slug": "the-time-machine",
+  "segment_id": "35_589",
+  "id": 1077,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1336,
+  "created_at": "2026-01-22T16:30:06.903868Z",
+  "updated_at": "2026-01-22T16:30:06.903881Z",
+  "lead_time": 99.881
+},
+{
+  "text": "If they did not they could at least reconnoiter the ground by daylight, and then when night came Turan could quickly come close to the city and in comparative safety prosecute his search for food and drink.",
+  "genre": "Science Fiction",
+  "length": 206,
+  "book_id": 1153,
+  "book_slug": "the-chessmen-of-mars",
+  "segment_id": "1153_789",
+  "id": 1078,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1404,
+  "created_at": "2026-02-07T11:28:42.994799Z",
+  "updated_at": "2026-02-07T11:28:42.994812Z",
+  "lead_time": 192.707
+},
+{
+  "text": "If they did not they could at least reconnoiter the ground by daylight, and then when night came Turan could quickly come close to the city and in comparative safety prosecute his search for food and drink.",
+  "genre": "Science Fiction",
+  "length": 206,
+  "book_id": 1153,
+  "book_slug": "the-chessmen-of-mars",
+  "segment_id": "1153_789",
+  "id": 1078,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1337,
+  "created_at": "2026-01-22T16:30:32.434209Z",
+  "updated_at": "2026-01-22T16:30:32.434227Z",
+  "lead_time": 24.917
+},
+{
+  "text": "One of his sons whistled low, causing Naab to rise slowly, to peer into the darkness, to listen intently. \"Here, get up,\" he said, extending a hand to Hare.",
+  "genre": "Western",
+  "length": 156,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_33",
+  "id": 1079,
+  "label": [
+    {
+      "end": 84,
+      "text": "One of his sons whistled low, causing Naab to rise slowly, to peer into the darkness",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 155,
+      "text": "extending a hand to Hare",
+      "start": 131,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Action",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1405,
+  "created_at": "2026-02-07T11:29:53.322211Z",
+  "updated_at": "2026-02-07T11:29:53.322224Z",
+  "lead_time": 60.9
+},
+{
+  "text": "One of his sons whistled low, causing Naab to rise slowly, to peer into the darkness, to listen intently. \"Here, get up,\" he said, extending a hand to Hare.",
+  "genre": "Western",
+  "length": 156,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_33",
+  "id": 1079,
+  "rating": "1",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1338,
+  "created_at": "2026-01-22T16:31:09.074180Z",
+  "updated_at": "2026-01-22T16:31:09.074194Z",
+  "lead_time": 36.103
+},
+{
+  "text": "In my efforts to escape we both fell into the water, and he, striking his head upon the edge of the wharf, was first stunned and then drowned.\" \"Thank God!\"",
+  "genre": "Fantasy",
+  "length": 156,
+  "book_id": 3687,
+  "book_slug": "the-ruby-of-kishmoor",
+  "segment_id": "3687_250",
+  "id": 1080,
+  "label": [
+    {
+      "end": 51,
+      "text": "we both fell into the water",
+      "start": 24,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 141,
+      "text": "he, striking his head upon the edge of the wharf, was first stunned and then drowned",
+      "start": 57,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1406,
+  "created_at": "2026-02-07T11:31:05.725020Z",
+  "updated_at": "2026-02-07T11:31:05.725033Z",
+  "lead_time": 56.985
+},
+{
+  "text": "In my efforts to escape we both fell into the water, and he, striking his head upon the edge of the wharf, was first stunned and then drowned.\" \"Thank God!\"",
+  "genre": "Fantasy",
+  "length": 156,
+  "book_id": 3687,
+  "book_slug": "the-ruby-of-kishmoor",
+  "segment_id": "3687_250",
+  "id": 1080,
+  "rating": "2",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1339,
+  "created_at": "2026-01-22T16:32:06.494514Z",
+  "updated_at": "2026-01-22T16:32:06.494528Z",
+  "lead_time": 56.817
+},
+{
+  "text": "Now and then some of the braves went forth on a war-party, or on a hunt after bears or buffaloes.  But the buffaloes were scarce, they told their chief; the herds must have wandered far, and the hunters often returned empty-handed.",
+  "genre": "History",
+  "length": 231,
+  "book_id": 14784,
+  "book_slug": "timid-hare-the-little-captive",
+  "segment_id": "14784_201",
+  "id": 1081,
+  "rating": "1",
+  "type": "Character",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1407,
+  "created_at": "2026-02-07T11:32:13.715059Z",
+  "updated_at": "2026-02-07T11:32:13.715073Z",
+  "lead_time": 58.538
+},
+{
+  "text": "Now and then some of the braves went forth on a war-party, or on a hunt after bears or buffaloes.  But the buffaloes were scarce, they told their chief; the herds must have wandered far, and the hunters often returned empty-handed.",
+  "genre": "History",
+  "length": 231,
+  "book_id": 14784,
+  "book_slug": "timid-hare-the-little-captive",
+  "segment_id": "14784_201",
+  "id": 1081,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1340,
+  "created_at": "2026-01-22T16:33:56.124217Z",
+  "updated_at": "2026-01-22T16:33:56.124232Z",
+  "lead_time": 109.09
+},
+{
+  "text": "Well, suppose you're camping out, and suppose it's a hot night, or you're in a hurry, and you've made camp late, or anyway you haven't got inside any tent, but you have just bedded down in the open.",
+  "genre": "Western",
+  "length": 198,
+  "book_id": 1298,
+  "book_slug": "the-virginian-a-horseman-of-the-plains",
+  "segment_id": "1298_959",
+  "id": 1082,
+  "label": [
+    {
+      "end": 62,
+      "text": "you're camping out, and suppose it's a hot night",
+      "start": 14,
+      "labels": [
+        "IVDL"
+      ]
+    },
+    {
+      "end": 197,
+      "text": "you have just bedded down in the open",
+      "start": 160,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1408,
+  "created_at": "2026-02-07T11:34:08.799913Z",
+  "updated_at": "2026-02-07T11:34:08.799926Z",
+  "lead_time": 99.42
+},
+{
+  "text": "Well, suppose you're camping out, and suppose it's a hot night, or you're in a hurry, and you've made camp late, or anyway you haven't got inside any tent, but you have just bedded down in the open.",
+  "genre": "Western",
+  "length": 198,
+  "book_id": 1298,
+  "book_slug": "the-virginian-a-horseman-of-the-plains",
+  "segment_id": "1298_959",
+  "id": 1082,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1341,
+  "created_at": "2026-01-22T16:35:01.834285Z",
+  "updated_at": "2026-01-22T16:35:01.834301Z",
+  "lead_time": 64.838
+},
+{
+  "text": "It was now spring, and seeing the item in the paper, about the touring club prize for an electric auto, had given him a new idea. But all thoughts of electric cars, and everything else, were driven from the mind of the young man, when, with his father, he rushed out to see the cause of the crash on the roof of the Swift homestead.",
+  "genre": "Fiction",
+  "length": 332,
+  "book_id": 950,
+  "book_slug": "tom-swift-and-his-electric-runabout-or-the-speediest-car-on-the-road",
+  "segment_id": "950_61",
+  "id": 1083,
+  "label": [
+    {
+      "end": 308,
+      "text": "young man, when, with his father, he rushed out to see the cause of the crash on the roof",
+      "start": 219,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 102,
+      "text": "seeing the item in the paper, about the touring club prize for an electric auto",
+      "start": 23,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Action",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1409,
+  "created_at": "2026-02-07T11:36:04.954203Z",
+  "updated_at": "2026-02-07T11:36:04.954217Z",
+  "lead_time": 105.247
+},
+{
+  "text": "It was now spring, and seeing the item in the paper, about the touring club prize for an electric auto, had given him a new idea. But all thoughts of electric cars, and everything else, were driven from the mind of the young man, when, with his father, he rushed out to see the cause of the crash on the roof of the Swift homestead.",
+  "genre": "Fiction",
+  "length": 332,
+  "book_id": 950,
+  "book_slug": "tom-swift-and-his-electric-runabout-or-the-speediest-car-on-the-road",
+  "segment_id": "950_61",
+  "id": 1083,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1342,
+  "created_at": "2026-01-22T17:42:54.087407Z",
+  "updated_at": "2026-01-22T17:42:54.087420Z",
+  "lead_time": 4071.036
+},
+{
+  "text": "But the other servants treated Nerle with much deference, noting in him an air of breeding that marked him the unusual servant of an unusual master. Indeed, most curious were the looks cast on these marvelous men who had calmly walked into the castle of mighty Terribus and successfully defied his anger; for in spite of his youthful appearance and smiling face every attendant at the banquet feared Prince Marvel even more than they feared their own fierce king.",
+  "genre": "Fantasy",
+  "length": 463,
+  "book_id": 518,
+  "book_slug": "the-enchanted-island-of-yew-whereon-prince-marvel-encountered-the-high-ki-of-twi-and-other-surprising-people",
+  "segment_id": "518_343",
+  "id": 1084,
+  "label": [
+    {
+      "end": 361,
+      "text": "youthful appearance and smiling face",
+      "start": 325,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 250,
+      "text": "calmly walked into the castle",
+      "start": 221,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 392,
+      "text": "every attendant at the banquet",
+      "start": 362,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Indoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1410,
+  "created_at": "2026-02-07T11:39:15.106475Z",
+  "updated_at": "2026-02-07T11:39:15.106489Z",
+  "lead_time": 159.215
+},
+{
+  "text": "But the other servants treated Nerle with much deference, noting in him an air of breeding that marked him the unusual servant of an unusual master. Indeed, most curious were the looks cast on these marvelous men who had calmly walked into the castle of mighty Terribus and successfully defied his anger; for in spite of his youthful appearance and smiling face every attendant at the banquet feared Prince Marvel even more than they feared their own fierce king.",
+  "genre": "Fantasy",
+  "length": 463,
+  "book_id": 518,
+  "book_slug": "the-enchanted-island-of-yew-whereon-prince-marvel-encountered-the-high-ki-of-twi-and-other-surprising-people",
+  "segment_id": "518_343",
+  "id": 1084,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1343,
+  "created_at": "2026-01-22T17:43:39.725948Z",
+  "updated_at": "2026-01-22T17:43:39.725963Z",
+  "lead_time": 45.019
+},
+{
+  "text": "Beloved, oh, not yet! Nothing is finished that we have to do and be:—hardly begun! I will not call even this \"midsummer,\" however much it seems so: it is still only spring.",
+  "genre": "Fiction",
+  "length": 172,
+  "book_id": 15941,
+  "book_slug": "an-englishwoman-s-love-letters",
+  "segment_id": "15941_50",
+  "id": 1085,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1411,
+  "created_at": "2026-02-07T11:39:44.472073Z",
+  "updated_at": "2026-02-07T11:39:44.472086Z",
+  "lead_time": 19.612
+},
+{
+  "text": "Beloved, oh, not yet! Nothing is finished that we have to do and be:—hardly begun! I will not call even this \"midsummer,\" however much it seems so: it is still only spring.",
+  "genre": "Fiction",
+  "length": 172,
+  "book_id": 15941,
+  "book_slug": "an-englishwoman-s-love-letters",
+  "segment_id": "15941_50",
+  "id": 1085,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1344,
+  "created_at": "2026-01-22T17:44:20.082226Z",
+  "updated_at": "2026-01-22T17:44:20.082239Z",
+  "lead_time": 39.787
+},
+{
+  "text": "Boy appeared. I didn't mean to visit any very big towns afterwards, for it wasn't civilisation I wanted; but—you came into the story, and I did lots of things I hadn't meant to do—because of you, Man.\"",
+  "genre": "Fiction",
+  "length": 201,
+  "book_id": 14740,
+  "book_slug": "the-princess-passes",
+  "segment_id": "14740_2013",
+  "id": 1086,
+  "rating": "1",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1412,
+  "created_at": "2026-02-07T11:42:03.799069Z",
+  "updated_at": "2026-02-07T11:42:03.799085Z",
+  "lead_time": 130.039
+},
+{
+  "text": "Boy appeared. I didn't mean to visit any very big towns afterwards, for it wasn't civilisation I wanted; but—you came into the story, and I did lots of things I hadn't meant to do—because of you, Man.\"",
+  "genre": "Fiction",
+  "length": 201,
+  "book_id": 14740,
+  "book_slug": "the-princess-passes",
+  "segment_id": "14740_2013",
+  "id": 1086,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1345,
+  "created_at": "2026-01-22T17:44:52.110377Z",
+  "updated_at": "2026-01-22T17:44:52.110390Z",
+  "lead_time": 31.449
+},
+{
+  "text": "You are clever and beautiful and have hosts of admirers. But—are you satisfied?\" She stared absently at the silk tassel, twirling it about her white fingers more and more rapidly.",
+  "genre": "Mystery",
+  "length": 179,
+  "book_id": 1182,
+  "book_slug": "dope",
+  "segment_id": "1182_716",
+  "id": 1087,
+  "label": [
+    {
+      "end": 178,
+      "text": "She stared absently at the silk tassel, twirling it about her white fingers more and more rapidly",
+      "start": 81,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "2",
+  "visual_action": "true",
+  "type": "Action",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1413,
+  "created_at": "2026-02-07T11:44:20.043704Z",
+  "updated_at": "2026-02-07T11:44:20.043718Z",
+  "lead_time": 48.234
+},
+{
+  "text": "You are clever and beautiful and have hosts of admirers. But—are you satisfied?\" She stared absently at the silk tassel, twirling it about her white fingers more and more rapidly.",
+  "genre": "Mystery",
+  "length": 179,
+  "book_id": 1182,
+  "book_slug": "dope",
+  "segment_id": "1182_716",
+  "id": 1087,
+  "rating": "2",
+  "annotator": 5,
+  "annotation_id": 1346,
+  "created_at": "2026-01-22T17:45:28.636215Z",
+  "updated_at": "2026-01-22T17:45:28.636230Z",
+  "lead_time": 35.938
+},
+{
+  "text": "\"An thou speakest another word in such strain of those who have favored us with naught save kindness, I will report thee to that same lash of which thou pratest so glibly.\"",
+  "genre": "History",
+  "length": 172,
+  "book_id": 15746,
+  "book_slug": "the-flamingo-feather",
+  "segment_id": "15746_187",
+  "id": 1088,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1414,
+  "created_at": "2026-02-07T11:48:59.990414Z",
+  "updated_at": "2026-02-07T11:48:59.990427Z",
+  "lead_time": 27.913
+},
+{
+  "text": "\"An thou speakest another word in such strain of those who have favored us with naught save kindness, I will report thee to that same lash of which thou pratest so glibly.\"",
+  "genre": "History",
+  "length": 172,
+  "book_id": 15746,
+  "book_slug": "the-flamingo-feather",
+  "segment_id": "15746_187",
+  "id": 1088,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1347,
+  "created_at": "2026-01-22T18:01:16.509563Z",
+  "updated_at": "2026-01-22T18:01:16.509578Z",
+  "lead_time": 947.26
+},
+{
+  "text": "A dozen years ago, as a lad of barely twenty, Levasseur had sailed with that monster of cruelty L'Ollonais, and his own subsequent exploits bore witness and did credit to the school in which he had been reared.",
+  "genre": "Fiction",
+  "length": 210,
+  "book_id": 1965,
+  "book_slug": "captain-blood",
+  "segment_id": "1965_885",
+  "id": 1089,
+  "label": [
+    {
+      "end": 106,
+      "text": "a lad of barely twenty, Levasseur had sailed with that monster of cruelty L'Ollonais",
+      "start": 22,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1415,
+  "created_at": "2026-02-07T11:51:32.571023Z",
+  "updated_at": "2026-02-07T11:51:32.571036Z",
+  "lead_time": 143.832
+},
+{
+  "text": "A dozen years ago, as a lad of barely twenty, Levasseur had sailed with that monster of cruelty L'Ollonais, and his own subsequent exploits bore witness and did credit to the school in which he had been reared.",
+  "genre": "Fiction",
+  "length": 210,
+  "book_id": 1965,
+  "book_slug": "captain-blood",
+  "segment_id": "1965_885",
+  "id": 1089,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1348,
+  "created_at": "2026-01-22T18:01:51.719830Z",
+  "updated_at": "2026-01-22T18:01:51.719844Z",
+  "lead_time": 34.588
+},
+{
+  "text": "An' the more ye struggle and fuss the less He can take hold of ye, and get a grup on ye with His feet—\" \"I'd like to feel sure they were God's, and not any other sort of feet,\" she said slowly, leaving her fish to go cold, though she was very hungry.",
+  "genre": "Fiction",
+  "length": 250,
+  "book_id": 15527,
+  "book_slug": "captivity",
+  "segment_id": "15527_114",
+  "id": 1090,
+  "rating": "1",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1416,
+  "created_at": "2026-02-07T11:53:25.047239Z",
+  "updated_at": "2026-02-07T11:53:25.047252Z",
+  "lead_time": 103.166
+},
+{
+  "text": "An' the more ye struggle and fuss the less He can take hold of ye, and get a grup on ye with His feet—\" \"I'd like to feel sure they were God's, and not any other sort of feet,\" she said slowly, leaving her fish to go cold, though she was very hungry.",
+  "genre": "Fiction",
+  "length": 250,
+  "book_id": 15527,
+  "book_slug": "captivity",
+  "segment_id": "15527_114",
+  "id": 1090,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1349,
+  "created_at": "2026-01-24T17:22:07.429420Z",
+  "updated_at": "2026-01-24T17:22:07.429435Z",
+  "lead_time": 98.637
+},
+{
+  "text": "Chapter 4: Onan, Lord of the Past Not wishing to delve too far into my past or relate what would be mundane and disconnected with my story, I will summarize with brevity what my situation was.",
+  "genre": "Science Fiction",
+  "length": 192,
+  "book_id": 8735,
+  "book_slug": "the-revolutions-of-time",
+  "segment_id": "8735_140",
+  "id": 1091,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1417,
+  "created_at": "2026-02-07T11:53:44.873167Z",
+  "updated_at": "2026-02-07T11:53:44.873180Z",
+  "lead_time": 11.153
+},
+{
+  "text": "Chapter 4: Onan, Lord of the Past Not wishing to delve too far into my past or relate what would be mundane and disconnected with my story, I will summarize with brevity what my situation was.",
+  "genre": "Science Fiction",
+  "length": 192,
+  "book_id": 8735,
+  "book_slug": "the-revolutions-of-time",
+  "segment_id": "8735_140",
+  "id": 1091,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1350,
+  "created_at": "2026-01-24T17:22:28.816515Z",
+  "updated_at": "2026-01-24T17:22:28.816529Z",
+  "lead_time": 20.764
+},
+{
+  "text": "I doan't want no talk with you or them hulking gert fules. 'T is you I'd ax, Martin Grimbal, by what right you'm here.\" \"You wouldn't answer my letters, and I couldn't find it in my heart to leave an important matter like this. I know I wasn't wise, but you don't understand what a priceless thing this is. I thought you'd find the new one in the morning and laugh at it. For",
+  "genre": "Fiction",
+  "length": 375,
+  "book_id": 14527,
+  "book_slug": "children-of-the-mist",
+  "segment_id": "14527_2249",
+  "id": 1092,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1418,
+  "created_at": "2026-02-07T11:54:34.667491Z",
+  "updated_at": "2026-02-07T11:54:34.667505Z",
+  "lead_time": 41.042
+},
+{
+  "text": "I doan't want no talk with you or them hulking gert fules. 'T is you I'd ax, Martin Grimbal, by what right you'm here.\" \"You wouldn't answer my letters, and I couldn't find it in my heart to leave an important matter like this. I know I wasn't wise, but you don't understand what a priceless thing this is. I thought you'd find the new one in the morning and laugh at it. For",
+  "genre": "Fiction",
+  "length": 375,
+  "book_id": 14527,
+  "book_slug": "children-of-the-mist",
+  "segment_id": "14527_2249",
+  "id": 1092,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1351,
+  "created_at": "2026-01-24T17:23:55.592293Z",
+  "updated_at": "2026-01-24T17:23:55.592309Z",
+  "lead_time": 86.204
+},
+{
+  "text": "We got up and looked out. Our house was surrounded by the whole population of Popsipetel.\nWe were used to having quite a number of curious and admiring Indians waiting at our door at all hours; but this was quite different. The vast crowd was dressed in its best clothes. Bright beads, gawdy feathers and gay blankets gave cheerful color to the scene. Every one seemed in very good humor, singing or playing on musical instruments—mostly painted wooden whistles or drums made from skins.",
+  "genre": "Fantasy",
+  "length": 487,
+  "book_id": 1154,
+  "book_slug": "the-voyages-of-doctor-dolittle",
+  "segment_id": "1154_1179",
+  "id": 1093,
+  "label": [
+    {
+      "end": 88,
+      "text": "We got up and looked out. Our house was surrounded by the whole population of Popsipetel",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 486,
+      "text": "The vast crowd was dressed in its best clothes. Bright beads, gawdy feathers and gay blankets gave cheerful color to the scene. Every one seemed in very good humor, singing or playing on musical instruments—mostly painted wooden whistles or drums made from skins",
+      "start": 224,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 179,
+      "text": "Indians waiting at our door",
+      "start": 152,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "4",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1419,
+  "created_at": "2026-02-07T11:56:14.803350Z",
+  "updated_at": "2026-02-07T11:56:14.803364Z",
+  "lead_time": 89.535
+},
+{
+  "text": "We got up and looked out. Our house was surrounded by the whole population of Popsipetel.\nWe were used to having quite a number of curious and admiring Indians waiting at our door at all hours; but this was quite different. The vast crowd was dressed in its best clothes. Bright beads, gawdy feathers and gay blankets gave cheerful color to the scene. Every one seemed in very good humor, singing or playing on musical instruments—mostly painted wooden whistles or drums made from skins.",
+  "genre": "Fantasy",
+  "length": 487,
+  "book_id": 1154,
+  "book_slug": "the-voyages-of-doctor-dolittle",
+  "segment_id": "1154_1179",
+  "id": 1093,
+  "rating": "4",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1352,
+  "created_at": "2026-01-25T11:37:11.681593Z",
+  "updated_at": "2026-01-25T11:39:56.769608Z",
+  "lead_time": 60.301
+},
+{
+  "text": "What harm does it do you to stay here a while?\" he asked doggedly. \"Don't you see? When my father hears of it he will be furious. I made\nPhil promise not to tell him. But he'll hear when he comes back. And then—there will be trouble. He'll drag me from you, or he'll die trying. He's that kind of man.\"",
+  "genre": "Western",
+  "length": 302,
+  "book_id": 14520,
+  "book_slug": "mavericks",
+  "segment_id": "14520_522",
+  "id": 1094,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1420,
+  "created_at": "2026-02-07T11:57:13.359603Z",
+  "updated_at": "2026-02-07T11:57:13.359617Z",
+  "lead_time": 22.665
+},
+{
+  "text": "What harm does it do you to stay here a while?\" he asked doggedly. \"Don't you see? When my father hears of it he will be furious. I made\nPhil promise not to tell him. But he'll hear when he comes back. And then—there will be trouble. He'll drag me from you, or he'll die trying. He's that kind of man.\"",
+  "genre": "Western",
+  "length": 302,
+  "book_id": 14520,
+  "book_slug": "mavericks",
+  "segment_id": "14520_522",
+  "id": 1094,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1353,
+  "created_at": "2026-01-25T11:39:33.714860Z",
+  "updated_at": "2026-01-25T11:39:33.714883Z",
+  "lead_time": 141.334
+},
+{
+  "text": "Peter Ruff sighed. \"My friend Fitzgerald,\" he remarked, \"will be glad to hear that.\"",
+  "genre": "Mystery",
+  "length": 84,
+  "book_id": 1976,
+  "book_slug": "peter-ruff-and-the-double-four",
+  "segment_id": "1976_492",
+  "id": 1095,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1421,
+  "created_at": "2026-02-07T11:57:43.377680Z",
+  "updated_at": "2026-02-07T11:57:43.377694Z",
+  "lead_time": 21.282
+},
+{
+  "text": "Peter Ruff sighed. \"My friend Fitzgerald,\" he remarked, \"will be glad to hear that.\"",
+  "genre": "Mystery",
+  "length": 84,
+  "book_id": 1976,
+  "book_slug": "peter-ruff-and-the-double-four",
+  "segment_id": "1976_492",
+  "id": 1095,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1354,
+  "created_at": "2026-01-25T11:40:39.951716Z",
+  "updated_at": "2026-01-25T11:40:39.951730Z",
+  "lead_time": 34.174
+},
+{
+  "text": "And she was not disappointed. When her maid, a stolid Englishwoman, appeared at her bedside early Saturday she carried a letter, which she handed over, with the turned-up nose of one who aids but does not approve. Quickly the girl tore it open.",
+  "genre": "Mystery",
+  "length": 244,
+  "book_id": 1814,
+  "book_slug": "the-agony-column",
+  "segment_id": "1814_152",
+  "id": 1096,
+  "label": [
+    {
+      "end": 243,
+      "text": "her maid, a stolid Englishwoman, appeared at her bedside early Saturday she carried a letter, which she handed over, with the turned-up nose of one who aids but does not approve. Quickly the girl tore it open",
+      "start": 35,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Indoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1422,
+  "created_at": "2026-02-07T11:59:00.888819Z",
+  "updated_at": "2026-02-07T11:59:00.888832Z",
+  "lead_time": 67.963
+},
+{
+  "text": "And she was not disappointed. When her maid, a stolid Englishwoman, appeared at her bedside early Saturday she carried a letter, which she handed over, with the turned-up nose of one who aids but does not approve. Quickly the girl tore it open.",
+  "genre": "Mystery",
+  "length": 244,
+  "book_id": 1814,
+  "book_slug": "the-agony-column",
+  "segment_id": "1814_152",
+  "id": 1096,
+  "rating": "2",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1355,
+  "created_at": "2026-01-25T11:42:37.002448Z",
+  "updated_at": "2026-01-25T11:43:41.666465Z",
+  "lead_time": 129.433
+},
+{
+  "text": "11.  They Meet the Wooden Gargoyles Another breathless climb brought our adventurers to a third landing where there was a rift in the mountain.  On peering out all they could see was rolling banks of clouds, so thick that they obscured all else.",
+  "genre": "Fantasy",
+  "length": 245,
+  "book_id": 420,
+  "book_slug": "dorothy-and-the-wizard-in-oz",
+  "segment_id": "420_469",
+  "id": 1097,
+  "label": [
+    {
+      "end": 244,
+      "text": "Another breathless climb brought our adventurers to a third landing where there was a rift in the mountain. On peering out all they could see was rolling banks of clouds, so thick that they obscured all else",
+      "start": 36,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1423,
+  "created_at": "2026-02-07T12:00:55.987113Z",
+  "updated_at": "2026-02-07T12:00:55.987127Z",
+  "lead_time": 93.969
+},
+{
+  "text": "11.  They Meet the Wooden Gargoyles Another breathless climb brought our adventurers to a third landing where there was a rift in the mountain.  On peering out all they could see was rolling banks of clouds, so thick that they obscured all else.",
+  "genre": "Fantasy",
+  "length": 245,
+  "book_id": 420,
+  "book_slug": "dorothy-and-the-wizard-in-oz",
+  "segment_id": "420_469",
+  "id": 1097,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1356,
+  "created_at": "2026-01-25T11:45:51.827562Z",
+  "updated_at": "2026-01-25T11:45:51.827576Z",
+  "lead_time": 69.195
+},
+{
+  "text": "And what Punk was able to contribute to the story throws no further light upon it. He was cleaning fish by the lake shore about five o'clock in the evening—an hour, that is, before the search party returned—when he saw this shadow of the guide picking its way weakly into camp. In advance of him, he declares, came the faint whiff of a certain singular odour.",
+  "genre": "Mystery",
+  "length": 359,
+  "book_id": 10897,
+  "book_slug": "the-wendigo",
+  "segment_id": "10897_361",
+  "id": 1098,
+  "label": [
+    {
+      "end": 155,
+      "text": "He was cleaning fish by the lake shore about five o'clock in the evening",
+      "start": 83,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 276,
+      "text": "he saw this shadow of the guide picking its way weakly into camp",
+      "start": 212,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "4",
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1424,
+  "created_at": "2026-02-07T12:02:22.373083Z",
+  "updated_at": "2026-02-07T12:02:22.373096Z",
+  "lead_time": 73.881
+},
+{
+  "text": "And what Punk was able to contribute to the story throws no further light upon it. He was cleaning fish by the lake shore about five o'clock in the evening—an hour, that is, before the search party returned—when he saw this shadow of the guide picking its way weakly into camp. In advance of him, he declares, came the faint whiff of a certain singular odour.",
+  "genre": "Mystery",
+  "length": 359,
+  "book_id": 10897,
+  "book_slug": "the-wendigo",
+  "segment_id": "10897_361",
+  "id": 1098,
+  "rating": "3",
+  "visual_action": "true",
+  "annotator": 5,
+  "annotation_id": 1357,
+  "created_at": "2026-01-25T11:47:36.806474Z",
+  "updated_at": "2026-01-25T11:47:36.806487Z",
+  "lead_time": 104.332
+},
+{
+  "text": "Tebrick ever laughed at his wife's transformation, for he was not very humorous. But this laugh was sour and painful to him. Then he tore up the photograph into little pieces, and scattered them out of the window, saying to himself: \"Memories will not help me here,\" and turning to the vixen he saw that she was still staring at the caged bird, and as he looked he saw her lick her chops.",
+  "genre": "Fantasy",
+  "length": 388,
+  "book_id": 10337,
+  "book_slug": "lady-into-fox",
+  "segment_id": "10337_109",
+  "id": 1099,
+  "label": [
+    {
+      "end": 212,
+      "text": "he tore up the photograph into little pieces, and scattered them out of the window",
+      "start": 130,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 387,
+      "text": "turning to the vixen he saw that she was still staring at the caged bird, and as he looked he saw her lick her chops",
+      "start": 271,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Indoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1425,
+  "created_at": "2026-02-07T12:03:32.677988Z",
+  "updated_at": "2026-02-07T12:03:32.678001Z",
+  "lead_time": 56.872
+},
+{
+  "text": "Tebrick ever laughed at his wife's transformation, for he was not very humorous. But this laugh was sour and painful to him. Then he tore up the photograph into little pieces, and scattered them out of the window, saying to himself: \"Memories will not help me here,\" and turning to the vixen he saw that she was still staring at the caged bird, and as he looked he saw her lick her chops.",
+  "genre": "Fantasy",
+  "length": 388,
+  "book_id": 10337,
+  "book_slug": "lady-into-fox",
+  "segment_id": "10337_109",
+  "id": 1099,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1358,
+  "created_at": "2026-01-25T11:48:49.104055Z",
+  "updated_at": "2026-01-25T11:48:49.104069Z",
+  "lead_time": 71.602
+},
+{
+  "text": "There was a dreadful screaming of horses, a shrieking of men. Then silence.\n\n\nShuddering, I looked. Where the mounted men had been was—nothing.\n\n\nNothing? There were two great circular spaces whose floors were glistening, wetly red. Fragments of man or horse—there was none. They had been crushed into—what was it Norhala had promised—had been stamped into the rock beneath the feet of her—servants.",
+  "genre": "Science Fiction",
+  "length": 399,
+  "book_id": 3479,
+  "book_slug": "the-metal-monster",
+  "segment_id": "3479_1368",
+  "id": 1100,
+  "label": [
+    {
+      "end": 258,
+      "text": "There were two great circular spaces whose floors were glistening, wetly red. Fragments of man or horse",
+      "start": 155,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 398,
+      "text": "had been stamped into the rock beneath the feet of her—servants",
+      "start": 335,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Outdoor",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1426,
+  "created_at": "2026-02-07T12:06:53.696996Z",
+  "updated_at": "2026-02-07T12:06:53.697012Z",
+  "lead_time": 191.771
+},
+{
+  "text": "There was a dreadful screaming of horses, a shrieking of men. Then silence.\n\n\nShuddering, I looked. Where the mounted men had been was—nothing.\n\n\nNothing? There were two great circular spaces whose floors were glistening, wetly red. Fragments of man or horse—there was none. They had been crushed into—what was it Norhala had promised—had been stamped into the rock beneath the feet of her—servants.",
+  "genre": "Science Fiction",
+  "length": 399,
+  "book_id": 3479,
+  "book_slug": "the-metal-monster",
+  "segment_id": "3479_1368",
+  "id": 1100,
+  "rating": "4",
+  "annotator": 5,
+  "annotation_id": 1359,
+  "created_at": "2026-02-01T16:41:27.459388Z",
+  "updated_at": "2026-02-01T16:41:27.459401Z",
+  "lead_time": 162.407
+},
+{
+  "text": "He had the same rations of rice and ragi {a cereal}, with occasional doles of more substantial fare. He was carefully kept from all communication with the other European prisoners, and as the Bengali was the only man of his set who knew English, his only opportunities of using his native tongue occurred in the evening before he slept.",
+  "genre": "History",
+  "length": 336,
+  "book_id": 16382,
+  "book_slug": "in-clive-s-command-a-story-of-the-fight-for-india",
+  "segment_id": "16382_785",
+  "id": 1101,
+  "label": [
+    {
+      "end": 52,
+      "text": "He had the same rations of rice and ragi {a cereal},",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1427,
+  "created_at": "2026-02-07T12:08:29.202529Z",
+  "updated_at": "2026-02-07T12:08:29.202543Z",
+  "lead_time": 84.773
+},
+{
+  "text": "He had the same rations of rice and ragi {a cereal}, with occasional doles of more substantial fare. He was carefully kept from all communication with the other European prisoners, and as the Bengali was the only man of his set who knew English, his only opportunities of using his native tongue occurred in the evening before he slept.",
+  "genre": "History",
+  "length": 336,
+  "book_id": 16382,
+  "book_slug": "in-clive-s-command-a-story-of-the-fight-for-india",
+  "segment_id": "16382_785",
+  "id": 1101,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1360,
+  "created_at": "2026-02-01T16:42:59.500085Z",
+  "updated_at": "2026-02-01T16:42:59.500098Z",
+  "lead_time": 91.411
+},
+{
+  "text": "From later observation—I mention this as worthy the attention of paleontologists and naturalists—I came to the conclusion that such creatures as the cave-bear, the cave-lion and the saber-tooth tiger, as well as the larger carnivorous reptiles make, ordinarily, two kills a day—one in the morning and one after night.  They immediately devour the entire carcass, after which they lie up and sleep for a few hours.",
+  "genre": "Science Fiction",
+  "length": 413,
+  "book_id": 552,
+  "book_slug": "the-people-that-time-forgot",
+  "segment_id": "552_215",
+  "id": 1102,
+  "label": [
+    {
+      "end": 412,
+      "text": "the cave-bear, the cave-lion and the saber-tooth tiger, as well as the larger carnivorous reptiles make, ordinarily, two kills a day—one in the morning and one after night. They immediately devour the entire carcass, after which they lie up and sleep for a few hours",
+      "start": 145,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Action",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1428,
+  "created_at": "2026-02-07T12:09:41.386784Z",
+  "updated_at": "2026-02-07T12:09:41.386797Z",
+  "lead_time": 61.133
+},
+{
+  "text": "From later observation—I mention this as worthy the attention of paleontologists and naturalists—I came to the conclusion that such creatures as the cave-bear, the cave-lion and the saber-tooth tiger, as well as the larger carnivorous reptiles make, ordinarily, two kills a day—one in the morning and one after night.  They immediately devour the entire carcass, after which they lie up and sleep for a few hours.",
+  "genre": "Science Fiction",
+  "length": 413,
+  "book_id": 552,
+  "book_slug": "the-people-that-time-forgot",
+  "segment_id": "552_215",
+  "id": 1102,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1361,
+  "created_at": "2026-02-01T16:43:57.734464Z",
+  "updated_at": "2026-02-01T16:43:57.734478Z",
+  "lead_time": 32.558
+},
+{
+  "text": "Manator and prepare them for their part in the plan that U-Thor and",
+  "genre": "Science Fiction",
+  "length": 67,
+  "book_id": 1153,
+  "book_slug": "the-chessmen-of-mars",
+  "segment_id": "1153_1648",
+  "id": 1103,
+  "rating": "0",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1429,
+  "created_at": "2026-02-07T12:10:14.058009Z",
+  "updated_at": "2026-02-07T12:10:14.058022Z",
+  "lead_time": 22.147
+},
+{
+  "text": "Manator and prepare them for their part in the plan that U-Thor and",
+  "genre": "Science Fiction",
+  "length": 67,
+  "book_id": 1153,
+  "book_slug": "the-chessmen-of-mars",
+  "segment_id": "1153_1648",
+  "id": 1103,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1362,
+  "created_at": "2026-02-01T16:44:09.978550Z",
+  "updated_at": "2026-02-01T16:44:09.978564Z",
+  "lead_time": 11.731
+},
+{
+  "text": "\"All right,\" it would mean; \"I only wanted to know where you are,\" but it did not come. Instead—two shots again in rapid succession—an interval—and then another.",
+  "genre": "Travel",
+  "length": 161,
+  "book_id": 16101,
+  "book_slug": "diane-of-the-green-van",
+  "segment_id": "16101_276",
+  "id": 1104,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1430,
+  "created_at": "2026-02-07T12:11:12.738934Z",
+  "updated_at": "2026-02-07T12:11:12.738949Z",
+  "lead_time": 41.831
+},
+{
+  "text": "\"All right,\" it would mean; \"I only wanted to know where you are,\" but it did not come. Instead—two shots again in rapid succession—an interval—and then another.",
+  "genre": "Travel",
+  "length": 161,
+  "book_id": 16101,
+  "book_slug": "diane-of-the-green-van",
+  "segment_id": "16101_276",
+  "id": 1104,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1363,
+  "created_at": "2026-02-01T16:44:21.008213Z",
+  "updated_at": "2026-02-01T16:44:21.008227Z",
+  "lead_time": 10.485
+},
+{
+  "text": "\"We'll rush them,\" said Dell. \"Remember how those men, the day we branded, rushed the cattle into the branding chute.\" \"They could do things that we wouldn't dare--those were trail men.\" \"The cattle are just as much afraid of a boy as of a man; they don't know any difference. You point them and I'll rush them.",
+  "genre": "Western",
+  "length": 311,
+  "book_id": 12791,
+  "book_slug": "wells-brothers-the-young-cattle-kings",
+  "segment_id": "12791_590",
+  "id": 1105,
+  "label": [
+    {
+      "end": 116,
+      "text": "those men, the day we branded, rushed the cattle into the branding chute",
+      "start": 44,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1431,
+  "created_at": "2026-02-07T12:12:16.726699Z",
+  "updated_at": "2026-02-07T12:12:16.726712Z",
+  "lead_time": 55.017
+},
+{
+  "text": "\"We'll rush them,\" said Dell. \"Remember how those men, the day we branded, rushed the cattle into the branding chute.\" \"They could do things that we wouldn't dare--those were trail men.\" \"The cattle are just as much afraid of a boy as of a man; they don't know any difference. You point them and I'll rush them.",
+  "genre": "Western",
+  "length": 311,
+  "book_id": 12791,
+  "book_slug": "wells-brothers-the-young-cattle-kings",
+  "segment_id": "12791_590",
+  "id": 1105,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1364,
+  "created_at": "2026-02-01T16:44:49.310850Z",
+  "updated_at": "2026-02-01T16:44:49.310863Z",
+  "lead_time": 27.779
+},
+{
+  "text": "\"At any rate, there the nuggets were, to the value, as it turned out afterwards, of about twelve hundred and fifty pounds, so that after all I took out of that hole four hundred and fifty pounds more than I put into it.",
+  "genre": "Fantasy",
+  "length": 219,
+  "book_id": 2729,
+  "book_slug": "a-tale-of-three-lions",
+  "segment_id": "2729_64",
+  "id": 1106,
+  "label": [
+    {
+      "end": 164,
+      "text": "I took out of that hole",
+      "start": 141,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 36,
+      "text": "there the nuggets were",
+      "start": 14,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "2",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1432,
+  "created_at": "2026-02-07T12:15:31.212839Z",
+  "updated_at": "2026-02-07T12:15:31.212852Z",
+  "lead_time": 67.794
+},
+{
+  "text": "\"At any rate, there the nuggets were, to the value, as it turned out afterwards, of about twelve hundred and fifty pounds, so that after all I took out of that hole four hundred and fifty pounds more than I put into it.",
+  "genre": "Fantasy",
+  "length": 219,
+  "book_id": 2729,
+  "book_slug": "a-tale-of-three-lions",
+  "segment_id": "2729_64",
+  "id": 1106,
+  "rating": "1",
+  "annotator": 5,
+  "annotation_id": 1365,
+  "created_at": "2026-02-01T16:48:15.344034Z",
+  "updated_at": "2026-02-01T16:48:15.344049Z",
+  "lead_time": 205.451
+},
+{
+  "text": "With an exclamation the district attorney broke in upon her. \"And the man,\" he demanded eagerly; \"was it he killed Banf?\"\nIn amazement the woman stared. \"Certainly not!\" she said.",
+  "genre": "History",
+  "length": 179,
+  "book_id": 11144,
+  "book_slug": "somewhere-in-france",
+  "segment_id": "11144_865",
+  "id": 1107,
+  "label": [
+    {
+      "end": 59,
+      "text": "With an exclamation the district attorney broke in upon her",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 151,
+      "text": "In amazement the woman stared",
+      "start": 122,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "1",
+  "visual_action": "true",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1433,
+  "created_at": "2026-02-07T12:17:26.808477Z",
+  "updated_at": "2026-02-07T12:17:26.808490Z",
+  "lead_time": 54.28
+},
+{
+  "text": "With an exclamation the district attorney broke in upon her. \"And the man,\" he demanded eagerly; \"was it he killed Banf?\"\nIn amazement the woman stared. \"Certainly not!\" she said.",
+  "genre": "History",
+  "length": 179,
+  "book_id": 11144,
+  "book_slug": "somewhere-in-france",
+  "segment_id": "11144_865",
+  "id": 1107,
+  "rating": "0",
+  "annotator": 5,
+  "annotation_id": 1366,
+  "created_at": "2026-02-01T16:48:51.089819Z",
+  "updated_at": "2026-02-01T16:48:51.089834Z",
+  "lead_time": 35.145
+},
+{
+  "text": "The riverman turned on him almost savagely. \"Down soon!\" he snorted. \"So'll the water be 'down soon.' It's dropping every minute. That telegraft of yours won't even start out before to-morrow morning. Don't you fool yourself. That Twin Falls outfit is just too tickled to do us up. It'll be two days before anybody shows up, and then where are you at? Hell!\" and the old riverman relapsed into a disgusted silence.",
+  "genre": "Western",
+  "length": 414,
+  "book_id": 13194,
+  "book_slug": "the-rules-of-the-game",
+  "segment_id": "13194_553",
+  "id": 1108,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1434,
+  "created_at": "2026-02-07T12:19:00.707666Z",
+  "updated_at": "2026-02-07T12:19:00.707680Z",
+  "lead_time": 82.17
+},
+{
+  "text": "The riverman turned on him almost savagely. \"Down soon!\" he snorted. \"So'll the water be 'down soon.' It's dropping every minute. That telegraft of yours won't even start out before to-morrow morning. Don't you fool yourself. That Twin Falls outfit is just too tickled to do us up. It'll be two days before anybody shows up, and then where are you at? Hell!\" and the old riverman relapsed into a disgusted silence.",
+  "genre": "Western",
+  "length": 414,
+  "book_id": 13194,
+  "book_slug": "the-rules-of-the-game",
+  "segment_id": "13194_553",
+  "id": 1108,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1367,
+  "created_at": "2026-02-01T16:49:21.004883Z",
+  "updated_at": "2026-02-01T16:49:21.004896Z",
+  "lead_time": 29.308
+},
+{
+  "text": "His hands were gently holding hers, and his eyes—suddenly she could no longer look into them. “Strong?” she echoed, trembling. “I—I will be.”\nUp on the stone-flag drive, nicked with the marks made by the iron-shod hoofs of her racers, Lassiter led her, his grasp ever growing firmer.",
+  "genre": "Western",
+  "length": 283,
+  "book_id": 1300,
+  "book_slug": "riders-of-the-purple-sage",
+  "segment_id": "1300_1449",
+  "id": 1109,
+  "rating": "3",
+  "label": [
+    {
+      "end": 34,
+      "text": "His hands were gently holding hers",
+      "start": 0,
+      "labels": [
+        "VDL"
+      ]
+    },
+    {
+      "end": 282,
+      "text": "Up on the stone-flag drive, nicked with the marks made by the iron-shod hoofs of her racers, Lassiter led her, his grasp ever growing firmer",
+      "start": 142,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "type": "Outdoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1435,
+  "created_at": "2026-02-07T12:20:54.063200Z",
+  "updated_at": "2026-02-07T12:20:54.063214Z",
+  "lead_time": 20.925
+},
+{
+  "text": "His hands were gently holding hers, and his eyes—suddenly she could no longer look into them. “Strong?” she echoed, trembling. “I—I will be.”\nUp on the stone-flag drive, nicked with the marks made by the iron-shod hoofs of her racers, Lassiter led her, his grasp ever growing firmer.",
+  "genre": "Western",
+  "length": 283,
+  "book_id": 1300,
+  "book_slug": "riders-of-the-purple-sage",
+  "segment_id": "1300_1449",
+  "id": 1109,
+  "rating": "3",
+  "annotator": 5,
+  "annotation_id": 1368,
+  "created_at": "2026-02-01T16:49:54.023078Z",
+  "updated_at": "2026-02-01T16:49:54.023092Z",
+  "lead_time": 32.463
+}
+]

@@ -26,10 +26,10 @@
     value="✓ 'the cathedral advanced like a headless creature in a long, shapeless coat' | ✗ 'he fought his illness as he would have fought a devil'"
     style="font-size: 16px; font-weight: normal; margin-top: 0; opacity: 0.75; margin-left: 16px;" />
   <Header size="5"
-    value="Note 3: You can rate theoretical or spoken-about content, if it is not either a) present tense imperative OR b) expression of character's purpose, intention or ability to do something. Example:"
+    value="Note 3: You can rate theoretical or spoken-about content, if it is not either a) present tense imperative OR b) expression of character's purpose, intention or ability to do something OR c) condition. Example:"
     style="font-size: 16px; font-weight: normal;" />
   <Header size="5"
-    value="✓ &quot;No&quot;, hesitated Jim. &quot;The ranch won't hold no more cattle than it always has.&quot; | ✗ &quot;Take a hold of your note-book, Shawn.&quot; | ✗ I came back the same way on the chance of finding the moose."
+    value="✓ &quot;No&quot;, hesitated Jim. &quot;The ranch won't hold no more cattle than it always has.&quot; | ✗ &quot;Take a hold of your note-book, Shawn.&quot; | ✗ I came back the same way on the chance of finding the moose. | ✗ If you want to find the treasure, you need to solve the riddle."
     style="font-size: 16px; font-weight: normal; margin-top: 0; opacity: 0.75; margin-left: 16px;" />
   <Header size="5"
     value="Note 4: Visualizable actions are only those whose visual state can be captured in one frozen moment, not requiring a sequence to understand. Example:"

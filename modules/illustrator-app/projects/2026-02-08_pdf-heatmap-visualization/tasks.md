@@ -35,16 +35,16 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - **Acceptance**: PdfViewer renders with heatmap overlay on left, PDF and ImageLayer layout unchanged
 
 ### Task 1.3: Implement collapse/expand toggle button
-- [ ] Add toggle button styled with negative `left` property (similar to ImageEditor pattern)
+- [x] Add toggle button styled with negative `left` property (similar to ImageEditor pattern)
   - Button outer container: `position: absolute`, `left: -26px`, `top: 8px`
   - Button size: `btn btn-sm btn-circle`
-- [ ] Style toggle based on `isExpanded` state
+- [x] Style toggle based on `isExpanded` state
   - Show chevron-right when collapsed, chevron-left when expanded
-- [ ] Bind click handler: `@click="isExpanded = !isExpanded"`
-- [ ] Add CSS transition for smooth collapse/expand (200ms)
+- [x] Bind click handler: `@click="isExpanded = !isExpanded"`
+- [x] Add CSS transition for smooth collapse/expand (200ms)
   - Use `transition-all` and `overflow: hidden` on content
   - Or wrap content in `<Transition name="collapse">`
-- [ ] Verify toggle button always visible (protrudes from edge)
+- [x] Verify toggle button always visible (protrudes from edge)
 - **Scope**: ~30 LoC (template + styles)
 - **Acceptance**: Button visible, toggle works, smooth animation
 

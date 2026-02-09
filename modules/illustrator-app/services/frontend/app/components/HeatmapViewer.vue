@@ -2,82 +2,79 @@
   <div
     ref="containerElement"
     class="heatmap-container fixed left-0 top-0 h-full transition-all duration-200 border-r"
-    :class="isExpanded ? 'w-24' : 'w-0'"
+    :class="isExpanded ? `w-[${HEATMAP_WIDTH}px]` : 'w-0'"
     :style="{
       backgroundColor: isExpanded ? 'transparent' : 'rgba(245, 245, 245, 0.7)',
       borderColor: '#D0D0D0'
     }"
   >
-    <button
-      type="button"
-      class="btn btn-sm btn-circle absolute"
-      style="left: -26px; top: 8px;"
-      :aria-pressed="isExpanded"
-      aria-label="Toggle heatmap"
-      @click="isExpanded = !isExpanded"
-    >
-      <Icon
-        name="lucide:chevron-left"
-        size="18"
-        class="heatmap-toggle-icon"
-        :class="{ 'heatmap-toggle-icon--collapsed': !isExpanded }"
-        aria-hidden="true"
-      />
-    </button>
-    <Transition name="heatmap-expand">
-      <div v-show="isExpanded" class="relative h-full w-full overflow-hidden">
-        <canvas
-          ref="canvasElement"
-          :width="HEATMAP_WIDTH"
-          :height="canvasHeight"
-          class="heatmap-canvas cursor-pointer"
-          @click="handleHeatmapClick"
+    <div class="relative h-full w-full">
+      <button
+        type="button"
+        class="btn btn-sm heatmap-toggle-button"
+        :aria-pressed="isExpanded"
+        aria-label="Toggle heatmap"
+        @click="isExpanded = !isExpanded"
+      >
+        <Icon
+          name="lucide:chevron-left"
+          size="14"
+          class="heatmap-toggle-icon"
+          :class="{ 'heatmap-toggle-icon--collapsed': !isExpanded }"
+          aria-hidden="true"
         />
-        <svg
-          :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
-          class="absolute inset-0 h-full w-full"
-          role="img"
-          aria-label="Heatmap image indicators"
-        >
-          <rect
-            :x="0"
-            :y="viewportY"
+      </button>
+      <Transition name="heatmap-expand">
+        <div v-show="isExpanded" class="h-full w-full overflow-hidden" @click="handleHeatmapClick">
+          <canvas
+            ref="canvasElement"
             :width="HEATMAP_WIDTH"
-            :height="viewportRectHeight"
-            class="viewport-rect"
-            :class="{ 'viewport-rect--dragging': isDragging }"
-            @pointerdown="startDrag"
+            :height="canvasHeight"
+            class="heatmap-canvas cursor-pointer"
           />
-          <template v-for="dot in segmentDots" :key="dot.highlightId">
-            <circle
-              v-if="dot.hasImage"
-              :cx="dot.x"
-              :cy="dot.y"
-              r="4.5"
-              class="image-dot image-dot--has pointer-events-none"
-              role="img"
-              :aria-label="`Segment ${dot.highlightId} has image`"
+          <svg
+            :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
+            class="absolute inset-0 h-full w-full"
+            role="img"
+            aria-label="Heatmap image indicators"
+          >
+            <rect
+              :x="0"
+              :y="viewportY"
+              :width="HEATMAP_WIDTH"
+              :height="viewportRectHeight"
+              class="viewport-rect"
+              :class="{ 'viewport-rect--dragging': isDragging }"
+              @pointerdown="startDrag"
             />
-            <circle
-              v-else
-              :cx="dot.x"
-              :cy="dot.y"
-              r="4"
-              class="image-dot image-dot--none pointer-events-none"
-              role="img"
-              :aria-label="`Segment ${dot.highlightId} has no image`"
-            />
-          </template>
-        </svg>
-      </div>
-    </Transition>
+            <template v-for="dot in segmentDots" :key="dot.highlightId">
+              <circle
+                v-if="dot.hasImage"
+                :cx="dot.x"
+                :cy="dot.y"
+                r="4.5"
+                class="image-dot image-dot--has pointer-events-none"
+                role="img"
+                :aria-label="`Segment ${dot.highlightId} has image`"
+              />
+              <circle
+                v-else
+                :cx="dot.x"
+                :cy="dot.y"
+                r="4"
+                class="image-dot image-dot--none pointer-events-none"
+                role="img"
+                :aria-label="`Segment ${dot.highlightId} has no image`"
+              />
+            </template>
+          </svg>
+        </div>
+      </Transition>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, watchEffect } from "vue";
-import { watchDebounced } from "@vueuse/core";
-
 import type { EditorImageState, Highlight } from "~/types/common";
 import {
   createSegmentArray,
@@ -89,7 +86,7 @@ import {
 } from "~/utils/heatmapUtils";
 import { clamp } from "~/utils/utils";
 
-const HEATMAP_WIDTH = 96;
+const HEATMAP_WIDTH = 72;
 
 const props = defineProps<{
   highlights: Highlight[];
@@ -433,6 +430,20 @@ export interface SegmentDot {
 
 .heatmap-toggle-icon--collapsed {
   transform: rotate(180deg);
+}
+
+.heatmap-toggle-button {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(100%, -50%);
+  height: 60px;
+  width: 20px;
+  opacity: 0.7;
+  padding-left: 0;
+  padding-right: 0;
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }
 
 .heatmap-expand-enter-active,

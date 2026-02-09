@@ -113,7 +113,6 @@ import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
 import type { EditorImageState, Highlight } from "~/types/common";
 
 import HeatmapViewer from "~/components/HeatmapViewer.vue";
-import { getFirstPolygonPoints, type PagePolygons } from "~/utils/heatmapUtils";
 import { scrollIntoView } from "~/utils/utils";
 // import { GlobalWorkerOptions } from "vue-pdf-embed/dist/index.essential.mjs";
 // import PdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
@@ -300,59 +299,7 @@ async function goToHighlight(highlight: Highlight) {
 }
 nuxtApp.hook("custom:goToHighlight", goToHighlight);
 
-function getHighlightCentroidY(highlight: Highlight, pageIndex: number): number | null {
-  const pagePolygons = highlight.polygons[pageIndex] as PagePolygons | undefined;
-  if (pagePolygons === undefined || pagePolygons === null) {
-    return null;
-  }
-
-  const points = getFirstPolygonPoints(pagePolygons);
-  if (points === null) {
-    return null;
-  }
-
-  let sumY = 0;
-  for (const [, y] of points) {
-    sumY += y;
-  }
-
-  return sumY / points.length;
-}
-
 async function handleNavigate(pageIndex: number, normalizedY: number) {
-  const targetPageNum = pageIndex + 1;
-  if (pageVisibility.value[targetPageNum] !== true) {
-    const loadRangeStart = Math.max(1, targetPageNum - PRELOAD_PAGES);
-    const loadRangeEnd = Math.min(pageNums.value.length, targetPageNum + PRELOAD_PAGES);
-
-    for (let i = loadRangeStart; i <= loadRangeEnd; i++) {
-      pageVisibility.value[i] = true;
-    }
-
-    await nextTick();
-  }
-
-  let closestHighlight: Highlight | null = null;
-  let closestDistance = Number.POSITIVE_INFINITY;
-
-  for (const highlight of highlights.value) {
-    const centroidY = getHighlightCentroidY(highlight, pageIndex);
-    if (centroidY === null) {
-      continue;
-    }
-    const distance = Math.abs(centroidY - normalizedY);
-    if (distance < closestDistance) {
-      closestDistance = distance;
-      closestHighlight = highlight;
-    }
-  }
-
-  if (closestHighlight !== null) {
-    await scrollIntoView(() => `[data-segment-id="${closestHighlight.id}"]`);
-    highlightLayer.value?.spawnMarker(closestHighlight.id);
-    return;
-  }
-
   const pageElement = pageRefs.value[pageIndex] as HTMLElement | undefined;
   if (pageElement === undefined) {
     return;

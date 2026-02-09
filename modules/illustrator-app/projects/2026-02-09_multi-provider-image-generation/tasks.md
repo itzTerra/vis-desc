@@ -67,7 +67,7 @@
 
 **File**: `services/api/core/tools/text2image.py`
 
-- [ ] Create class `CloudflareProvider(ImageProvider)`:
+- [x] Create class `CloudflareProvider(ImageProvider)`:
   - `__init__`: Initialize with credentials from settings (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_MODEL`); set `self.available = bool(all_three_keys)`
   - `get_image_bytes(text)`:
     - POST to `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}`
@@ -77,9 +77,9 @@
     - Return PNG bytes
   - Handle missing credentials, API errors, malformed responses; raise `ProviderError`
   - Apply timeout from settings
-- [ ] Create minimal custom exception: `class ProviderError(Exception): pass`
+- [x] Create minimal custom exception: `class ProviderError(Exception): pass`
 
-**Atomic task**: <180 LoC. Full provider implementation with error handling.
+**Atomic task**: <180 LoC. Full provider implementation with error handling. ✅ COMPLETE
 
 ---
 

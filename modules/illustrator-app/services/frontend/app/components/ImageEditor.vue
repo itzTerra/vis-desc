@@ -55,7 +55,7 @@
           <div class="flex justify-between gap-2 my-1">
             <button
               class="btn btn-sm btn-secondary flex-1"
-              :disabled="enhanceLoading || generateLoading || !currentPrompt"
+              :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
               :aria-busy="enhanceLoading"
               @click="handleEnhance"
             >
@@ -89,7 +89,7 @@
             </div>
             <button
               class="btn btn-sm btn-primary flex-1"
-              :disabled="enhanceLoading || generateLoading || !currentPrompt"
+              :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
               :aria-busy="generateLoading"
               title="Generate image"
               @click="handleGenerate"
@@ -115,6 +115,8 @@
 </template>
 
 <script setup lang="ts">
+import type { EditorImageState } from "~/types/common";
+
 import { useEditorHistory } from "~/composables/useEditorHistory";
 
 const props = defineProps<{
@@ -126,6 +128,7 @@ const emit = defineEmits<{
   delete: [];
   bringToFront: [];
   pointerDown: [event: PointerEvent];
+  "state-change": [state: EditorImageState];
 }>();
 
 const { $api } = useNuxtApp();
@@ -151,8 +154,17 @@ const {
 
 addToHistory(props.initialText);
 
-const imageUrl = computed(() => currentHistoryItem.value?.imageUrl || "");
-const hasImage = computed(() => !!imageUrl.value);
+const imageUrl = computed(() => currentHistoryItem.value?.imageUrl ?? "");
+const hasImage = computed(() => imageUrl.value !== "");
+
+watchEffect(() => {
+  const currentImageUrl = imageUrl.value === "" ? null : imageUrl.value;
+  emit("state-change", {
+    highlightId: props.highlightId,
+    imageUrl: currentImageUrl,
+    hasImage: currentImageUrl !== null,
+  });
+});
 
 watchImmediate(isOpen, (open) => {
   if (open) {
@@ -168,7 +180,7 @@ watch(currentHistoryItem, (item) => {
 
 async function handleEnhance() {
   const prompt = currentPrompt.value.trim();
-  if (!prompt) return;
+  if (prompt === "") return;
 
   enhanceLoading.value = true;
 
@@ -198,7 +210,7 @@ async function handleEnhance() {
 
 async function handleGenerate() {
   const prompt = currentPrompt.value.trim();
-  if (!prompt) return;
+  if (prompt === "") return;
 
   generateLoading.value = true;
 

@@ -15,13 +15,14 @@
         @delete="closeImageEditor(editorId)"
         @bring-to-front="bringImageToFront(editorId)"
         @pointer-down="onEditorPointerDown($event, editorId)"
+        @state-change="handleEditorStateChange"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Highlight } from "~/types/common";
+import type { EditorImageState, Highlight } from "~/types/common";
 
 const props = defineProps<{
   pdfEmbedWrapper: HTMLElement | null;
@@ -35,6 +36,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "close-editor": [highlightId: number];
+  "editor-state-change": [state: EditorImageState];
 }>();
 
 const EDITOR_NO_IMAGE_HEIGHT = 156; // controls height when no image
@@ -254,6 +256,10 @@ function bringImageToFront(highlightId: number) {
 
 function closeImageEditor(highlightId: number) {
   emit("close-editor", highlightId);
+}
+
+function handleEditorStateChange(state: EditorImageState) {
+  emit("editor-state-change", state);
 }
 
 const editorRefs = ref<Array<InstanceType<typeof ImageEditor> | null>>([]);

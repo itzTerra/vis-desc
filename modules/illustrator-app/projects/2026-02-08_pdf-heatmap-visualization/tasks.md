@@ -348,20 +348,25 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - **Acceptance**: Full integration works end-to-end
 
 ### Task 8.2: Integration with ImageEditor state
-- [ ] Verify editor state access via props:
+- [x] Verify editor state access via props:
   - PdfViewer passes editorStates to HeatmapViewer
-- [ ] Test image dots:
+- [x] Test image dots:
   - Open ImageEditor on a segment
   - Verify dot appears on heatmap at correct position
   - Close editor, verify dot remains if imageUrl exists
   - Remove image, verify dot switches to no-image symbol
   - Open multiple editors, verify multiple dots
-- [ ] Handle edge cases:
+- [x] Handle edge cases:
   - Segment with no polygon (skip)
   - Segment spanning multiple pages (show one dot only)
   - No images: heatmap appears without dots
 - **Scope**: ~25 LoC integration code
 - **Acceptance**: Image dots sync correctly with editor state
+
+### Task 8.5: Address review feedback (image state + event naming)
+- [x] Emit minimal image state payload (highlightId + imageUrl/hasImage)
+- [x] Store minimal image state array in PdfViewer and pass to HeatmapViewer
+- [x] Standardize kebab-case event naming for editor state updates
 
 ### Task 8.3: Manual testing checklist
 - [ ] Desktop testing:

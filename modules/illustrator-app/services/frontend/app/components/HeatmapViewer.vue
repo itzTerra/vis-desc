@@ -78,7 +78,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, watchEffect } from "vue";
 import { watchDebounced } from "@vueuse/core";
 
-import type { EditorState, Highlight } from "~/types/common";
+import type { EditorImageState, Highlight } from "~/types/common";
 import {
   createSegmentArray,
   getFirstPolygonPoints,
@@ -96,7 +96,7 @@ const props = defineProps<{
   currentPage: number;
   pageAspectRatio: number;
   pageRefs: Element[];
-  editorStates: EditorState[];
+  editorStates: EditorImageState[];
 }>();
 
 const emit = defineEmits<{
@@ -170,19 +170,28 @@ const segmentDots = computed<SegmentDot[]>(() => {
   const heatmapHeight = canvasHeight.value;
 
   for (const highlight of props.highlights) {
-    const pageNums = Object.keys(highlight.polygons).map(Number);
+    const pageNums = Object.keys(highlight.polygons).map(Number).sort((a, b) => a - b);
     if (pageNums.length === 0) {
       continue;
     }
 
-    const pageNum = Math.min(...pageNums);
-    const pagePolygons = highlight.polygons[pageNum] as PagePolygons | undefined;
-    if (pagePolygons === undefined || pagePolygons === null) {
-      continue;
+    let pageNum: number | null = null;
+    let pagePoints: number[][] | null = null;
+    for (const candidatePage of pageNums) {
+      const pagePolygons = highlight.polygons[candidatePage] as PagePolygons | undefined;
+      if (pagePolygons === undefined || pagePolygons === null) {
+        continue;
+      }
+
+      const candidatePoints = getFirstPolygonPoints(pagePolygons);
+      if (candidatePoints !== null && candidatePoints !== undefined) {
+        pageNum = candidatePage;
+        pagePoints = candidatePoints;
+        break;
+      }
     }
 
-    const pagePoints = getFirstPolygonPoints(pagePolygons);
-    if (pagePoints === null) {
+    if (pageNum === null || pagePoints === null) {
       continue;
     }
 
@@ -209,7 +218,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
       continue;
     }
 
-    const hasImage = Boolean(editorStateById.get(highlight.id)?.imageUrl);
+    const hasImage = editorStateById.get(highlight.id)?.hasImage ?? false;
     dots.push({
       highlightId: highlight.id,
       pageNum,

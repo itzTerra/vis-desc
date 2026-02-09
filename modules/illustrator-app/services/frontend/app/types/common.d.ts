@@ -35,3 +35,9 @@ export type EditorState = {
   enhanceLoading: boolean;
   generateLoading: boolean;
 };
+
+export type EditorImageState = {
+  highlightId: number;
+  imageUrl: string | null;
+  hasImage: boolean;
+};

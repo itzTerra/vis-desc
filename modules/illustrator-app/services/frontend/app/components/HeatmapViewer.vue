@@ -129,6 +129,7 @@ const canvasHeight = computed(() => {
   return Math.ceil(totalPages.value * props.pageAspectRatio * HEATMAP_WIDTH);
 });
 
+// Maps viewport size to heatmap canvas space for drag-to-scroll UI
 const viewportRectHeight = computed(() => {
   if (totalHeight.value <= 0) {
     return 20;
@@ -146,6 +147,8 @@ const scrollableHeight = computed(() => {
   return Math.max(0, totalHeight.value - viewportHeight.value);
 });
 
+// Map document scroll position to heatmap viewport rectangle Y coordinate
+// Linear mapping: scroll ratio (0-1) → vertical position in heatmap track
 const viewportY = computed(() => {
   if (scrollableHeight.value <= 0 || trackHeight.value <= 0) {
     return 0;
@@ -169,6 +172,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
   const dots: SegmentDot[] = [];
   const heatmapHeight = canvasHeight.value;
 
+  // Converts normalized coordinates [0,1] from PDF space to heatmap pixel space
   for (const highlight of props.highlights) {
     const pageNums = Object.keys(highlight.polygons).map(Number).sort((a, b) => a - b);
     if (pageNums.length === 0) {
@@ -195,6 +199,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
       continue;
     }
 
+    // Points are assumed to be in normalized coordinates [0,1] within the page
     let sumX = 0;
     let sumY = 0;
     for (const [x, y] of pagePoints) {
@@ -204,6 +209,8 @@ const segmentDots = computed<SegmentDot[]>(() => {
 
     const normalizedX = clamp(sumX / pagePoints.length, 0, 1);
     const normalizedY = clamp(sumY / pagePoints.length, 0, 1);
+    
+    // Accounts for page stacking (cumulative Y offset) and aspect ratio
     const pixel = normalizedToHeatmapPixel(
       normalizedX,
       normalizedY,
@@ -268,10 +275,13 @@ function handleHeatmapClick(event: MouseEvent) {
     return;
   }
 
+  // Account for canvas scaling (logical pixels vs display size)
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
   const clickX = (event.clientX - rect.left) * scaleX;
   const clickY = (event.clientY - rect.top) * scaleY;
+  
+  // Reverse transformation: heatmap pixels → normalized PDF coordinates
   const normalized = heatmapPixelToNormalized(
     clickX,
     clickY,
@@ -334,6 +344,7 @@ function onDrag(event: PointerEvent) {
     return;
   }
 
+  // Reverse mapping: heatmap pixel delta → PDF scroll distance
   const deltaY = event.clientY - dragStartY.value;
   const scrollDelta = (deltaY / trackHeight.value) * scrollableHeight.value;
   const nextScrollOffset = clamp(dragStartScrollOffset.value + scrollDelta, 0, scrollableHeight.value);

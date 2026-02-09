@@ -390,6 +390,20 @@ docker compose logs frontend   # Frontend only
 - **NLP Processing**: Integration with Hugging Face models and ONNX runtime for efficient inference
 - **Model Caching**: Pre-downloaded models cached in `services/api/model_cache/`
 
+#### Frontend Component Architecture
+
+**HeatmapViewer**: Fixed left-overlay visualization component providing miniature PDF representation with segment scoring and navigation.
+
+**Integration with PdfViewer**:
+- Mounted as fixed-position overlay on left edge of PDF viewport
+- Receives `highlights`, `currentPage`, `pageAspectRatio`, `pageRefs`, and `editorStates` props
+- Emits `navigate` event with page number and normalized Y coordinate for scroll-to-segment
+- Collapses/expands with toggle button (always visible, protruding from edge)
+
+**Props and Events**: See [HeatmapViewer API documentation](../services/frontend/README.md#heatmapviewer-component) for detailed props and events reference.
+
+
+
 ### Performance Considerations
 
 - ONNX models used for optimized inference (MiniLM, ModernBERT, RoBERTa)

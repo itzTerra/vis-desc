@@ -396,14 +396,14 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - [x] Update type definitions:
   - Ensure HeatmapViewer props are exported in types
   - Add JSDoc comments to utility functions
-- [ ] Update README or component documentation:
+- [x] Update README or component documentation:
   - Brief overview of feature
   - Props and events API
   - Known limitations/browser support (Canvas)
-- [ ] Add comments in code:
+- [x] Add comments in code:
   - Explain coordinate transformation logic
   - Document assumptions (e.g., normalized coords stored in highlights)
-- [ ] Update AGENTS.md with HeatmapViewer integration details
+- [x] Update AGENTS.md with HeatmapViewer integration details
 - **Scope**: ~50 LoC documentation
 - **Acceptance**: Documentation complete and accurate
 

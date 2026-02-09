@@ -41,3 +41,14 @@ export type EditorImageState = {
   imageUrl: string | null;
   hasImage: boolean;
 };
+
+/**
+ * Props for the HeatmapViewer component.
+ */
+export type HeatmapViewerProps = {
+  highlights: Highlight[];
+  currentPage: number;
+  pageAspectRatio: number;
+  pageRefs: Element[];
+  editorStates: EditorImageState[];
+};

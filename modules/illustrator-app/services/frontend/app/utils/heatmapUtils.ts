@@ -29,6 +29,12 @@ export type HeatmapSegment = {
 
 export type PagePolygons = number[][] | number[][][];
 
+/**
+ * Returns the first non-empty polygon point list for a page entry.
+ *
+ * @param pagePolygons - Polygon entry that can be a flat list or nested list of points.
+ * @returns The first non-empty polygon points array, or null if none exist.
+ */
 export function getFirstPolygonPoints(pagePolygons: PagePolygons): number[][] | null {
   if (pagePolygons.length === 0) {
     return null;
@@ -54,6 +60,15 @@ export function getFirstPolygonPoints(pagePolygons: PagePolygons): number[][] | 
 
 /**
  * Converts normalized PDF coordinates into heatmap pixel space.
+ *
+ * @param normalizedX - Normalized X position within the PDF page (0-1).
+ * @param normalizedY - Normalized Y position within the PDF page (0-1).
+ * @param pageNum - Zero-indexed page number for the point.
+ * @param pageAspectRatio - Page height divided by width.
+ * @param heatmapWidth - Heatmap canvas width in pixels.
+ * @param heatmapHeight - Heatmap canvas height in pixels.
+ * @param totalPageCount - Total number of pages in the document.
+ * @returns Heatmap pixel position, or undefined if the page is out of range.
  */
 export function normalizedToHeatmapPixel(
   normalizedX: number,
@@ -79,6 +94,11 @@ export function normalizedToHeatmapPixel(
 
 /**
  * Calculates viewport percentages relative to the total scrollable height.
+ *
+ * @param scrollY - Current scroll offset from the top of the page.
+ * @param totalHeight - Total scrollable height for all pages combined.
+ * @param viewportHeight - Current visible viewport height.
+ * @returns Percentages and pixel positions for viewport placement.
  */
 export function getViewportPercentage(
   scrollY: number,
@@ -102,6 +122,13 @@ export function getViewportPercentage(
 
 /**
  * Converts heatmap pixel coordinates back to normalized PDF coordinates.
+ *
+ * @param pixelX - X coordinate in heatmap pixel space.
+ * @param pixelY - Y coordinate in heatmap pixel space.
+ * @param pageAspectRatio - Page height divided by width.
+ * @param heatmapHeight - Heatmap canvas height in pixels.
+ * @param totalPageCount - Total number of pages in the document.
+ * @returns Normalized coordinates and page index for the hit position.
  */
 export function heatmapPixelToNormalized(
   pixelX: number,
@@ -127,6 +154,9 @@ export function heatmapPixelToNormalized(
 
 /**
  * Maps a segment score to a canvas opacity value.
+ *
+ * @param score - Segment score between 0 and 1.
+ * @returns Opacity value clamped to the expected render range.
  */
 export function scoreToOpacity(score: number): number {
   const opacity = 0.15 + score * 0.75;
@@ -135,6 +165,9 @@ export function scoreToOpacity(score: number): number {
 
 /**
  * Maps a segment score to a grayscale brightness value.
+ *
+ * @param score - Segment score between 0 and 1.
+ * @returns Grayscale brightness value clamped to avoid pure black or white.
  */
 export function scoreToBrightness(score: number): number {
   const brightness = 220 - score * 180;
@@ -143,6 +176,12 @@ export function scoreToBrightness(score: number): number {
 
 /**
  * Renders heatmap segments to a cached canvas for fast reuse.
+ *
+ * @param segments - Precomputed heatmap segments with polygon points and scores.
+ * @param heatmapWidth - Heatmap canvas width in pixels.
+ * @param pageAspectRatio - Page height divided by width.
+ * @param totalPageCount - Total number of pages in the document.
+ * @returns A rendered canvas that can be drawn onto the visible heatmap.
  */
 export function renderHeatmapCanvas(
   segments: HeatmapSegment[],
@@ -201,6 +240,9 @@ export function renderHeatmapCanvas(
 
 /**
  * Builds a renderable heatmap segment list from highlight data.
+ *
+ * @param highlights - Highlight list with polygon data and optional scores.
+ * @returns Renderable heatmap segments sorted for consistent output.
  */
 export function createSegmentArray(highlights: Highlight[]): HeatmapSegment[] {
   const segments: HeatmapSegment[] = [];

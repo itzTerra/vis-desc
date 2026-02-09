@@ -209,7 +209,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
 
     const normalizedX = clamp(sumX / pagePoints.length, 0, 1);
     const normalizedY = clamp(sumY / pagePoints.length, 0, 1);
-    
+
     // Accounts for page stacking (cumulative Y offset) and aspect ratio
     const pixel = normalizedToHeatmapPixel(
       normalizedX,
@@ -280,7 +280,7 @@ function handleHeatmapClick(event: MouseEvent) {
   const scaleY = canvas.height / rect.height;
   const clickX = (event.clientX - rect.left) * scaleX;
   const clickY = (event.clientY - rect.top) * scaleY;
-  
+
   // Reverse transformation: heatmap pixels → normalized PDF coordinates
   const normalized = heatmapPixelToNormalized(
     clickX,

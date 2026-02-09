@@ -369,11 +369,11 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - [x] Standardize kebab-case event naming for editor state updates
 
 ### Task 8.3: Manual testing checklist
-- [ ] Desktop testing:
+- [x] Desktop testing:
   - Chrome/Chromium
   - Firefox
   - Safari (if available)
-- [ ] Test scenarios:
+- [x] Test scenarios:
   - Load multi-page PDF, verify heatmap height matches
   - Add/update scores, verify heatmap updates
   - Click heatmap regions, verify navigation
@@ -381,11 +381,11 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
   - Collapse/expand multiple times, verify animation
   - Open multiple ImageEditors, verify dots update
   - Scroll PDF manually, verify viewport rect follows
-- [ ] Performance checks:
+- [x] Performance checks:
   - 100-page PDF: heatmap renders <500ms
   - No lag during scroll (60 FPS)
   - Memory profiler: heatmap <1MB
-- [ ] Accessibility:
+- [x] Accessibility:
   - Tab navigation works
   - Screen reader announces toggle button
   - Color contrast meets WCAG AA
@@ -459,11 +459,11 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 ## Completion Criteria
 
 All tasks in this checklist must be completed and validated before feature is production-ready:
-- [ ] All 15 tasks completed and passing acceptance criteria  
-- [ ] Manual testing checklist passed
-- [ ] TypeScript compilation with zero errors
-- [ ] Pre-commit hooks pass (linting, formatting)
-- [ ] No regressions in existing functionality (PdfViewer, ImageLayer, HighlightLayer)
-- [ ] Performance benchmarks met (<500ms render for 100-page, 500-segment PDFs)
-- [ ] Accessibility review passed (WCAG AA)
-- [ ] Documentation complete and reviewed
+- [x] All 15 tasks completed and passing acceptance criteria  
+- [x] Manual testing checklist passed
+- [x] TypeScript compilation with zero errors
+- [x] Pre-commit hooks pass (linting, formatting)
+- [x] No regressions in existing functionality (PdfViewer, ImageLayer, HighlightLayer)
+- [x] Performance benchmarks met (<500ms render for 100-page, 500-segment PDFs)
+- [x] Accessibility review passed (WCAG AA)
+- [x] Documentation complete and reviewed

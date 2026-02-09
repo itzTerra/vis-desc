@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 import requests
 from urllib.parse import quote
@@ -7,6 +8,27 @@ from django.template.defaultfilters import slugify
 import time
 
 from django.conf import settings
+
+
+class ProviderError(Exception):
+    """Raised when an image provider fails to generate an image."""
+
+    pass
+
+
+class ImageProvider(ABC):
+    """Abstract base class for text-to-image generation providers."""
+
+    def __init__(self):
+        self.available = False
+
+    @abstractmethod
+    def get_image_bytes(self, text: str) -> bytes:
+        """Generate and return PNG image bytes from text prompt."""
+
+    def is_available(self) -> bool:
+        """Return True if provider has required credentials configured."""
+        return self.available
 
 
 class Provider(str, Enum):
@@ -19,7 +41,7 @@ PROVIDER_SETTINGS = {
         "height": 512,
         "model": "flux",
         "api_key": settings.POLLINATIONS_API_KEY,
-        "seed": -1,
+        "seed": -1,  # Random seed
     }
 }
 

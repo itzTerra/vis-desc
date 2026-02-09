@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-from ..env import env
+from environ import Env
+
+env = Env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -203,3 +205,13 @@ ENABLE_DRAMATIQ = env.bool("ENABLE_DRAMATIQ", default=True)
 # LLM Configuration for text enhancement
 EINFRA_API_KEY = env.str("EINFRA_API_KEY", default="")
 EINFRA_BASE_URL = env.str("EINFRA_BASE_URL", default="")
+
+POLLINATIONS_API_KEY = env.str("POLLINATIONS_API_KEY", default=None)
+CLOUDFLARE_ACCOUNT_ID = env.str("CLOUDFLARE_ACCOUNT_ID", default=None)
+CLOUDFLARE_API_TOKEN = env.str("CLOUDFLARE_API_TOKEN", default=None)
+CLOUDFLARE_MODEL = env.str(
+    "CLOUDFLARE_MODEL", default="@cf/black-forest-labs/flux-2-klein-4b"
+)
+IMAGE_GENERATION_TIMEOUT_SECONDS = env.int(
+    "IMAGE_GENERATION_TIMEOUT_SECONDS", default=30
+)

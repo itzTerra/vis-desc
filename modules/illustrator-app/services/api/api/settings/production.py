@@ -1,5 +1,5 @@
 from .base import *  # noqa: F403
-from ..env import env
+from .base import env
 
 PRODUCTION_SERVER = True
 

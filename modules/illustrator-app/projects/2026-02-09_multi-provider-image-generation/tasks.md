@@ -25,24 +25,24 @@
 
 **File**: `services/api/core/tools/text2image.py`
 
-- [ ] Create abstract class `ImageProvider`:
+- [x] Create abstract class `ImageProvider`:
   ```python
   from abc import ABC, abstractmethod
-  
+
   class ImageProvider(ABC):
       @abstractmethod
       def get_image_bytes(self, text: str) -> bytes:
           """Return PNG image bytes from text prompt"""
           pass
-      
+
       def is_available(self) -> bool:
           """Return True if provider has required credentials configured"""
           pass
   ```
-- [ ] Add `__init__` method that initializes credentials and sets `self.available` based on credential presence
-- [ ] Add basic exception handling structure for provider-specific errors
+- [x] Add `__init__` method that initializes credentials and sets `self.available` based on credential presence
+- [x] Add basic exception handling structure for provider-specific errors
 
-**Atomic task**: <100 LoC. Defines interface contract.
+**Atomic task**: <100 LoC. Defines interface contract. ✅ COMPLETE
 
 ---
 
@@ -69,7 +69,7 @@
 
 - [ ] Create class `CloudflareProvider(ImageProvider)`:
   - `__init__`: Initialize with credentials from settings (`CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_MODEL`); set `self.available = bool(all_three_keys)`
-  - `get_image_bytes(text)`: 
+  - `get_image_bytes(text)`:
     - POST to `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}`
     - Bearer auth header with token
     - JSON body `{"prompt": text}`
@@ -129,12 +129,12 @@
   ```
   # Pollinations (optional - set key to enable)
   POLLINATIONS_API_KEY=
-  
+
   # Cloudflare Workers AI (all required if using - set all three to enable)
   CLOUDFLARE_ACCOUNT_ID=
   CLOUDFLARE_API_TOKEN=
   CLOUDFLARE_MODEL=@cf/black-forest-labs/flux-2-klein-4b
-  
+
   # Image Generation Timeout (seconds)
   IMAGE_GENERATION_TIMEOUT_SECONDS=30
   ```

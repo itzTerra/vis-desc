@@ -393,7 +393,7 @@ This document contains ordered, atomic tasks for implementing the PDF heatmap vi
 - **Acceptance**: All tests pass, no regressions
 
 ### Task 8.4: Update documentation and types
-- [ ] Update type definitions:
+- [x] Update type definitions:
   - Ensure HeatmapViewer props are exported in types
   - Add JSDoc comments to utility functions
 - [ ] Update README or component documentation:

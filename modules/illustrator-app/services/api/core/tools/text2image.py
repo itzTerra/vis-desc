@@ -31,6 +31,51 @@ class ImageProvider(ABC):
         return self.available
 
 
+class PollinationsProvider(ImageProvider):
+    """Text-to-image provider using Pollinations API."""
+
+    def __init__(self):
+        """Initialize provider with credentials from settings."""
+        api_key = settings.POLLINATIONS_API_KEY
+        self.api_key = api_key
+        self.available = bool(api_key)
+
+    def get_image_bytes(self, text: str) -> bytes:
+        """Generate and return PNG image bytes from text using Pollinations API."""
+        if not self.available:
+            raise ProviderError("pollinations", "API key not configured")
+
+        try:
+            width = 512
+            height = 512
+            model = "flux"
+            seed = -1
+
+            url = f"https://gen.pollinations.ai/image/{quote(text)}"
+            params = {"width": width, "height": height, "seed": seed, "model": model}
+            timeout = settings.IMAGE_GENERATION_TIMEOUT_SECONDS
+
+            response = requests.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=timeout,
+            )
+
+            if response.status_code != 200:
+                raise ProviderError("pollinations", f"HTTP {response.status_code}")
+            return response.content
+
+        except requests.exceptions.Timeout:
+            raise ProviderError("pollinations", "Request timeout")
+        except requests.exceptions.RequestException as e:
+            raise ProviderError("pollinations", f"Request failed: {str(e)}")
+        except ProviderError:
+            raise
+        except Exception as e:
+            raise ProviderError("pollinations", str(e))
+
+
 class Provider(str, Enum):
     POLLINATIONS = "pollinations"
 
@@ -41,7 +86,7 @@ PROVIDER_SETTINGS = {
         "height": 512,
         "model": "flux",
         "api_key": settings.POLLINATIONS_API_KEY,
-        "seed": -1,  # Random seed
+        "seed": -1,
     }
 }
 
@@ -55,29 +100,13 @@ def upload_image(request, image: bytes, filename: str) -> str:
 
 
 def get_image_bytes(text: str, provider: Provider) -> bytes:
-    provider_config = PROVIDER_SETTINGS[provider]
-
+    """Generate image bytes using specified provider."""
     match provider:
         case Provider.POLLINATIONS:
-            width = provider_config["width"]
-            height = provider_config["height"]
-            model = provider_config["model"]
-            seed = provider_config["seed"]
-            api_key = provider_config["api_key"]
-
-            url = f"https://gen.pollinations.ai/image/{quote(text)}"
-            params = {"width": width, "height": height, "seed": seed, "model": model}
-            response = requests.get(
-                url, params=params, headers={"Authorization": f"Bearer {api_key}"}
-            )
-
-            if response.status_code != 200:
-                raise Exception(f"Failed to fetch image from {url}: {response.text}")
-            return response.content
+            pollinations = PollinationsProvider()
+            return pollinations.get_image_bytes(text)
         case _:
-            raise Exception(f"Unsupported provider: {provider}")
-
-    raise Exception("There was an error generating the image.")
+            raise ProviderError("unknown", f"Unsupported provider: {provider}")
 
 
 def get_image_url(request, text: str, provider: Provider) -> str:

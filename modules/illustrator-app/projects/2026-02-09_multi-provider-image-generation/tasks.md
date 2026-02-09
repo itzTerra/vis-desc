@@ -51,14 +51,14 @@
 
 **File**: `services/api/core/tools/text2image.py`
 
-- [ ] Create class `PollinationsProvider(ImageProvider)`:
+- [x] Create class `PollinationsProvider(ImageProvider)`:
   - `__init__`: Initialize with credentials from `settings.POLLINATIONS_API_KEY`; set `self.available = bool(api_key)`
   - `get_image_bytes(text)`: Call existing Pollinations API with timeout from settings; return PNG bytes
   - Handle timeouts and API errors; raise `ProviderError(provider_name, error_detail)`
-- [ ] Refactor existing `get_image_bytes()` function logic into provider class method
-- [ ] Preserve existing URL-building and request logic; only move to class
+- [x] Refactor existing `get_image_bytes()` function logic into provider class method
+- [x] Preserve existing URL-building and request logic; only move to class
 
-**Atomic task**: <150 LoC. Wraps existing Pollinations logic in provider class.
+**Atomic task**: <150 LoC. Wraps existing Pollinations logic in provider class. ✅ COMPLETE
 
 ---
 

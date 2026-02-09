@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+import base64
 import requests
 from urllib.parse import quote
 from django.core.files.storage import default_storage
@@ -74,6 +75,73 @@ class PollinationsProvider(ImageProvider):
             raise
         except Exception as e:
             raise ProviderError("pollinations", str(e))
+
+
+class CloudflareProvider(ImageProvider):
+    """Text-to-image provider using Cloudflare Workers AI."""
+
+    def __init__(self):
+        """Initialize provider with credentials from settings."""
+        account_id = settings.CLOUDFLARE_ACCOUNT_ID
+        api_token = settings.CLOUDFLARE_API_TOKEN
+        model = settings.CLOUDFLARE_MODEL
+
+        self.account_id = account_id
+        self.api_token = api_token
+        self.model = model
+        self.available = bool(account_id and api_token and model)
+
+    def get_image_bytes(self, text: str) -> bytes:
+        """Generate and return PNG image bytes from text using Cloudflare Workers AI."""
+        if not self.available:
+            raise ProviderError(
+                "cloudflare", "Account ID, API token, or model not configured"
+            )
+
+        try:
+            url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/ai/run/{self.model}"
+            headers = {
+                "Authorization": f"Bearer {self.api_token}",
+                "Content-Type": "application/json",
+            }
+            body = {"prompt": text}
+            timeout = settings.IMAGE_GENERATION_TIMEOUT_SECONDS
+
+            response = requests.post(
+                url,
+                json=body,
+                headers=headers,
+                timeout=timeout,
+            )
+
+            if response.status_code != 200:
+                raise ProviderError("cloudflare", f"HTTP {response.status_code}")
+
+            response_data = response.json()
+
+            if not response_data.get("success"):
+                error_messages = response_data.get("errors", [])
+                raise ProviderError("cloudflare", f"API error: {error_messages}")
+
+            result = response_data.get("result", {})
+            image_base64 = result.get("image")
+
+            if not image_base64:
+                raise ProviderError("cloudflare", "No image data in response")
+
+            image_bytes = base64.b64decode(image_base64)
+            return image_bytes
+
+        except requests.exceptions.Timeout:
+            raise ProviderError("cloudflare", "Request timeout")
+        except requests.exceptions.RequestException as e:
+            raise ProviderError("cloudflare", f"Request failed: {str(e)}")
+        except base64.binascii.Error as e:
+            raise ProviderError("cloudflare", f"Invalid base64 data: {str(e)}")
+        except ProviderError:
+            raise
+        except Exception as e:
+            raise ProviderError("cloudflare", str(e))
 
 
 class Provider(str, Enum):

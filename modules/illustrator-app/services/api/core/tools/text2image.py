@@ -6,20 +6,20 @@ from django.core.files.base import ContentFile
 from django.template.defaultfilters import slugify
 import time
 
-from api.env import env
+from django.conf import settings
 
 
 class Provider(str, Enum):
     POLLINATIONS = "pollinations"
 
 
-provider_settings = {
+PROVIDER_SETTINGS = {
     Provider.POLLINATIONS: {
         "width": 512,
         "height": 512,
         "model": "flux",
-        "api_key": env.str("POLLINATIONS_API_KEY"),
-        "seed": -1,  # Random seed
+        "api_key": settings.POLLINATIONS_API_KEY,
+        "seed": -1,
     }
 }
 
@@ -33,15 +33,15 @@ def upload_image(request, image: bytes, filename: str) -> str:
 
 
 def get_image_bytes(text: str, provider: Provider) -> bytes:
-    settings = provider_settings[provider]
+    provider_config = PROVIDER_SETTINGS[provider]
 
     match provider:
         case Provider.POLLINATIONS:
-            width = settings["width"]
-            height = settings["height"]
-            model = settings["model"]
-            api_key = settings["api_key"]
-            seed = settings["seed"]
+            width = provider_config["width"]
+            height = provider_config["height"]
+            model = provider_config["model"]
+            seed = provider_config["seed"]
+            api_key = provider_config["api_key"]
 
             url = f"https://gen.pollinations.ai/image/{quote(text)}"
             params = {"width": width, "height": height, "seed": seed, "model": model}

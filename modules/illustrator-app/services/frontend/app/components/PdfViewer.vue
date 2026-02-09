@@ -59,6 +59,7 @@
       :style="{ width: IMAGES_WIDTH + 'px' }"
       data-help-target="images"
       @close-editor="closeImageEditor"
+      @editor-state-change="updateEditorState"
     />
     <HeatmapViewer
       class="z-40"
@@ -104,11 +105,13 @@
 </template>
 
 <script setup lang="ts">
-import type { EditorState, Highlight } from "~/types/common";
 import { debounce } from "lodash-es";
 import "vue-pdf-embed/dist/styles/annotationLayer.css";
 import "vue-pdf-embed/dist/styles/textLayer.css";
 import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
+
+import type { EditorImageState, Highlight } from "~/types/common";
+
 import HeatmapViewer from "~/components/HeatmapViewer.vue";
 import { getFirstPolygonPoints, type PagePolygons } from "~/utils/heatmapUtils";
 import { scrollIntoView } from "~/utils/utils";
@@ -150,7 +153,7 @@ const pdfWidthScaled = computed(() => pdfWidth.value * pdfScale.value);
 const textLayerEnabled = ref(false);
 
 const openEditorIds = ref(new Set<number>());
-const editorStates = ref<EditorState[]>([]);
+const editorStates = ref<EditorImageState[]>([]);
 const heatmapOffset = ref({ top: 0, height: 0 });
 const heatmapStyle = computed(() => ({
   top: `${heatmapOffset.value.top}px`,
@@ -163,6 +166,16 @@ function openImageEditor(highlightId: number) {
 
 function closeImageEditor(highlightId: number) {
   openEditorIds.value.delete(highlightId);
+}
+
+function updateEditorState(nextState: EditorImageState) {
+  const index = editorStates.value.findIndex(state => state.highlightId === nextState.highlightId);
+  if (index === -1) {
+    editorStates.value.push(nextState);
+    return;
+  }
+
+  editorStates.value[index] = nextState;
 }
 
 async function setPdfScale(scale: number) {
@@ -360,6 +373,7 @@ function toggleHighlightSelection(id: number) {
 
 function reset() {
   openEditorIds.value.clear();
+  editorStates.value = [];
   pageVisibility.value = {};
   pageIntersectionRatios.clear();
   currentPage.value = 1;

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
 import base64
+import logging
 import requests
 from urllib.parse import quote
 from django.core.files.storage import default_storage
@@ -9,6 +10,8 @@ from django.template.defaultfilters import slugify
 import time
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderError(Exception):
@@ -142,6 +145,56 @@ class CloudflareProvider(ImageProvider):
             raise
         except Exception as e:
             raise ProviderError("cloudflare", str(e))
+
+
+def generate_image_bytes(prompt: str) -> bytes:
+    """
+    Generate image bytes from text prompt using available providers.
+
+    Attempts providers in priority order, failing over to next on error.
+    Returns first successful result.
+
+    Parameters:
+        prompt (str): Text prompt for image generation.
+
+    Returns:
+        bytes: PNG image bytes.
+
+    Raises:
+        ValueError: If prompt is empty, None, or whitespace only.
+        ProviderError: If all providers fail or none are available.
+    """
+    if not prompt or not prompt.strip():
+        raise ValueError("Prompt cannot be empty or whitespace")
+
+    providers = [PollinationsProvider(), CloudflareProvider()]
+
+    attempted = []
+    errors = []
+
+    for provider in providers:
+        provider_name = provider.__class__.__name__
+
+        if not provider.is_available():
+            logger.debug(f"{provider_name} is not available (missing credentials)")
+            continue
+
+        try:
+            logger.info(f"Attempting image generation with {provider_name}")
+            image_bytes = provider.get_image_bytes(prompt)
+            logger.info(f"Successfully generated image with {provider_name}")
+            return image_bytes
+        except ProviderError as e:
+            error_msg = f"{provider_name}: {str(e)}"
+            logger.warning(f"Provider failed - {error_msg}")
+            attempted.append(provider_name)
+            errors.append(error_msg)
+
+    if not attempted:
+        raise ProviderError("all", "No providers are available (missing credentials)")
+
+    error_details = "; ".join(errors)
+    raise ProviderError("all", f"All providers failed: {error_details}")
 
 
 class Provider(str, Enum):

@@ -88,17 +88,17 @@
 
 **File**: `services/api/core/tools/text2image.py`
 
-- [ ] Create function `generate_image_bytes(prompt: str) -> bytes`:
+- [x] Create function `generate_image_bytes(prompt: str) -> bytes`:
   - Initialize providers in priority order: `[PollinationsProvider(), CloudflareProvider()]`
   - Validate prompt: raise ValueError if empty/None
   - Iterate providers; check `is_available()` and attempt `get_image_bytes()`
   - Catch `ProviderError`; log provider name + error; try next
   - Return first success
   - If all fail or none available: raise final exception with all attempted provider names and errors
-- [ ] Provider initialization includes credential discovery; no separate `get_available_providers()` needed
-- [ ] Log provider name and error on failure for debugging
+- [x] Provider initialization includes credential discovery; no separate `get_available_providers()` needed
+- [x] Log provider name and error on failure for debugging
 
-**Atomic task**: <120 LoC. Selection logic with simple failover.
+**Atomic task**: <120 LoC. Selection logic with simple failover. ✅ COMPLETE
 
 ---
 

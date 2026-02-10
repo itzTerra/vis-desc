@@ -5,5 +5,13 @@ DJANGO_ALLOWED_HOSTS=localhost:8000,localhost:3000,api,frontend,localhost,0.0.0.
 DJANGO_SUPERUSER_USERNAME=super_admin
 DJANGO_SUPERUSER_PASSWORD=default_superuser_password
 
-# Provide yours
+# Pollinations (optional - set key to enable)
 POLLINATIONS_API_KEY=
+
+# Cloudflare Workers AI (all required if using - set all three to enable)
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_MODEL=@cf/black-forest-labs/flux-2-klein-4b
+
+# Image Generation Timeout (seconds)
+IMAGE_GENERATION_TIMEOUT_SECONDS=30

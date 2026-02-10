@@ -107,16 +107,16 @@
 
 **File**: `services/api/core/api.py`
 
-- [ ] Update `/api/gen-image-bytes` endpoint:
+- [x] Update `/api/gen-image-bytes` endpoint:
   - Validate prompt: if empty/None, return `Response(status=400, content="Prompt cannot be empty")`
   - Call `generate_image_bytes(prompt)` with timeout wrapper
   - On `ValueError` (validation): return 400 + plain text
   - On any provider exception (all failed/none available): return 500 + plain text (e.g., "Image generation failed")
   - On success: return binary PNG with `media_type="image/png"`
-- [ ] Update `/api/gen-image` endpoint similarly (return JSON with URL or error status)
-- [ ] Remove JSON error body; use status code only for error detection
+- [x] Update `/api/gen-image` endpoint similarly (return JSON with URL or error status)
+- [x] Remove JSON error body; use status code only for error detection
 
-**Atomic task**: <120 LoC. Endpoint updates with status-code error responses.
+**Atomic task**: <120 LoC. Endpoint updates with status-code error responses. ✅ COMPLETE
 
 ---
 
@@ -125,7 +125,7 @@
 
 **Files**: `.envs/.local/.api.template`, `.envs/.production/.api.template`
 
-- [ ] Add (all optional):
+- [x] Add (all optional):
   ```
   # Pollinations (optional - set key to enable)
   POLLINATIONS_API_KEY=
@@ -138,9 +138,9 @@
   # Image Generation Timeout (seconds)
   IMAGE_GENERATION_TIMEOUT_SECONDS=30
   ```
-- [ ] Update `.envs/.production/.api.template` with guidance comments about setting via secrets engine
+- [x] Update `.envs/.production/.api.template` with guidance comments about setting via secrets engine
 
-**Atomic task**: <50 LoC. Template updates.
+**Atomic task**: <50 LoC. Template updates. ✅ COMPLETE
 
 ---
 

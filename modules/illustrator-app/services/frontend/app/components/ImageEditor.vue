@@ -215,24 +215,27 @@ async function handleGenerate() {
   generateLoading.value = true;
 
   try {
-    const res = await $api("/api/gen-image-bytes", {
+    const response = await $api.raw("/api/gen-image-bytes", {
       method: "POST",
       body: { text: prompt },
     });
 
-    if (!res) {
-      useNotifier().error("Image generation failed");
+    if (response.status >= 400) {
+      if (response._data !== undefined && response._data !== null && response._data !== "") {
+        console.error(response._data);
+      }
+      useNotifier().error("Image generation failed. Please try again.");
       return;
     }
 
-    const blob = new Blob([res as any], { type: "image/png" });
+    const blob = new Blob([response._data as any], { type: "image/png" });
     const url = URL.createObjectURL(blob);
 
     addToHistory(prompt, url, blob);
 
     useNotifier().success("Image generated");
   } catch (error) {
-    useNotifier().error("Image generation failed");
+    useNotifier().error("Image generation failed. Please try again.");
     console.error(error);
   } finally {
     generateLoading.value = false;

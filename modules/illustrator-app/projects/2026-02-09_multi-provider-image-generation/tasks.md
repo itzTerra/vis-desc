@@ -149,13 +149,13 @@
 
 **File**: `services/frontend/app/components/ImageEditor.vue`
 
-- [ ] Update image generation handler:
+- [x] Update image generation handler:
   - Call `/api/gen-image-bytes` as before
   - Check response status on error: if `>= 400`, treat as error
   - Display user message: "Image generation failed. Please try again."
   - Log response body to console (if present) for debugging
   - No special handling needed for 4xx vs 5xx; both show same message
-- [ ] Verify blob handling on success (200) unchanged
+- [x] Verify blob handling on success (200) unchanged
 - [ ] Test that Blob construction still works with successful binary responses
 
 **Atomic task**: <80 LoC. Error handling using status code only.

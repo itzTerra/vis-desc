@@ -156,7 +156,7 @@
   - Log response body to console (if present) for debugging
   - No special handling needed for 4xx vs 5xx; both show same message
 - [x] Verify blob handling on success (200) unchanged
-- [ ] Test that Blob construction still works with successful binary responses
+- [x] Test that Blob construction still works with successful binary responses
 
 **Atomic task**: <80 LoC. Error handling using status code only.
 

@@ -144,4 +144,8 @@ function clamp(v: number, min: number, max: number) {
   return v < min ? min : (v > max ? max : v);
 }
 
-export { easeInExpo, assertIsDefined, scrollIntoView, clamp };
+function lerp(start: number, end: number, t: number): number {
+  return start + (end - start) * t;
+}
+
+export { easeInExpo, assertIsDefined, scrollIntoView, clamp, lerp };

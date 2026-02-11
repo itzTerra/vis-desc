@@ -16,7 +16,7 @@
             <span class="flex items-center space-x-2 ">
               <Icon name="lucide:upload" />
               <span class="font-medium">
-                Drop file here or click in this area
+                Drop a file here or click in this area
               </span>
             </span>
             <input type="file" accept="application/pdf" name="file_upload" class="hidden" @change="$emit('fileSelected', $event)">

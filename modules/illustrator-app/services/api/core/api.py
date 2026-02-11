@@ -1,6 +1,6 @@
 from core.tools.book_segmenting import TextSegmenter
 from ninja import File, Form, NinjaAPI, UploadedFile
-from django.http import Response
+from django.http import HttpResponse
 from django.conf import settings
 import uuid
 from core.schemas import (
@@ -14,10 +14,8 @@ from core.schemas import (
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
 from core.tools.text2image import (
-    Provider,
     ProviderError,
     generate_image_bytes,
-    get_image_url,
 )
 from core.tools.llm import enhance_text_with_llm
 import json
@@ -74,32 +72,18 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     }
 
 
-@api.post("/gen-image")
-def gen_image(request, body: TextBody):
-    if not body.text or not body.text.strip():
-        return Response("Prompt cannot be empty", status=400)
-
-    try:
-        image_url = get_image_url(request, body.text, Provider.POLLINATIONS)
-        return {"image": image_url}
-    except ValueError as e:
-        return Response(str(e), status=400)
-    except (ProviderError, Exception):
-        return Response("Image generation failed", status=500)
-
-
 @api.post("/gen-image-bytes")
 def gen_image_bytes_endpoint(request, body: TextBody):
     if not body.text or not body.text.strip():
-        return Response("Prompt cannot be empty", status=400)
+        return HttpResponse("Prompt cannot be empty", status=400)
 
     try:
         image_bytes = generate_image_bytes(body.text)
-        return Response(image_bytes, content_type="image/png")
+        return HttpResponse(image_bytes, content_type="image/png")
     except ValueError as e:
-        return Response(str(e), status=400)
+        return HttpResponse(str(e), status=400)
     except (ProviderError, Exception):
-        return Response("Image generation failed", status=500)
+        return HttpResponse("Image generation failed", status=500)
 
 
 @api.post("/enhance", response=EnhanceTextResponse)

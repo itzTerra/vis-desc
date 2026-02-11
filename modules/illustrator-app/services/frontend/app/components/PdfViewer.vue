@@ -69,7 +69,6 @@
       :page-aspect-ratio="pageAspectRatio"
       :page-refs="pageRefs"
       :editor-states="editorStates"
-      @navigate="handleNavigate"
     />
     <div class="fixed bottom-0 left-0 flex justify-center z-200">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">
@@ -160,11 +159,23 @@ const heatmapStyle = computed(() => ({
 }));
 
 function openImageEditor(highlightId: number) {
-  openEditorIds.value.add(highlightId);
+  openEditorIds.value = new Set([...openEditorIds.value, highlightId]);
+  // Initialize state immediately so dots appear right away
+  if (!editorStates.value.some(state => state.highlightId === highlightId)) {
+    editorStates.value.push({
+      highlightId,
+      imageUrl: null,
+      hasImage: false,
+    });
+  }
 }
 
 function closeImageEditor(highlightId: number) {
-  openEditorIds.value.delete(highlightId);
+  const newSet = new Set(openEditorIds.value);
+  newSet.delete(highlightId);
+  openEditorIds.value = newSet;
+  // Remove editor state so dots vanish
+  editorStates.value = editorStates.value.filter(state => state.highlightId !== highlightId);
 }
 
 function updateEditorState(nextState: EditorImageState) {
@@ -299,17 +310,6 @@ async function goToHighlight(highlight: Highlight) {
 }
 nuxtApp.hook("custom:goToHighlight", goToHighlight);
 
-async function handleNavigate(pageIndex: number, normalizedY: number) {
-  const pageElement = pageRefs.value[pageIndex] as HTMLElement | undefined;
-  if (pageElement === undefined) {
-    return;
-  }
-
-  const pageRect = pageElement.getBoundingClientRect();
-  const targetTop = pageRect.top + window.scrollY + normalizedY * pageRect.height - window.innerHeight / 2;
-  window.scrollTo({ top: targetTop, behavior: "smooth" });
-}
-
 function toggleHighlightSelection(id: number) {
   if (selectedHighlights.value.has(id)) {
     selectedHighlights.value.delete(id);
@@ -329,7 +329,7 @@ function reset() {
     virtualScrollDebounce = undefined;
   }
   highlightLayerKey.value++;
-  console.log("resetting");
+  // console.log("resetting");
 }
 
 nuxtApp.$debugPanel.track("pageVisibility", pageVisibility);
@@ -340,7 +340,7 @@ async function pageResizeHandler() {
   if (pdfEmbedWrapper.value) {
     const containerWidth = pdfViewer.value ? pdfViewer.value.clientWidth : window.innerWidth;
     pdfWidth.value = containerWidth - IMAGES_WIDTH;
-    console.log(`Setting PDF width to ${pdfWidth.value}px`);
+    // console.log(`Setting PDF width to ${pdfWidth.value}px`);
     pdfEmbedWrapper.value.style.width = `${pdfWidth.value}px`;
     await nextTick();
     highlightLayerKey.value++; // force re-render highlight layer

@@ -166,6 +166,7 @@
 **Goal**: Verify all providers work correctly with failover.
 
 **Tests**:
+- [x] Create manual test runbook in `projects/2026-02-09_multi-provider-image-generation/manual-test-runbook.md`
 - [ ] Manual test: Pollinations enabled only → generation succeeds
 - [ ] Manual test: Cloudflare enabled only → generation succeeds
 - [ ] Manual test: Pollinations fails → tries Cloudflare → succeeds

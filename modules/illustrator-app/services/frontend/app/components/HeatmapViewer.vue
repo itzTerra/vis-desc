@@ -1,11 +1,9 @@
 <template>
   <div
     ref="containerElement"
-    class="heatmap-container fixed left-0 top-0 h-full transition-all duration-200 border-r"
-    :class="isExpanded ? `w-[${HEATMAP_WIDTH}px]` : 'w-0'"
+    class="heatmap-container fixed left-0 top-0 h-full transition-all duration-200 border-r bg-base-300/50 border-base-300"
     :style="{
-      backgroundColor: isExpanded ? 'transparent' : 'rgba(245, 245, 245, 0.7)',
-      borderColor: '#D0D0D0'
+      width: isExpanded ? `${HEATMAP_WIDTH}px` : '0',
     }"
   >
     <div class="relative h-full w-full">
@@ -25,16 +23,20 @@
         />
       </button>
       <Transition name="heatmap-expand">
-        <div v-show="isExpanded" class="h-full w-full overflow-hidden" @click="handleHeatmapClick">
+        <div v-show="isExpanded" class="h-full w-full overflow-hidden" @pointerdown.left="handleHeatmapClick">
           <canvas
             ref="canvasElement"
-            :width="HEATMAP_WIDTH"
-            :height="canvasHeight"
-            class="heatmap-canvas cursor-pointer"
+            :width="HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH"
+            :height="heatmapHeight"
+            class="h-full cursor-pointer"
+            :style="{
+              width: `${HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH}px`,
+            }"
           />
           <svg
-            :viewBox="`0 0 ${HEATMAP_WIDTH} ${canvasHeight}`"
+            :viewBox="`0 0 ${HEATMAP_WIDTH} ${heatmapHeight}`"
             class="absolute inset-0 h-full w-full"
+            preserveAspectRatio="none"
             role="img"
             aria-label="Heatmap image indicators"
           >
@@ -45,26 +47,23 @@
               :height="viewportRectHeight"
               class="viewport-rect"
               :class="{ 'viewport-rect--dragging': isDragging }"
-              @pointerdown="startDrag"
             />
             <template v-for="dot in segmentDots" :key="dot.highlightId">
-              <circle
+              <ellipse
                 v-if="dot.hasImage"
                 :cx="dot.x"
                 :cy="dot.y"
-                r="4.5"
+                rx="5"
+                :ry="5 * radiusScale"
                 class="image-dot image-dot--has pointer-events-none"
-                role="img"
-                :aria-label="`Segment ${dot.highlightId} has image`"
               />
-              <circle
+              <ellipse
                 v-else
                 :cx="dot.x"
                 :cy="dot.y"
-                r="4"
+                rx="4"
+                :ry="4 * radiusScale"
                 class="image-dot image-dot--none pointer-events-none"
-                role="img"
-                :aria-label="`Segment ${dot.highlightId} has no image`"
               />
             </template>
           </svg>
@@ -86,7 +85,8 @@ import {
 } from "~/utils/heatmapUtils";
 import { clamp } from "~/utils/utils";
 
-const HEATMAP_WIDTH = 72;
+const HEATMAP_WIDTH = 56;
+const IMAGE_INDICATOR_STRIP_WIDTH = 16; // Justified on the right of heatmap container
 
 const props = defineProps<{
   highlights: Highlight[];
@@ -94,10 +94,6 @@ const props = defineProps<{
   pageAspectRatio: number;
   pageRefs: Element[];
   editorStates: EditorImageState[];
-}>();
-
-const emit = defineEmits<{
-  navigate: [page: number, normalizedY: number];
 }>();
 
 const isExpanded = ref(true);
@@ -114,6 +110,23 @@ const dragStartScrollOffset = ref(0);
 const dragTarget = ref<SVGRectElement | null>(null);
 let scrollRafId: number | null = null;
 
+const stickyHeaderOffset = ref(0);
+const bottomOffset = ref(0);
+const documentScrollHeight = ref(0);
+
+const radiusScale = computed(() => {
+  if (!containerElement.value || heatmapHeight.value <= 0) {
+    return 1;
+  }
+
+  const containerHeight = containerElement.value.clientHeight;
+  if (containerHeight <= 0) {
+    return 1;
+  }
+
+  return heatmapHeight.value / containerHeight;
+});
+
 const totalPages = computed(() => {
   const maxPageNum = Math.max(
     -1,
@@ -122,8 +135,11 @@ const totalPages = computed(() => {
   return Math.max(props.pageRefs.length, maxPageNum + 1) || 1;
 });
 
-const canvasHeight = computed(() => {
-  return Math.ceil(totalPages.value * props.pageAspectRatio * HEATMAP_WIDTH);
+// Use the actual drawing width (excluding the image indicator strip)
+const drawingWidth = HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH;
+
+const heatmapHeight = computed(() => {
+  return Math.ceil(totalPages.value * props.pageAspectRatio * drawingWidth);
 });
 
 // Maps viewport size to heatmap canvas space for drag-to-scroll UI
@@ -132,16 +148,33 @@ const viewportRectHeight = computed(() => {
     return 20;
   }
 
-  const rectHeight = (viewportHeight.value / totalHeight.value) * canvasHeight.value;
+  // Use actual visible PDF height (accounting for sticky header and bottom controls)
+  const visiblePdfHeight = Math.max(0, viewportHeight.value - stickyHeaderOffset.value - bottomOffset.value);
+  const rectHeight = (visiblePdfHeight / totalHeight.value) * heatmapHeight.value;
   return Math.max(rectHeight, 20);
 });
 
 const trackHeight = computed(() => {
-  return Math.max(0, canvasHeight.value - viewportRectHeight.value);
+  return Math.max(0, heatmapHeight.value - viewportRectHeight.value);
+});
+
+const actualContentHeight = computed(() => {
+  // Calculate real-time content height from first to last page
+  const lastPageElement = props.pageRefs[props.pageRefs.length - 1];
+  if (!lastPageElement) {
+    return totalHeight.value;
+  }
+
+  // Depend on scrollOffset to trigger re-evaluation on scroll
+  const _ = scrollOffset.value;
+
+  const lastPageRect = lastPageElement.getBoundingClientRect();
+  const lastPageAbsoluteBottom = lastPageRect.bottom + window.scrollY;
+  return lastPageAbsoluteBottom - pageTop.value;
 });
 
 const scrollableHeight = computed(() => {
-  return Math.max(0, totalHeight.value - viewportHeight.value);
+  return Math.max(0, actualContentHeight.value - viewportHeight.value);
 });
 
 // Map document scroll position to heatmap viewport rectangle Y coordinate
@@ -151,11 +184,40 @@ const viewportY = computed(() => {
     return 0;
   }
 
-  return clamp(
+  const result = clamp(
     (scrollOffset.value / scrollableHeight.value) * trackHeight.value,
     0,
     trackHeight.value
   );
+
+  // Debug logging
+  const lastPageRect = props.pageRefs[props.pageRefs.length - 1]?.getBoundingClientRect();
+  const lastPageBottom = lastPageRect ? lastPageRect.bottom + window.scrollY : 0;
+  const lastPageIndex = props.pageRefs.length - 1;
+
+  console.log("[HeatmapViewer]", {
+    scrollOffset: scrollOffset.value,
+    scrollableHeight: scrollableHeight.value,
+    trackHeight: trackHeight.value,
+    viewportRectHeight: viewportRectHeight.value,
+    heatmapHeight: heatmapHeight.value,
+    totalHeight: totalHeight.value,
+    viewportHeight: viewportHeight.value,
+    viewportY: result,
+    bottomGap: heatmapHeight.value - (result + viewportRectHeight.value),
+    windowScrollY: window.scrollY,
+    pageTop: pageTop.value,
+    stickyHeaderOffset: stickyHeaderOffset.value,
+    bottomOffset: bottomOffset.value,
+    documentScrollHeight: documentScrollHeight.value,
+    lastPageBottom,
+    viewportBottom: window.scrollY + viewportHeight.value,
+    numPageRefs: props.pageRefs.length,
+    lastPageIndex,
+    totalPages: totalPages.value,
+  });
+
+  return result;
 });
 
 const segmentDots = computed<SegmentDot[]>(() => {
@@ -167,10 +229,12 @@ const segmentDots = computed<SegmentDot[]>(() => {
     props.editorStates.map(state => [state.highlightId, state])
   );
   const dots: SegmentDot[] = [];
-  const heatmapHeight = canvasHeight.value;
 
   // Converts normalized coordinates [0,1] from PDF space to heatmap pixel space
   for (const highlight of props.highlights) {
+    if (!editorStateById.has(highlight.id)) {
+      continue;
+    }
     const pageNums = Object.keys(highlight.polygons).map(Number).sort((a, b) => a - b);
     if (pageNums.length === 0) {
       continue;
@@ -213,8 +277,8 @@ const segmentDots = computed<SegmentDot[]>(() => {
       normalizedY,
       pageNum,
       props.pageAspectRatio,
-      HEATMAP_WIDTH,
-      heatmapHeight,
+      drawingWidth,
+      heatmapHeight.value,
       totalPages.value
     );
 
@@ -223,12 +287,13 @@ const segmentDots = computed<SegmentDot[]>(() => {
     }
 
     const hasImage = editorStateById.get(highlight.id)?.hasImage ?? false;
+    const centerX = HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH / 2;
     dots.push({
       highlightId: highlight.id,
       pageNum,
       normalizedX,
       normalizedY,
-      x: pixel.x,
+      x: centerX,
       y: pixel.y,
       hasImage,
     });
@@ -245,7 +310,7 @@ function renderHeatmap() {
   const segments = createSegmentArray(props.highlights);
   const renderedCanvas = renderHeatmapCanvas(
     segments,
-    HEATMAP_WIDTH,
+    drawingWidth,
     props.pageAspectRatio,
     totalPages.value
   );
@@ -261,7 +326,7 @@ function renderHeatmap() {
   ctx.drawImage(renderedCanvas, 0, 0);
 }
 
-function handleHeatmapClick(event: MouseEvent) {
+function handleHeatmapClick(event: PointerEvent) {
   const canvas = canvasElement.value;
   if (canvas === null) {
     return;
@@ -282,27 +347,54 @@ function handleHeatmapClick(event: MouseEvent) {
   const normalized = heatmapPixelToNormalized(
     clickX,
     clickY,
-    props.pageAspectRatio,
-    canvasHeight.value,
-    totalPages.value
+    drawingWidth,
+    heatmapHeight.value,
   );
 
-  emit("navigate", normalized.page, normalized.normalizedY);
+  window.scrollTo({
+    top: pageTop.value + normalized.normalizedY * actualContentHeight.value
+  });
+
+  startDrag(event);
 }
 
 function measureLayout() {
   const pageElements = props.pageRefs;
   const firstPageRect = pageElements[0]?.getBoundingClientRect();
   const lastPageRect = pageElements[pageElements.length - 1]?.getBoundingClientRect();
+  const viewportHeightValue = window.innerHeight;
+
+  // Calculate absolute positions: firstPageRect.top is relative to viewport, add scrollY for absolute
   const pageTopValue = firstPageRect ? firstPageRect.top + window.scrollY : 0;
-  const totalHeightValue = firstPageRect && lastPageRect
-    ? lastPageRect.bottom - firstPageRect.top
-    : 0;
-  const viewportHeightValue = containerElement.value?.getBoundingClientRect().height ?? window.innerHeight;
+  const pageBottomValue = lastPageRect ? lastPageRect.bottom + window.scrollY : pageTopValue;
+
+  // Total height is the distance from first page top to last page bottom in absolute coordinates
+  const totalHeightValue = pageBottomValue - pageTopValue;
+
+  console.log("[measureLayout]", {
+    numPages: pageElements.length,
+    firstPageRect: firstPageRect ? { top: firstPageRect.top, bottom: firstPageRect.bottom } : null,
+    lastPageRect: lastPageRect ? { top: lastPageRect.top, bottom: lastPageRect.bottom } : null,
+    windowScrollY: window.scrollY,
+    pageTopValue,
+    pageBottomValue,
+    totalHeightValue,
+  });
+
+  stickyHeaderOffset.value = Math.max(0, firstPageRect?.top ?? 0);
+
+  // Measure bottom offset: space between last page bottom and viewport bottom
+  // This accounts for PDF controls and other UI elements at the bottom
+  if (lastPageRect) {
+    bottomOffset.value = Math.max(0, viewportHeightValue - lastPageRect.bottom);
+  } else {
+    bottomOffset.value = 0;
+  }
 
   pageTop.value = pageTopValue;
   totalHeight.value = totalHeightValue;
   viewportHeight.value = viewportHeightValue;
+  documentScrollHeight.value = document.documentElement.scrollHeight;
   scrollOffset.value = window.scrollY - pageTopValue;
 }
 
@@ -326,7 +418,7 @@ function startDrag(event: PointerEvent) {
   dragTarget.value?.setPointerCapture(event.pointerId);
   isDragging.value = true;
   dragStartY.value = event.clientY;
-  dragStartScrollOffset.value = scrollOffset.value;
+  dragStartScrollOffset.value = window.scrollY - pageTop.value;
   window.addEventListener("pointermove", onDrag);
   window.addEventListener("pointerup", endDrag);
   window.addEventListener("pointercancel", endDrag);
@@ -337,13 +429,27 @@ function onDrag(event: PointerEvent) {
     return;
   }
 
-  if (trackHeight.value <= 0 || scrollableHeight.value <= 0) {
+  if (heatmapHeight.value <= 0 || totalHeight.value <= 0) {
     return;
   }
 
-  // Reverse mapping: heatmap pixel delta → PDF scroll distance
-  const deltaY = event.clientY - dragStartY.value;
-  const scrollDelta = (deltaY / trackHeight.value) * scrollableHeight.value;
+  const canvas = canvasElement.value;
+  if (!canvas) {
+    return;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  if (rect.height <= 0) {
+    return;
+  }
+
+  // Convert screen pixel delta to heatmap canvas pixel delta
+  const screenDeltaY = event.clientY - dragStartY.value;
+  const scaleY = canvas.height / rect.height;
+  const heatmapDeltaY = screenDeltaY * scaleY;
+
+  // Map heatmap pixel movement directly to scroll distance
+  const scrollDelta = (heatmapDeltaY / heatmapHeight.value) * totalHeight.value;
   const nextScrollOffset = clamp(dragStartScrollOffset.value + scrollDelta, 0, scrollableHeight.value);
 
   window.scrollTo({ top: pageTop.value + nextScrollOffset });
@@ -371,6 +477,15 @@ watchDebounced(
     }
   },
   { debounce: 200, deep: true }
+);
+
+watch(
+  () => actualContentHeight.value,
+  () => {
+    if (isExpanded.value) {
+      renderHeatmap();
+    }
+  }
 );
 
 watchEffect(() => {
@@ -419,9 +534,8 @@ export interface SegmentDot {
 </script>
 
 <style scoped>
-.heatmap-canvas {
-  width: 100%;
-  height: 100%;
+.heatmap-container {
+  padding-bottom: 34px; /* PDF control panel height */
 }
 
 .heatmap-toggle-icon {
@@ -438,7 +552,7 @@ export interface SegmentDot {
   top: 50%;
   transform: translate(100%, -50%);
   height: 60px;
-  width: 20px;
+  width: 15px;
   opacity: 0.7;
   padding-left: 0;
   padding-right: 0;
@@ -461,20 +575,21 @@ export interface SegmentDot {
 }
 
 .image-dot--has {
-  fill: #f5c542;
-  stroke: #6b4d00;
-  stroke-width: 1.5px;
+  fill: var(--color-primary);
+  stroke: var(--color-primary);
+  stroke-width: 2px;
 }
 
 .image-dot--none {
   fill: transparent;
-  stroke: #9ca3af;
-  stroke-width: 1.5px;
+  stroke: var(--color-primary);
+  stroke-width: 2px;
 }
 
 .viewport-rect {
-  fill: rgba(74, 144, 226, 0.15);
-  stroke: #4a90e2;
+  fill: var(--color-info);
+  fill-opacity: 0.3;
+  stroke: var(--color-info);
   stroke-width: 2px;
   pointer-events: all;
   cursor: grab;

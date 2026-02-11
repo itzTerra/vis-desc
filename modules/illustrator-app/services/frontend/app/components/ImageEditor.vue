@@ -215,32 +215,13 @@ async function handleGenerate() {
   generateLoading.value = true;
 
   try {
-    const response = await $api.raw("/api/gen-image-bytes", {
+    const res = await $api("/api/gen-image-bytes", {
       method: "POST",
       body: { text: prompt },
-      responseType: "arrayBuffer",
     });
-
-    if (response.status >= 400) {
-      if (response._data !== undefined && response._data !== null) {
-        const errorText = response._data instanceof ArrayBuffer
-          ? new TextDecoder().decode(response._data)
-          : String(response._data);
-
-        if (errorText.trim() !== "") {
-          console.error(errorText);
-        }
-      }
-      useNotifier().error("Image generation failed. Please try again.");
-      return;
-    }
-
-    const blob = new Blob([response._data as any], { type: "image/png" });
+    const blob = new Blob([res as any], { type: "image/png" });
     const url = URL.createObjectURL(blob);
-
     addToHistory(prompt, url, blob);
-
-    useNotifier().success("Image generated");
   } catch (error) {
     useNotifier().error("Image generation failed. Please try again.");
     console.error(error);

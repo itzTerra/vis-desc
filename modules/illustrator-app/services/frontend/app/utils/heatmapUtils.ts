@@ -8,7 +8,6 @@ export type HeatmapPixel = {
 };
 
 export type HeatmapNormalizedPoint = {
-  page: number;
   normalizedX: number;
   normalizedY: number;
 };
@@ -75,19 +74,19 @@ export function normalizedToHeatmapPixel(
   normalizedY: number,
   pageNum: number,
   pageAspectRatio: number,
-  heatmapWidth: number,
-  heatmapHeight: number,
+  canvasWidth: number,
+  canvasHeight: number,
   totalPageCount: number
 ): HeatmapPixel | undefined {
   if (pageNum >= totalPageCount) {
     return undefined;
   }
 
-  const pageHeight = pageAspectRatio * heatmapWidth;
+  const pageHeight = pageAspectRatio * canvasWidth;
   const cumulativeOffset = pageNum * pageHeight;
   const withinPageOffset = normalizedY * pageHeight;
-  const x = clamp(normalizedX * heatmapWidth, 0, heatmapWidth);
-  const y = clamp(cumulativeOffset + withinPageOffset, 0, heatmapHeight);
+  const x = clamp(normalizedX * canvasWidth, 0, canvasWidth);
+  const y = clamp(cumulativeOffset + withinPageOffset, 0, canvasHeight);
 
   return { x, y };
 }
@@ -125,31 +124,26 @@ export function getViewportPercentage(
  *
  * @param pixelX - X coordinate in heatmap pixel space.
  * @param pixelY - Y coordinate in heatmap pixel space.
- * @param pageAspectRatio - Page height divided by width.
+ * @param heatmapWidth - Heatmap canvas width in pixels.
  * @param heatmapHeight - Heatmap canvas height in pixels.
- * @param totalPageCount - Total number of pages in the document.
- * @returns Normalized coordinates and page index for the hit position.
+ * @returns Normalized coordinates for the hit position.
  */
 export function heatmapPixelToNormalized(
   pixelX: number,
   pixelY: number,
-  pageAspectRatio: number,
+  heatmapWidth: number,
   heatmapHeight: number,
-  totalPageCount: number
 ): HeatmapNormalizedPoint {
-  if (totalPageCount <= 0 || pageAspectRatio <= 0 || heatmapHeight <= 0) {
-    return { page: 0, normalizedX: 0, normalizedY: 0 };
+  if (heatmapWidth <= 0 || heatmapHeight <= 0) {
+    return { normalizedX: 0, normalizedY: 0 };
   }
 
-  const pageHeight = heatmapHeight / totalPageCount;
-  const heatmapWidth = pageHeight / pageAspectRatio;
   const clampedX = clamp(pixelX, 0, heatmapWidth);
   const clampedY = clamp(pixelY, 0, heatmapHeight);
-  const page = clamp(Math.floor(clampedY / pageHeight), 0, totalPageCount - 1);
   const normalizedX = clamp(clampedX / heatmapWidth, 0, 1);
-  const normalizedY = clamp((clampedY - page * pageHeight) / pageHeight, 0, 1);
+  const normalizedY = clamp(clampedY / heatmapHeight, 0, 1);
 
-  return { page, normalizedX, normalizedY };
+  return { normalizedX, normalizedY };
 }
 
 /**
@@ -159,43 +153,31 @@ export function heatmapPixelToNormalized(
  * @returns Opacity value clamped to the expected render range.
  */
 export function scoreToOpacity(score: number): number {
-  const opacity = 0.15 + score * 0.75;
-  return clamp(opacity, 0.15, 0.9);
-}
-
-/**
- * Maps a segment score to a grayscale brightness value.
- *
- * @param score - Segment score between 0 and 1.
- * @returns Grayscale brightness value clamped to avoid pure black or white.
- */
-export function scoreToBrightness(score: number): number {
-  const brightness = 220 - score * 180;
-  return Math.round(clamp(brightness, 40, 220));
+  return lerp(0.05, 0.8, score);
 }
 
 /**
  * Renders heatmap segments to a cached canvas for fast reuse.
  *
  * @param segments - Precomputed heatmap segments with polygon points and scores.
- * @param heatmapWidth - Heatmap canvas width in pixels.
+ * @param canvasWidth - Heatmap canvas width in pixels.
  * @param pageAspectRatio - Page height divided by width.
  * @param totalPageCount - Total number of pages in the document.
  * @returns A rendered canvas that can be drawn onto the visible heatmap.
  */
 export function renderHeatmapCanvas(
   segments: HeatmapSegment[],
-  heatmapWidth: number,
+  canvasWidth: number,
   pageAspectRatio: number,
   totalPageCount: number
 ): HTMLCanvasElement {
-  const heatmapHeight = Math.ceil(totalPageCount * pageAspectRatio * heatmapWidth);
+  const heatmapHeight = Math.ceil(totalPageCount * pageAspectRatio * canvasWidth);
   if (typeof document === "undefined") {
-    return { width: heatmapWidth, height: heatmapHeight } as HTMLCanvasElement;
+    return { width: canvasWidth, height: heatmapHeight } as HTMLCanvasElement;
   }
 
   const canvas = document.createElement("canvas");
-  canvas.width = heatmapWidth;
+  canvas.width = canvasWidth;
   canvas.height = heatmapHeight;
 
   const ctx = canvas.getContext("2d");
@@ -203,30 +185,38 @@ export function renderHeatmapCanvas(
     return canvas;
   }
 
-  try {
-    ctx.fillStyle = "#E8E8E8";
-    ctx.fillRect(0, 0, heatmapWidth, heatmapHeight);
+  const segmentColor = getComputedStyle(document.documentElement).getPropertyValue("--color-secondary");
 
+  try {
     for (const segment of segments) {
       const opacity = scoreToOpacity(segment.score);
-      const brightness = scoreToBrightness(segment.score);
       ctx.globalAlpha = opacity;
-      ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+      ctx.fillStyle = segmentColor;
 
+      const pixelPoints: HeatmapPixel[] = [];
       for (const [x, y] of segment.polygonPoints) {
         const point = normalizedToHeatmapPixel(
           x,
           y,
           segment.pageNum,
           pageAspectRatio,
-          heatmapWidth,
+          canvasWidth,
           heatmapHeight,
           totalPageCount
         );
-        if (!point) {
-          continue;
+        if (point) {
+          pixelPoints.push(point);
         }
-        ctx.fillRect(Math.round(point.x), Math.round(point.y), 2, 2);
+      }
+
+      if (pixelPoints.length >= 3) {
+        ctx.beginPath();
+        ctx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
+        for (let i = 1; i < pixelPoints.length; i++) {
+          ctx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+        }
+        ctx.closePath();
+        ctx.fill();
       }
     }
   } catch (error) {

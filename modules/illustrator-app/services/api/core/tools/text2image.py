@@ -1,13 +1,8 @@
 from abc import ABC, abstractmethod
-from enum import Enum
 import base64
 import logging
 import requests
 from urllib.parse import quote
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-from django.template.defaultfilters import slugify
-import time
 
 from django.conf import settings
 
@@ -195,42 +190,3 @@ def generate_image_bytes(prompt: str) -> bytes:
 
     error_details = "; ".join(errors)
     raise ProviderError("all", f"All providers failed: {error_details}")
-
-
-class Provider(str, Enum):
-    POLLINATIONS = "pollinations"
-
-
-PROVIDER_SETTINGS = {
-    Provider.POLLINATIONS: {
-        "width": 512,
-        "height": 512,
-        "model": "flux",
-        "api_key": settings.POLLINATIONS_API_KEY,
-        "seed": -1,
-    }
-}
-
-
-def upload_image(request, image: bytes, filename: str) -> str:
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    filename = f"{timestr}/{filename}"
-    path = default_storage.save(filename, ContentFile(image))
-    image_url = request.build_absolute_uri(default_storage.url(path))
-    return image_url
-
-
-def get_image_bytes(text: str, provider: Provider) -> bytes:
-    """Generate image bytes using specified provider."""
-    match provider:
-        case Provider.POLLINATIONS:
-            pollinations = PollinationsProvider()
-            return pollinations.get_image_bytes(text)
-        case _:
-            raise ProviderError("unknown", f"Unsupported provider: {provider}")
-
-
-def get_image_url(request, text: str, provider: Provider) -> str:
-    content = get_image_bytes(text, provider)
-    text_slug = slugify(text)[:10]
-    return upload_image(request, content, f"{text_slug}.png")

@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import type { ImageEditor } from "#components";
 import type { EditorImageState, Highlight } from "~/types/common";
 
 const props = defineProps<{

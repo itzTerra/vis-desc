@@ -489,9 +489,6 @@ onMounted(() => {
         pdfRenderedQueue.push(async () => {
           const segments = (await import("~/assets/data/example-segments.json").then(m => m.default || m)) as Highlight[];
           highlights.splice(0, highlights.length, ...segments);
-
-          useNotifier().success("Example PDF and segments loaded successfully");
-          console.log("Loaded example with", highlights.length, "segments");
         });
       } catch (error) {
         console.error("Failed to load example data:", error);

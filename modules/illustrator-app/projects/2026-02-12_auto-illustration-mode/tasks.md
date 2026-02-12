@@ -55,11 +55,6 @@ Note: API request/response JSON should use camelCase keys (frontend convention).
  - [x] Ensure `HighlightNav` still reads `selectedHighlights` for navigation; `useAutoIllustration()` will become the authoritative updater of `selectedHighlights` when enabled.
  - [x] In `ImageLayer`/`ImageEditor`, verify `openEditorIds` API signature and update call sites if needed to accept array input from auto-select code.
 
-## API Routes & Tests
-
-- [ ] Add route-level tests for `gen-image-bytes` and `enhance` batch behaviors.
-- [ ] Add an integration test that calls the batch route with 3 entries and inspects results ordering.
-
 ## UX polish & validation
  - [x] Add validation messages in cogwheel dropdown for invalid `maxGapLines <= minGapLines` and non-integer `minScore`.
  - [x] Ensure the status bar tooltip includes: number selected, number enhanced, number of images generated, and whether the algorithm is currently enhancing/generating.
@@ -69,11 +64,6 @@ Note: API request/response JSON should use camelCase keys (frontend convention).
 - [ ] Document new settings and default values in project `README` or a short front-end README (one paragraph).
 - [ ] Add comments to `useAutoIllustration()` describing the selection algorithm and mapping rule (1 line = 0.01 normalized).
 - [ ] Run lint/format on changed files and update any tests broken by refactors.
-
-## Rollout checklist
-
-- [ ] Feature flag the toggle behind a user preference or remote flag for gradual rollout.
-- [ ] Manually smoke test: enable toggle, stream sample highlights, verify editors open and images generate.
 
 ---
 

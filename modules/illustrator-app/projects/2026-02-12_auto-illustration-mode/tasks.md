@@ -61,9 +61,8 @@ Note: API request/response JSON should use camelCase keys (frontend convention).
 - [ ] Add an integration test that calls the batch route with 3 entries and inspects results ordering.
 
 ## UX polish & validation
-
-- [ ] Add validation messages in cogwheel dropdown for invalid `maxGapLines <= minGapLines` and non-integer `minScore`.
-- [ ] Ensure the status bar tooltip includes: number selected, number enhanced, number of images generated, and whether the algorithm is currently enhancing/generating.
+ - [x] Add validation messages in cogwheel dropdown for invalid `maxGapLines <= minGapLines` and non-integer `minScore`.
+ - [x] Ensure the status bar tooltip includes: number selected, number enhanced, number of images generated, and whether the algorithm is currently enhancing/generating.
 
 ## Cleanup & docs
 

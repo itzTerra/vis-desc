@@ -60,10 +60,11 @@ Note: API request/response JSON should use camelCase keys (frontend convention).
  - [x] Ensure the status bar tooltip includes: number selected, number enhanced, number of images generated, and whether the algorithm is currently enhancing/generating.
 
 ## Cleanup & docs
+## Cleanup & docs
 
-- [ ] Document new settings and default values in project `README` or a short front-end README (one paragraph).
-- [ ] Add comments to `useAutoIllustration()` describing the selection algorithm and mapping rule (1 line = 0.01 normalized).
-- [ ] Run lint/format on changed files and update any tests broken by refactors.
+- [x] Document new settings and default values in project `README` or a short front-end README (one paragraph).
+- [x] Add comments to `useAutoIllustration()` describing the selection algorithm and mapping rule (1 line = 0.01 normalized).
+- [x] Run lint/format on changed files and update any tests broken by refactors.
 
 ---
 

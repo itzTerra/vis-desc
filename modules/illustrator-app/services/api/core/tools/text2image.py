@@ -98,37 +98,54 @@ class CloudflareProvider(ImageProvider):
 
         try:
             url = f"https://api.cloudflare.com/client/v4/accounts/{self.account_id}/ai/run/{self.model}"
-            headers = {
-                "Authorization": f"Bearer {self.api_token}",
-                "Content-Type": "application/json",
-            }
-            body = {"prompt": text}
+            # Send as multipart/form-data (Cloudflare expects a multipart body)
+            # Use requests' `files` to let it generate the boundary and Content-Type header.
+            width = 512
+            height = 512
             timeout = settings.IMAGE_GENERATION_TIMEOUT_SECONDS
+
+            files = {
+                "prompt": (None, text),
+                "width": (None, str(width)),
+                "height": (None, str(height)),
+            }
+
+            headers = {"Authorization": f"Bearer {self.api_token}"}
 
             response = requests.post(
                 url,
-                json=body,
+                files=files,
                 headers=headers,
                 timeout=timeout,
             )
 
             if response.status_code != 200:
-                raise ProviderError("cloudflare", f"HTTP {response.status_code}")
+                raise ProviderError(
+                    "cloudflare", f"HTTP {response.status_code}: {response.text}"
+                )
 
-            response_data = response.json()
+            # Cloudflare may return JSON (with base64 image) or raw binary image bytes.
+            content_type = response.headers.get("content-type", "")
 
-            if not response_data.get("success"):
-                error_messages = response_data.get("errors", [])
-                raise ProviderError("cloudflare", f"API error: {error_messages}")
+            # If response is JSON, parse and extract base64 image string as before.
+            if "application/json" in content_type:
+                response_data = response.json()
 
-            result = response_data.get("result", {})
-            image_base64 = result.get("image")
+                if not response_data.get("success"):
+                    error_messages = response_data.get("errors", [])
+                    raise ProviderError("cloudflare", f"API error: {error_messages}")
 
-            if not image_base64:
-                raise ProviderError("cloudflare", "No image data in response")
+                result = response_data.get("result", {})
+                image_base64 = result.get("image")
 
-            image_bytes = base64.b64decode(image_base64)
-            return image_bytes
+                if not image_base64:
+                    raise ProviderError("cloudflare", "No image data in response")
+
+                image_bytes = base64.b64decode(image_base64)
+                return image_bytes
+
+            # Otherwise assume binary image data was returned directly.
+            return response.content
 
         except requests.exceptions.Timeout:
             raise ProviderError("cloudflare", "Request timeout")
@@ -140,6 +157,32 @@ class CloudflareProvider(ImageProvider):
             raise
         except Exception as e:
             raise ProviderError("cloudflare", str(e))
+
+
+def get_image_providers() -> list[ImageProvider]:
+    """Instantiate and return list of available image providers in priority order."""
+    provider_classes = {
+        "pollinations": PollinationsProvider,
+        "cloudflare": CloudflareProvider,
+    }
+    order_setting = settings.IMAGE_GENERATION_PROVIDERS
+    if isinstance(order_setting, (list, tuple)):
+        order = [str(p).strip().lower() for p in order_setting if str(p).strip()]
+    elif isinstance(order_setting, str) and order_setting.strip():
+        order = [p.strip().lower() for p in order_setting.split(",") if p.strip()]
+    else:
+        # Setting provided but empty/blank -> treat as explicit empty list (no providers)
+        order = []
+
+    providers = []
+    seen = set()
+    for key in order:
+        cls = provider_classes.get(key)
+        if cls and key not in seen:
+            providers.append(cls())
+            seen.add(key)
+
+    return providers
 
 
 def generate_image_bytes(prompt: str) -> bytes:
@@ -162,8 +205,7 @@ def generate_image_bytes(prompt: str) -> bytes:
     if not prompt or not prompt.strip():
         raise ValueError("Prompt cannot be empty or whitespace")
 
-    providers = [PollinationsProvider(), CloudflareProvider()]
-
+    providers = get_image_providers()
     attempted = []
     errors = []
 

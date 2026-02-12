@@ -213,3 +213,7 @@ CLOUDFLARE_MODEL = env.str(
 IMAGE_GENERATION_TIMEOUT_SECONDS = env.int(
     "IMAGE_GENERATION_TIMEOUT_SECONDS", default=30
 )
+IMAGE_GENERATION_PROVIDERS = env.list(
+    "IMAGE_GENERATION_PROVIDERS",
+    default=["cloudflare", "pollinations"],
+)

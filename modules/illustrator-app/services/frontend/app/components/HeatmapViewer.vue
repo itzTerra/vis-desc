@@ -191,31 +191,31 @@ const viewportY = computed(() => {
   );
 
   // Debug logging
-  const lastPageRect = props.pageRefs[props.pageRefs.length - 1]?.getBoundingClientRect();
-  const lastPageBottom = lastPageRect ? lastPageRect.bottom + window.scrollY : 0;
-  const lastPageIndex = props.pageRefs.length - 1;
+  // const lastPageRect = props.pageRefs[props.pageRefs.length - 1]?.getBoundingClientRect();
+  // const lastPageBottom = lastPageRect ? lastPageRect.bottom + window.scrollY : 0;
+  // const lastPageIndex = props.pageRefs.length - 1;
 
-  console.log("[HeatmapViewer]", {
-    scrollOffset: scrollOffset.value,
-    scrollableHeight: scrollableHeight.value,
-    trackHeight: trackHeight.value,
-    viewportRectHeight: viewportRectHeight.value,
-    heatmapHeight: heatmapHeight.value,
-    totalHeight: totalHeight.value,
-    viewportHeight: viewportHeight.value,
-    viewportY: result,
-    bottomGap: heatmapHeight.value - (result + viewportRectHeight.value),
-    windowScrollY: window.scrollY,
-    pageTop: pageTop.value,
-    stickyHeaderOffset: stickyHeaderOffset.value,
-    bottomOffset: bottomOffset.value,
-    documentScrollHeight: documentScrollHeight.value,
-    lastPageBottom,
-    viewportBottom: window.scrollY + viewportHeight.value,
-    numPageRefs: props.pageRefs.length,
-    lastPageIndex,
-    totalPages: totalPages.value,
-  });
+  // console.log("[HeatmapViewer]", {
+  //   scrollOffset: scrollOffset.value,
+  //   scrollableHeight: scrollableHeight.value,
+  //   trackHeight: trackHeight.value,
+  //   viewportRectHeight: viewportRectHeight.value,
+  //   heatmapHeight: heatmapHeight.value,
+  //   totalHeight: totalHeight.value,
+  //   viewportHeight: viewportHeight.value,
+  //   viewportY: result,
+  //   bottomGap: heatmapHeight.value - (result + viewportRectHeight.value),
+  //   windowScrollY: window.scrollY,
+  //   pageTop: pageTop.value,
+  //   stickyHeaderOffset: stickyHeaderOffset.value,
+  //   bottomOffset: bottomOffset.value,
+  //   documentScrollHeight: documentScrollHeight.value,
+  //   lastPageBottom,
+  //   viewportBottom: window.scrollY + viewportHeight.value,
+  //   numPageRefs: props.pageRefs.length,
+  //   lastPageIndex,
+  //   totalPages: totalPages.value,
+  // });
 
   return result;
 });
@@ -371,15 +371,15 @@ function measureLayout() {
   // Total height is the distance from first page top to last page bottom in absolute coordinates
   const totalHeightValue = pageBottomValue - pageTopValue;
 
-  console.log("[measureLayout]", {
-    numPages: pageElements.length,
-    firstPageRect: firstPageRect ? { top: firstPageRect.top, bottom: firstPageRect.bottom } : null,
-    lastPageRect: lastPageRect ? { top: lastPageRect.top, bottom: lastPageRect.bottom } : null,
-    windowScrollY: window.scrollY,
-    pageTopValue,
-    pageBottomValue,
-    totalHeightValue,
-  });
+  // console.log("[measureLayout]", {
+  //   numPages: pageElements.length,
+  //   firstPageRect: firstPageRect ? { top: firstPageRect.top, bottom: firstPageRect.bottom } : null,
+  //   lastPageRect: lastPageRect ? { top: lastPageRect.top, bottom: lastPageRect.bottom } : null,
+  //   windowScrollY: window.scrollY,
+  //   pageTopValue,
+  //   pageBottomValue,
+  //   totalHeightValue,
+  // });
 
   stickyHeaderOffset.value = Math.max(0, firstPageRect?.top ?? 0);
 

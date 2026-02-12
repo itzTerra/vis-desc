@@ -4,18 +4,16 @@ from django.http import HttpResponse
 from django.conf import settings
 import uuid
 from core.schemas import (
-    EnhanceTextBody,
-    EnhanceTextResponse,
     ProcessPdfBody,
     ProcessPdfResponse,
     ProcessPdfSegmentsOnlyResponse,
-    TextBody,
+    BatchTextsBody,
 )
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
 from core.tools.text2image import (
     ProviderError,
-    generate_image_bytes,
+    generate_image_bytes_batch,
 )
 from core.tools.llm import enhance_text_with_llm
 import json
@@ -73,20 +71,34 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
 
 
 @api.post("/gen-image-bytes")
-def gen_image_bytes_endpoint(request, body: TextBody):
-    if not body.text or not body.text.strip():
-        return HttpResponse("Prompt cannot be empty", status=400)
+def gen_image_bytes_endpoint(request, body: BatchTextsBody):
+    # Validate input
+    texts = body.texts
+    if not isinstance(texts, (list, tuple)):
+        return HttpResponse("texts must be a list", status=400)
 
+    # Enforce server-side max batch size via helper
     try:
-        image_bytes = generate_image_bytes(body.text)
-        return HttpResponse(image_bytes, content_type="image/png")
+        results = generate_image_bytes_batch(texts)
+        return api.create_response(request, results)
     except ValueError as e:
         return HttpResponse(str(e), status=400)
-    except (ProviderError, Exception):
+    except ProviderError:
         return HttpResponse("Image generation failed", status=500)
 
 
-@api.post("/enhance", response=EnhanceTextResponse)
-def enhance_text(request, body: EnhanceTextBody):
-    enhanced_text = enhance_text_with_llm(body.text)
-    return {"text": enhanced_text}
+@api.post("/enhance")
+def enhance_text(request, body: BatchTextsBody):
+    texts = body.texts
+    if not isinstance(texts, (list, tuple)):
+        return HttpResponse("texts must be a list", status=400)
+
+    results: list[dict] = []
+    for t in texts:
+        try:
+            enhanced = enhance_text_with_llm(t)
+            results.append({"ok": True, "text": enhanced})
+        except Exception:
+            results.append({"ok": False, "error": "enhance failed"})
+
+    return api.create_response(request, results)

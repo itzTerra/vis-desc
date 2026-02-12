@@ -15,11 +15,11 @@
           <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
           <AutoIllustrationToggle
             v-model:enabled="autoIllustration.enabled"
-            v-model:minGapLines="autoIllustration.minGapLines"
-            v-model:maxGapLines="autoIllustration.maxGapLines"
-            v-model:minScore="autoIllustration.minScore"
-            :runPass="autoIllustration.runPass"
-            :clearAutoSelections="autoIllustration.clearAutoSelections"
+            v-model:min-gap-lines="autoIllustration.minGapLines"
+            v-model:max-gap-lines="autoIllustration.maxGapLines"
+            v-model:min-score="autoIllustration.minScore"
+            :run-pass="autoIllustration.runPass"
+            :clear-auto-selections="autoIllustration.clearAutoSelections"
             data-help-target="auto-illustration"
           />
           <button
@@ -116,6 +116,9 @@
 import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { ModelManager } from "#components";
+
+import useAutoIllustration from "~/composables/useAutoIllustration";
+import AutoIllustrationToggle from "~/components/AutoIllustrationToggle.vue";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
@@ -356,9 +359,6 @@ function cancelSegmentLoading() {
   // socket.close();
   // onDisconnected();
 }
-
-import useAutoIllustration from "~/composables/useAutoIllustration";
-import AutoIllustrationToggle from "~/components/AutoIllustrationToggle.vue";
 
 function scoreSegment(segment: Segment) {
   const segmentHighlight = highlights.find((seg) => (typeof (segment as any).id === "number" && seg.id === (segment as any).id) || seg.text === segment.text);

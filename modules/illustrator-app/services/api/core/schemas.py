@@ -47,3 +47,7 @@ class EnhanceTextBody(Schema):
 
 class EnhanceTextResponse(Schema):
     text: str
+
+
+class BatchTextsBody(Schema):
+    texts: list[str]

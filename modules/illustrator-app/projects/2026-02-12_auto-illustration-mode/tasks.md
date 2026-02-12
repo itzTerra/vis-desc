@@ -20,6 +20,11 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
 - [ ] Update `/enhance` handler to accept a list of texts (`texts: string[]`) and return batched enhancements.
 - [ ] Add server-side validation for max batch size (configurable, default 50) and input sanitization.
 - [ ] Add unit tests for new batch path and ordering of results.
+ - [x] Add small batch helper function in `services/api/core/tools/text2image.py` to accept `texts: string[]` and return an array of results.
+ - [x] Update `services/api/core/api.py` route handlers for `/gen-image-bytes` to accept `texts` (batch-only) and route to helper.
+ - [x] Update `/enhance` handler to accept a list of texts (`texts: string[]`) and return batched enhancements.
+ - [x] Add server-side validation for max batch size (configurable, default 50) and input sanitization.
+ - [x] Add unit tests for new batch path and ordering of results.
 
 ## Frontend — Components & UI
 

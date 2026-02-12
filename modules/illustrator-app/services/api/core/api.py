@@ -1,8 +1,10 @@
-from core.tools.book_segmenting import TextSegmenter
-from ninja import File, Form, NinjaAPI, UploadedFile
-from django.http import HttpResponse
-from django.conf import settings
 import uuid
+import json
+
+from ninja import File, Form, NinjaAPI, UploadedFile
+from django.conf import settings
+
+from core.tools.book_segmenting import TextSegmenter
 from core.schemas import (
     ProcessPdfBody,
     ProcessPdfResponse,
@@ -16,7 +18,6 @@ from core.tools.text2image import (
     generate_image_bytes_batch,
 )
 from core.tools.llm import enhance_text_with_llm
-import json
 
 
 api = NinjaAPI()
@@ -75,23 +76,38 @@ def gen_image_bytes_endpoint(request, body: BatchTextsBody):
     # Validate input
     texts = body.texts
     if not isinstance(texts, (list, tuple)):
-        return HttpResponse("texts must be a list", status=400)
+        return api.create_response(
+            request, {"error": "texts must be a list"}, status=400
+        )
+
+    # Enforce server-side max batch size early for clearer errors
+    max_batch = getattr(settings, "IMAGE_GENERATION_MAX_BATCH_SIZE", None)
+    if max_batch is not None and len(texts) > max_batch:
+        return api.create_response(
+            request,
+            {"error": f"Batch size exceeds maximum {max_batch}"},
+            status=400,
+        )
 
     # Enforce server-side max batch size via helper
     try:
         results = generate_image_bytes_batch(texts)
         return api.create_response(request, results)
     except ValueError as e:
-        return HttpResponse(str(e), status=400)
+        return api.create_response(request, {"error": str(e)}, status=400)
     except ProviderError:
-        return HttpResponse("Image generation failed", status=500)
+        return api.create_response(
+            request, {"error": "Image generation failed"}, status=500
+        )
 
 
 @api.post("/enhance")
 def enhance_text(request, body: BatchTextsBody):
     texts = body.texts
     if not isinstance(texts, (list, tuple)):
-        return HttpResponse("texts must be a list", status=400)
+        return api.create_response(
+            request, {"error": "texts must be a list"}, status=400
+        )
 
     results: list[dict] = []
     for t in texts:

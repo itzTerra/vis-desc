@@ -369,6 +369,20 @@ function scoreSegment(segment: Segment) {
 // instantiate auto-illustration composable
 const autoIllustration = useAutoIllustration({ highlights, selectedHighlights });
 
+// when composable requests editors to be opened, forward to PdfViewer's exposed method
+watch(autoIllustration.pendingOpenIds, (ids) => {
+  const list = ids ?? [];
+  if (!Array.isArray(list) || list.length === 0) return;
+  const pvInstance = pdfViewer.value as any;
+  if (pvInstance?.openEditors) {
+    pvInstance.openEditors(list);
+  } else {
+    console.warn("PDF viewer openEditors not available for ids", list);
+  }
+  // clear the pending list directly on the ref
+  autoIllustration.pendingOpenIds.value = [];
+});
+
 function fullReset() {
   isCancelled.value = false;
   socket.close();

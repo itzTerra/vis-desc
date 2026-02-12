@@ -244,6 +244,8 @@ const pageIntersectionRatios = new Map<number, number>();
 
 const resetPageIntersectionObserver = () => {
   pageIntersectionObserver?.disconnect();
+  // Clear any previously tracked ratios to avoid stale values
+  pageIntersectionRatios.clear();
   pageIntersectionObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       const index = pageRefs.value.indexOf(entry.target);
@@ -272,8 +274,11 @@ const resetPageIntersectionObserver = () => {
     threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0],
   });
 
+  // Observe only valid mounted elements
   pageRefs.value.forEach((element) => {
-    pageIntersectionObserver!.observe(element);
+    if (element && element instanceof Element) {
+      pageIntersectionObserver!.observe(element);
+    }
   });
 };
 
@@ -290,13 +295,25 @@ watch(pageNums, (newPageNums) => {
   nextTick(resetPageIntersectionObserver);
 });
 
+function getFirstPolygonPageIndex(polygons: any): number | null {
+  if (!polygons) return null;
+  // Array-style polygons (simple list) -> assume page index 0
+  if (Array.isArray(polygons)) return 0;
+  const keys = Object.keys(polygons || {});
+  if (keys.length === 0) return null;
+  const k = Number(keys[0]);
+  return Number.isFinite(k) ? k : null;
+}
+
 async function goToHighlight(highlight: Highlight) {
-  // Make page of the first polygon visible
-  const firstPolyKey = Object.keys(highlight.polygons)[0];
-  const firstPolyPage = firstPolyKey === undefined ? null : Number(firstPolyKey);
-  if (firstPolyPage !== null && firstPolyPage !== undefined && pageVisibility.value[firstPolyPage + 1] !== true) {
-    const targetPageNum = firstPolyPage + 1;
-    for (let i = Math.max(1, targetPageNum - PRELOAD_PAGES); i <= Math.min(pageNums.value.length, targetPageNum + PRELOAD_PAGES); i++) {
+  // Determine a valid 0-based page index for the first polygon (null = unknown)
+  const firstPolyPage = getFirstPolygonPageIndex(highlight.polygons);
+  if (firstPolyPage === null) return;
+  const targetPageNum = firstPolyPage + 1; // convert 0-based -> 1-based
+  if (pageVisibility.value[targetPageNum] !== true) {
+    const start = Math.max(1, targetPageNum - PRELOAD_PAGES);
+    const end = Math.min(pageNums.value.length, targetPageNum + PRELOAD_PAGES);
+    for (let i = start; i <= end; i++) {
       if (pageVisibility.value[i] !== true) {
         pageVisibility.value[i] = true;
       }
@@ -378,5 +395,11 @@ onBeforeUnmount(() => {
 defineExpose({
   getPageCount: () => pageNums.value.length,
   imageLayer,
+  openEditors: (ids: number[] = []) => {
+    if (!Array.isArray(ids)) return;
+    for (const id of ids) {
+      openImageEditor(id);
+    }
+  },
 });
 </script>

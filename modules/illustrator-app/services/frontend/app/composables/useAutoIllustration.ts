@@ -15,15 +15,31 @@ export function useAutoIllustration(opts: {
   const minScore = ref<number | null>(null);
 
   const autoAddedIds = ref(new Set<number>());
+  // ids that the composable asks the UI to open editors for
+  const pendingOpenIds = ref<number[]>([]);
+
+  // simple counters for downstream UI (enhance/generate flows will increment)
+  const enhancedCount = ref(0);
+  const generatedCount = ref(0);
 
   const minGapNorm = computed(() => minGapLines.value * 0.01);
   const maxGapNorm = computed(() => maxGapLines.value * 0.01);
 
   function getYCenterNorm(h: HighlightLike) {
     // simplified: look at first polygon's y values if available
+    // Accept both array-shaped polygons (array of polygons)
+    // and object-shaped polygons (map page -> polygon array)
+    let firstPoly: any = null;
     if (Array.isArray(h.polygons) && Array.isArray(h.polygons[0])) {
-      const first = h.polygons[0];
-      const ys = first.map((p: any) => p[1]).filter((v: any) => typeof v === "number");
+      firstPoly = h.polygons[0];
+    } else if (h.polygons && typeof h.polygons === "object" && !Array.isArray(h.polygons)) {
+      const vals = Object.values(h.polygons);
+      if (Array.isArray(vals) && vals.length > 0 && Array.isArray(vals[0])) {
+        firstPoly = vals[0];
+      }
+    }
+    if (Array.isArray(firstPoly)) {
+      const ys = firstPoly.map((p: any) => p[1]).filter((v: any) => typeof v === "number");
       if (ys.length) return ys.reduce((a: number, b: number) => a + b, 0) / ys.length;
     }
     if (typeof h.yCenterNorm === "number") return h.yCenterNorm;
@@ -32,6 +48,9 @@ export function useAutoIllustration(opts: {
   }
 
   const resolveHighlights = () => isRef(highlights as any) ? (highlights as any).value : (highlights as any);
+
+  const resolveSelected = (): Set<number> =>
+    isRef(selectedHighlights as any) ? (selectedHighlights as any).value as Set<number> : (selectedHighlights as any as Set<number>);
 
   function runSelectionOnce(): number[] {
     const list = resolveHighlights() || [];
@@ -78,7 +97,7 @@ export function useAutoIllustration(opts: {
   function runPass() {
     const ids = runSelectionOnce();
     const newlyAdded: number[] = [];
-    const selSet: Set<number> = isRef(selectedHighlights as any) ? (selectedHighlights as any).value as Set<number> : (selectedHighlights as any as Set<number>);
+    const selSet = resolveSelected();
     for (const id of ids) {
       if (!selSet.has(id)) {
         selSet.add(id);
@@ -86,13 +105,17 @@ export function useAutoIllustration(opts: {
         newlyAdded.push(id);
       }
     }
+    // request UI to open editors for newly added ids
+    if (newlyAdded.length) pendingOpenIds.value = newlyAdded.slice();
     return newlyAdded;
   }
 
   function clearAutoSelections() {
-    const selSet: Set<number> = isRef(selectedHighlights as any) ? (selectedHighlights as any).value as Set<number> : (selectedHighlights as any as Set<number>);
+    const selSet = resolveSelected();
     for (const id of autoAddedIds.value) selSet.delete(id);
-    autoAddedIds.value = new Set<number>();
+    // clear the tracking set in-place to keep the same ref object
+    autoAddedIds.value.clear();
+    pendingOpenIds.value = [];
   }
 
   // reactively run when highlights change, but only if enabled
@@ -121,6 +144,21 @@ export function useAutoIllustration(opts: {
     minScore,
     runPass,
     clearAutoSelections,
+    // instrumentation & UI helpers
+    pendingOpenIds,
+    enhancedCount,
+    generatedCount,
+    progress: computed(() => {
+      const selSet = resolveSelected();
+      // compute max possible by running selection with current settings
+      const maxPossible = runSelectionOnce().length;
+      return {
+        selectedCount: selSet.size,
+        enhancedCount: enhancedCount.value,
+        generatedCount: generatedCount.value,
+        maxPossible,
+      };
+    }),
   };
 }
 

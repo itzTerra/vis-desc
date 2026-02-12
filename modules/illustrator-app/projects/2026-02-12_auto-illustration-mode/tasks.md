@@ -6,10 +6,9 @@ Phases: Discovery → Backend (domain) → Frontend components → API routes & 
 Notes: Keep changes small and focused. Where possible reuse existing flows (`open-editor`, `openEditorIds`, `ImageLayer`, `ImageEditor`, `scoreSegment()`).
 
 ## Discovery
-
-- [ ] Review current `Highlight` WS payload format and list keys used (id, page, normalized coords, score).
-- [ ] Confirm where `scoreSegment()` is invoked and what events are emitted (`highlight` events).
-- [ ] Identify current `open-editor` / `openEditorIds` event handlers and parameters in `ImageLayer`/`ImageEditor`.
+ - [x] Review current `Highlight` WS payload format and list keys used (id, page, normalized coords, score).
+ - [x] Confirm where `scoreSegment()` is invoked and what events are emitted (`highlight` events).
+ - [x] Identify current `open-editor` / `openEditorIds` event handlers and parameters in `ImageLayer`/`ImageEditor`.
 
 ## Backend / Domain (minimal changes)
 
@@ -45,10 +44,10 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
  - [x] Implement the in-order lookahead algorithm that processes the `highlights` array in its current order (document/physical order) and returns an array of selected ids.
  - [x] On algorithm output, add the returned ids into the shared `selectedHighlights` reactive Set/array (union), and emit `openEditorIds` (or call `open-editor` flow) for newly-added ids; ensure manual selections are preserved and the UI deduplicates already-open editors.
  - [x] Ensure the watcher is efficient (debounce or microtask) and tolerant to frequent updates (client-side workers or WS); do not rely on WS-only messages.
- - [ ] Track counts of selected, enhanced, and generated highlights in `useAutoIllustration()` and expose a derived `progress` object: `{ selectedCount, enhancedCount, generatedCount, maxPossible }` and `isActive` flag (true when enhancing/generating). The status bar component will consume this object to render fills and tooltip text.
+ - [x] Track counts of selected, enhanced, and generated highlights in `useAutoIllustration()` and expose a derived `progress` object: `{ selectedCount, enhancedCount, generatedCount, maxPossible }` and `isActive` flag (true when enhancing/generating). The status bar component will consume this object to render fills and tooltip text.
 
 ### 4) Editor management
-- [ ] Implement tracking of open editor IDs in `useAutoIllustration()` and manage opens without imposing a fixed upper limit.
+- [x] Implement tracking of open editor IDs in `useAutoIllustration()` and manage opens without imposing a fixed upper limit.
 
 ### 5) Distance calculations
  - [x] Implement helper to compute normalized vertical delta → lines mapping: lines = delta / 0.01.
@@ -85,5 +84,3 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
 ---
 
 Each task above should be implemented as a small commit. If you'd like, I can start by implementing the frontend composable `useAutoIllustration()` and the UI toggle + cogwheel dropdown.
-
-```

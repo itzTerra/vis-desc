@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
+from urllib.parse import quote
 import base64
 import logging
 import requests
-from urllib.parse import quote
 
 from django.conf import settings
 
@@ -10,9 +10,22 @@ logger = logging.getLogger(__name__)
 
 
 class ProviderError(Exception):
-    """Raised when an image provider fails to generate an image."""
+    """Raised when an image provider fails to generate an image.
 
-    pass
+    Args:
+        provider: identifier of provider (e.g. 'pollinations')
+        message: human-readable error message
+    """
+
+    def __init__(self, provider: str | None = None, message: str | None = None):
+        self.provider = provider
+        self.message = message or ""
+        super().__init__(self.message)
+
+    def __str__(self) -> str:
+        if self.provider:
+            return f"{self.provider}: {self.message}"
+        return self.message
 
 
 class ImageProvider(ABC):
@@ -206,7 +219,6 @@ def generate_image_bytes(prompt: str) -> bytes:
         raise ValueError("Prompt cannot be empty or whitespace")
 
     providers = get_image_providers()
-    attempted = []
     errors = []
 
     for provider in providers:
@@ -224,10 +236,9 @@ def generate_image_bytes(prompt: str) -> bytes:
         except ProviderError as e:
             error_msg = f"{provider_name}: {str(e)}"
             logger.warning(f"Provider failed - {error_msg}")
-            attempted.append(provider_name)
             errors.append(error_msg)
 
-    if not attempted:
+    if not errors:
         raise ProviderError("all", "No providers are available (missing credentials)")
 
     error_details = "; ".join(errors)
@@ -260,13 +271,17 @@ def generate_image_bytes_batch(
 
     results: list[dict] = []
     for idx, t in enumerate(texts):
+        # Validate element type before calling provider code to avoid
+        # AttributeError from non-string inputs and to return clear errors.
+        if not isinstance(t, str):
+            results.append({"ok": False, "error": "text must be a string"})
+            continue
+
         try:
             image_bytes = generate_image_bytes(t)
             image_b64 = base64.b64encode(image_bytes).decode("ascii")
             results.append({"ok": True, "image_b64": image_b64})
-        except ValueError as e:
-            results.append({"ok": False, "error": str(e)})
-        except ProviderError as e:
+        except (ValueError, ProviderError) as e:
             results.append({"ok": False, "error": str(e)})
         except Exception:
             results.append({"ok": False, "error": "generation failed"})

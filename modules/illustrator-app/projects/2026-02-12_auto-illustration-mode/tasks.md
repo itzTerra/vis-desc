@@ -2,10 +2,10 @@
 Project folder: projects/2026-02-12_auto-illustration-mode/
 
 Phases: Discovery → Backend (domain) → Frontend components → API routes & integration → Cleanup & tests
-Notes: Keep changes small and focused. Where possible reuse existing flows (`open-editor`, `openEditorIds`, `ImageLayer`, `ImageEditor`, `scoreSegment()`).
+Notes: Keep changes small and focused. Where possible reuse existing flows. Use these canonical names: emit the DOM event `open-editor` (kebab-case) and invoke the JS function `openEditorIds()` (camelCase) in code. Reuse `ImageLayer`, `ImageEditor`, and `scoreSegment()`.
 
 ## Discovery
- - [x] Review current `Highlight` WS payload format and list keys used (id, page, normalized coords, score).
+ - [x] Review current `Highlight` WS payload format and list keys used (id, page, normalizedCoords, score).
  - [x] Confirm where `scoreSegment()` is invoked and what events are emitted (`highlight` events).
  - [x] Identify current `open-editor` / `openEditorIds` event handlers and parameters in `ImageLayer`/`ImageEditor`.
 
@@ -13,24 +13,26 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
 
 ### Goal: Add batch-first support for image/enhance endpoints
 
-- [x] Add small batch helper function in `services/api/core/tools/text2image.py` to accept `texts: string[]` and return an array of results.
-- [x] Update `services/api/core/api.py` route handlers for `/gen-image-bytes` to accept `texts` (batch-only) and route to helper.
-- [x] Update `/enhance` handler to accept a list of texts (`texts: string[]`) and return batched enhancements.
+- [x] Add small batch helper function in `services/api/core/tools/text2image.py` to accept `texts: list[str]` and return an array of results.
+- [x] Update `services/api/core/api.py` route handlers for `/gen-image-bytes` to accept `texts: list[str]` (always a list; single-item requests should be provided as a one-element array) and route to helper. Example JSON: `{ "texts": ["a prompt", "another prompt"] }`.
+- [x] Update `/enhance` handler to accept a list of texts (`texts: list[str]`) and return batched enhancements.
 - [x] Add server-side validation for max batch size (configurable, default 50) and input sanitization.
 - [x] Add unit tests for new batch path and ordering of results.
+
+Note: API request/response JSON should use camelCase keys (frontend convention). Backend handlers (Python) should accept these and map to internal snake_case as needed or use Pydantic/serialization helpers to maintain consistent naming.
 
 ## Frontend — Components & UI
 
 ### 1) Top bar toggle & cogwheel
  - [x] Add `AutoIllustrationToggle` UI element inside `services/frontend/app/pages/index.vue` top bar: place to the right of `ModelSelect.vue` and left of export controls.
- - [x] Create a small composable `useAutoIllustration()` to hold mode state, settings (`min_gap_lines`, `max_gap_lines`, `min_score`) and helper methods.
- - [x] Implement cogwheel dropdown using `ModelManager.vue` patterns (styles & show/hide) and include inputs for `min_gap`, `max_gap`, `min_score`, with validation: `max_gap > min_gap`.
+ - [x] Create a small composable `useAutoIllustration()` to hold mode state, settings (`minGapLines`, `maxGapLines`, `minScore`) and helper methods.
+ - [x] Implement cogwheel dropdown using `ModelManager.vue` patterns (styles & show/hide) and include inputs for `minGapLines`, `maxGapLines`, `minScore`, with validation: `maxGapLines > minGapLines`.
  - [x] Add a `Clear` button inside the cogwheel dropdown that closes all open `ImageEditor` instances and removes auto-added ids from `selectedHighlights` (preserve manually-selected ids). Implement `useAutoIllustration().clearAutoSelections()` to perform this.
 
 ### 2) Selection UI patterns
  - [x] Add a button to run an on-demand selection pass (can be in cogwheel dropdown or top bar) wired to `useAutoIllustration().runPass()`.
  - [x] Add a compact status bar component next to the cogwheel dropdown showing three fills for: selected (color A), enhanced (color B/pattern), and generated (color C/pattern). The bar should display percentages relative to the computed maximum possible selections (derived from gap rules and total segment count) and show a tooltip with a textual summary (counts and active state). Wire this component to `useAutoIllustration()` for live counts and active status.
- - [x] Add animations to the `enhanced` and `generated` fills when those processes are active (e.g., subtle pulse or diagonal stripe animation). The `selected` fill remains static (instant). Ensure animations are CSS-driven and accessible (reduce-motion respects user preference).
+ - [x] Optionally add CSS-driven animations to the `enhanced` and `generated` fills when those processes are active (e.g., subtle pulse); ensure they respect `prefers-reduced-motion`.
 
 ### 3) Hook into scored highlights reactively
  - [x] Implement selection logic in `useAutoIllustration()` that watches the reactive `highlights` array (the scored segments array) and runs whenever the array changes (add/update/remove).
@@ -43,15 +45,15 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
  - [x] Implement tracking of open editor IDs in `useAutoIllustration()` and manage opens without imposing a fixed upper limit.
 
 ### 5) Distance calculations
- - [x] Implement helper to compute normalized vertical delta → lines mapping: lines = delta / 0.01.
- - [ ] Use `pageAspectRatio` and page refs from `PdfViewer.vue` when computing y coordinates for accurate mapping.
+ - [x] Implement helper to compute normalized vertical delta → lines mapping: lines = delta * 100 (1 line = 0.01 normalized).
+ - [x] Use `pageAspectRatio` and page refs from `PdfViewer.vue` when computing y coordinates for accurate mapping.
 
 ## Frontend — Integration & minor changes
 
-- [x] Update `scoreSegment()` (in `services/frontend/app/pages/index.vue`) so it only assigns `highlight.score` and does NOT mutate `selectedHighlights` (remove SCORE_THRESHOLD-based autoselect code).
-- [ ] Reuse `scoreSegment()` where appropriate to keep scoring pipeline consistent before selection.
-- [ ] Ensure `HighlightNav` still reads `selectedHighlights` for navigation; `useAutoIllustration()` will become the authoritative updater of `selectedHighlights` when enabled.
-- [ ] In `ImageLayer`/`ImageEditor`, verify `openEditorIds` API signature and update call sites if needed to accept array input from auto-select code.
+ - [x] Update `scoreSegment()` (in `services/frontend/app/pages/index.vue`) so it only assigns `highlight.score` and does NOT mutate `selectedHighlights` (remove SCORE_THRESHOLD-based autoselect code).
+ - [x] Reuse `scoreSegment()` where appropriate to keep scoring pipeline consistent before selection.
+ - [x] Ensure `HighlightNav` still reads `selectedHighlights` for navigation; `useAutoIllustration()` will become the authoritative updater of `selectedHighlights` when enabled.
+ - [x] In `ImageLayer`/`ImageEditor`, verify `openEditorIds` API signature and update call sites if needed to accept array input from auto-select code.
 
 ## API Routes & Tests
 
@@ -60,7 +62,7 @@ Notes: Keep changes small and focused. Where possible reuse existing flows (`ope
 
 ## UX polish & validation
 
-- [ ] Add validation messages in cogwheel dropdown for invalid `max_gap <= min_gap` and non-integer `min_score`.
+- [ ] Add validation messages in cogwheel dropdown for invalid `maxGapLines <= minGapLines` and non-integer `minScore`.
 - [ ] Ensure the status bar tooltip includes: number selected, number enhanced, number of images generated, and whether the algorithm is currently enhancing/generating.
 
 ## Cleanup & docs

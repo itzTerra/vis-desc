@@ -1,13 +1,23 @@
 import { ref, computed, watch, onBeforeUnmount, isRef } from "vue";
 import type { Ref } from "vue";
+import type { Highlight } from "~/types/common";
 
-type HighlightLike = any;
+type HighlightLike = Highlight;
 
 export function useAutoIllustration(opts: {
   highlights: Ref<HighlightLike[]> | HighlightLike[];
   selectedHighlights: Ref<Set<number>> | Set<number>;
+  // optional page sizing helpers from PdfViewer
+  pageAspectRatio?: Ref<number> | number | null;
 }) {
   const { highlights, selectedHighlights } = opts;
+  const pageAspectRatioRef = (opts.pageAspectRatio ?? null) as Ref<number> | number | null;
+
+  const pageAspectRatioValue = computed(() => {
+    if (pageAspectRatioRef && typeof (pageAspectRatioRef as any).value === "number") return (pageAspectRatioRef as Ref<number>).value;
+    if (typeof pageAspectRatioRef === "number") return pageAspectRatioRef as number;
+    return 1;
+  });
 
   const enabled = ref(false);
   const minGapLines = ref(2); // lines
@@ -42,9 +52,27 @@ export function useAutoIllustration(opts: {
       const ys = firstPoly.map((p: any) => p[1]).filter((v: any) => typeof v === "number");
       if (ys.length) return ys.reduce((a: number, b: number) => a + b, 0) / ys.length;
     }
-    if (typeof h.yCenterNorm === "number") return h.yCenterNorm;
-    if (typeof h.centerY === "number") return h.centerY;
-    return 0;
+    let y: number = 0;
+    if (typeof h.yCenterNorm === "number") y = h.yCenterNorm;
+    else if (typeof h.centerY === "number") y = h.centerY;
+
+    // determine page index (0-based) for this highlight if available
+    let pageIndex = 0;
+    if (h.polygons && !Array.isArray(h.polygons) && typeof h.polygons === "object") {
+      const keys = Object.keys(h.polygons || {});
+      if (keys.length > 0) {
+        const k = Number(keys[0]);
+        if (Number.isFinite(k)) pageIndex = k;
+      }
+    }
+
+    // Compute a document-level normalized Y so comparisons across pages are meaningful.
+    // Use pageAspectRatio when available to scale a page unit; otherwise each page is 1 unit.
+    const pageUnit = (pageAspectRatioRef && typeof (pageAspectRatioRef as any).value === "number")
+      ? (pageAspectRatioRef as Ref<number>).value
+      : (typeof pageAspectRatioRef === "number" ? pageAspectRatioRef : 1);
+
+    return (pageIndex + y) * pageUnit;
   }
 
   const resolveHighlights = () => isRef(highlights as any) ? (highlights as any).value : (highlights as any);
@@ -56,23 +84,33 @@ export function useAutoIllustration(opts: {
     const list = resolveHighlights() || [];
     const selected: number[] = [];
     const n = list.length;
-    const minGap = minGapNorm.value;
-    const maxGap = maxGapNorm.value;
+
+    // scale the min/max gap by the page unit used in getYCenterNorm
+    const pageUnit = pageAspectRatioValue.value;
+    const minGap = minGapNorm.value * pageUnit;
+    const maxGap = maxGapNorm.value * pageUnit;
     const minScoreVal = minScore.value;
+
+    // Precompute y centers and scores to avoid repeated work inside inner loops
+    const yCenters: number[] = new Array(n);
+    const scores: number[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const it = list[i];
+      yCenters[i] = it ? getYCenterNorm(it) : 0;
+      scores[i] = it && typeof it.score === "number" ? it.score : -Infinity;
+    }
 
     for (let i = 0; i < n; i++) {
       const base = list[i];
       if (!base) continue;
-      const baseY = getYCenterNorm(base);
+      const baseY = yCenters[i];
       // build lookahead window up to maxGap
       let bestIdx = i;
       let bestScore = (typeof list[i].score === "number") ? list[i].score : -Infinity;
       for (let j = i; j < n; j++) {
-        const candidate = list[j];
-        if (!candidate) continue;
-        const candY = getYCenterNorm(candidate);
+        const candY = yCenters[j];
         if (Math.abs(candY - baseY) > maxGap) break;
-        const s = typeof candidate.score === "number" ? candidate.score : -Infinity;
+        const s = scores[j];
         if (minScoreVal !== null && (s === -Infinity || s < minScoreVal)) continue;
         if (s > bestScore) {
           bestScore = s;
@@ -84,9 +122,9 @@ export function useAutoIllustration(opts: {
       if (chosen && typeof chosen.id === "number") {
         selected.push(chosen.id);
         // advance i to index beyond chosen + minGap
-        const chosenY = getYCenterNorm(chosen);
+        const chosenY = yCenters[bestIdx];
         let k = bestIdx + 1;
-        while (k < n && Math.abs(getYCenterNorm(list[k]) - chosenY) <= minGap) k++;
+        while (k < n && Math.abs(yCenters[k] - chosenY) <= minGap) k++;
         i = k - 1;
       }
     }
@@ -118,6 +156,12 @@ export function useAutoIllustration(opts: {
     pendingOpenIds.value = [];
   }
 
+  function consumePendingOpenIds(): number[] {
+    const list = pendingOpenIds.value.slice();
+    pendingOpenIds.value = [];
+    return list;
+  }
+
   // reactively run when highlights change, but only if enabled
   let debounceTimer: number | undefined;
   const scheduleRun = () => {
@@ -146,6 +190,7 @@ export function useAutoIllustration(opts: {
     clearAutoSelections,
     // instrumentation & UI helpers
     pendingOpenIds,
+    consumePendingOpenIds,
     enhancedCount,
     generatedCount,
     progress: computed(() => {

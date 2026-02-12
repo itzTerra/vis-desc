@@ -13,6 +13,15 @@
             @change="handleFileUpload"
           >
           <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
+          <AutoIllustrationToggle
+            v-model:enabled="autoIllustration.enabled"
+            v-model:minGapLines="autoIllustration.minGapLines"
+            v-model:maxGapLines="autoIllustration.maxGapLines"
+            v-model:minScore="autoIllustration.minScore"
+            :runPass="autoIllustration.runPass"
+            :clearAutoSelections="autoIllustration.clearAutoSelections"
+            data-help-target="auto-illustration"
+          />
           <button
             v-if="pdfUrl"
             class="btn btn-primary btn-outline"
@@ -110,7 +119,7 @@ import type { ModelManager } from "#components";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
-const SCORE_THRESHOLD = 0.95;
+// SCORE_THRESHOLD-based autoselect removed. Auto-illustration composable controls selections now.
 
 const { $api: call, callHook, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
@@ -118,7 +127,8 @@ const runtimeConfig = useRuntimeConfig();
 const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
-const modelSelect = ref<ModelId>(MODELS.filter(model => !model.disabled)[0].id);
+const firstModel = MODELS.find(model => !model.disabled);
+const modelSelect = ref<ModelId | null>(firstModel ? firstModel.id : (MODELS[0]?.id ?? null));
 const pendingModel = ref<TModelInfo | null>(null);
 // Holds start timestamp (ms) when loading begins; null when idle
 const isLoading = ref<number | null>(null);
@@ -347,21 +357,17 @@ function cancelSegmentLoading() {
   // onDisconnected();
 }
 
+import useAutoIllustration from "~/composables/useAutoIllustration";
+import AutoIllustrationToggle from "~/components/AutoIllustrationToggle.vue";
+
 function scoreSegment(segment: Segment) {
-  const segmentHighlight = highlights.find((seg) => seg.text === segment.text);
-  if (!segmentHighlight) {
-    return;
-  }
+  const segmentHighlight = highlights.find((seg) => (typeof (segment as any).id === "number" && seg.id === (segment as any).id) || seg.text === segment.text);
+  if (!segmentHighlight) return;
   segmentHighlight.score = segment.score;
-  if ((segmentHighlight?.score ?? 0) >= SCORE_THRESHOLD && !selectedHighlights.has(segmentHighlight.id)) {
-    // Autoselect high-score highlights
-    selectedHighlights.add(segmentHighlight.id);
-    if (selectedHighlights.size === 1) {
-      // If this is the first selected highlight, navigate to it
-      callHook("custom:goToHighlight", segmentHighlight);
-    }
-  }
 }
+
+// instantiate auto-illustration composable
+const autoIllustration = useAutoIllustration({ highlights, selectedHighlights });
 
 function fullReset() {
   isCancelled.value = false;

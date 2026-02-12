@@ -22,6 +22,10 @@
             :clear-auto-selections="autoIllustration.clearAutoSelections"
             data-help-target="auto-illustration"
           />
+          <AutoIllustrationStatusBar
+            :progress="autoIllustration.progress"
+            :is-active="autoIllustration.progress?.isActive ?? ((autoIllustration.progress?.enhancedCount ?? 0) > 0 || (autoIllustration.progress?.generatedCount ?? 0) > 0)"
+          />
           <button
             v-if="pdfUrl"
             class="btn btn-primary btn-outline"
@@ -119,12 +123,13 @@ import type { ModelManager } from "#components";
 
 import useAutoIllustration from "~/composables/useAutoIllustration";
 import AutoIllustrationToggle from "~/components/AutoIllustrationToggle.vue";
+import AutoIllustrationStatusBar from "~/components/AutoIllustrationStatusBar.vue";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
 // SCORE_THRESHOLD-based autoselect removed. Auto-illustration composable controls selections now.
 
-const { $api: call, callHook, $config, $debugPanel } = useNuxtApp();
+const { $api: call, callHook: _callHook, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);

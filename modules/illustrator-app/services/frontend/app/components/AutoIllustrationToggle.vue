@@ -1,11 +1,11 @@
 <template>
   <div class="auto-illustration inline-flex items-center gap-2">
     <label class="flex items-center gap-2">
-      <input type="checkbox" class="toggle toggle-sm" v-model="enabledComputed" />
+      <input v-model="enabledComputed" type="checkbox" class="toggle toggle-sm">
       <span class="text-sm">Auto-illustration</span>
     </label>
     <div class="relative">
-      <button class="btn btn-ghost btn-square btn-sm" @click="open = !open" aria-label="Settings">
+      <button class="btn btn-ghost btn-square btn-sm" aria-label="Settings" @click="open = !open">
         <Icon name="lucide:settings" size="16" />
       </button>
       <div v-if="open" class="dropdown-content card p-3 mt-2 bg-base-100 shadow-lg w-64 z-50">
@@ -13,25 +13,31 @@
           <label class="label">
             <span class="label-text">Min gap (lines)</span>
           </label>
-          <input type="number" class="input input-sm w-full" v-model.number="minGapLinesComputed" min="0" />
+          <input v-model.number="minGapLinesComputed" type="number" class="input input-sm w-full" min="0">
         </div>
         <div class="mb-2">
           <label class="label">
             <span class="label-text">Max gap (lines)</span>
           </label>
-          <input type="number" class="input input-sm w-full" v-model.number="maxGapLinesComputed" :min="minGapLinesComputed + 0.1" />
+          <input v-model.number="maxGapLinesComputed" type="number" class="input input-sm w-full" :min="minGapLinesComputed + 0.1">
         </div>
         <div class="mb-2">
           <label class="label">
             <span class="label-text">Min score (optional)</span>
           </label>
-          <input type="number" class="input input-sm w-full" v-model.number="minScoreComputed" min="0" max="1" step="0.01" placeholder="unset (leave empty)" />
+          <input v-model.number="minScoreComputed" type="number" class="input input-sm w-full" min="0" max="1" step="0.01" placeholder="unset (leave empty)">
         </div>
         <div class="flex justify-between mt-2">
-          <button class="btn btn-sm btn-warning" @click="clearAutoSelections">Clear</button>
+          <button class="btn btn-sm btn-warning" @click="clearAutoSelections">
+            Clear
+          </button>
           <div class="space-x-2">
-            <button class="btn btn-sm" @click="runPass">Run Now</button>
-            <button class="btn btn-sm btn-outline" @click="open = false">Close</button>
+            <button class="btn btn-sm" @click="runPass">
+              Run Now
+            </button>
+            <button class="btn btn-sm btn-outline" @click="open = false">
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -83,7 +89,7 @@ const maxGapLinesComputed = computed<number>({
 const minScoreComputed = computed<number | null>({
   get: () => (isRef(props.minScore) ? (props.minScore as Ref<number | null>).value : (props.minScore as number | null)),
   set: (v: number | null) => {
-    const vNorm = (typeof v === 'number' && !Number.isNaN(v)) ? v : null;
+    const vNorm = (typeof v === "number" && !Number.isNaN(v)) ? v : null;
     if (isRef(props.minScore)) (props.minScore as Ref<number | null>).value = vNorm;
     else emit("update:minScore", vNorm);
   }

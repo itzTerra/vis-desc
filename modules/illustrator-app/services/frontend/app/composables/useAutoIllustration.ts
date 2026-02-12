@@ -131,7 +131,7 @@ export function useAutoIllustration(opts: {
   watch(() => resolveHighlights(), () => {
     if (!enabled.value) return;
     scheduleRun();
-  }, { deep: true, flush: 'post' });
+  }, { deep: true, flush: "post" });
 
   onBeforeUnmount(() => {
     if (debounceTimer) clearTimeout(debounceTimer);

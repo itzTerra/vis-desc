@@ -105,6 +105,7 @@
 
 <script setup lang="ts">
 import { debounce } from "lodash-es";
+import { DEFAULT_PAGE_ASPECT_RATIO, scrollIntoView } from "~/utils/utils";
 import "vue-pdf-embed/dist/styles/annotationLayer.css";
 import "vue-pdf-embed/dist/styles/textLayer.css";
 import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
@@ -112,7 +113,6 @@ import VuePdfEmbed, { useVuePdfEmbed } from "vue-pdf-embed";
 import type { EditorImageState, Highlight } from "~/types/common";
 
 import HeatmapViewer from "~/components/HeatmapViewer.vue";
-import { scrollIntoView } from "~/utils/utils";
 // import { GlobalWorkerOptions } from "vue-pdf-embed/dist/index.essential.mjs";
 // import PdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 // GlobalWorkerOptions.workerSrc = PdfWorker;
@@ -401,5 +401,8 @@ defineExpose({
       openImageEditor(id);
     }
   },
+  // expose sizing helpers for parent components
+  pageAspectRatio,
+  pageRefs,
 });
 </script>

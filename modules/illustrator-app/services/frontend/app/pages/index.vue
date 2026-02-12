@@ -129,7 +129,7 @@ type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "e
 
 // SCORE_THRESHOLD-based autoselect removed. Auto-illustration composable controls selections now.
 
-const { $api: call, callHook: _callHook, $config, $debugPanel } = useNuxtApp();
+const { $api: call, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
@@ -371,21 +371,23 @@ function scoreSegment(segment: Segment) {
   segmentHighlight.score = segment.score;
 }
 
+// expose PdfViewer sizing to the composable for accurate cross-page distance math
+const pageAspectRatioRef = computed(() => {
+  const pv = pdfViewer.value as any;
+  if (!pv) return 1;
+  const par = pv.pageAspectRatio;
+  if (par && typeof par === "object" && "value" in par) return par.value as number;
+  return typeof par === "number" ? par : 1;
+});
+
 // instantiate auto-illustration composable
-const autoIllustration = useAutoIllustration({ highlights, selectedHighlights });
+const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef });
 
 // when composable requests editors to be opened, forward to PdfViewer's exposed method
-watch(autoIllustration.pendingOpenIds, (ids) => {
-  const list = ids ?? [];
+watch(autoIllustration.pendingOpenIds, () => {
+  const list = autoIllustration.consumePendingOpenIds();
   if (!Array.isArray(list) || list.length === 0) return;
-  const pvInstance = pdfViewer.value as any;
-  if (pvInstance?.openEditors) {
-    pvInstance.openEditors(list);
-  } else {
-    console.warn("PDF viewer openEditors not available for ids", list);
-  }
-  // clear the pending list directly on the ref
-  autoIllustration.pendingOpenIds.value = [];
+  pdfViewer.value?.openEditors?.(list);
 });
 
 function fullReset() {

@@ -14,7 +14,8 @@ export type ParagraphPosition = {
 export type Highlight = {
   id: number;
   text: string;
-  polygons: Record<number, number[][]>; // page -> list of polygons, each polygon a list of [x,y]
+  // page->polygons map
+  polygons: Record<number, number[][]>;
   score?: number; // may be attached later when scoring arrives
   score_received_at?: number;
 };
@@ -52,3 +53,9 @@ export type HeatmapViewerProps = {
   pageRefs: Element[];
   editorStates: EditorImageState[];
 };
+
+export interface AlertOptions {
+  type: "info" | "success" | "warning" | "error";
+  message: string;
+  duration?: number;
+}

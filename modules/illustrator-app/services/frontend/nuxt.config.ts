@@ -53,6 +53,10 @@ export default defineNuxtConfig({
       sourcemap: true // process.env.NODE_ENV === "development"
     }
   },
+  sourcemap: {
+    server: true,
+    client: true,
+  },
   css: ["~/assets/css/app.css"],
   modules: ["@vueuse/nuxt", "nuxt-open-fetch", "@nuxt/icon"],
   openFetch: {

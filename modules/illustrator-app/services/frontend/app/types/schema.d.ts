@@ -55,23 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/gen-image": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Gen Image */
-        post: operations["core_api_gen_image"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/gen-image-bytes": {
         parameters: {
             query?: never;
@@ -81,8 +64,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Gen Image Bytes */
-        post: operations["core_api_gen_image_bytes"];
+        /** Gen Image Bytes Endpoint */
+        post: operations["core_api_gen_image_bytes_endpoint"];
         delete?: never;
         options?: never;
         head?: never;
@@ -151,20 +134,28 @@ export interface components {
             /** Segments */
             segments: components["schemas"]["SegmentWithPos"][];
         };
-        /** TextBody */
-        TextBody: {
-            /** Text */
-            text: string;
+        /** BatchImageItem */
+        BatchImageItem: {
+            /** Ok */
+            ok: boolean;
+            /** Image B64 */
+            image_b64?: string | null;
+            /** Error */
+            error?: string | null;
         };
-        /** EnhanceTextResponse */
-        EnhanceTextResponse: {
-            /** Text */
-            text: string;
+        /** BatchTextsBody */
+        BatchTextsBody: {
+            /** Texts */
+            texts: string[];
         };
-        /** EnhanceTextBody */
-        EnhanceTextBody: {
+        /** BatchEnhanceItem */
+        BatchEnhanceItem: {
+            /** Ok */
+            ok: boolean;
             /** Text */
-            text: string;
+            text?: string | null;
+            /** Error */
+            error?: string | null;
         };
     };
     responses: never;
@@ -263,7 +254,7 @@ export interface operations {
             };
         };
     };
-    core_api_gen_image: {
+    core_api_gen_image_bytes_endpoint: {
         parameters: {
             query?: never;
             header?: never;
@@ -272,7 +263,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TextBody"];
+                "application/json": components["schemas"]["BatchTextsBody"];
             };
         };
         responses: {
@@ -281,29 +272,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
-            };
-        };
-    };
-    core_api_gen_image_bytes: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TextBody"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
+                content: {
+                    "application/json": components["schemas"]["BatchImageItem"][];
                 };
-                content?: never;
             };
         };
     };
@@ -316,7 +287,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EnhanceTextBody"];
+                "application/json": components["schemas"]["BatchTextsBody"];
             };
         };
         responses: {
@@ -326,7 +297,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EnhanceTextResponse"];
+                    "application/json": components["schemas"]["BatchEnhanceItem"][];
                 };
             };
         };

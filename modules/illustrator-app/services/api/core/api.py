@@ -1,5 +1,6 @@
 import uuid
 import json
+from typing import List
 
 from ninja import File, Form, NinjaAPI, UploadedFile
 from django.conf import settings
@@ -10,6 +11,8 @@ from core.schemas import (
     ProcessPdfResponse,
     ProcessPdfSegmentsOnlyResponse,
     BatchTextsBody,
+    BatchEnhanceItem,
+    BatchImageItem,
 )
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
@@ -71,8 +74,8 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     }
 
 
-@api.post("/gen-image-bytes")
-def gen_image_bytes_endpoint(request, body: BatchTextsBody):
+@api.post("/gen-image-bytes", response=List[BatchImageItem])
+def gen_image_bytes_endpoint(request, body: BatchTextsBody) -> List[BatchImageItem]:
     # Validate input
     texts = body.texts
     if not isinstance(texts, (list, tuple)):
@@ -81,18 +84,19 @@ def gen_image_bytes_endpoint(request, body: BatchTextsBody):
         )
 
     # Enforce server-side max batch size early for clearer errors
-    max_batch = getattr(settings, "IMAGE_GENERATION_MAX_BATCH_SIZE", None)
-    if max_batch is not None and len(texts) > max_batch:
+    if len(texts) > settings.IMAGE_GENERATION_MAX_BATCH_SIZE:
         return api.create_response(
             request,
-            {"error": f"Batch size exceeds maximum {max_batch}"},
+            {
+                "error": f"Batch size exceeds maximum {settings.IMAGE_GENERATION_MAX_BATCH_SIZE}"
+            },
             status=400,
         )
 
     # Enforce server-side max batch size via helper
     try:
         results = generate_image_bytes_batch(texts)
-        return api.create_response(request, results)
+        return api.create_response(request, results, status=200)
     except ValueError as e:
         return api.create_response(request, {"error": str(e)}, status=400)
     except ProviderError:
@@ -101,15 +105,15 @@ def gen_image_bytes_endpoint(request, body: BatchTextsBody):
         )
 
 
-@api.post("/enhance")
-def enhance_text(request, body: BatchTextsBody):
+@api.post("/enhance", response=List[BatchEnhanceItem])
+def enhance_text(request, body: BatchTextsBody) -> List[BatchEnhanceItem]:
     texts = body.texts
     if not isinstance(texts, (list, tuple)):
         return api.create_response(
             request, {"error": "texts must be a list"}, status=400
         )
 
-    results: list[dict] = []
+    results: List[BatchEnhanceItem] = []
     for t in texts:
         try:
             enhanced = enhance_text_with_llm(t)
@@ -117,4 +121,4 @@ def enhance_text(request, body: BatchTextsBody):
         except Exception:
             results.append({"ok": False, "error": "enhance failed"})
 
-    return api.create_response(request, results)
+    return api.create_response(request, results, status=200)

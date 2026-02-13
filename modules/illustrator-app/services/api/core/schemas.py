@@ -1,5 +1,6 @@
 from ninja import Schema
 from enum import Enum
+from typing import Optional
 
 
 class TextBody(Schema):
@@ -49,5 +50,17 @@ class EnhanceTextResponse(Schema):
     text: str
 
 
+class BatchEnhanceItem(Schema):
+    ok: bool
+    text: Optional[str] = None
+    error: Optional[str] = None
+
+
 class BatchTextsBody(Schema):
     texts: list[str]
+
+
+class BatchImageItem(Schema):
+    ok: bool
+    image_b64: Optional[str] = None
+    error: Optional[str] = None

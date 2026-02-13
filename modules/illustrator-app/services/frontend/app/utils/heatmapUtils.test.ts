@@ -9,7 +9,6 @@ import {
   heatmapPixelToNormalized,
   normalizedToHeatmapPixel,
   renderHeatmapCanvas,
-  scoreToBrightness,
   scoreToOpacity,
 } from "~/utils/heatmapUtils";
 
@@ -27,15 +26,15 @@ test("getViewportPercentage clamps output", () => {
 });
 
 test("heatmapPixelToNormalized returns normalized coordinates", () => {
-  const result = heatmapPixelToNormalized(50, 150, 1, 200, 2);
-  assert.deepEqual(result, { page: 1, normalizedX: 0.5, normalizedY: 0.5 });
+  // heatmapPixelToNormalized(pixelX, pixelY, heatmapWidth, heatmapHeight)
+  const result = heatmapPixelToNormalized(50, 150, 100, 200);
+  assert.deepEqual(result, { normalizedX: 0.5, normalizedY: 0.75 });
 });
 
 test("score helpers clamp values", () => {
-  assert.equal(scoreToOpacity(1), 0.9);
-  assert.equal(scoreToOpacity(0), 0.15);
-  assert.equal(scoreToBrightness(1), 40);
-  assert.equal(scoreToBrightness(0), 220);
+  // scoreToOpacity uses lerp(0.05, 0.8, score)
+  assert.equal(scoreToOpacity(1), 0.8);
+  assert.equal(scoreToOpacity(0), 0.05);
 });
 
 test("createSegmentArray filters and sorts segments", () => {

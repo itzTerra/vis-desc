@@ -1,0 +1,465 @@
+ngram,doc_freq,doc_freq_ratio
+"('NOUN', 'det', 'DET')",19008,0.9504
+"('ADP', 'pobj', 'NOUN')",18316,0.9158
+"('VERB', 'punct', 'PUNCT')",18155,0.90775
+"('VERB', 'prep', 'ADP')",16780,0.839
+"('NOUN', 'amod', 'ADJ')",15757,0.78785
+"('ADP', 'pobj', 'NOUN', 'det', 'DET')",15535,0.77675
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN')",15008,0.7504
+"('NOUN', 'prep', 'ADP')",14251,0.71255
+"('VERB', 'dobj', 'NOUN')",14226,0.7113
+"('VERB', 'nsubj', 'PRON')",12583,0.62915
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",12379,0.61895
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",11717,0.58585
+"('VERB', 'nsubj', 'NOUN')",11157,0.55785
+"('VERB', 'aux', 'AUX')",10925,0.54625
+"('VERB', 'advmod', 'ADV')",10924,0.5462
+"('ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",10301,0.51505
+"('VERB', 'dobj', 'NOUN', 'det', 'DET')",10226,0.5113
+"('VERB', 'cc', 'CCONJ')",9881,0.49405
+"('NOUN', 'punct', 'PUNCT')",9556,0.4778
+"('NOUN', 'poss', 'PRON')",9294,0.4647
+"('VERB', 'conj', 'VERB')",8164,0.4082
+"('NOUN', 'compound', 'NOUN')",8083,0.40415
+"('ADP', 'pobj', 'NOUN', 'prep', 'ADP')",8017,0.40085
+"('VERB', 'advcl', 'VERB')",7958,0.3979
+"('VERB', 'nsubj', 'NOUN', 'det', 'DET')",7884,0.3942
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",7833,0.39165
+"('AUX', 'punct', 'PUNCT')",7621,0.38105
+"('ADP', 'pobj', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",6645,0.33225
+"('VERB', 'aux', 'PART')",6626,0.3313
+"('NOUN', 'cc', 'CCONJ')",6558,0.3279
+"('VERB', 'dobj', 'PRON')",6416,0.3208
+"('VERB', 'ccomp', 'VERB')",6312,0.3156
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",6310,0.3155
+"('AUX', 'nsubj', 'PRON')",6220,0.311
+"('VERB', 'mark', 'SCONJ')",6181,0.30905
+"('VERB', 'dobj', 'NOUN', 'amod', 'ADJ')",6093,0.30465
+"('ADP', 'pobj', 'PRON')",5828,0.2914
+"('NOUN', 'conj', 'NOUN')",5763,0.28815
+"('VERB', 'nsubj', 'PROPN')",5659,0.28295
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'prep', 'ADP')",5564,0.2782
+"('ADP', 'pobj', 'NOUN', 'poss', 'PRON')",5450,0.2725
+"('PROPN', 'compound', 'PROPN')",5101,0.25505
+"('ADP', 'pobj', 'PROPN')",5078,0.2539
+"('AUX', 'acomp', 'ADJ')",5035,0.25175
+"('VERB', 'auxpass', 'AUX')",5009,0.25045
+"('VERB', 'dobj', 'NOUN', 'prep', 'ADP')",4929,0.24645
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",4907,0.24535
+"('NOUN', 'acl', 'VERB')",4709,0.23545
+"('NOUN', 'relcl', 'VERB')",4633,0.23165
+"('ADP', 'pobj', 'NOUN', 'compound', 'NOUN')",4527,0.22635
+"('VERB', 'xcomp', 'VERB')",4368,0.2184
+"('VERB', 'conj', 'VERB', 'punct', 'PUNCT')",4125,0.20625
+"('AUX', 'nsubj', 'NOUN')",4098,0.2049
+"('NOUN', 'nummod', 'NUM')",3984,0.1992
+"('AUX', 'attr', 'NOUN')",3934,0.1967
+"('VERB', 'dobj', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",3920,0.196
+"('VERB', 'prt', 'ADP')",3911,0.19555
+"('VERB', 'ccomp', 'VERB', 'nsubj', 'PRON')",3908,0.1954
+"('ADJ', 'advmod', 'ADV')",3881,0.19405
+"('VERB', 'conj', 'VERB', 'prep', 'ADP')",3817,0.19085
+"('VERB', 'xcomp', 'VERB', 'aux', 'PART')",3721,0.18605
+"('PROPN', 'punct', 'PUNCT')",3515,0.17575
+"('VERB', 'dobj', 'NOUN', 'poss', 'PRON')",3507,0.17535
+"('VERB', 'prep', 'ADP', 'pobj', 'PRON')",3494,0.1747
+"('VERB', 'advcl', 'VERB', 'mark', 'SCONJ')",3451,0.17255
+"('VERB', 'advcl', 'VERB', 'prep', 'ADP')",3350,0.1675
+"('VERB', 'neg', 'PART')",3334,0.1667
+"('AUX', 'prep', 'ADP')",3329,0.16645
+"('NOUN', 'relcl', 'VERB', 'nsubj', 'PRON')",3308,0.1654
+"('NOUN', 'amod', 'VERB')",3294,0.1647
+"('ADP', 'pobj', 'NOUN', 'punct', 'PUNCT')",3249,0.16245
+"('PROPN', 'det', 'DET')",3247,0.16235
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'poss', 'PRON')",3219,0.16095
+"('ADP', 'pobj', 'NOUN', 'cc', 'CCONJ')",3209,0.16045
+"('VERB', 'nsubj', 'NOUN', 'amod', 'ADJ')",3138,0.1569
+"('ADP', 'pobj', 'NOUN', 'conj', 'NOUN')",3136,0.1568
+"('VERB', 'conj', 'VERB', 'dobj', 'NOUN')",3122,0.1561
+"('VERB', 'conj', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",3083,0.15415
+"('VERB', 'advcl', 'VERB', 'dobj', 'NOUN')",3039,0.15195
+"('ADJ', 'prep', 'ADP')",3018,0.1509
+"('VERB', 'ccomp', 'VERB', 'aux', 'AUX')",2940,0.147
+"('VERB', 'nsubj', 'NOUN', 'prep', 'ADP')",2886,0.1443
+"('AUX', 'attr', 'NOUN', 'det', 'DET')",2872,0.1436
+"('VERB', 'ccomp', 'AUX')",2869,0.14345
+"('AUX', 'nsubj', 'NOUN', 'det', 'DET')",2832,0.1416
+"('VERB', 'nsubjpass', 'NOUN')",2707,0.13535
+"('VERB', 'advcl', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",2596,0.1298
+"('PUNCT', 'dep', 'SPACE')",2596,0.1298
+"('AUX', 'cc', 'CCONJ')",2563,0.12815
+"('VERB', 'advcl', 'VERB', 'nsubj', 'PRON')",2545,0.12725
+"('NOUN', 'prep', 'ADP', 'pobj', 'PROPN')",2541,0.12705
+"('VERB', 'ccomp', 'VERB', 'punct', 'PUNCT')",2522,0.1261
+"('AUX', 'prep', 'ADP', 'pobj', 'NOUN')",2521,0.12605
+"('NOUN', 'acl', 'VERB', 'prep', 'ADP')",2504,0.1252
+"('AUX', 'advmod', 'ADV')",2491,0.12455
+"('VERB', 'nsubj', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",2457,0.12285
+"('VERB', 'ccomp', 'VERB', 'prep', 'ADP')",2450,0.1225
+"('VERB', 'advmod', 'SCONJ')",2414,0.1207
+"('ADP', 'pcomp', 'VERB')",2328,0.1164
+"('ADJ', 'cc', 'CCONJ')",2284,0.1142
+"('VERB', 'prep', 'ADP', 'pobj', 'PROPN')",2271,0.11355
+"('ADP', 'pobj', 'NOUN', 'relcl', 'VERB')",2204,0.1102
+"('ADV', 'advmod', 'ADV')",2199,0.10995
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'compound', 'NOUN')",2181,0.10905
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'prep', 'ADP')",2140,0.107
+"('NOUN', 'acl', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",2111,0.10555
+"('ADJ', 'prep', 'ADP', 'pobj', 'NOUN')",2108,0.1054
+"('VERB', 'npadvmod', 'NOUN')",2094,0.1047
+"('VERB', 'dobj', 'PROPN')",2076,0.1038
+"('VERB', 'conj', 'VERB', 'advmod', 'ADV')",2075,0.10375
+"('NOUN', 'conj', 'NOUN', 'det', 'DET')",2061,0.10305
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'compound', 'NOUN')",2055,0.10275
+"('VERB', 'ccomp', 'VERB', 'dobj', 'NOUN')",2038,0.1019
+"('VERB', 'dobj', 'NOUN', 'compound', 'NOUN')",2035,0.10175
+"('NOUN', 'conj', 'NOUN', 'amod', 'ADJ')",2008,0.1004
+"('VERB', 'punct', 'PUNCT', 'dep', 'SPACE')",1992,0.0996
+"('ADP', 'pobj', 'NOUN', 'acl', 'VERB')",1988,0.0994
+"('VERB', 'dobj', 'NOUN', 'punct', 'PUNCT')",1987,0.09935
+"('VERB', 'ccomp', 'AUX', 'nsubj', 'PRON')",1967,0.09835
+"('VERB', 'conj', 'VERB', 'nsubj', 'PRON')",1961,0.09805
+"('VERB', 'nsubjpass', 'NOUN', 'det', 'DET')",1913,0.09565
+"('NOUN', 'relcl', 'VERB', 'prep', 'ADP')",1910,0.0955
+"('AUX', 'mark', 'SCONJ')",1904,0.0952
+"('ADP', 'pobj', 'PROPN', 'compound', 'PROPN')",1894,0.0947
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'poss', 'PRON')",1892,0.0946
+"('VERB', 'expl', 'PRON')",1846,0.0923
+"('NOUN', 'compound', 'PROPN')",1810,0.0905
+"('VERB', 'advcl', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",1807,0.09035
+"('ADJ', 'conj', 'ADJ')",1804,0.0902
+"('VERB', 'nsubjpass', 'PRON')",1802,0.0901
+"('VERB', 'conj', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",1790,0.0895
+"('ADJ', 'punct', 'PUNCT')",1784,0.0892
+"('PROPN', 'case', 'PART')",1782,0.0891
+"('VERB', 'agent', 'ADP')",1779,0.08895
+"('AUX', 'attr', 'NOUN', 'amod', 'ADJ')",1743,0.08715
+"('VERB', 'attr', 'NOUN')",1717,0.08585
+"('VERB', 'ccomp', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",1712,0.0856
+"('VERB', 'ccomp', 'VERB', 'advmod', 'ADV')",1689,0.08445
+"('VERB', 'conj', 'VERB', 'aux', 'AUX')",1681,0.08405
+"('AUX', 'aux', 'AUX')",1663,0.08315
+"('ADP', 'pobj', 'NOUN', 'amod', 'VERB')",1644,0.0822
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'punct', 'PUNCT')",1640,0.082
+"('VERB', 'nsubj', 'PROPN', 'compound', 'PROPN')",1637,0.08185
+"('VERB', 'xcomp', 'VERB', 'prep', 'ADP')",1636,0.0818
+"('VERB', 'xcomp', 'VERB', 'dobj', 'NOUN')",1628,0.0814
+"('VERB', 'ccomp', 'VERB', 'nsubj', 'NOUN')",1627,0.08135
+"('VERB', 'dobj', 'NOUN', 'conj', 'NOUN')",1624,0.0812
+"('ADP', 'pobj', 'PROPN', 'det', 'DET')",1621,0.08105
+"('VERB', 'ccomp', 'VERB', 'mark', 'SCONJ')",1598,0.0799
+"('ADP', 'pobj', 'NOUN', 'relcl', 'VERB', 'nsubj', 'PRON')",1583,0.07915
+"('VERB', 'advcl', 'VERB', 'advmod', 'ADV')",1567,0.07835
+"('VERB', 'dobj', 'NOUN', 'cc', 'CCONJ')",1564,0.0782
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'conj', 'NOUN')",1561,0.07805
+"('VERB', 'nsubj', 'NOUN', 'poss', 'PRON')",1560,0.078
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'cc', 'CCONJ')",1559,0.07795
+"('AUX', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",1553,0.07765
+"('AUX', 'acomp', 'ADJ', 'advmod', 'ADV')",1545,0.07725
+"('NOUN', 'relcl', 'VERB', 'aux', 'AUX')",1538,0.0769
+"('AUX', 'conj', 'VERB')",1537,0.07685
+"('NOUN', 'advmod', 'ADV')",1530,0.0765
+"('AUX', 'advcl', 'VERB')",1499,0.07495
+"('NOUN', 'prep', 'ADP', 'pobj', 'PRON')",1489,0.07445
+"('VERB', 'advmod', 'ADV', 'advmod', 'ADV')",1488,0.0744
+"('NOUN', 'appos', 'NOUN')",1485,0.07425
+"('NOUN', 'poss', 'PROPN')",1482,0.0741
+"('ADJ', 'det', 'DET')",1463,0.07315
+"('NOUN', 'poss', 'PROPN', 'case', 'PART')",1452,0.0726
+"('NOUN', 'acl', 'VERB', 'dobj', 'NOUN')",1439,0.07195
+"('VERB', 'agent', 'ADP', 'pobj', 'NOUN')",1436,0.0718
+"('PROPN', 'cc', 'CCONJ')",1394,0.0697
+"('VERB', 'advcl', 'VERB', 'punct', 'PUNCT')",1375,0.06875
+"('VERB', 'prep', 'ADP', 'pcomp', 'VERB')",1370,0.0685
+"('AUX', 'attr', 'NOUN', 'prep', 'ADP')",1355,0.06775
+"('VERB', 'advcl', 'VERB', 'aux', 'PART')",1352,0.0676
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'punct', 'PUNCT')",1305,0.06525
+"('NOUN', 'amod', 'ADJ', 'advmod', 'ADV')",1301,0.06505
+"('ADP', 'pobj', 'NOUN', 'nummod', 'NUM')",1285,0.06425
+"('AUX', 'acomp', 'ADJ', 'prep', 'ADP')",1283,0.06415
+"('VERB', 'nsubj', 'NOUN', 'punct', 'PUNCT')",1281,0.06405
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'cc', 'CCONJ')",1247,0.06235
+"('NOUN', 'case', 'PART')",1224,0.0612
+"('VERB', 'conj', 'VERB', 'dobj', 'PRON')",1214,0.0607
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'conj', 'NOUN')",1213,0.06065
+"('VERB', 'advcl', 'VERB', 'aux', 'AUX')",1212,0.0606
+"('VERB', 'ccomp', 'VERB', 'dobj', 'PRON')",1209,0.06045
+"('ADP', 'advmod', 'ADV')",1205,0.06025
+"('NOUN', 'relcl', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",1194,0.0597
+"('VERB', 'conj', 'VERB', 'advcl', 'VERB')",1192,0.0596
+"('VERB', 'dobj', 'NOUN', 'relcl', 'VERB')",1181,0.05905
+"('VERB', 'conj', 'AUX')",1177,0.05885
+"('ADP', 'pobj', 'NOUN', 'prep', 'ADP', 'pobj', 'PROPN')",1174,0.0587
+"('NOUN', 'amod', 'ADJ', 'cc', 'CCONJ')",1173,0.05865
+"('VERB', 'xcomp', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",1167,0.05835
+"('NOUN', 'poss', 'NOUN')",1167,0.05835
+"('ADV', 'prep', 'ADP')",1167,0.05835
+"('ADJ', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",1165,0.05825
+"('ADP', 'prep', 'ADP')",1165,0.05825
+"('VERB', 'ccomp', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",1164,0.0582
+"('NOUN', 'relcl', 'VERB', 'dobj', 'NOUN')",1158,0.0579
+"('NOUN', 'poss', 'NOUN', 'case', 'PART')",1125,0.05625
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'relcl', 'VERB')",1111,0.05555
+"('ADP', 'punct', 'PUNCT')",1107,0.05535
+"('VERB', 'conj', 'VERB', 'nsubj', 'NOUN')",1105,0.05525
+"('VERB', 'advcl', 'VERB', 'nsubj', 'NOUN')",1105,0.05525
+"('NOUN', 'amod', 'ADJ', 'conj', 'ADJ')",1092,0.0546
+"('VERB', 'conj', 'VERB', 'cc', 'CCONJ')",1092,0.0546
+"('AUX', 'neg', 'PART')",1092,0.0546
+"('VERB', 'attr', 'NOUN', 'det', 'DET')",1087,0.05435
+"('VERB', 'acomp', 'ADJ')",1085,0.05425
+"('VERB', 'ccomp', 'AUX', 'acomp', 'ADJ')",1078,0.0539
+"('AUX', 'nsubj', 'PROPN')",1046,0.0523
+"('VERB', 'nsubj', 'NOUN', 'compound', 'NOUN')",1044,0.0522
+"('PROPN', 'prep', 'ADP')",1022,0.0511
+"('AUX', 'attr', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",1004,0.0502
+"('AUX', 'conj', 'VERB', 'punct', 'PUNCT')",997,0.04985
+"('AUX', 'ccomp', 'VERB')",995,0.04975
+"('VERB', 'conj', 'VERB', 'conj', 'VERB')",994,0.0497
+"('VERB', 'ccomp', 'VERB', 'cc', 'CCONJ')",992,0.0496
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'acl', 'VERB')",988,0.0494
+"('NOUN', 'conj', 'NOUN', 'prep', 'ADP')",977,0.04885
+"('VERB', 'nsubj', 'NOUN', 'nummod', 'NUM')",977,0.04885
+"('VERB', 'advcl', 'VERB', 'advmod', 'SCONJ')",958,0.0479
+"('NOUN', 'prep', 'ADP', 'pobj', 'PROPN', 'compound', 'PROPN')",953,0.04765
+"('VERB', 'ccomp', 'AUX', 'punct', 'PUNCT')",945,0.04725
+"('VERB', 'advcl', 'VERB', 'dobj', 'PRON')",943,0.04715
+"('VERB', 'advcl', 'AUX')",942,0.0471
+"('ADP', 'pcomp', 'VERB', 'dobj', 'NOUN')",941,0.04705
+"('PROPN', 'amod', 'ADJ')",941,0.04705
+"('ADP', 'pobj', 'NOUN', 'acl', 'VERB', 'prep', 'ADP')",936,0.0468
+"('ADP', 'pobj', 'ADJ')",929,0.04645
+"('ADP', 'pobj', 'NOUN', 'conj', 'NOUN', 'amod', 'ADJ')",927,0.04635
+"('VERB', 'conj', 'VERB', 'dobj', 'NOUN', 'amod', 'ADJ')",916,0.0458
+"('NOUN', 'conj', 'NOUN', 'punct', 'PUNCT')",913,0.04565
+"('VERB', 'ccomp', 'AUX', 'attr', 'NOUN')",911,0.04555
+"('VERB', 'advcl', 'VERB', 'dobj', 'NOUN', 'amod', 'ADJ')",909,0.04545
+"('VERB', 'xcomp', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",906,0.0453
+"('VERB', 'attr', 'NOUN', 'prep', 'ADP')",905,0.04525
+"('VERB', 'advcl', 'VERB', 'cc', 'CCONJ')",901,0.04505
+"('AUX', 'aux', 'PART')",898,0.0449
+"('ADP', 'prep', 'ADP', 'pobj', 'NOUN')",896,0.0448
+"('NOUN', 'compound', 'NOUN', 'amod', 'ADJ')",884,0.0442
+"('ADP', 'pobj', 'NOUN', 'relcl', 'VERB', 'prep', 'ADP')",867,0.04335
+"('VERB', 'npadvmod', 'NOUN', 'det', 'DET')",866,0.0433
+"('AUX', 'nsubj', 'NOUN', 'amod', 'ADJ')",864,0.0432
+"('NOUN', 'conj', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",862,0.0431
+"('NOUN', 'appos', 'PROPN')",861,0.04305
+"('ADP', 'pobj', 'PROPN', 'punct', 'PUNCT')",854,0.0427
+"('AUX', 'acomp', 'ADJ', 'prep', 'ADP', 'pobj', 'NOUN')",848,0.0424
+"('VERB', 'ccomp', 'VERB', 'nsubj', 'NOUN', 'det', 'DET')",845,0.04225
+"('VERB', 'dobj', 'NOUN', 'acl', 'VERB')",844,0.0422
+"('NOUN', 'acl', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",843,0.04215
+"('ADP', 'pobj', 'NOUN', 'conj', 'NOUN', 'det', 'DET')",843,0.04215
+"('NOUN', 'nmod', 'NOUN')",840,0.042
+"('VERB', 'advmod', 'ADV', 'prep', 'ADP')",837,0.04185
+"('VERB', 'intj', 'INTJ')",829,0.04145
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'VERB')",825,0.04125
+"('PROPN', 'conj', 'PROPN')",825,0.04125
+"('VERB', 'nsubj', 'PROPN', 'det', 'DET')",821,0.04105
+"('VERB', 'conj', 'VERB', 'ccomp', 'VERB')",818,0.0409
+"('VERB', 'prep', 'SCONJ')",813,0.04065
+"('VERB', 'attr', 'NOUN', 'amod', 'ADJ')",809,0.04045
+"('NOUN', 'conj', 'NOUN', 'cc', 'CCONJ')",808,0.0404
+"('ADP', 'pcomp', 'VERB', 'prep', 'ADP')",808,0.0404
+"('NOUN', 'conj', 'NOUN', 'compound', 'NOUN')",806,0.0403
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'acl', 'VERB')",803,0.04015
+"('PRON', 'prep', 'ADP')",802,0.0401
+"('NOUN', 'amod', 'VERB', 'punct', 'PUNCT')",801,0.04005
+"('VERB', 'xcomp', 'VERB', 'dobj', 'PRON')",794,0.0397
+"('NOUN', 'poss', 'NOUN', 'det', 'DET')",792,0.0396
+"('NOUN', 'prep', 'ADP', 'pobj', 'PROPN', 'det', 'DET')",792,0.0396
+"('NOUN', 'conj', 'NOUN', 'conj', 'NOUN')",791,0.03955
+"('VERB', 'advcl', 'VERB', 'conj', 'VERB')",791,0.03955
+"('ADJ', 'xcomp', 'VERB')",789,0.03945
+"('VERB', 'conj', 'VERB', 'xcomp', 'VERB')",788,0.0394
+"('VERB', 'npadvmod', 'PROPN')",788,0.0394
+"('NOUN', 'predet', 'DET')",783,0.03915
+"('NOUN', 'relcl', 'VERB', 'advmod', 'ADV')",782,0.0391
+"('VERB', 'conj', 'AUX', 'punct', 'PUNCT')",781,0.03905
+"('VERB', 'ccomp', 'VERB', 'advcl', 'VERB')",777,0.03885
+"('VERB', 'ccomp', 'VERB', 'nsubj', 'PROPN')",772,0.0386
+"('ADV', 'prep', 'ADP', 'pobj', 'NOUN')",771,0.03855
+"('NOUN', 'appos', 'NOUN', 'det', 'DET')",768,0.0384
+"('NOUN', 'relcl', 'VERB', 'dobj', 'PRON')",767,0.03835
+"('VERB', 'dobj', 'NOUN', 'relcl', 'VERB', 'nsubj', 'PRON')",766,0.0383
+"('ADP', 'pobj', 'NUM')",766,0.0383
+"('VERB', 'attr', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",757,0.03785
+"('VERB', 'prep', 'ADP', 'prep', 'ADP')",757,0.03785
+"('ADP', 'pobj', 'NOUN', 'compound', 'PROPN')",752,0.0376
+"('VERB', 'nsubj', 'PROPN', 'punct', 'PUNCT')",751,0.03755
+"('AUX', 'nsubj', 'NOUN', 'prep', 'ADP')",749,0.03745
+"('ADJ', 'xcomp', 'VERB', 'aux', 'PART')",749,0.03745
+"('VERB', 'ccomp', 'VERB', 'neg', 'PART')",748,0.0374
+"('VERB', 'conj', 'VERB', 'prt', 'ADP')",741,0.03705
+"('VERB', 'dobj', 'NOUN', 'amod', 'VERB')",737,0.03685
+"('NUM', 'prep', 'ADP')",731,0.03655
+"('VERB', 'ccomp', 'VERB', 'ccomp', 'VERB')",723,0.03615
+"('VERB', 'xcomp', 'AUX')",722,0.0361
+"('VERB', 'ccomp', 'AUX', 'nsubj', 'NOUN')",714,0.0357
+"('AUX', 'prep', 'ADP', 'pobj', 'NOUN', 'prep', 'ADP')",713,0.03565
+"('VERB', 'conj', 'NOUN')",712,0.0356
+"('VERB', 'ccomp', 'AUX', 'mark', 'SCONJ')",712,0.0356
+"('VERB', 'prep', 'ADP', 'pobj', 'PROPN', 'compound', 'PROPN')",706,0.0353
+"('AUX', 'nsubj', 'NOUN', 'poss', 'PRON')",703,0.03515
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'relcl', 'VERB')",702,0.0351
+"('VERB', 'agent', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",700,0.035
+"('ADP', 'pobj', 'NOUN', 'relcl', 'VERB', 'aux', 'AUX')",698,0.0349
+"('ADJ', 'amod', 'ADJ')",698,0.0349
+"('VERB', 'conj', 'VERB', 'dobj', 'NOUN', 'prep', 'ADP')",696,0.0348
+"('VERB', 'prep', 'ADP', 'pobj', 'NOUN', 'nummod', 'NUM')",695,0.03475
+"('VERB', 'xcomp', 'AUX', 'aux', 'PART')",692,0.0346
+"('AUX', 'advcl', 'VERB', 'mark', 'SCONJ')",690,0.0345
+"('VERB', 'nsubjpass', 'NOUN', 'amod', 'ADJ')",689,0.03445
+"('VERB', 'ccomp', 'VERB', 'auxpass', 'AUX')",685,0.03425
+"('VERB', 'advcl', 'AUX', 'mark', 'SCONJ')",684,0.0342
+"('VERB', 'advcl', 'VERB', 'nsubj', 'NOUN', 'det', 'DET')",683,0.03415
+"('SCONJ', 'pobj', 'NOUN')",679,0.03395
+"('NOUN', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'VERB')",674,0.0337
+"('NOUN', 'amod', 'ADJ', 'punct', 'PUNCT')",670,0.0335
+"('VERB', 'conj', 'VERB', 'dobj', 'NOUN', 'poss', 'PRON')",662,0.0331
+"('VERB', 'conj', 'VERB', 'nsubj', 'NOUN', 'det', 'DET')",659,0.03295
+"('VERB', 'ccomp', 'VERB', 'conj', 'VERB')",657,0.03285
+"('VERB', 'advcl', 'VERB', 'dobj', 'NOUN', 'prep', 'ADP')",655,0.03275
+"('VERB', 'conj', 'VERB', 'xcomp', 'VERB', 'aux', 'PART')",650,0.0325
+"('NOUN', 'prep', 'ADP', 'pcomp', 'VERB')",648,0.0324
+"('NOUN', 'acl', 'VERB', 'agent', 'ADP')",641,0.03205
+"('VERB', 'dobj', 'ADJ')",636,0.0318
+"('VERB', 'dobj', 'PROPN', 'compound', 'PROPN')",630,0.0315
+"('VERB', 'ccomp', 'AUX', 'attr', 'NOUN', 'det', 'DET')",630,0.0315
+"('VERB', 'nsubj', 'NOUN', 'cc', 'CCONJ')",629,0.03145
+"('VERB', 'nsubjpass', 'NOUN', 'prep', 'ADP')",628,0.0314
+"('VERB', 'dobj', 'NOUN', 'nummod', 'NUM')",626,0.0313
+"('VERB', 'dative', 'PRON')",626,0.0313
+"('VERB', 'advmod', 'ADJ')",624,0.0312
+"('PROPN', 'appos', 'NOUN')",623,0.03115
+"('NOUN', 'compound', 'NOUN', 'compound', 'NOUN')",621,0.03105
+"('ADP', 'pobj', 'NOUN', 'poss', 'PROPN')",621,0.03105
+"('VERB', 'prep', 'ADP', 'advmod', 'ADV')",620,0.031
+"('AUX', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",619,0.03095
+"('NOUN', 'relcl', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",618,0.0309
+"('VERB', 'conj', 'VERB', 'auxpass', 'AUX')",617,0.03085
+"('VERB', 'prep', 'ADP', 'pobj', 'PROPN', 'det', 'DET')",617,0.03085
+"('ADP', 'pobj', 'NOUN', 'poss', 'NOUN')",612,0.0306
+"('ADP', 'pobj', 'NOUN', 'poss', 'PROPN', 'case', 'PART')",612,0.0306
+"('AUX', 'conj', 'VERB', 'nsubj', 'PRON')",607,0.03035
+"('VERB', 'conj', 'AUX', 'acomp', 'ADJ')",605,0.03025
+"('ADP', 'pcomp', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",604,0.0302
+"('AUX', 'nsubj', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",602,0.0301
+"('ADP', 'pobj', 'NOUN', 'poss', 'NOUN', 'case', 'PART')",601,0.03005
+"('AUX', 'attr', 'PRON')",601,0.03005
+"('VERB', 'advcl', 'AUX', 'nsubj', 'PRON')",596,0.0298
+"('AUX', 'xcomp', 'VERB')",588,0.0294
+"('VERB', 'prep', 'ADP', 'prep', 'ADP', 'pobj', 'NOUN')",580,0.029
+"('VERB', 'dobj', 'NOUN', 'prep', 'ADP', 'pobj', 'PROPN')",578,0.0289
+"('VERB', 'advcl', 'VERB', 'dobj', 'NOUN', 'poss', 'PRON')",577,0.02885
+"('AUX', 'punct', 'PUNCT', 'dep', 'SPACE')",573,0.02865
+"('ADJ', 'prep', 'ADP', 'pobj', 'PRON')",570,0.0285
+"('NOUN', 'relcl', 'AUX')",569,0.02845
+"('ADP', 'pobj', 'NOUN', 'prep', 'ADP', 'pobj', 'PRON')",568,0.0284
+"('ADP', 'pobj', 'NOUN', 'amod', 'ADJ', 'cc', 'CCONJ')",567,0.02835
+"('VERB', 'ccomp', 'VERB', 'xcomp', 'VERB')",564,0.0282
+"('AUX', 'ccomp', 'VERB', 'nsubj', 'PRON')",564,0.0282
+"('AUX', 'acomp', 'ADJ', 'xcomp', 'VERB')",560,0.028
+"('NOUN', 'amod', 'VERB', 'advmod', 'ADV')",558,0.0279
+"('ADP', 'pobj', 'NOUN', 'relcl', 'VERB', 'dobj', 'NOUN')",553,0.02765
+"('AUX', 'attr', 'NOUN', 'punct', 'PUNCT')",552,0.0276
+"('AUX', 'xcomp', 'VERB', 'aux', 'PART')",552,0.0276
+"('PROPN', 'prep', 'ADP', 'pobj', 'PROPN')",550,0.0275
+"('VERB', 'nsubj', 'NOUN', 'acl', 'VERB')",548,0.0274
+"('ADV', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",547,0.02735
+"('AUX', 'conj', 'VERB', 'prep', 'ADP')",546,0.0273
+"('AUX', 'advcl', 'VERB', 'nsubj', 'PRON')",546,0.0273
+"('VERB', 'dobj', 'NOUN', 'conj', 'NOUN', 'det', 'DET')",545,0.02725
+"('PROPN', 'compound', 'NOUN')",545,0.02725
+"('VERB', 'oprd', 'ADJ')",541,0.02705
+"('VERB', 'xcomp', 'VERB', 'advmod', 'ADV')",540,0.027
+"('VERB', 'advmod', 'ADV', 'prep', 'ADP', 'pobj', 'NOUN')",540,0.027
+"('VERB', 'dobj', 'NOUN', 'conj', 'NOUN', 'amod', 'ADJ')",539,0.02695
+"('VERB', 'ccomp', 'VERB', 'dobj', 'NOUN', 'amod', 'ADJ')",539,0.02695
+"('NOUN', 'acl', 'VERB', 'agent', 'ADP', 'pobj', 'NOUN')",539,0.02695
+"('ADJ', 'prep', 'ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",538,0.0269
+"('VERB', 'prep', 'ADP', 'pcomp', 'VERB', 'dobj', 'NOUN')",536,0.0268
+"('PRON', 'punct', 'PUNCT')",536,0.0268
+"('AUX', 'acomp', 'ADJ', 'xcomp', 'VERB', 'aux', 'PART')",535,0.02675
+"('VERB', 'neg', 'ADV')",531,0.02655
+"('VERB', 'agent', 'ADP', 'pobj', 'NOUN', 'amod', 'ADJ')",529,0.02645
+"('VERB', 'ccomp', 'AUX', 'prep', 'ADP')",529,0.02645
+"('NOUN', 'appos', 'NOUN', 'amod', 'ADJ')",526,0.0263
+"('PROPN', 'relcl', 'VERB')",526,0.0263
+"('VERB', 'nsubjpass', 'NOUN', 'prep', 'ADP', 'pobj', 'NOUN')",525,0.02625
+"('VERB', 'advcl', 'VERB', 'advcl', 'VERB')",519,0.02595
+"('NUM', 'prep', 'ADP', 'pobj', 'NOUN')",519,0.02595
+"('ADP', 'pobj', 'NOUN', 'amod', 'ADJ', 'conj', 'ADJ')",517,0.02585
+"('PRON', 'prep', 'ADP', 'pobj', 'NOUN')",517,0.02585
+"('VERB', 'advcl', 'VERB', 'ccomp', 'VERB')",515,0.02575
+"('VERB', 'conj', 'VERB', 'advcl', 'VERB', 'mark', 'SCONJ')",513,0.02565
+"('VERB', 'nsubj', 'NOUN', 'conj', 'NOUN')",511,0.02555
+"('VERB', 'advcl', 'VERB', 'prt', 'ADP')",509,0.02545
+"('NOUN', 'relcl', 'VERB', 'auxpass', 'AUX')",505,0.02525
+"('PRON', 'relcl', 'VERB')",505,0.02525
+"('VERB', 'conj', 'AUX', 'nsubj', 'PRON')",504,0.0252
+"('AUX', 'advmod', 'SCONJ')",502,0.0251
+"('NOUN', 'compound', 'NOUN', 'punct', 'PUNCT')",501,0.02505
+"('NOUN', 'relcl', 'VERB', 'prep', 'ADP', 'pobj', 'PRON')",501,0.02505
+"('NOUN', 'acl', 'VERB', 'dobj', 'NOUN', 'amod', 'ADJ')",495,0.02475
+"('AUX', 'advcl', 'VERB', 'prep', 'ADP')",495,0.02475
+"('VERB', 'ccomp', 'VERB', 'xcomp', 'VERB', 'aux', 'PART')",494,0.0247
+"('ADP', 'pobj', 'NOUN', 'acl', 'VERB', 'dobj', 'NOUN')",491,0.02455
+"('VERB', 'prep', 'SCONJ', 'pobj', 'NOUN')",490,0.0245
+"('PROPN', 'conj', 'NOUN')",488,0.0244
+"('NOUN', 'appos', 'NOUN', 'punct', 'PUNCT')",486,0.0243
+"('ADP', 'prep', 'ADP', 'pobj', 'NOUN', 'det', 'DET')",484,0.0242
+"('VERB', 'dobj', 'PROPN', 'det', 'DET')",484,0.0242
+"('VERB', 'advcl', 'VERB', 'xcomp', 'VERB')",482,0.0241
+"('ADP', 'cc', 'CCONJ')",479,0.02395
+"('VERB', 'conj', 'VERB', 'prep', 'ADP', 'pobj', 'PRON')",476,0.0238
+"('VERB', 'prep', 'ADP', 'pcomp', 'VERB', 'prep', 'ADP')",474,0.0237
+"('AUX', 'conj', 'VERB', 'dobj', 'NOUN')",473,0.02365
+"('VERB', 'prep', 'ADP', 'pobj', 'ADJ')",472,0.0236
+"('AUX', 'attr', 'NOUN', 'relcl', 'VERB')",471,0.02355
+"('VERB', 'npadvmod', 'NOUN', 'amod', 'ADJ')",469,0.02345
+"('ADP', 'pcomp', 'VERB', 'dobj', 'NOUN', 'det', 'DET')",468,0.0234
+"('ADP', 'pobj', 'ADJ', 'det', 'DET')",466,0.0233
+"('VERB', 'dobj', 'NOUN', 'relcl', 'VERB', 'prep', 'ADP')",464,0.0232
+"('ADP', 'pobj', 'NOUN', 'amod', 'ADJ', 'advmod', 'ADV')",463,0.02315
+"('VERB', 'conj', 'VERB', 'ccomp', 'VERB', 'nsubj', 'PRON')",461,0.02305
+"('VERB', 'ccomp', 'VERB', 'dobj', 'NOUN', 'prep', 'ADP')",459,0.02295
+"('NOUN', 'acl', 'VERB', 'aux', 'PART')",458,0.0229
+"('AUX', 'advcl', 'VERB', 'dobj', 'NOUN')",448,0.0224
+"('VERB', 'prep', 'ADP', 'pobj', 'NUM')",448,0.0224
+"('VERB', 'ccomp', 'AUX', 'aux', 'AUX')",447,0.02235
+"('NOUN', 'relcl', 'VERB', 'nsubj', 'NOUN')",446,0.0223
+"('NOUN', 'relcl', 'VERB', 'aux', 'PART')",445,0.02225
+"('AUX', 'prep', 'ADP', 'pobj', 'PRON')",443,0.02215
+"('VERB', 'nsubjpass', 'PROPN')",443,0.02215
+"('NOUN', 'relcl', 'AUX', 'nsubj', 'PRON')",442,0.0221
+"('ADP', 'pcomp', 'ADV')",441,0.02205
+"('ADJ', 'npadvmod', 'NOUN')",438,0.0219
+"('VERB', 'advcl', 'VERB', 'auxpass', 'AUX')",438,0.0219
+"('PROPN', 'nummod', 'NUM')",438,0.0219
+"('VERB', 'parataxis', 'VERB')",438,0.0219
+"('NOUN', 'acl', 'VERB', 'advmod', 'ADV')",437,0.02185
+"('VERB', 'ccomp', 'VERB', 'prep', 'ADP', 'pobj', 'PRON')",436,0.0218
+"('VERB', 'conj', 'VERB', 'advcl', 'VERB', 'prep', 'ADP')",429,0.02145
+"('VERB', 'ccomp', 'ADJ')",428,0.0214
+"('VERB', 'ccomp', 'AUX', 'advmod', 'ADV')",424,0.0212
+"('VERB', 'ccomp', 'VERB', 'ccomp', 'VERB', 'nsubj', 'PRON')",424,0.0212
+"('INTJ', 'punct', 'PUNCT')",423,0.02115
+"('SCONJ', 'pobj', 'NOUN', 'det', 'DET')",420,0.021
+"('VERB', 'dobj', 'NOUN', 'acl', 'VERB', 'prep', 'ADP')",419,0.02095
+"('VERB', 'ccomp', 'AUX', 'nsubj', 'NOUN', 'det', 'DET')",419,0.02095
+"('VERB', 'advcl', 'VERB', 'xcomp', 'VERB', 'aux', 'PART')",418,0.0209
+"('AUX', 'acomp', 'ADJ', 'cc', 'CCONJ')",415,0.02075
+"('PROPN', 'appos', 'PROPN')",415,0.02075
+"('PROPN', 'prep', 'ADP', 'pobj', 'NOUN')",415,0.02075
+"('ADP', 'pobj', 'NOUN', 'poss', 'NOUN', 'det', 'DET')",415,0.02075
+"('AUX', 'attr', 'PROPN')",415,0.02075
+"('PROPN', 'relcl', 'VERB', 'nsubj', 'PRON')",412,0.0206
+"('VERB', 'advcl', 'VERB', 'prep', 'ADP', 'pobj', 'PRON')",411,0.02055
+"('NOUN', 'amod', 'NOUN')",410,0.0205
+"('VERB', 'advcl', 'VERB', 'nsubj', 'PROPN')",410,0.0205
+"('ADP', 'pcomp', 'VERB', 'nsubj', 'NOUN')",409,0.02045
+"('AUX', 'conj', 'VERB', 'prep', 'ADP', 'pobj', 'NOUN')",408,0.0204
+"('VERB', 'conj', 'VERB', 'conj', 'VERB', 'prep', 'ADP')",407,0.02035
+"('AUX', 'conj', 'VERB', 'aux', 'AUX')",403,0.02015

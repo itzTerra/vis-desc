@@ -119,6 +119,40 @@
                   </button>
                 </div>
               </div>
+              <div class="mt-4">
+                <h3 class="font-semibold mb-2">WordNet Resources</h3>
+                <div v-for="wn in wordnetModels" :key="wn.id" class="bg-base-200 rounded-lg p-4 border border-base-content/10 mb-2">
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2">
+                        <h4 class="font-semibold">{{ wn.label }}</h4>
+                        <span v-if="getWordNetDownloadStatus(wn) === 'cached'" class="badge badge-success">
+                          <Icon name="lucide:check" class="w-3 h-3 mr-1" />
+                          Cached
+                        </span>
+                        <span v-else-if="getWordNetDownloadStatus(wn) === 'downloading'" class="badge badge-warning">
+                          <span class="loading loading-spinner loading-xs mr-1" />
+                          Downloading {{ getModelProgress({ id: wn.id } as any) }}%
+                        </span>
+                        <span v-else class="badge badge-neutral">Not Cached</span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <div class="flex items-end gap-4 text-sm text-base-content/50">
+                        <span>{{ wn.sizeMb }} MB</span>
+                      </div>
+                      <button v-if="getWordNetDownloadStatus(wn) === 'not-cached'" class="btn btn-primary btn-sm" @click="queueDownloadWordNet(wn)">
+                        <Icon name="lucide:download" class="w-4 h-4" />
+                        Download
+                      </button>
+                      <button class="btn btn-error btn-sm btn-outline" :disabled="getWordNetDownloadStatus(wn) !== 'cached'" @click="removeWordnetFromCache(wn)">
+                        <Icon name="lucide:trash-2" class="w-4 h-4" />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -169,7 +203,8 @@ const emit = defineEmits<{
   modelReady: [modelId: ModelId];
 }>();
 
-const { getOrLoadModel, getModelCacheStatus, clearModelCache, clearAllCache: clearAllCacheFn, syncAllCacheState } = useModelLoader();
+const { getOrLoadModel, getModelCacheStatus, clearModelCache, clearAllCache: clearAllCacheFn, syncAllCacheState, getOrLoadWordNet, getWordNetCacheStatus, clearWordNetFromCache } = useModelLoader();
+import { WORDNETS } from "~/utils/models";
 
 const modelManagerDialog = ref<HTMLDialogElement>();
 const downloadQueue = ref<DownloadQueueItem[]>([]);
@@ -179,12 +214,18 @@ const transformersModels = computed<TModelInfo[]>(() =>
   MODELS.filter(m => m.transformersConfig && !m.disabled) as TModelInfo[]
 );
 
+const wordnetModels = computed(() => WORDNETS);
+
 const currentDownload = computed(() => downloadQueue.value[0] || null);
 
 const hasActiveDownload = computed(() => downloadQueue.value.length > 0);
 
 const hasCachedModels = computed(() =>
   transformersModels.value.some(m => getModelCacheStatus(m.transformersConfig) === "cached")
+);
+
+const hasCachedWordnets = computed(() =>
+  wordnetModels.value.some(w => getWordNetCacheStatus(w) === "cached")
 );
 
 function getModelDownloadStatus(model: TModelInfo): "cached" | "downloading" | "queued" | "not-cached" {
@@ -202,6 +243,18 @@ function getModelDownloadStatus(model: TModelInfo): "cached" | "downloading" | "
 function getModelProgress(model: TModelInfo): number {
   const queueItem = downloadQueue.value.find(item => item.model.id === model.id);
   return queueItem?.progress || 0;
+}
+
+function getWordNetDownloadStatus(wordnet: any): "cached" | "downloading" | "queued" | "not-cached" {
+  const cacheStatus = getWordNetCacheStatus(wordnet);
+  if (cacheStatus === "cached") return "cached";
+
+  const inQueue = downloadQueue.value.find(item => item.model.id === wordnet.id);
+  if (inQueue) {
+    return inQueue === downloadQueue.value[0] ? "downloading" : "queued";
+  }
+
+  return "not-cached";
 }
 
 watch(pendingModel, async (modelInfo) => {
@@ -233,6 +286,23 @@ async function queueDownload(model: TModelInfo) {
   }
 }
 
+async function queueDownloadWordNet(wordnet: any) {
+  if (downloadQueue.value.some(item => item.model.id === wordnet.id)) return;
+
+  await syncAllCacheState();
+
+  if (getWordNetCacheStatus(wordnet) === "cached") {
+    useNotifier().info(`${wordnet.label} is already cached`);
+    return;
+  }
+
+  // We push a pseudo-model object with id to reuse the queue
+  downloadQueue.value.push({ model: { id: wordnet.id, label: wordnet.label } as any, progress: 0 });
+  if (!isProcessingQueue.value) {
+    processQueue();
+  }
+}
+
 async function processQueue() {
   if (isProcessingQueue.value || downloadQueue.value.length === 0) {
     return;
@@ -245,11 +315,22 @@ async function processQueue() {
     const modelInfo = current.model;
 
     try {
-      await getOrLoadModel(modelInfo.transformersConfig, {
+      if (modelInfo.transformersConfig) {
+        await getOrLoadModel(modelInfo.transformersConfig, {
         onProgress: (progress: number) => {
           current.progress = Math.round(progress);
         },
       });
+
+      } else {
+        // treat as wordnet resource
+        const wn = WORDNETS.find(w => w.id === modelInfo.id);
+        if (wn) {
+          await getOrLoadWordNet(wn, {
+            onProgress: (p) => { current.progress = Math.round(p); }
+          });
+        }
+      }
 
       useNotifier().success(`${modelInfo.label} downloaded successfully`);
       emit("update:modelsState");
@@ -277,6 +358,18 @@ async function removeModelFromCache(model: TModelInfo) {
   } catch (error) {
     console.error("Failed to remove model from cache:", error);
     useNotifier().error("Failed to remove model from cache");
+  }
+}
+
+async function removeWordnetFromCache(wordnet: any) {
+  if (!confirm(`Remove ${wordnet.label} from cache?`)) return;
+  try {
+    await clearWordNetFromCache(wordnet);
+    useNotifier().success("WordNet removed from cache");
+    emit("update:modelsState");
+  } catch (error) {
+    console.error("Failed to remove WordNet from cache:", error);
+    useNotifier().error("Failed to remove WordNet from cache");
   }
 }
 

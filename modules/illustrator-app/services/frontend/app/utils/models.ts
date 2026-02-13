@@ -119,6 +119,20 @@ export const MODELS: ModelInfo[] = [
     disabled: false,
     description: "Instant random selection for debugging.",
   },
+  {
+    id: "xenova_minilm",
+    label: "Xenova MiniLM",
+    speed: 4,
+    quality: 3,
+    disabled: false,
+    description: "Xenova all-MiniLM-L6-v2 feature-extraction model (browser-friendly).",
+    transformersConfig: {
+      huggingFaceId: "Xenova/all-MiniLM-L6-v2",
+      pipeline: "feature-extraction",
+      sizeMb: 30,
+      workerName: "text2features",
+    },
+  },
 ];
 
 export type ModelId = typeof MODELS[number]["id"];
@@ -126,6 +140,24 @@ export type ModelId = typeof MODELS[number]["id"];
 export const getModelById = (id: ModelId): ModelInfo => {
   return MODELS.find(model => model.id === id)!;
 };
+
+export type WordNetInfo = {
+  id: string;
+  label: string;
+  description?: string;
+  sizeMb: number;
+  downloadUrl: string;
+}
+
+export const WORDNETS: WordNetInfo[] = [
+  {
+    id: "oewn",
+    label: "Open English WordNet (oewn:2025)",
+    description: "English WordNet JSON dump (zipped) for polysemy counting.",
+    sizeMb: 180,
+    downloadUrl: "https://en-word.net/static/english-wordnet-2025-json.zip",
+  },
+];
 
 export class NLIZeroshotClassifier {
   private candidateLabels: string[];
@@ -246,3 +278,47 @@ export const promptEnhancer = new PromptEnhancer(
     workerName: "prompt-enhancer",
   }
 );
+
+/**
+ * Run the `text2features` worker to extract features for the given texts.
+ * Currently the results are ignored (placeholder for future handling).
+ */
+export async function runText2FeaturesOnTexts(texts: string[], batchSize = 8): Promise<void> {
+  const model = getModelById("xenova_minilm");
+  if (!model.transformersConfig) return;
+
+  const { getOrLoadWorker, terminateWorker } = useModelLoader();
+  const worker = await getOrLoadWorker(model.transformersConfig);
+
+  return new Promise((resolve, reject) => {
+    const handler = (event: MessageEvent) => {
+      const { type, payload } = event.data;
+      switch (type) {
+      case "progress":
+        // placeholder: could inspect payload.results
+        break;
+      case "complete":
+        worker.removeEventListener("message", handler);
+        // For now do nothing with results
+        terminateWorker(model.transformersConfig!.huggingFaceId);
+        resolve();
+        break;
+      case "error":
+        worker.removeEventListener("message", handler);
+        terminateWorker(model.transformersConfig!.huggingFaceId);
+        reject(new Error(payload.message));
+        break;
+      }
+    };
+
+    worker.addEventListener("message", handler);
+
+    worker.postMessage({
+      type: "extract",
+      payload: {
+        texts,
+        batchSize,
+      }
+    });
+  });
+}

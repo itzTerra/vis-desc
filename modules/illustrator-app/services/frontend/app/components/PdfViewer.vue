@@ -60,6 +60,7 @@
       data-help-target="images"
       @close-editor="closeImageEditor"
       @editor-state-change="updateEditorState"
+      @editor-enhanced="handleEditorEnhanced"
     />
     <HeatmapViewer
       class="z-40"
@@ -118,6 +119,12 @@ import HeatmapViewer from "~/components/HeatmapViewer.vue";
 // GlobalWorkerOptions.workerSrc = PdfWorker;
 
 const IMAGES_WIDTH = 512;
+
+const emit = defineEmits<{
+  "pdf:rendered": [];
+  "editor-state-change": [state: EditorImageState];
+  "editor-enhanced": [highlightId: number];
+}>();
 const PRELOAD_PAGES = 3;
 
 const props = defineProps<{
@@ -130,10 +137,6 @@ watch(() => props.pdfUrl, () => {
 
 const highlights = defineModel<Highlight[]>("highlights", { required: true });
 const selectedHighlights = defineModel<Set<number>>("selectedHighlights", { required: true });
-
-defineEmits<{
-  (e: "pdf:rendered"): void;
-}>();
 
 const pdfUrlComputed = computed(() => props.pdfUrl);
 
@@ -186,6 +189,10 @@ function updateEditorState(nextState: EditorImageState) {
   }
 
   editorStates.value[index] = nextState;
+}
+
+function handleEditorEnhanced(highlightId: number) {
+  emit("editor-enhanced", highlightId);
 }
 
 async function setPdfScale(scale: number) {

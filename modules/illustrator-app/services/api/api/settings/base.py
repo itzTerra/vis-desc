@@ -217,3 +217,4 @@ IMAGE_GENERATION_PROVIDERS = env.list(
     "IMAGE_GENERATION_PROVIDERS",
     default=["cloudflare", "pollinations"],
 )
+IMAGE_GENERATION_MAX_BATCH_SIZE = env.int("IMAGE_GENERATION_MAX_BATCH_SIZE", default=32)

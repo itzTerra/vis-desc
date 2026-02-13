@@ -245,9 +245,7 @@ def generate_image_bytes(prompt: str) -> bytes:
     raise ProviderError("all", f"All providers failed: {error_details}")
 
 
-def generate_image_bytes_batch(
-    texts: list[str], max_batch_size: int | None = None
-) -> list[dict]:
+def generate_image_bytes_batch(texts: list[str]) -> list[dict]:
     """
     Generate images for a list of text prompts.
 
@@ -255,19 +253,9 @@ def generate_image_bytes_batch(
       {"ok": True, "image_b64": "..."}
     or
       {"ok": False, "error": "..."}
-
-    Enforces a server-side max batch size (from settings if not provided).
     """
-    if max_batch_size is None:
-        max_batch_size = getattr(settings, "IMAGE_GENERATION_MAX_BATCH_SIZE", 50)
-
     if not isinstance(texts, (list, tuple)):
         raise ValueError("texts must be a list of strings")
-
-    if len(texts) > max_batch_size:
-        raise ValueError(
-            f"Batch size {len(texts)} exceeds maximum allowed {max_batch_size}"
-        )
 
     results: list[dict] = []
     for idx, t in enumerate(texts):

@@ -1,4 +1,4 @@
-import type { AlertOptions } from "~/components/Alert.vue";
+import type { AlertOptions } from "~/types/common";
 
 export default function useNotifier() {
   const notify = (options: AlertOptions) => {

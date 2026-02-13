@@ -32,6 +32,11 @@ function tokenizeSimple(text: string): string[] {
  */
 async function loadModel(config: LoadMessage["payload"]): Promise<void> {
   try {
+    // The pipeline helper's return type can produce an extremely complex
+    // union that TypeScript sometimes cannot represent. Ignore the check
+    // here and assert the expected pipeline shape via a cast below.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     embeddingPipeline = await pipeline(
       "feature-extraction",
       config.huggingFaceId,

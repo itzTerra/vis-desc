@@ -13,18 +13,18 @@
             @change="handleFileUpload"
           >
           <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
-          <AutoIllustrationToggle
-            v-model:enabled="autoIllustration.enabled"
-            v-model:min-gap-lines="autoIllustration.minGapLines"
-            v-model:max-gap-lines="autoIllustration.maxGapLines"
-            v-model:min-score="autoIllustration.minScore"
+          <AutoIllustration
+            v-model:enabled="autoIllustration.enabled.value"
+            v-model:min-gap-pages="autoIllustration.minGapPages.value"
+            v-model:max-gap-pages="autoIllustration.maxGapPages.value"
+            v-model:min-score="autoIllustration.minScore.value"
+            v-model:enable-enhance="autoIllustration.enableEnhance.value"
+            v-model:enable-generate="autoIllustration.enableGenerate.value"
             :run-pass="autoIllustration.runPass"
             :clear-auto-selections="autoIllustration.clearAutoSelections"
+            :progress="autoIllustration.progress.value"
+            :is-active="(autoIllustration.isActive?.value) ?? (((autoIllustration.progress?.value?.enhancedCount ?? 0) > 0) || ((autoIllustration.progress?.value?.generatedCount ?? 0) > 0))"
             data-help-target="auto-illustration"
-          />
-          <AutoIllustrationStatusBar
-            :progress="autoIllustration.progress"
-            :is-active="autoIllustration.progress?.isActive ?? ((autoIllustration.progress?.enhancedCount ?? 0) > 0 || (autoIllustration.progress?.generatedCount ?? 0) > 0)"
           />
           <button
             v-if="pdfUrl"
@@ -63,6 +63,8 @@
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
       @pdf:rendered="onPdfRendered"
+      @editor-state-change="onEditorStateChange"
+      @editor-enhanced="onEditorEnhanced"
     />
     <Hero v-else @file-selected="handleFileUpload" />
     <div class="bottom-bar">
@@ -121,10 +123,6 @@ import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { ModelManager } from "#components";
 
-import useAutoIllustration from "~/composables/useAutoIllustration";
-import AutoIllustrationToggle from "~/components/AutoIllustrationToggle.vue";
-import AutoIllustrationStatusBar from "~/components/AutoIllustrationStatusBar.vue";
-
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
 // SCORE_THRESHOLD-based autoselect removed. Auto-illustration composable controls selections now.
@@ -136,7 +134,7 @@ const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
 const firstModel = MODELS.find(model => !model.disabled);
-const modelSelect = ref<ModelId | null>(firstModel ? firstModel.id : (MODELS[0]?.id ?? null));
+const modelSelect = ref<ModelId>(firstModel ? firstModel.id : (MODELS[0]?.id ?? null));
 const pendingModel = ref<TModelInfo | null>(null);
 // Holds start timestamp (ms) when loading begins; null when idle
 const isLoading = ref<number | null>(null);
@@ -290,7 +288,7 @@ const handleFileUpload = async (event: any) => {
     return;
   }
 
-  call(modelInfo.apiUrl, {
+  call(modelInfo.apiUrl as any, {
     method: "POST",
     body: formData as any
   }).then((data: any) => {
@@ -384,10 +382,29 @@ const pageAspectRatioRef = computed(() => {
 const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef });
 
 // when composable requests editors to be opened, forward to PdfViewer's exposed method
-watch(autoIllustration.pendingOpenIds, () => {
+watch(autoIllustration.pendingOpenIds, async () => {
   const list = autoIllustration.consumePendingOpenIds();
   if (!Array.isArray(list) || list.length === 0) return;
   pdfViewer.value?.openEditors?.(list);
+  // wait for editors to mount
+  await nextTick();
+  const enhance = (autoIllustration.enableEnhance?.value ?? true);
+  const generate = (autoIllustration.enableGenerate?.value ?? true);
+  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  if (layer && typeof layer.runAutoActions === "function") {
+    // run auto actions on the newly opened editors and update counts based on results
+    try {
+      const res = await layer.runAutoActions(list, { enhance, generate });
+      if (res && Array.isArray(res.enhancedIds) && res.enhancedIds.length) {
+        autoIllustration.markEnhanced?.(res.enhancedIds || []);
+      }
+      if (res && Array.isArray(res.generatedIds) && res.generatedIds.length) {
+        autoIllustration.markGenerated?.(res.generatedIds || []);
+      }
+    } catch (e) {
+      console.error("auto actions failed", e);
+    }
+  }
 });
 
 function fullReset() {
@@ -525,6 +542,18 @@ onMounted(() => {
     "Load example PDF and segments"
   );
 });
+
+function onEditorStateChange(nextState: any) {
+  if (!nextState || typeof nextState.highlightId !== "number") return;
+  if (nextState.hasImage) {
+    autoIllustration.markGenerated?.([nextState.highlightId]);
+  }
+}
+
+function onEditorEnhanced(highlightId: number) {
+  if (typeof highlightId !== "number") return;
+  autoIllustration.markEnhanced?.([highlightId]);
+}
 </script>
 <style scoped>
 .bottom-bar {

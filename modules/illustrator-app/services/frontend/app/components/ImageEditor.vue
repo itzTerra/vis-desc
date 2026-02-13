@@ -129,6 +129,7 @@ const emit = defineEmits<{
   bringToFront: [];
   pointerDown: [event: PointerEvent];
   "state-change": [state: EditorImageState];
+  enhanced: [highlightId: number];
 }>();
 
 const { $api } = useNuxtApp();
@@ -178,53 +179,61 @@ watch(currentHistoryItem, (item) => {
   }
 });
 
-async function handleEnhance() {
+async function handleEnhance(): Promise<boolean> {
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return;
+  if (prompt === "") return false;
 
   enhanceLoading.value = true;
-
   try {
-    const res = await $api("/api/enhance", {
+    const res = (await $api("/api/enhance", {
       method: "POST",
-      body: { text: prompt },
-    });
+      body: { texts: [prompt] },
+    }))[0];
 
-    if (!res || !res.text) {
-      useNotifier().error("Enhance failed");
-      return;
+    if (!res || !res.ok) {
+      useNotifier().error("Enhance failed: " + (res?.error || "Unknown error"));
+      return false;
     }
-    // const res = await promptEnhancer.enhance(prompt, PromptBridgeMode.Compress);
 
-    currentPrompt.value = res.text;
+    currentPrompt.value = res.text!;
     addToHistory(currentPrompt.value);
 
     useNotifier().success("Prompt enhanced");
+    emit("enhanced", props.highlightId);
+    return true;
   } catch (error) {
     useNotifier().error("Enhance request failed");
     console.error(error);
+    return false;
   } finally {
     enhanceLoading.value = false;
   }
 }
 
-async function handleGenerate() {
+async function handleGenerate(): Promise<boolean> {
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return;
+  if (prompt === "") return false;
 
   generateLoading.value = true;
-
   try {
-    const res = await $api("/api/gen-image-bytes", {
+    const res = (await $api("/api/gen-image-bytes", {
       method: "POST",
-      body: { text: prompt },
-    });
-    const blob = new Blob([res as any], { type: "image/png" });
-    const url = URL.createObjectURL(blob);
+      body: { texts: [prompt] },
+    }))[0];
+    if (!res || !res.ok) {
+      useNotifier().error("Image generation failed: " + (res?.error || "Unknown error"));
+      return false;
+    }
+    // const blob = new Blob([res as any], { type: "image/png" });
+    // const url = URL.createObjectURL(blob);
+    const blob = undefined;
+    const url = res.image_b64 ? `data:image/png;base64,${res.image_b64}` : undefined;
     addToHistory(prompt, url, blob);
+    return true;
   } catch (error) {
     useNotifier().error("Image generation failed. Please try again.");
     console.error(error);
+    return false;
   } finally {
     generateLoading.value = false;
   }
@@ -243,8 +252,39 @@ function getExportImage() {
   };
 }
 
+// Helpers to apply batched API results from parent
+async function applyEnhanceResult(text: string) {
+  currentPrompt.value = text;
+  addToHistory(currentPrompt.value);
+  useNotifier().success("Prompt enhanced");
+  emit("enhanced", props.highlightId);
+  return true;
+}
+
+async function applyGenerateResult(image_b64: string) {
+  const url = `data:image/png;base64,${image_b64}`;
+  addToHistory(currentPrompt.value.trim(), url, undefined);
+  return true;
+}
+
+function getCurrentPrompt() {
+  return currentPrompt.value;
+}
+
 defineExpose({
-  getExportImage
+  getExportImage,
+  getHighlightId: () => props.highlightId,
+  triggerEnhance: async (): Promise<boolean> => {
+    if (enhanceLoading.value) return false;
+    return await handleEnhance();
+  },
+  triggerGenerate: async (): Promise<boolean> => {
+    if (generateLoading.value) return false;
+    return await handleGenerate();
+  },
+  applyEnhanceResult,
+  applyGenerateResult,
+  getCurrentPrompt,
 });
 
 onBeforeUnmount(() => {

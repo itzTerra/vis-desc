@@ -299,8 +299,8 @@ export default defineNuxtPlugin((nuxtApp) => {
 
   window.addEventListener("keydown", listener);
 
-  if (import.meta.hot) {
-    import.meta.hot.on("nuxt:before-hmr", () => {
+  if ((import.meta as any).hot) {
+    (import.meta as any).hot.on("nuxt:before-hmr", () => {
       api.hide();
       api.clear();
       window.removeEventListener("keydown", listener);

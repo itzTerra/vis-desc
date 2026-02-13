@@ -16,6 +16,7 @@
         @bring-to-front="bringImageToFront(editorId)"
         @pointer-down="onEditorPointerDown($event, editorId)"
         @state-change="handleEditorStateChange"
+        @enhanced="handleEditorEnhanced"
       />
     </div>
   </div>
@@ -38,7 +39,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   "close-editor": [highlightId: number];
   "editor-state-change": [state: EditorImageState];
+  "editor-enhanced": [highlightId: number];
 }>();
+
+const { $api } = useNuxtApp();
 
 const EDITOR_NO_IMAGE_HEIGHT = 156; // controls height when no image
 const EDITOR_MAX_POSSIBLE_HEIGHT = 512 + EDITOR_NO_IMAGE_HEIGHT; // Image + controls
@@ -263,7 +267,52 @@ function handleEditorStateChange(state: EditorImageState) {
   emit("editor-state-change", state);
 }
 
+function handleEditorEnhanced(highlightId: number) {
+  emit("editor-enhanced", highlightId);
+}
+
 const editorRefs = ref<Array<InstanceType<typeof ImageEditor> | null>>([]);
+
+// Batch config and helpers
+const BATCH_LIMIT = 32;
+function chunkArray<T>(arr: T[], size: number) {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+async function processChunks(
+  endpoint: "/api/enhance" | "/api/gen-image-bytes",
+  idOrder: number[],
+  idToEditor: Map<number, InstanceType<typeof ImageEditor>>,
+  mapResponseToApplyArgs: (r: any) => [string],
+  applyMethodName: "applyEnhanceResult" | "applyGenerateResult",
+  resultArray: number[]
+) {
+  const chunks = chunkArray(idOrder, BATCH_LIMIT);
+  for (const chunk of chunks) {
+    const texts = chunk.map(id => {
+      const ed = idToEditor.get(id);
+      if (ed && typeof ed.getCurrentPrompt === "function") return ed.getCurrentPrompt();
+      return getHighlightText(id);
+    });
+    if (texts.length === 0) continue;
+    const res = await $api(endpoint, { method: "POST", body: { texts } });
+    for (let i = 0; i < (res?.length || 0); i++) {
+      const r = res[i];
+      const id = chunk[i];
+      const ed = idToEditor.get(id);
+      if (r && r.ok) {
+        if (ed && typeof ed[applyMethodName] === "function") {
+          try { await ed[applyMethodName](...(mapResponseToApplyArgs(r))); } catch (e) { console.error(e); }
+        }
+        resultArray.push(id);
+      } else {
+        console.error(`${endpoint} error`, r?.error);
+      }
+    }
+  }
+}
 
 function getExportImages(): Record<number, Blob> {
   const result: Record<number, Blob> = {};
@@ -280,7 +329,35 @@ function getExportImages(): Record<number, Blob> {
 }
 
 defineExpose({
-  getExportImages
+  getExportImages,
+  runAutoActions: async (ids: number[] = [], opts: { enhance?: boolean; generate?: boolean } = {}) => {
+    if (!Array.isArray(ids) || ids.length === 0) return { enhancedIds: [], generatedIds: [] };
+    const enhance = !!opts.enhance;
+    const generate = !!opts.generate;
+    const enhancedIds: number[] = [];
+    const generatedIds: number[] = [];
+    try {
+      // Build map of highlightId -> editor instance for requested ids
+      const idToEditor = new Map<number, InstanceType<typeof ImageEditor>>();
+      for (const editor of editorRefs.value) {
+        if (!editor) continue;
+        const id = typeof editor.getHighlightId === "function" ? editor.getHighlightId() : (editor?.$props?.highlightId ?? null);
+        if (id == null) continue;
+        if (ids.includes(id)) idToEditor.set(id, editor as any);
+      }
+
+      const order = Array.from(idToEditor.keys());
+      if (enhance && order.length > 0) {
+        await processChunks("/api/enhance", order, idToEditor, (r: any) => [r.text], "applyEnhanceResult", enhancedIds);
+      }
+      if (generate && order.length > 0) {
+        await processChunks("/api/gen-image-bytes", order, idToEditor, (r: any) => [r.image_b64], "applyGenerateResult", generatedIds);
+      }
+    } catch (e) {
+      console.error("runAutoActions error", e);
+    }
+    return { enhancedIds, generatedIds };
+  }
 });
 </script>
 

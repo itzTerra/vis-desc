@@ -6,7 +6,7 @@ import type {
   FeatureExtractionResult,
   ExtractProgressPayload,
 } from "~/types/text2features-worker";
-import * as featureExtractors from "~/utils/feature-extractors";
+import * as featureExtractors from "~/utils/text2features";
 import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
 
 env.allowLocalModels = false;
@@ -16,16 +16,7 @@ env.useBrowserCache = true;
 let embeddingPipeline: FeatureExtractionPipeline | null = null;
 const trie = new MultiWordExpressionTrie();
 
-/**
- * Split text into words for feature extraction.
- * Simple whitespace-based tokenization.
- */
-function tokenizeSimple(text: string): string[] {
-  return text
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((word) => word.length > 0);
-}
+// Tokenization and feature assembly live in utils/text2features.ts
 
 /**
  * Load the embedding model.
@@ -74,54 +65,13 @@ async function loadModel(config: LoadMessage["payload"]): Promise<void> {
 async function extractFeaturesFromText(
   text: string
 ): Promise<FeatureExtractionResult> {
-  const preprocessedText = featureExtractors.preprocess(text);
-  const words = tokenizeSimple(preprocessedText);
-
-  // Get embeddings
+  // Let the utility module build the feature vector
+  const { features } = await featureExtractors.extractFeaturesFromText(text);
   const embeddings = await getEmbeddings(text);
-
-  // Extract features
-  const features: number[] = [];
-
-  features.push(...featureExtractors.extractQuoteRatioFeature(text));
-  features.push(...featureExtractors.extractCharNgrams(text));
-  features.push(...featureExtractors.extractWordLengthByChar(words));
-  features.push(...featureExtractors.extractNgramWordLengthByChar(words));
-
-  // Sentence length features would go here (requires sentence tokenization)
-  features.push(...new Array(27).fill(0)); // 26 + 1 for avg
-
-  features.push(featureExtractors.extractNumericWordRatio(words));
-  features.push(featureExtractors.extractTTR(words));
-  features.push(featureExtractors.extractLexicalDensity(words));
-  features.push(...featureExtractors.extractSyllableRatios(words));
-  features.push(featureExtractors.extractStopwords(words));
-  features.push(...featureExtractors.extractArticles(words));
-  features.push(...featureExtractors.extractPunctuation(text));
-  features.push(featureExtractors.extractContractions(words));
-  features.push(...featureExtractors.extractCasing(words));
-  features.push(...featureExtractors.extractCasingBigrams(words));
-
-  // POS and dependency features (requires BookNLP)
-  features.push(...featureExtractors.extractPOSFrequency(null));
-  features.push(...featureExtractors.extractPOSNgrams(null));
-  features.push(...featureExtractors.extractDependencyTreeStructure(null));
-  features.push(...featureExtractors.extractDependencyTreeRelations(null));
-
-  // Noun phrase and entity features (requires booknlp)
-  features.push(...featureExtractors.extractNounPhraseLengths(words));
-  features.push(...featureExtractors.extractEntityCategories(null, words));
-  features.push(featureExtractors.extractEvents(null));
-  features.push(...featureExtractors.extractSupersense(null, words));
-  features.push(...featureExtractors.extractTense(null));
-  features.push(...featureExtractors.extractPolysemy(words));
-  features.push(...featureExtractors.extractWordConcreteness(words));
-  features.push(...featureExtractors.extractPrepositionImageability());
-  features.push(featureExtractors.extractPlaces(words));
 
   return {
     text,
-    features: features.map((f) => (isNaN(f) ? 0 : f)),
+    features,
     embeddings,
   };
 }

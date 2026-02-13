@@ -1,5 +1,7 @@
 import { pipeline, type Pipeline } from "@huggingface/transformers";
-import type { TModelInfo, TransformersModelConfig } from "~/utils/models";
+import type { TModelInfo, TransformersModelConfig, WordNetInfo } from "~/utils/models";
+import { WORDNETS } from "~/utils/models";
+import { downloadAndLoadWordNet, clearWordNetCache } from "~/utils/wordnet";
 
 interface ModelLoadState {
   isLoading: boolean;
@@ -12,6 +14,7 @@ interface ModelLoadState {
 type ModelCacheStatus = "cached" | "not-cached" | "downloading";
 
 const TRANSFORMERS_CACHE_NAME = "transformers-cache";
+const WORDNET_CACHE_NAME = "wordnet-cache";
 
 const useModelsState = () => useState<Map<string, ModelLoadState>>("models-state", () => new Map());
 const pipelinesCache = new Map<string, Pipeline>();
@@ -176,6 +179,54 @@ const clearAllCache = async () => {
 const syncAllCacheState = async () => {
   const models = MODELS.filter(m => m.transformersConfig) as TModelInfo[];
   await Promise.all(models.map(m => syncCacheState(m.transformersConfig.huggingFaceId)));
+  // also sync wordnet cache state for known wordnets
+  await Promise.all(WORDNETS.map(async (w) => {
+    const isCached = await checkModelCached(w.downloadUrl);
+    const state = getModelState(w.id);
+    state.isCached = isCached;
+  }));
+};
+
+const getWordNetCacheStatus = (wordnet: WordNetInfo): ModelCacheStatus => {
+  const state = getModelState(wordnet.id);
+
+  if (state.isLoading) return "downloading";
+  if (state.isCached) return "cached";
+  return "not-cached";
+};
+
+const getOrLoadWordNet = async (
+  wordnet: WordNetInfo,
+  options?: {
+    forceDownload?: boolean;
+    onProgress?: (progress: number) => void;
+  }
+) => {
+  const state = getModelState(wordnet.id);
+  if (state.isLoadedInMemory) {
+    return; // wordnet is in memory (wordnet module holds data)
+  }
+
+  state.isLoading = true;
+  try {
+    await downloadAndLoadWordNet(wordnet.id, wordnet.downloadUrl, options?.onProgress);
+    state.isLoadedInMemory = true;
+    state.isCached = true;
+    state.isLoading = false;
+    state.progress = 100;
+  } catch (err) {
+    state.error = err instanceof Error ? err.message : String(err);
+    state.isLoading = false;
+    throw err;
+  }
+};
+
+const clearWordNetFromCache = async (wordnet: WordNetInfo) => {
+  await clearWordNetCache(wordnet.downloadUrl);
+  const state = getModelState(wordnet.id);
+  state.isCached = false;
+  state.isLoadedInMemory = false;
+  state.progress = 0;
 };
 
 const loadModelInWorker = async (
@@ -274,6 +325,10 @@ export const useModelLoader = () => {
     getModelCacheStatus,
     clearModelCache,
     clearAllCache,
-    syncAllCacheState
+    syncAllCacheState,
+    // WordNet helpers
+    getOrLoadWordNet,
+    getWordNetCacheStatus,
+    clearWordNetFromCache,
   };
 };

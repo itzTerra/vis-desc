@@ -1,21 +1,23 @@
+import { loadAsync } from "jszip";
+
 export type WordNetData = Record<string, Record<string, any>>;
 
-const WORDNET_CACHE_NAME = "wordnet-cache";
+let cacheName = "wordnet-cache";
 const inMemoryWordnets = new Map<string, WordNetData>();
 
-async function checkCached(idOrUrl: string): Promise<boolean> {
+export async function isCached(idOrUrl: string): Promise<boolean> {
   try {
-    const cache = await caches.open(WORDNET_CACHE_NAME);
+    const cache = await caches.open(cacheName);
     const keys = await cache.keys();
     return keys.some((r) => r.url.includes(idOrUrl));
-  } catch (err) {
+  } catch {
     return false;
   }
 }
 
 async function loadFromCache(idOrUrl: string): Promise<WordNetData | null> {
   try {
-    const cache = await caches.open(WORDNET_CACHE_NAME);
+    const cache = await caches.open(cacheName);
     const keys = await cache.keys();
     const found = keys.find((r) => r.url.includes(idOrUrl));
     if (!found) return null;
@@ -25,12 +27,14 @@ async function loadFromCache(idOrUrl: string): Promise<WordNetData | null> {
 
     const json = await resp.json();
     return json as WordNetData;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
 
-export async function downloadAndLoadWordNet(id: string, url: string, onProgress?: (p: number) => void): Promise<WordNetData> {
+export async function downloadAndLoadWordNet(id: string, url: string, customCacheName?: string, onProgress?: (p: number) => void): Promise<WordNetData> {
+  if (customCacheName) cacheName = customCacheName;
+
   // If already in memory return
   if (inMemoryWordnets.has(id)) return inMemoryWordnets.get(id)!;
 
@@ -55,26 +59,17 @@ export async function downloadAndLoadWordNet(id: string, url: string, onProgress
     const buffer = await response.arrayBuffer();
     onProgress?.(30);
 
-    // dynamic import of JSZip (browser CDN). If it fails, throw informative error.
-    let JSZip: any;
-    try {
-      // @ts-ignore
-      const jszipModule = await import("https://cdn.jsdelivr.net/npm/jszip@3.10.0/dist/jszip.min.js");
-      JSZip = jszipModule.default || jszipModule;
-    } catch (err) {
-      throw new Error("Failed to load JSZip from CDN to extract zip archive. Ensure network access or add JSZip as a dependency.");
-    }
-
-    const zip = await JSZip.loadAsync(buffer);
+    const zip = await loadAsync(buffer);
     onProgress?.(50);
 
     // merge all .json files in the archive into a single object
     const merged: Record<string, any> = {};
-    const fileNames = Object.keys(zip.files).filter((n) => n.toLowerCase().endsWith('.json'));
-    if (fileNames.length === 0) throw new Error('No JSON file found in WordNet zip archive');
+    const fileNames = Object.keys(zip.files).filter((n) => n.toLowerCase().endsWith(".json"));
+    if (fileNames.length === 0) throw new Error("No JSON file found in WordNet zip archive");
 
     for (const name of fileNames) {
-      const txt = await zip.file(name).async('string');
+      const txt = await zip.file(name)?.async("string");
+      if (!txt) continue;
       try {
         const obj = JSON.parse(txt);
         for (const [k, v] of Object.entries(obj)) {
@@ -85,7 +80,7 @@ export async function downloadAndLoadWordNet(id: string, url: string, onProgress
           for (const posKey of Object.keys(v as any)) {
             entry[posKey] = (entry[posKey] || { pronunciation: [], sense: [] });
             const src = (v as any)[posKey];
-            if (src && typeof src === 'object') {
+            if (src && typeof src === "object") {
               if (Array.isArray(src.sense)) {
                 entry[posKey].sense = entry[posKey].sense.concat(src.sense);
               }
@@ -96,7 +91,7 @@ export async function downloadAndLoadWordNet(id: string, url: string, onProgress
           }
         }
       } catch (err) {
-        console.warn('Skipping invalid JSON in zip entry', name, err);
+        console.warn("Skipping invalid JSON in zip entry", name, err);
       }
     }
 
@@ -116,11 +111,11 @@ export async function downloadAndLoadWordNet(id: string, url: string, onProgress
 
   // attempt to cache the original response body where feasible
   try {
-    const cache = await caches.open(WORDNET_CACHE_NAME);
+    const cache = await caches.open(cacheName);
     // store original resource request (some browsers disallow caching cross-origin opaque responses)
     try {
-      await cache.put(new Request(`${url}#${id}`), new Response(JSON.stringify(parsed), { headers: { 'Content-Type': 'application/json' } }));
-    } catch (e) {
+      await cache.put(new Request(`${url}#${id}`), new Response(JSON.stringify(parsed), { headers: { "Content-Type": "application/json" } }));
+    } catch {
       // fallback: try caching the original response clone if available
       try {
         const rclone = response.clone();
@@ -141,7 +136,9 @@ export async function downloadAndLoadWordNet(id: string, url: string, onProgress
 
 export function synsets(word: string, pos?: string, id: string = "oewn"): any[] {
   const data = inMemoryWordnets.get(id);
-  if (!data) return [];
+  if (!data) {
+    throw new Error(`WordNet with id "${id}" not loaded in memory. Call downloadAndLoadWordNet first.`);
+  }
 
   const lemma = word.toLowerCase();
   const entry = data[lemma] || data[word] || data[word.toLowerCase()];
@@ -189,7 +186,7 @@ export function clearWordNetFromMemory(id: string) {
 
 export async function clearWordNetCache(idOrUrl: string) {
   try {
-    const cache = await caches.open(WORDNET_CACHE_NAME);
+    const cache = await caches.open(cacheName);
     const keys = await cache.keys();
     const matches = keys.filter((r) => r.url.includes(idOrUrl));
     await Promise.all(matches.map((k) => cache.delete(k)));

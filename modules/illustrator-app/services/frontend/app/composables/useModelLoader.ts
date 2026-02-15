@@ -14,7 +14,6 @@ interface ModelLoadState {
 type ModelCacheStatus = "cached" | "not-cached" | "downloading";
 
 const TRANSFORMERS_CACHE_NAME = "transformers-cache";
-const WORDNET_CACHE_NAME = "wordnet-cache";
 
 const useModelsState = () => useState<Map<string, ModelLoadState>>("models-state", () => new Map());
 const pipelinesCache = new Map<string, Pipeline>();
@@ -81,7 +80,8 @@ const downloadModel = async (
 
   try {
     const model = await pipeline(config.pipeline, config.huggingFaceId, {
-      subfolder: "",
+      subfolder: config.subfolder || "",
+      model_file_name: config.modelFileName,
       progress_callback: (data: any) => {
         if (data.progress !== undefined && data.file.endsWith(".onnx")) {
           state.progress = data.progress;
@@ -209,7 +209,7 @@ const getOrLoadWordNet = async (
 
   state.isLoading = true;
   try {
-    await downloadAndLoadWordNet(wordnet.id, wordnet.downloadUrl, options?.onProgress);
+    await downloadAndLoadWordNet(wordnet.id, wordnet.downloadUrl, undefined, options?.onProgress);
     state.isLoadedInMemory = true;
     state.isCached = true;
     state.isLoading = false;
@@ -258,9 +258,7 @@ const loadModelInWorker = async (
     worker.postMessage({
       type: "load",
       payload: {
-        huggingFaceId: config.huggingFaceId,
-        modelFileName: config.modelFileName,
-        pipeline: config.pipeline,
+        ...config,
       }
     });
   });

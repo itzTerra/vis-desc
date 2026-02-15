@@ -1,0 +1,338 @@
+[
+  {
+    "pattern": "on top",
+    "score": 1.0
+  },
+  {
+    "pattern": "aboard",
+    "score": 0.9968678815489748
+  },
+  {
+    "pattern": "behind",
+    "score": 0.9900341685649202
+  },
+  {
+    "pattern": "in between",
+    "score": 0.9834851936218676
+  },
+  {
+    "pattern": "across from",
+    "score": 0.976651480637813
+  },
+  {
+    "pattern": "close to",
+    "score": 0.9743735763097948
+  },
+  {
+    "pattern": "beneath",
+    "score": 0.9695330296127562
+  },
+  {
+    "pattern": "up",
+    "score": 0.9615603644646924
+  },
+  {
+    "pattern": "underneath",
+    "score": 0.9399202733485192
+  },
+  {
+    "pattern": "above",
+    "score": 0.9111617312072892
+  },
+  {
+    "pattern": "backward(s)?",
+    "score": 0.9066059225512528
+  },
+  {
+    "pattern": "between",
+    "score": 0.8952164009111616
+  },
+  {
+    "pattern": "in front",
+    "score": 0.8952164009111616
+  },
+  {
+    "pattern": "next to",
+    "score": 0.880125284738041
+  },
+  {
+    "pattern": "under",
+    "score": 0.835136674259681
+  },
+  {
+    "pattern": "below",
+    "score": 0.8320045558086558
+  },
+  {
+    "pattern": "together",
+    "score": 0.8268792710706149
+  },
+  {
+    "pattern": "down into",
+    "score": 0.820615034168565
+  },
+  {
+    "pattern": "beside",
+    "score": 0.800398633257403
+  },
+  {
+    "pattern": "forward(s)?",
+    "score": 0.7927107061503416
+  },
+  {
+    "pattern": "nearby",
+    "score": 0.782744874715262
+  },
+  {
+    "pattern": "over",
+    "score": 0.7813211845102505
+  },
+  {
+    "pattern": "past",
+    "score": 0.7753416856492026
+  },
+  {
+    "pattern": "up against",
+    "score": 0.7730637813211844
+  },
+  {
+    "pattern": "inside",
+    "score": 0.7670842824601366
+  },
+  {
+    "pattern": "outside",
+    "score": 0.7670842824601366
+  },
+  {
+    "pattern": "down",
+    "score": 0.7528473804100227
+  },
+  {
+    "pattern": "in back",
+    "score": 0.7528473804100227
+  },
+  {
+    "pattern": "downward",
+    "score": 0.7414578587699316
+  },
+  {
+    "pattern": "on",
+    "score": 0.7369020501138951
+  },
+  {
+    "pattern": "among(s|st)?",
+    "score": 0.6647209567198178
+  },
+  {
+    "pattern": "upward(s)?",
+    "score": 0.7129840546697036
+  },
+  {
+    "pattern": "abroad",
+    "score": 0.7052961275626424
+  },
+  {
+    "pattern": "across",
+    "score": 0.692767653758542
+  },
+  {
+    "pattern": "back",
+    "score": 0.6865034168564919
+  },
+  {
+    "pattern": "toward(s)?",
+    "score": 0.684510250569476
+  },
+  {
+    "pattern": "near",
+    "score": 0.6788154897494305
+  },
+  {
+    "pattern": "in",
+    "score": 0.6674259681093394
+  },
+  {
+    "pattern": "apart",
+    "score": 0.6560364464692483
+  },
+  {
+    "pattern": "onward(s)?",
+    "score": 0.6306947608200454
+  },
+  {
+    "pattern": "ahead",
+    "score": 0.6218678815489749
+  },
+  {
+    "pattern": "opposite",
+    "score": 0.5911161731207287
+  },
+  {
+    "pattern": "alongside",
+    "score": 0.5885535307517084
+  },
+  {
+    "pattern": "out",
+    "score": 0.5820045558086558
+  },
+  {
+    "pattern": "through",
+    "score": 0.5757403189066059
+  },
+  {
+    "pattern": "all over",
+    "score": 0.5677676537585421
+  },
+  {
+    "pattern": "up to",
+    "score": 0.5358769931662869
+  },
+  {
+    "pattern": "outward(s)?",
+    "score": 0.5313211845102505
+  },
+  {
+    "pattern": "by",
+    "score": 0.5307517084282459
+  },
+  {
+    "pattern": "sub\\w+",
+    "score": 0.5222095671981776
+  },
+  {
+    "pattern": "against",
+    "score": 0.5056947608200455
+  },
+  {
+    "pattern": "with",
+    "score": 0.5028473804100226
+  },
+  {
+    "pattern": "kitty-corner from",
+    "score": 0.4681093394077448
+  },
+  {
+    "pattern": "inward(s)?",
+    "score": 0.4530182232346241
+  },
+  {
+    "pattern": "along",
+    "score": 0.4521640091116172
+  },
+  {
+    "pattern": "out from",
+    "score": 0.447892938496583
+  },
+  {
+    "pattern": "beyond",
+    "score": 0.4458997722095671
+  },
+  {
+    "pattern": "around",
+    "score": 0.439635535307517
+  },
+  {
+    "pattern": "into",
+    "score": 0.4185649202733484
+  },
+  {
+    "pattern": "away",
+    "score": 0.399772209567198
+  },
+  {
+    "pattern": "off",
+    "score": 0.3920842824601366
+  },
+  {
+    "pattern": "over\\w+",
+    "score": 0.3684510250569475
+  },
+  {
+    "pattern": "within",
+    "score": 0.3656036446469248
+  },
+  {
+    "pattern": "amid",
+    "score": 0.3399772209567197
+  },
+  {
+    "pattern": "by way of",
+    "score": 0.3325740318906605
+  },
+  {
+    "pattern": "before",
+    "score": 0.3200455580865602
+  },
+  {
+    "pattern": "throughout",
+    "score": 0.3063781321184509
+  },
+  {
+    "pattern": "from",
+    "score": 0.3029612756264236
+  },
+  {
+    "pattern": "without",
+    "score": 0.3029612756264236
+  },
+  {
+    "pattern": "onto",
+    "score": 0.297266514806378
+  },
+  {
+    "pattern": "since",
+    "score": 0.2716400911161731
+  },
+  {
+    "pattern": "during",
+    "score": 0.2710706150341684
+  },
+  {
+    "pattern": "at",
+    "score": 0.2656605922551253
+  },
+  {
+    "pattern": "after",
+    "score": 0.2272209567198176
+  },
+  {
+    "pattern": "upon",
+    "score": 0.2272209567198176
+  },
+  {
+    "pattern": "inter\\w+",
+    "score": 0.2260820045558085
+  },
+  {
+    "pattern": "to",
+    "score": 0.1890660592255124
+  },
+  {
+    "pattern": "via",
+    "score": 0.1833712984054669
+  },
+  {
+    "pattern": "about",
+    "score": 0.1739749430523917
+  },
+  {
+    "pattern": "for",
+    "score": 0.1739749430523917
+  },
+  {
+    "pattern": "unto",
+    "score": 0.1506264236902049
+  },
+  {
+    "pattern": "ago",
+    "score": 0.0956719817767653
+  },
+  {
+    "pattern": "until",
+    "score": 0.0410022779043279
+  },
+  {
+    "pattern": "of",
+    "score": 0.0
+  }
+]

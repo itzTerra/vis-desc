@@ -1,7 +1,7 @@
 from typing import Iterable
 import numpy as np
 from core.tools.evaluators.base import BaseEvaluator, OnnxMixin
-from core.tools.text2features import FeatureService
+from core.tools._text2features import FeatureService
 from core.utils import MODEL_DIR
 
 

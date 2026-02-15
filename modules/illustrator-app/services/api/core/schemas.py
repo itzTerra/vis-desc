@@ -4,7 +4,7 @@ from typing import Optional
 
 
 class TextBody(Schema):
-    text: str
+    texts: list[str]
 
 
 class Evaluator(str, Enum):
@@ -64,3 +64,49 @@ class BatchImageItem(Schema):
     ok: bool
     image_b64: Optional[str] = None
     error: Optional[str] = None
+
+
+# SpaCy-related types used by the API
+class SpaCyToken(Schema):
+    text: str
+    startByte: int
+    endByte: int
+    pos: str
+    finePos: str
+    lemma: str
+    deprel: str
+    dephead: int
+    morph: dict[str, str]
+    likeNum: bool
+    isStop: bool
+    sentenceId: int
+    withinSentenceId: int
+
+
+class SentToken(Schema):
+    text: str
+    pos_: str
+    dep_: str
+    children: list["SentToken"]
+
+
+class SpacySent(Schema):
+    root: SentToken
+    start: int
+    end: int
+
+
+class NounChunk(Schema):
+    start: int
+    end: int
+    text: str
+
+
+class SpaCyContext(Schema):
+    tokens: list[SpaCyToken]
+    sentences: list[SpacySent]
+    nounChunks: list[NounChunk]
+
+
+class SpacyContextResponse(Schema):
+    contexts: list[SpaCyContext]

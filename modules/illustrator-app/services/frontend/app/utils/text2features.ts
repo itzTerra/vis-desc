@@ -1,1269 +1,1383 @@
-import type {
-  TokenData,
-  EntityData,
-  SentenceData,
-  BookNLPContext,
-} from "~/types/text2features-worker";
-
 import { getPolysemyCount, downloadAndLoadWordNet } from "~/utils/wordnet";
 import { estimate as estimateSyllables } from "~/utils/syllables";
 import { WORDNETS } from "~/utils/models";
+import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
+import { BookNLP, type BookNLPResult, type SpaCyContext } from "booknlp-ts";
+import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
+import charNgrams from "~/assets/data/features/char_ngrams_features.json";
+import posNgrams from "~/assets/data/features/pos_ngrams_features.json";
+import depNodeNgrams from "~/assets/data/features/dep_tree_node_ngrams_features.json";
+import depRelationNgrams from "~/assets/data/features/dep_tree_relation_ngrams_features.json";
+import depCompleteNgrams from "~/assets/data/features/dep_tree_complete_ngrams_features.json";
+import concretenessWords from "~/assets/data/features/concreteness/words.json";
+import concretenessMulti from "~/assets/data/features/concreteness/multiword.json";
+import concretenessPrepositions from "~/assets/data/features/concreteness/prepositions.json";
+import concretenessPlaces from "~/assets/data/features/concreteness/places.json";
+import type { ProgressCallback } from "~/types/common";
 
-// dynamic import path for booknlp-ts; allow fallback if not available
-let _booknlpPipeline: any | null = null;
-let _featureResourcesLoaded: Promise<void> | null = null;
-let _charFeaturesMap: Record<string, number> | null = null;
-let _posFeaturesMap: Record<string, number> | null = null;
-let _depNodeFeaturesMap: Record<string, number> | null = null;
-let _depRelationFeaturesMap: Record<string, number> | null = null;
-let _depCompleteFeaturesMap: Record<string, number> | null = null;
-let _concretenessSingle: Record<string, number> | null = null;
-let _concretenessMulti: Record<string, number> | null = null;
-let _prepositions: Array<{ pattern: string; score: number }> | null = null;
-let _placesList: string[] | null = null;
-
-async function parseCsv(text: string): Promise<string[][]> {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return [];
-  const rows: string[][] = [];
-  for (const line of lines) {
-    // naive CSV split, assumes no embedded commas in fields
-    rows.push(line.split(",").map((c) => c.trim()));
-  }
-  return rows;
+interface TokenData {
+  text: string;
+  itext: string; // lowercase text
+  pos: string; // UD POS tag
+  fine_pos: string; // fine-grained POS tag
+  lemma: string;
+  sentence_id: number;
+  within_sentence_id: number;
+  event: boolean;
+  is_stop: boolean;
+  like_num: boolean;
+  morph_tense?: string | null;
 }
 
-async function ensureFeatureResourcesLoaded(): Promise<void> {
-  if (_featureResourcesLoaded) return _featureResourcesLoaded;
-  _featureResourcesLoaded = (async () => {
-    try {
-      const base = "/assets/data/features";
-      // char ngrams
-      try {
-        const resp = await fetch(`${base}/char_ngrams_features.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        const header = rows[0] || [];
-        const idx = header.indexOf("ngram");
-        _charFeaturesMap = {};
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const ngram = row[idx] || row[0];
-          _charFeaturesMap[ngram] = i - 1;
-        }
-      } catch (e) {
-        _charFeaturesMap = null;
-      }
+interface EntityData {
+  start_token: number;
+  end_token: number;
+  cat: string;
+  text: string;
+  prop: string;
+  coref: number;
+}
 
-      // pos ngrams
-      try {
-        const resp = await fetch(`${base}/pos_ngrams_features.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        const header = rows[0] || [];
-        const idx = header.indexOf("ngram");
-        _posFeaturesMap = {};
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const raw = row[idx] || row[0];
-          const key1 = raw;
-          const key2 = raw.replace(/[\[\]\(\)\"' ]+/g, "").replace(/,/g, "_");
-          _posFeaturesMap[key1] = i - 1;
-          _posFeaturesMap[key2] = i - 1;
-        }
-      } catch (e) {
-        _posFeaturesMap = null;
-      }
+interface NounChunkData {
+  text: string;
+  start: number;
+  end: number;
+  length: number;
+}
 
-      // dep tree ngrams
-      try {
-        const resp = await fetch(`${base}/dep_tree_node_ngrams_features.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        const header = rows[0] || [];
-        const idx = header.indexOf("ngram");
-        _depNodeFeaturesMap = {};
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const raw = row[idx] || row[0];
-          _depNodeFeaturesMap[raw] = i - 1;
-        }
-      } catch (e) {
-        _depNodeFeaturesMap = null;
-      }
+class SentenceToken {
+  text: string;
+  pos: string;
+  dep: string;
+  children: SentenceToken[];
 
-      try {
-        const resp = await fetch(`${base}/dep_tree_relation_ngrams_features.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        const header = rows[0] || [];
-        const idx = header.indexOf("ngram");
-        _depRelationFeaturesMap = {};
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const raw = row[idx] || row[0];
-          _depRelationFeaturesMap[raw] = i - 1;
-        }
-      } catch (e) {
-        _depRelationFeaturesMap = null;
-      }
+  constructor(
+    text: string,
+    pos: string,
+    dep: string,
+    children: SentenceToken[] = []
+  ) {
+    this.text = text;
+    this.pos = pos;
+    this.dep = dep;
+    this.children = children;
+  }
 
-      try {
-        const resp = await fetch(`${base}/dep_tree_complete_ngrams_features.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        const header = rows[0] || [];
-        const idx = header.indexOf("ngram");
-        _depCompleteFeaturesMap = {};
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const raw = row[idx] || row[0];
-          _depCompleteFeaturesMap[raw] = i - 1;
-        }
-      } catch (e) {
-        _depCompleteFeaturesMap = null;
-      }
+  // Depth-first tokens list
+  getTokens(): SentenceToken[] {
+    const out: SentenceToken[] = [];
+    const traverse = (t: SentenceToken) => {
+      out.push(t);
+      for (const c of t.children) traverse(c);
+    };
+    traverse(this);
+    return out;
+  }
+}
 
-      // concreteness and related resources
-      try {
-        const resp = await fetch(`${base}/concreteness/words.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        _concretenessSingle = {};
-        const header = rows[0] || [];
-        const widx = header.indexOf('word');
-        const sidx = header.indexOf('score');
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const w = casefold(row[widx] || row[0] || '');
-          const s = parseFloat(row[sidx] || row[1] || '0') || 0;
-          _concretenessSingle[w] = s;
-        }
-      } catch (e) {
-        _concretenessSingle = null;
-      }
+class SentenceData {
+  root: SentenceToken;
 
-      try {
-        const resp = await fetch(`${base}/concreteness/multiword.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        _concretenessMulti = {};
-        const header = rows[0] || [];
-        const widx = header.indexOf('expression');
-        const sidx = header.indexOf('score');
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const w = casefold(row[widx] || row[0] || '');
-          const s = parseFloat(row[sidx] || row[1] || '0') || 0;
-          _concretenessMulti[w] = s;
-        }
-      } catch (e) {
-        _concretenessMulti = null;
-      }
+  constructor(root: SentenceToken) {
+    this.root = root;
+  }
 
-      try {
-        const resp = await fetch(`${base}/concreteness/prepositions.csv`);
-        const txt = await resp.text();
-        const rows = await parseCsv(txt);
-        _prepositions = [];
-        const header = rows[0] || [];
-        const pidx = header.indexOf('pattern');
-        const sidx = header.indexOf('score');
-        for (let i = 1; i < rows.length; i++) {
-          const row = rows[i];
-          const p = (row[pidx] || row[0] || '');
-          const s = parseFloat(row[sidx] || row[1] || '0') || 0;
-          _prepositions.push({ pattern: p, score: s });
-        }
-      } catch (e) {
-        _prepositions = null;
-      }
+  get_tokens(): SentenceToken[] {
+    return this.root.getTokens();
+  }
+}
 
-      try {
-        const resp = await fetch(`${base}/concreteness/places.txt`);
-        const txt = await resp.text();
-        _placesList = txt.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      } catch (e) {
-        _placesList = null;
+type SupersenseEntry = [number, number, string, string];
+
+class ExtCtx {
+  text: string;
+  tokens: TokenData[];
+  words: TokenData[];
+  noun_chunks: NounChunkData[];
+  entities: EntityData[];
+  supersense: SupersenseEntry[];
+  sents: SentenceData[];
+
+  constructor(
+    text: string,
+    tokens: TokenData[] = [],
+    words: TokenData[] = [],
+    noun_chunks: NounChunkData[] = [],
+    entities: EntityData[] = [],
+    supersense: SupersenseEntry[] = [],
+    sents: SentenceData[] = []
+  ) {
+    this.text = text;
+    this.tokens = tokens;
+    this.words = words;
+    this.noun_chunks = noun_chunks;
+    this.entities = entities;
+    this.supersense = supersense;
+    this.sents = sents;
+  }
+
+  static fromBookNLPResult(booknlpResult: BookNLPResult, text: string): ExtCtx {
+    const tokens: TokenData[] = booknlpResult.tokens.map((t) => ({
+      text: t.text,
+      itext: t.itext,
+      pos: t.pos!,
+      fine_pos: t.finePos!,
+      lemma: t.lemma!,
+      sentence_id: t.sentenceId,
+      within_sentence_id: t.withinSentenceId,
+      event: t.event,
+      is_stop: t.isStop,
+      like_num: t.likeNum,
+      morph_tense: t.morph.Tense,
+    }));
+
+    const words: TokenData[] = tokens.filter((tk) => tk.pos !== "PUNCT" && tk.pos !== "SYM");
+
+    const entities: EntityData[] = booknlpResult.entities.map((e) => ({
+      start_token: e.startToken,
+      end_token: e.endToken,
+      cat: e.cat,
+      text: e.text,
+      prop: e.prop,
+      coref: e.coref,
+    }));
+
+    const noun_chunks: NounChunkData[] = booknlpResult.nounChunks.map((n) => ({
+      text: n.text,
+      start: n.start,
+      end: n.end,
+      length: n.end - n.start + 1,
+    }));
+
+    const supersense: SupersenseEntry[] = booknlpResult.supersense;
+
+    const buildTokenTree = (spacyToken: any): SentenceToken => {
+      const pos = spacyToken.pos_;
+      const dep = spacyToken.dep_;
+      const node = new SentenceToken(spacyToken.text, pos, dep, []);
+      const children = spacyToken.children || [];
+      for (const c of children) {
+        node.children.push(buildTokenTree(c));
       }
-    } catch (err) {
-      // swallow errors — feature extraction will degrade gracefully
-      console.warn('Failed to load feature resources', err);
+      return node;
+    };
+
+    const sents: SentenceData[] = booknlpResult.sents.map((s: any) => {
+      const root = buildTokenTree(s.root);
+      return new SentenceData(root);
+    });
+
+    return new ExtCtx(text, tokens, words, noun_chunks, entities, supersense, sents);
+  }
+}
+
+class FeatureExtractorPipeline {
+  bookNLP: BookNLP;
+  spacyCtxUrl: string;
+  ENG_POS_TAGS: string[];
+  ENG_POS_TAG_MAP: Record<string, number>;
+  ENTITY_CATEGORY_MAP: Record<string, number>;
+  SUPERSENSE_LABELS: string[];
+  SUPERSENSE_LABEL_MAP: Record<string, number>;
+  FEATURE_COUNT = 3671;
+  EXTRACTOR_FEATURE_COUNTS: Record<string, number>;
+  CONTENT_UD_POS_TAGS: Set<string>;
+  PUNCTUATION_SYMBOL_MAP: Record<string, number>;
+  _depTreeNgramMap: Map<string, number>;
+  _nodeFeaturesEnd = 0;
+  _relationFeaturesEnd = 0;
+  _depTreeFeaturesTotal = 0;
+  _pos_features_map: Record<string, number> = {};
+  _placesTrie: MultiWordExpressionTrie;
+  _multiwordTrie: MultiWordExpressionTrie;
+  _prepCompiledRegexPatterns: Array<[RegExp, number]> = [];
+  _prepMultiWordPatterns: Record<string, number> = {};
+  _prepExactMatchPatterns: Record<string, [number, number, number]> = {};
+
+  _ready: boolean = false;
+
+  constructor(spacyCtxUrl: string) {
+    this.bookNLP = new BookNLP();
+    this.spacyCtxUrl = spacyCtxUrl;
+
+    this.ENG_POS_TAGS = [
+      "$",
+      "''",
+      ",",
+      "-LRB-",
+      "-RRB-",
+      ".",
+      ":",
+      "ADD",
+      "AFX",
+      "CC",
+      "CD",
+      "DT",
+      "EX",
+      "FW",
+      "HYPH",
+      "IN",
+      "JJ",
+      "JJR",
+      "JJS",
+      "LS",
+      "MD",
+      "NFP",
+      "NN",
+      "NNP",
+      "NNPS",
+      "NNS",
+      "PDT",
+      "POS",
+      "PRP",
+      "PRP$",
+      "RB",
+      "RBR",
+      "RBS",
+      "RP",
+      "SYM",
+      "TO",
+      "UH",
+      "VB",
+      "VBD",
+      "VBG",
+      "VBN",
+      "VBP",
+      "VBZ",
+      "WDT",
+      "WP",
+      "WP$",
+      "WRB",
+      "XX",
+      "_SP",
+      "``",
+    ];
+
+    this.ENG_POS_TAG_MAP = this.ENG_POS_TAGS.reduce((acc, t, i) => {
+      acc[t] = i;
+      return acc;
+    }, {} as Record<string, number>);
+
+    this.ENTITY_CATEGORY_MAP = {
+      PER: 0,
+      FAC: 1,
+      GPE: 2,
+      LOC: 3,
+      VEH: 4,
+      ORG: 5,
+    };
+
+    const SUPERSENSE_LABELS_NOUNS = [
+      "act",
+      "animal",
+      "artifact",
+      "attribute",
+      "body",
+      "cognition",
+      "communication",
+      "event",
+      "feeling",
+      "food",
+      "group",
+      "location",
+      "motive",
+      "object",
+      "quantity",
+      "phenomenon",
+      "plant",
+      "possession",
+      "process",
+      "person",
+      "relation",
+      "shape",
+      "state",
+      "substance",
+      "time",
+      "Tops",
+    ];
+
+    const SUPERSENSE_LABELS_VERBS = [
+      "body",
+      "change",
+      "cognition",
+      "communication",
+      "competition",
+      "consumption",
+      "contact",
+      "creation",
+      "emotion",
+      "motion",
+      "perception",
+      "possession",
+      "social",
+      "stative",
+      "weather",
+    ];
+
+    this.SUPERSENSE_LABELS = [
+      ...SUPERSENSE_LABELS_NOUNS.map((l) => `noun.${l}`),
+      ...SUPERSENSE_LABELS_VERBS.map((l) => `verb.${l}`),
+    ];
+
+    this.SUPERSENSE_LABEL_MAP = this.SUPERSENSE_LABELS.reduce((acc, s, i) => {
+      acc[s] = i;
+      return acc;
+    }, {} as Record<string, number>);
+
+    this.EXTRACTOR_FEATURE_COUNTS = {
+      extract_quote_ratio: 1,
+      extract_char_ngrams: 1000,
+      extract_word_length_by_char: 15,
+      extract_ngram_word_length_by_char: 15,
+      extract_sentence_length_by_word: 26,
+      extract_sentence_length_by_word_avg: 1,
+      extract_numeric_word_ratio: 1,
+      extract_ttr: 1,
+      extract_lexical_density: 1,
+      extract_syllable_count_avg: 1,
+      extract_3plus_syllable_count_ratio: 1,
+      extract_stopwords: 1,
+      extract_articles: 2,
+      extract_punctuation: 16,
+      extract_contractions: 1,
+      extract_casing: 9,
+      extract_casing_bigrams: 9,
+      extract_pos_frequency: 50,
+      extract_pos_ngrams: 995,
+      extract_dependency_tree_structure: 92,
+      extract_dependency_tree_relations: 1319,
+      extract_noun_phrase_lengths: 14,
+      extract_entity_categories: 6,
+      extract_events: 1,
+      extract_supersense: 41,
+      extract_tense: 4,
+      extract_polysemy: 15,
+      extract_word_concreteness: 20,
+      extract_word_concreteness_avg: 1,
+      extract_preposition_imageability: 10,
+      extract_preposition_imageability_avg: 1,
+      extract_places: 1,
+    };
+
+    // Runtime sanity checks: ensure FEATURE_COUNT matches extractor counts sum
+    const total = Object.values(this.EXTRACTOR_FEATURE_COUNTS).reduce((a, b) => a + b, 0);
+    if (total !== this.FEATURE_COUNT) {
+      throw new Error(`FEATURE_COUNT mismatch: ${total} != ${this.FEATURE_COUNT}`);
     }
-  })();
-  return _featureResourcesLoaded;
-}
 
-const ENG_POS_TAGS = [
-  "$",
-  "''",
-  ",",
-  "-LRB-",
-  "-RRB-",
-  ".",
-  ":",
-  "ADD",
-  "AFX",
-  "CC",
-  "CD",
-  "DT",
-  "EX",
-  "FW",
-  "HYPH",
-  "IN",
-  "JJ",
-  "JJR",
-  "JJS",
-  "LS",
-  "MD",
-  "NFP",
-  "NN",
-  "NNP",
-  "NNPS",
-  "NNS",
-  "PDT",
-  "POS",
-  "PRP",
-  "PRP$",
-  "RB",
-  "RBR",
-  "RBS",
-  "RP",
-  "SYM",
-  "TO",
-  "UH",
-  "VB",
-  "VBD",
-  "VBG",
-  "VBN",
-  "VBP",
-  "VBZ",
-  "WDT",
-  "WP",
-  "WP$",
-  "WRB",
-  "XX",
-  "_SP",
-  "``",
-];
+    this.CONTENT_UD_POS_TAGS = new Set(["NOUN", "PROPN", "VERB", "ADJ", "ADV"]);
 
-const ENG_POS_TAG_MAP: Record<string, number> = ENG_POS_TAGS.reduce((acc, t, i) => {
-  acc[t] = i;
-  return acc;
-}, {} as Record<string, number>);
+    this.PUNCTUATION_SYMBOL_MAP = {
+      ".": 0,
+      ",": 1,
+      ":": 2,
+      ";": 3,
+      "!": 4,
+      "?": 5,
+      "\"": 6,
+      "'": 7,
+      "(": 8,
+      ")": 9,
+      "-": 10,
+      "–": 11,
+      "—": 12,
+      "…": 13,
+      "/": 14,
+      "\\": 15,
+    };
 
-const ENTITY_CATEGORY_MAP: Record<string, number> = {
-  PER: 0,
-  FAC: 1,
-  GPE: 2,
-  LOC: 3,
-  VEH: 4,
-  ORG: 5,
-};
-
-const SUPERSENSE_LABELS_NOUNS = [
-  "act",
-  "animal",
-  "artifact",
-  "attribute",
-  "body",
-  "cognition",
-  "communication",
-  "event",
-  "feeling",
-  "food",
-  "group",
-  "location",
-  "motive",
-  "object",
-  "quantity",
-  "phenomenon",
-  "plant",
-  "possession",
-  "process",
-  "person",
-  "relation",
-  "shape",
-  "state",
-  "substance",
-  "time",
-  "Tops",
-];
-
-const SUPERSENSE_LABELS_VERBS = [
-  "body",
-  "change",
-  "cognition",
-  "communication",
-  "competition",
-  "consumption",
-  "contact",
-  "creation",
-  "emotion",
-  "motion",
-  "perception",
-  "possession",
-  "social",
-  "stative",
-  "weather",
-];
-
-const SUPERSENSE_LABELS = [
-  ...SUPERSENSE_LABELS_NOUNS.map((l) => `noun.${l}`),
-  ...SUPERSENSE_LABELS_VERBS.map((l) => `verb.${l}`),
-];
-
-const SUPERSENSE_LABEL_MAP: Record<string, number> = SUPERSENSE_LABELS.reduce((acc, s, i) => {
-  acc[s] = i;
-  return acc;
-}, {} as Record<string, number>);
-
-export const FEATURE_COUNT = 3671;
-
-export const EXTRACTOR_FEATURE_COUNTS: Record<string, number> = {
-  extract_quote_ratio: 1,
-  extract_char_ngrams: 1000,
-  extract_word_length_by_char: 15,
-  extract_ngram_word_length_by_char: 15,
-  extract_sentence_length_by_word: 26,
-  extract_sentence_length_by_word_avg: 1,
-  extract_numeric_word_ratio: 1,
-  extract_ttr: 1,
-  extract_lexical_density: 1,
-  extract_syllable_count_avg: 1,
-  extract_3plus_syllable_count_ratio: 1,
-  extract_stopwords: 1,
-  extract_articles: 2,
-  extract_punctuation: 16,
-  extract_contractions: 1,
-  extract_casing: 9,
-  extract_casing_bigrams: 9,
-  extract_pos_frequency: 50,
-  extract_pos_ngrams: 995,
-  extract_dependency_tree_structure: 92,
-  extract_dependency_tree_relations: 1319,
-  extract_noun_phrase_lengths: 14,
-  extract_entity_categories: 6,
-  extract_events: 1,
-  extract_supersense: 41,
-  extract_tense: 4,
-  extract_polysemy: 15,
-  extract_word_concreteness: 20,
-  extract_word_concreteness_avg: 1,
-  extract_preposition_imageability: 10,
-  extract_preposition_imageability_avg: 1,
-  extract_places: 1,
-};
-
-// Load FEATURE_NAMES via Vite import from assets so bundler includes it.
-// The JSON file lives under `assets/data/features/feature-names.json`.
-import featureNamesData from "~/assets/data/features/feature-names.json";
-export const FEATURE_NAMES: string[] = featureNamesData as string[];
-
-// Runtime sanity checks: ensure FEATURE_COUNT matches extractor counts sum
-{
-  const total = Object.values(EXTRACTOR_FEATURE_COUNTS).reduce((a, b) => a + b, 0);
-  if (total !== FEATURE_COUNT) {
-    throw new Error(`FEATURE_COUNT mismatch: ${total} != ${FEATURE_COUNT}`);
-  }
-}
-
-const PREPROCESS_TRANSLATION_TABLE: Record<string, string | null> = {
-  "\r": null,
-  "\u2019": "'",
-  "\u201c": "\"",
-  "\u201d": "\"",
-  "？": "?",
-  "！": "!",
-};
-
-/**
- * Unicode-aware casefold helper using NFKC normalization and small mappings.
- * This is a conservative casefold implementation suitable for feature extraction.
- */
-export function casefold(s: string): string {
-  if (!s) return s;
-  // Normalize to NFKC to combine compatibility characters
-  let v = s.normalize("NFKC");
-  // Basic mappings (extend if needed)
-  v = v.replace(/\u00DF/g, "ss"); // German sharp s
-  v = v.replace(/\u017F/g, "s"); // long s
-  // Final lowercase (locale-insensitive)
-  return v.toLowerCase();
-}
-
-// Tokenization: words, contractions, numbers, ellipses, punctuation
-const TOKEN_REGEX = /(?:\.\.\.|\p{L}+(?:'\p{L}+)?)|\d+(?:\.\d+)?|[^\s\p{L}\d]/gu;
-
-/**
- * Tokenize text in a way that mirrors the Python tokenization used in extractors.
- * Preserves contractions (don't), ellipses (...) and returns punctuation as tokens.
- */
-export function tokenize(text: string): string[] {
-  const src = preprocess(text);
-  const matches = [...src.matchAll(TOKEN_REGEX)];
-  return matches.map((m) => m[0]).filter(Boolean);
-}
-
-const CONTENT_UD_POS_TAGS = new Set(["NOUN", "PROPN", "VERB", "ADJ", "ADV"]);
-
-const PUNCTUATION_SYMBOL_MAP: Record<string, number> = {
-  ".": 0,
-  ",": 1,
-  ":": 2,
-  ";": 3,
-  "!": 4,
-  "?": 5,
-  "\"": 6,
-  "'": 7,
-  "(": 8,
-  ")": 9,
-  "-": 10,
-  "–": 11,
-  "—": 12,
-  "…": 13,
-  "/": 14,
-  "\\": 15,
-};
-
-export const PUNCTUATION = PUNCTUATION_SYMBOL_MAP;
-
-// Note: stopword lists are removed from the frontend port. The BookNLP/Python
-// pipeline provides `isStop` on tokens; feature extraction should rely on
-// that field instead of an embedded stopword set.
-
-export const CONTRACTIONS: Record<string, string> = {
-  "aren't": "are not",
-  "can't": "cannot",
-  "couldn't": "could not",
-  "didn't": "did not",
-  "doesn't": "does not",
-  "don't": "do not",
-  "hadn't": "had not",
-  "hasn't": "has not",
-  "haven't": "have not",
-  "he'd": "he would",
-  "he'll": "he will",
-  "he's": "he is",
-  "i'd": "i would",
-  "i'll": "i will",
-  "i'm": "i am",
-  "i've": "i have",
-  "isn't": "is not",
-  "it's": "it is",
-  "she'd": "she would",
-  "she'll": "she will",
-  "she's": "she is",
-  "shouldn't": "should not",
-  "that's": "that is",
-  "they'd": "they would",
-  "they'll": "they will",
-  "they're": "they are",
-  "they've": "they have",
-  "we'd": "we would",
-  "we'll": "we will",
-  "we're": "we are",
-  "we've": "we have",
-  "won't": "will not",
-  "wouldn't": "would not",
-  "you're": "you are",
-  "you've": "you have",
-};
-
-export function preprocess(text: string): string {
-  let result = text;
-  for (const [char, replacement] of Object.entries(PREPROCESS_TRANSLATION_TABLE)) {
-    if (replacement === null) {
-      result = result.replaceAll(char, "");
-    } else {
-      result = result.replaceAll(char, replacement);
+    // Build combined dependency-tree ngram map (node ngrams, relation ngrams, complete ngrams)
+    this._depTreeNgramMap = new Map<string, number>();
+    let offset = 0;
+    const nodeEntries = Object.entries(depNodeNgrams as Record<string, number>).sort((a, b) => a[1] - b[1]);
+    for (const [k] of nodeEntries) {
+      this._depTreeNgramMap.set(k, offset);
+      offset += 1;
     }
-  }
-  return result;
-}
+    this._nodeFeaturesEnd = offset;
 
-/**
- * Simple whitespace-based tokenizer exposed for worker use.
- */
-export function tokenizeSimple(text: string): string[] {
-  // preserve old behaviour (lowercased whitespace split) but delegate to new tokenizer
-  return tokenize(text).map((t) => casefold(t)).filter((w) => w.length > 0);
-}
+    const relEntries = Object.entries(depRelationNgrams as Record<string, number>).sort((a, b) => a[1] - b[1]);
+    for (const [k] of relEntries) {
+      this._depTreeNgramMap.set(k, offset);
+      offset += 1;
+    }
+    this._relationFeaturesEnd = offset;
 
-/**
- * Count characters between properly closed quotes only.
- * Time complexity: O(n)
- */
-export function extractQuoteRatio(text: string): number {
-  if (!text) return 0;
+    const completeEntries = Object.entries(depCompleteNgrams as Record<string, number>).sort((a, b) => a[1] - b[1]);
+    for (const [k] of completeEntries) {
+      this._depTreeNgramMap.set(k, offset);
+      offset += 1;
+    }
+    this._depTreeFeaturesTotal = offset;
 
-  const totalChars = text.length;
-  let quotedChars = 0;
-  let inQuote = false;
-  let quoteChar: string | null = null;
-  let currentSpanChars = 0;
+    // Build a normalized lookup map for POS ngram features so we can match
+    // different string representations (tuple-like or underscore-separated).
+    for (const [k, v] of Object.entries(posNgrams as Record<string, number>)) {
+      this._pos_features_map[k] = v;
+      const norm = k.replace(/\s+/g, "").replace(/\(|\)|"|'|\[/g, "").replace(/,/g, "_");
+      this._pos_features_map[norm] = v;
+      const undersc = k.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      this._pos_features_map[undersc] = v;
+    }
 
-  for (const char of text) {
-    if (!inQuote && (char === "\"" || char === "'")) {
-      inQuote = true;
-      quoteChar = char;
-      currentSpanChars = 0;
-    } else if (inQuote && char === quoteChar) {
-      inQuote = false;
-      quotedChars += currentSpanChars;
-      currentSpanChars = 0;
-      quoteChar = null;
-    } else if (inQuote) {
-      currentSpanChars++;
+    // Build multiword trie for concreteness (single + multiword entries)
+    this._multiwordTrie = new MultiWordExpressionTrie();
+    for (const [w, v] of Object.entries(concretenessWords)) {
+      const expr = casefold(w);
+      this._multiwordTrie.addExpression(expr, Number(v), 1);
+    }
+    for (const [exprRaw, v] of Object.entries(concretenessMulti)) {
+      const expr = casefold(exprRaw);
+      const nWords = expr.trim().split(/\s+/).filter(Boolean).length || 1;
+      this._multiwordTrie.addExpression(expr, Number(v), nWords);
+    }
+
+    // Build preposition patterns similar to Python pipeline
+    this._prepCompiledRegexPatterns = [];
+    this._prepMultiWordPatterns = {};
+    this._prepExactMatchPatterns = {};
+    if (Array.isArray(concretenessPrepositions) && (concretenessPrepositions as any).length > 0) {
+      for (const p of concretenessPrepositions as any) {
+        const prep = (p.pattern || p.prep || "").toString();
+        const imag = Number(p.score ?? p.imag ?? p.value ?? NaN);
+        const isRegex = !!p.is_regex || !!p.isRegex;
+        const nWords = Number(p.n_words ?? p.nWords ?? (prep.trim().split(/\s+/).filter(Boolean).length || 1));
+        const pos_adp = p.pos_adp !== undefined ? Number(p.pos_adp) : NaN;
+        const pos_nonadp = p.pos_nonadp !== undefined ? Number(p.pos_nonadp) : NaN;
+
+        if (isRegex) {
+          const flags = "i"; // case-insensitive like Python regex.IGNORECASE
+          this._prepCompiledRegexPatterns.push([new RegExp(prep, flags), imag]);
+        } else if (nWords > 1) {
+          const key = casefold(prep);
+          this._prepMultiWordPatterns[key] = imag;
+        } else {
+          const key = casefold(prep);
+          this._prepExactMatchPatterns[key] = [imag, pos_adp, pos_nonadp];
+        }
+      }
+    }
+
+    this._placesTrie = new MultiWordExpressionTrie();
+    for (const p of concretenessPlaces) {
+      const expr = casefold((p || "").toString());
+      const nWords = expr.trim().split(/\s+/).filter(Boolean).length || 1;
+      this._placesTrie.addExpression(expr, 0, nWords);
     }
   }
 
-  return totalChars > 0 ? quotedChars / totalChars : 0;
-}
-
-export async function getBookNLPContext(spaCyContext: any): Promise<BookNLPContext> {
-  if (!_booknlpPipeline) {
-    // TODO add the package from NPM when uploaded
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = await import('/home/terra/Projects/booknlp/booknlp-ts/src/english-booknlp');
-    _booknlpPipeline = await mod.createPipeline({ pipeline: 'entity,supersense,event' });
+  _pythonTupleString(parts: string[]): string {
+    if (parts.length === 0) return "()";
+    if (parts.length === 1) return `('${parts[0]}',)`;
+    return `(${parts.map((p) => `'${p}'`).join(", ")})`;
   }
 
-  const result = await _booknlpPipeline.process(spaCyContext);
+  async init(cacheName: string, progressCallback: ProgressCallback): Promise<void> {
+    let booknlpProgress = 0;
+    let wordnetProgress = 0;
+    const report = () => {
+      const combined = 0.5 * booknlpProgress + 0.5 * wordnetProgress;
+      progressCallback(Math.min(Math.max(combined, 0), 1));
+    };
 
-  // Map BookNLPResult to our BookNLPContext
-  const ctx: BookNLPContext = {
-    tokens: (result.tokens || []).map((tk: any) => ({
-      text: tk.text || '',
-      itext: casefold(tk.text || ''),
-      pos: tk.pos || '',
-      finePOS: tk.finePos || tk.pos || '',
-      lemma: tk.lemma || casefold(tk.text || ''),
-      sentenceId: tk.sentenceId ?? 0,
-      withinSentenceId: tk.withinSentenceId ?? 0,
-      event: !!tk.event,
-      isStop: !!tk.isStop,
-      likeNum: !!tk.likeNum,
-      morphTense: tk.morph?.Tense ?? null,
-    })),
-    entities: (result.entities || []).map((e: any) => ({
-      startToken: e.startToken,
-      endToken: e.endToken,
-      cat: e.cat || '',
-      text: e.text || '',
-      coref: e.coref ?? -1,
-      prop: e.prop || '',
-    })),
-    supersense: result.supersense || [],
-    sentences: (result.sents || []).map((s: any) => ({ root: { text: '', pos: '', dep: '', children: [] } })),
-  };
+    const bookNLPPromise = this.bookNLP.initialize({
+      pipeline: ["entity", "supersense", "event"],
+      executionProviders: ["wasm", "webgpu"],
+      cacheName: cacheName,
+      dtype: "fp32",
+    }, (progress) => {
+      booknlpProgress = progress;
+      report();
+    });
 
-  return ctx;
-}
+    const defaultWn = WORDNETS[0];
+    const wordnetPromise = downloadAndLoadWordNet(defaultWn.id, defaultWn.downloadUrl, cacheName, (progress) => {
+      wordnetProgress = progress;
+      report();
+    });
 
-/**
- * Extract word length distribution.
- * Returns 15-dimensional vector where each dimension represents
- * relative frequency of words with that character length.
- */
-export function extractWordLengthByChar(words: string[]): number[] {
-  const DIM = 15;
-  const lengthCounts = new Array(DIM).fill(0);
+    await Promise.all([bookNLPPromise, wordnetPromise]);
 
-  if (words.length === 0) {
-    return lengthCounts;
+    this._ready = true;
   }
 
-  for (const word of words) {
-    const len = word.length;
-    const binIdx = Math.min(len - 1, DIM - 1);
-    lengthCounts[binIdx]++;
-  }
-
-  return lengthCounts.map((count) => count / words.length);
-}
-
-/**
- * Extract word length by n-grams (3-grams).
- * Returns 15-dimensional vector of normalized lengths.
- */
-export function extractNgramWordLengthByChar(words: string[]): number[] {
-  const DIM = 15;
-  const N = 3;
-  const lengthCounts = new Array(DIM).fill(0);
-
-  if (words.length === 0) {
-    return lengthCounts;
-  }
-
-  const totalNgrams = Math.max(words.length - N + 1, 1);
-  for (let i = 0; i < totalNgrams; i++) {
-    const ngramLength = words
-      .slice(i, i + N)
-      .reduce((sum, w) => sum + w.length, 0);
-    const binIdx = Math.min(Math.floor(ngramLength / 3), DIM - 1);
-    lengthCounts[binIdx]++;
-  }
-
-  return lengthCounts.map((count) => count / totalNgrams);
-}
-
-/**
- * Extract quote ratio.
- */
-export function extractQuoteRatioFeature(text: string): number[] {
-  return [extractQuoteRatio(text)];
-}
-
-/**
- * Count numeric words in text.
- */
-export function extractNumericWordRatio(words: string[]): number {
-  if (words.length === 0) return 0;
-
-  const numericCount = words.filter((word) =>
-    /^\d+(\.\d+)?$/.test(word)
-  ).length;
-
-  return numericCount / words.length;
-}
-
-/**
- * Calculate type-token ratio (unique words / total words).
- */
-export function extractTTR(words: string[]): number {
-  if (words.length === 0) return 0;
-
-  const uniqueWords = new Set(words.map((w) => casefold(w)));
-  return uniqueWords.size / words.length;
-}
-
-/**
- * Calculate lexical density (simple approximation without POS tagging).
- */
-export function extractLexicalDensity(words: string[]): number {
-  if (words.length === 0) return 0;
-
-  // Simple heuristic: words longer than 3 chars are content words
-  const contentWordCount = words.filter((word) => word.length > 3).length;
-  return contentWordCount / words.length;
-}
-
-/**
- * Extract syllable count ratios.
- */
-export function extractSyllableRatios(words: string[]): number[] {
-  if (words.length === 0) {
-    return [0, 0];
-  }
-
-  const UPPER_SYLLABLE_COUNT = 8;
-  let syllableTotal = 0;
-  let threeOrMoreCount = 0;
-
-  for (const word of words) {
-    const syllables = estimateSyllables(word);
-    syllableTotal += syllables;
-    if (syllables >= 3) {
-      threeOrMoreCount++;
-    }
-  }
-
-  return [
-    Math.min(syllableTotal / words.length / UPPER_SYLLABLE_COUNT, 1.0),
-    threeOrMoreCount / words.length,
-  ];
-}
-
-// Syllable estimation is provided by the imported `estimateSyllables` from `syllables.ts`.
-
-/**
- * Extract stopword ratio.
- */
-export function extractStopwords(tokens: TokenData[] | null): number {
-  // Rely on `token.isStop` provided by BookNLP; if tokens are not available,
-  // return 0 so frontend does not guess stopwords.
-  if (!tokens || tokens.length === 0) return 0;
-  const stopwordCount = tokens.filter((t) => !!t.isStop).length;
-  return stopwordCount / tokens.length;
-}
-
-/**
- * Extract article ratio (definite and indefinite).
- */
-export function extractArticles(words: string[]): number[] {
-  if (words.length === 0) {
-    return [0, 0];
-  }
-
-  let definiteCount = 0;
-  let indefiniteCount = 0;
-
-  for (const word of words) {
-    const lower = casefold(word);
-    if (lower === "the") {
-      definiteCount++;
-    } else if (lower === "a" || lower === "an") {
-      indefiniteCount++;
-    }
-  }
-
-  return [definiteCount / words.length, indefiniteCount / words.length];
-}
-
-/**
- * Extract punctuation frequency.
- */
-export function extractPunctuation(text: string): number[] {
-  const counts = new Array(Object.keys(PUNCTUATION_SYMBOL_MAP).length).fill(0);
-
-  if (text.length === 0) {
-    return counts;
-  }
-
-  for (const char of text) {
-    if (char in PUNCTUATION_SYMBOL_MAP) {
-      counts[PUNCTUATION_SYMBOL_MAP[char]]++;
-    }
-  }
-
-  const totalPunctuation = counts.reduce((a, b) => a + b, 0);
-  return totalPunctuation > 0
-    ? counts.map((c) => c / totalPunctuation)
-    : counts;
-}
-
-/**
- * Extract contraction ratio.
- */
-export function extractContractions(tokens: TokenData[] | null): number {
-  // Match Python behaviour: fraction of words containing an apostrophe
-  if (!tokens || tokens.length === 0) return 0;
-  const contractionCount = tokens.filter((t) => (t.text || "").includes("'")).length;
-  return contractionCount / tokens.length;
-}
-
-/**
- * Extract casing features (position × casing).
- */
-export function extractCasing(tokens: TokenData[] | null): number[] {
-  // Mirror Python: position is relative to sentence (first, inbetween, last)
-  const counts = new Array(9).fill(0);
-  if (!tokens || tokens.length === 0) return counts;
-
-  const getCasingType = (text: string): number => {
+  /**
+   * Count characters between properly closed quotes only.
+   * Time complexity: O(n)
+   */
+  extractQuoteRatio(text: string): number {
     if (!text) return 0;
-    if (text === text.toLowerCase()) return 0; // lower
-    if (text === text.toUpperCase()) return 1; // upper
-    // Title-case heuristic: first character uppercase
-    const firstChar = text[0];
-    if (firstChar === firstChar.toUpperCase()) return 2; // title
-    return 0;
-  };
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    const casingType = getCasingType(token.text || "");
+    const totalChars = text.length;
+    let quotedChars = 0;
+    let inQuote = false;
+    let quoteChar: string | null = null;
+    let currentSpanChars = 0;
 
-    let positionIdx = 1; // inbetween
-    if (token.withinSentenceId === 0) {
-      positionIdx = 0; // first
-    } else if (i === tokens.length - 1 || (tokens[i + 1] && tokens[i + 1].withinSentenceId === 0)) {
-      positionIdx = 2; // last
+    for (const char of text) {
+      if (!inQuote && (char === "\"" || char === "'")) {
+        inQuote = true;
+        quoteChar = char;
+        currentSpanChars = 0;
+      } else if (inQuote && char === quoteChar) {
+        inQuote = false;
+        quotedChars += currentSpanChars;
+        currentSpanChars = 0;
+        quoteChar = null;
+      } else if (inQuote) {
+        currentSpanChars++;
+      }
     }
 
-    counts[positionIdx * 3 + casingType]++;
+    return totalChars > 0 ? quotedChars / totalChars : 0;
   }
 
-  return counts.map((c) => c / tokens.length);
-}
+  /**
+   * Extract word length distribution.
+   * Returns 15-dimensional vector where each dimension represents
+   * relative frequency of words with that character length.
+   */
+  extractWordLengthByChar(words: TokenData[]): number[] {
+    const DIM = 15;
+    const lengthCounts = new Array(DIM).fill(0);
 
-/**
- * Extract casing bigrams.
- */
-export function extractCasingBigrams(words: string[]): number[] {
-  const counts = new Array(9).fill(0);
-
-  if (words.length < 2) {
-    return counts;
-  }
-
-  const getCasingType = (word: string): number => {
-    if (word.length === 0) return 0;
-    const isAllUpper = word === word.toUpperCase();
-    const isTitle = word[0] === word[0].toUpperCase();
-
-    if (isAllUpper) return 2;
-    if (isTitle) return 1;
-    return 0;
-  };
-
-  for (let i = 0; i < words.length - 1; i++) {
-    const casingType1 = getCasingType(words[i]);
-    const casingType2 = getCasingType(words[i + 1]);
-    const idx = casingType1 * 3 + casingType2;
-    counts[idx]++;
-  }
-
-  const totalBigrams = words.length - 1;
-  return counts.map((c) => c / totalBigrams);
-}
-
-/**
- * Stub implementations for BookNLP-dependent features.
- * These return zero-filled arrays and will be properly implemented
- * when BookNLP integration is added.
- */
-
-export function extractPOSFrequency(
-  tokens: TokenData[] | null
-): number[] {
-  const counts = new Array(ENG_POS_TAGS.length).fill(0);
-  if (!tokens || tokens.length === 0) return counts;
-
-  let total = 0;
-  for (const t of tokens) {
-    const tag = (t.finePOS || t.pos || '').toString();
-    if (tag in ENG_POS_TAG_MAP) {
-      counts[ENG_POS_TAG_MAP[tag]]++;
+    if (words.length === 0) {
+      return lengthCounts;
     }
-    total++;
-  }
 
-  if (total === 0) return counts;
-  return counts.map((c) => c / total);
-}
-
-export function extractPOSNgrams(tokens: TokenData[] | null): number[] {
-  const DIM = 995;
-  const counts = new Array(DIM).fill(0);
-  if (!tokens || tokens.length === 0) return counts;
-
-  // Use preloaded pos ngram map if available
-  const seq = tokens.map((t) => (t.finePOS || t.pos || ''));
-
-  // Try to use map for matching ngrams up to length 3
-  const tryMatch = (ng: string) => {
-    if (!_posFeaturesMap) return -1;
-    if (ng in _posFeaturesMap) return _posFeaturesMap[ng];
-    const norm = ng.replace(/\s+/g, '').replace(/\(|\)|\"|\'|\[/g, '').replace(/,/g, '_');
-    if (norm in _posFeaturesMap) return _posFeaturesMap[norm];
-    return -1;
-  };
-
-  const ngramList: number[] = [];
-  for (let n = 1; n <= 3; n++) {
-    for (let i = 0; i + n <= seq.length; i++) {
-      const ng = seq.slice(i, i + n).join(',');
-      const idx = tryMatch(ng);
-      if (idx >= 0) ngramList.push(idx);
+    for (const word of words) {
+      const len = word.text.length;
+      const binIdx = Math.min(len - 1, DIM - 1);
+      lengthCounts[binIdx]++;
     }
+
+    return lengthCounts.map((count) => count / words.length);
   }
 
-  if (ngramList.length === 0) return counts;
-  for (const idx of ngramList) counts[idx]++;
-  const total = ngramList.length;
-  return counts.map((c) => c / total);
-}
+  /**
+   * Extract word length by n-grams (3-grams).
+   * Returns 15-dimensional vector of normalized lengths.
+   */
+  extractNgramWordLengthByChar(words: TokenData[]): number[] {
+    const DIM = 15;
+    const N = 3;
+    const lengthCounts = new Array(DIM).fill(0);
 
-export function extractDependencyTreeStructure(
-  sentences: SentenceData[] | null
-): number[] {
-  const DIM = 92;
-  const out = new Array(DIM).fill(0);
-  if (!sentences || sentences.length === 0) return out;
-
-  // Collect simple stats: avg depth, max depth, avg branching
-  let totalDepth = 0;
-  let totalNodes = 0;
-  let maxDepth = 0;
-  let totalBranching = 0;
-
-  function walk(node: any, depth: number) {
-    totalDepth += depth;
-    totalNodes++;
-    maxDepth = Math.max(maxDepth, depth);
-    totalBranching += (node.children || []).length;
-    for (const c of node.children || []) walk(c, depth + 1);
-  }
-
-  for (const s of sentences) {
-    if (!s || !s.root) continue;
-    walk(s.root, 0);
-  }
-
-  if (totalNodes === 0) return out;
-
-  const avgDepth = totalDepth / totalNodes;
-  const avgBranch = totalBranching / totalNodes;
-
-  // Fill first slots with these normalized values
-  out[0] = avgDepth / (maxDepth || 1);
-  out[1] = maxDepth / 30;
-  out[2] = avgBranch / 5;
-
-  // Remaining dims: simple histograms via hashing of depth and branching
-  let idx = 3;
-  for (let d = 0; d < 44 && idx < DIM; d++, idx++) out[idx] = Math.min(1, (d === Math.floor(avgDepth) ? 1 : 0));
-  for (let b = 0; b < 45 && idx < DIM; b++, idx++) out[idx] = Math.min(1, (b === Math.floor(avgBranch) ? 1 : 0));
-
-  return out;
-}
-
-export function extractDependencyTreeRelations(
-  sentences: SentenceData[] | null
-): number[] {
-  const DIM = 1319;
-  const out = new Array(DIM).fill(0);
-  if (!sentences || sentences.length === 0) return out;
-
-  // Collect relation strings
-  const rels: string[] = [];
-  function walkCollect(node: any) {
-    for (const c of node.children || []) {
-      if (c.dep) rels.push(c.dep);
-      walkCollect(c);
+    if (words.length === 0) {
+      return lengthCounts;
     }
-  }
 
-  for (const s of sentences) {
-    if (!s || !s.root) continue;
-    walkCollect(s.root);
-  }
-
-  if (_depRelationFeaturesMap) {
-    for (const r of rels) {
-      const idx = _depRelationFeaturesMap[r];
-      if (idx !== undefined) out[idx]++;
+    const totalNgrams = Math.max(words.length - N + 1, 1);
+    for (let i = 0; i < totalNgrams; i++) {
+      const ngramLength = words
+        .slice(i, i + N)
+        .reduce((sum, w) => sum + w.text.length, 0);
+      const binIdx = Math.min(Math.floor(ngramLength / 3), DIM - 1);
+      lengthCounts[binIdx]++;
     }
-    const total = rels.length || 1;
-    return out.map((c) => c / total);
+
+    return lengthCounts.map((count) => count / totalNgrams);
   }
 
-  // fallback: hash into buckets
-  for (const r of rels) {
-    let h = 2166136261 >>> 0;
-    for (let i = 0; i < r.length; i++) {
-      h ^= r.charCodeAt(i);
-      h = Math.imul(h, 16777619) >>> 0;
+  extractSentenceLengthByWord(ctx: ExtCtx | null): number[] {
+    const BIN_SIZE = 3;
+    const UPPER_SENTENCE_LENGTH = 78;
+    const DIM = UPPER_SENTENCE_LENGTH / BIN_SIZE; // 26
+    const lengthCounts = new Array(DIM).fill(0);
+
+    if (!ctx || !Array.isArray(ctx.words) || ctx.words.length === 0) {
+      return [...lengthCounts, 0];
     }
-    out[h % DIM]++;
-  }
 
-  const total = rels.length || 1;
-  return out.map((c) => c / total);
-}
+    let cur_sent_idx = 0;
+    let cur_sent_length = 0;
+    let total_length = 0;
 
-export function extractNounPhraseLengths(words: string[]): number[] {
-  // Returns 14-dimensional vector of noun-phrase length distribution
-  const DIM = 14;
-  const counts = new Array(DIM).fill(0);
-  if (words.length === 0) return counts;
+    for (const token of ctx.words) {
+      const sent_idx = token.sentence_id;
+      if (sent_idx === cur_sent_idx) {
+        cur_sent_length += 1;
+      } else {
+        total_length += cur_sent_length;
+        const bin_idx = Math.floor(cur_sent_length / BIN_SIZE);
+        if (bin_idx >= DIM) {
+          lengthCounts[DIM - 1] += 1;
+        } else {
+          lengthCounts[bin_idx] += 1;
+        }
+        cur_sent_idx = sent_idx;
+        cur_sent_length = 1;
+      }
+    }
 
-  // approximate by grouping adjacent capitalized tokens as NPs
-  let i = 0;
-  const n = words.length;
-  while (i < n) {
-    if (words[i][0] === words[i][0]?.toUpperCase()) {
-      let j = i + 1;
-      while (j < n && words[j][0] === words[j][0]?.toUpperCase()) j++;
-      const len = Math.min(j - i, DIM);
-      counts[len - 1]++;
-      i = j;
+    // finalize last sentence
+    total_length += cur_sent_length;
+    const bin_idx = Math.floor(cur_sent_length / BIN_SIZE);
+    if (bin_idx >= DIM) {
+      lengthCounts[DIM - 1] += 1;
     } else {
-      i++;
+      lengthCounts[bin_idx] += 1;
     }
+
+    const num_sents = cur_sent_idx + 1;
+    const rel_freq = lengthCounts.map((c) => (num_sents > 0 ? c / num_sents : 0));
+    const avg_sent_length = Math.min(total_length / (num_sents || 1) / UPPER_SENTENCE_LENGTH, 1.0);
+    return [...rel_freq, avg_sent_length];
   }
 
-  const total = counts.reduce((a, b) => a + b, 0) || 1;
-  return counts.map((c) => c / total);
-}
+  /**
+   * Count numeric words in text.
+   */
+  extractNumericWordRatio(words: TokenData[]): number {
+    if (words.length === 0) return 0;
 
-export function extractEntityCategories(
-  tokens: TokenData[] | null,
-  words: string[]
-): number[] {
-  const counts = new Array(6).fill(0);
-  if (!tokens || tokens.length === 0) return counts;
+    const numericCount = words.filter((word) =>
+      /^\d+(\.\d+)?$/.test(word.text)
+    ).length;
 
-  // Entities are not directly available here; infer by capitalization sequences
-  // Simple heuristic: capitalized sequences => PERSON/ORG/GPE
-  let i = 0;
-  while (i < tokens.length) {
-    const t = tokens[i];
-    if (t.text[0] === t.text[0]?.toUpperCase()) {
-      let j = i + 1;
-      while (j < tokens.length && tokens[j].text[0] === tokens[j].text[0]?.toUpperCase()) j++;
-      // heuristic category
-      const span = tokens.slice(i, j).map((x) => x.text).join(' ');
-      if (span.match(/\b(St|Mr|Mrs|Ms)\b/)) counts[0]++; // PER
-      else if (span.match(/\b(Street|St|Ave|Road|Rd|Lane|Blvd)\b/)) counts[1]++; // FAC
-      else if (span.match(/\b(City|Town|County|State)\b/)) counts[2]++; // GPE
-      else counts[5]++; // ORG/other
-      i = j;
-    } else {
-      i++;
-    }
+    return numericCount / words.length;
   }
 
-  const total = counts.reduce((a, b) => a + b, 0) || 1;
-  return counts.map((c) => c / total);
-}
+  /**
+   * Calculate type-token ratio (unique words / total words).
+   */
+  extractTTR(words: TokenData[]): number {
+    if (words.length === 0) return 0;
 
-export function extractEvents(tokens: TokenData[] | null): number {
-  if (!tokens || tokens.length === 0) return 0;
-  const ev = tokens.filter((t) => !!t.event).length;
-  return ev / tokens.length;
-}
-
-export function extractSupersense(tokens: TokenData[] | null, words: string[]): number[] {
-  const counts = new Array(SUPERSENSE_LABELS.length).fill(0);
-  // In our BookNLPContext the supersense annotations are provided separately; here
-  // we cannot access them if only tokens are passed. Return zeros unless tokens
-  // include a special supersense field (not present in TokenData type).
-  return counts;
-}
-
-export function extractTense(tokens: TokenData[] | null): number[] {
-  if (!tokens || tokens.length === 0) return [0, 0, 0, 0];
-  let past = 0;
-  let present = 0;
-  let future = 0;
-  let none = 0;
-  for (const t of tokens) {
-    const tense = casefold(t.morphTense || '');
-    if (tense.includes('past')) past++;
-    else if (tense.includes('pres')) present++;
-    else if (tense.includes('fut')) future++;
-    else none++;
+    const uniqueWords = new Set(words.map((w) => casefold(w.text)));
+    return uniqueWords.size / words.length;
   }
-  const total = tokens.length || 1;
-  return [past / total, present / total, future / total, none / total];
-}
 
-export function extractPolysemy(words: string[]): number[] {
-  const DIM = 15;
-  const counts = new Array(DIM).fill(0);
-  if (!words || words.length === 0) return counts;
+  extractLexicalDensity(ctx: ExtCtx | null): number {
+    // Required ctx: `words` (non-punctuation tokens)
+    if (!ctx || !Array.isArray(ctx.words) || ctx.words.length === 0) return 0;
 
-  try {
-    // trigger background download of default WordNet resource
-    const defaultWn = WORDNETS && WORDNETS.length > 0 ? WORDNETS[0] : null;
-    if (defaultWn) {
-      void downloadAndLoadWordNet(defaultWn.id, defaultWn.downloadUrl).catch(() => {});
+    // Count tokens whose UD POS is in CONTENT_UD_POS_TAGS
+    const contentWordCount = ctx.words.filter((token) => this.CONTENT_UD_POS_TAGS.has(token.pos)).length;
+    return contentWordCount / ctx.words.length;
+  }
+
+  /**
+   * Extract syllable count ratios.
+   */
+  extractSyllableRatios(words: TokenData[]): number[] {
+    if (words.length === 0) {
+      return [0, 0];
     }
+
+    const UPPER_SYLLABLE_COUNT = 8;
+    let syllableTotal = 0;
+    let threeOrMoreCount = 0;
+
+    for (const word of words) {
+      const syllables = estimateSyllables(word.text);
+      syllableTotal += syllables;
+      if (syllables >= 3) {
+        threeOrMoreCount++;
+      }
+    }
+
+    return [
+      Math.min(syllableTotal / words.length / UPPER_SYLLABLE_COUNT, 1.0),
+      threeOrMoreCount / words.length,
+    ];
+  }
+
+  // Syllable estimation is provided by the imported `estimateSyllables` from `syllables.ts`.
+
+  /**
+   * Extract stopword ratio.
+   */
+  extractStopwords(tokens: TokenData[] | null): number {
+    // return 0 so frontend does not guess stopwords.
+    if (!tokens || tokens.length === 0) return 0;
+    const stopwordCount = tokens.filter((t) => !!t.is_stop).length;
+    return stopwordCount / tokens.length;
+  }
+
+  /**
+   * Extract article ratio (definite and indefinite).
+   */
+  extractArticles(words: TokenData[]): number[] {
+    if (words.length === 0) {
+      return [0, 0];
+    }
+
+    let definiteCount = 0;
+    let indefiniteCount = 0;
+
+    for (const word of words) {
+      const lower = casefold(word.text);
+      if (lower === "the") {
+        definiteCount++;
+      } else if (lower === "a" || lower === "an") {
+        indefiniteCount++;
+      }
+    }
+
+    return [definiteCount / words.length, indefiniteCount / words.length];
+  }
+
+  /**
+   * Extract punctuation frequency.
+   */
+  extractPunctuation(text: string): number[] {
+    const counts = new Array(Object.keys(this.PUNCTUATION_SYMBOL_MAP).length).fill(0);
+
+    if (text.length === 0) {
+      return counts;
+    }
+
+    for (const char of text) {
+      if (char in this.PUNCTUATION_SYMBOL_MAP) {
+        counts[this.PUNCTUATION_SYMBOL_MAP[char]]++;
+      }
+    }
+
+    const totalPunctuation = counts.reduce((a, b) => a + b, 0);
+    return totalPunctuation > 0
+      ? counts.map((c) => c / totalPunctuation)
+      : counts;
+  }
+
+  /**
+   * Extract contraction ratio.
+   */
+  extractContractions(tokens: TokenData[] | null): number {
+    // Match Python behaviour: fraction of words containing an apostrophe
+    if (!tokens || tokens.length === 0) return 0;
+    const contractionCount = tokens.filter((t) => (t.text || "").includes("'")).length;
+    return contractionCount / tokens.length;
+  }
+
+  /**
+   * Extract casing features (position × casing).
+   */
+  extractCasing(tokens: TokenData[] | null): number[] {
+    // Mirror Python: position is relative to sentence (first, inbetween, last)
+    const counts = new Array(9).fill(0);
+    if (!tokens || tokens.length === 0) return counts;
+
+    const getCasingType = (text: string): number => {
+      if (!text) return 0;
+      if (text === text.toLowerCase()) return 0; // lower
+      if (text === text.toUpperCase()) return 1; // upper
+      // Title-case heuristic: first character uppercase
+      const firstChar = text[0];
+      if (firstChar === firstChar.toUpperCase()) return 2; // title
+      return 0;
+    };
+
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const casingType = getCasingType(token.text || "");
+
+      let positionIdx = 1; // inbetween
+      if (token.within_sentence_id === 0) {
+        positionIdx = 0; // first
+      } else if (i === tokens.length - 1 || (tokens[i + 1] && tokens[i + 1].within_sentence_id === 0)) {
+        positionIdx = 2; // last
+      }
+
+      counts[positionIdx * 3 + casingType]++;
+    }
+
+    return counts.map((c) => c / tokens.length);
+  }
+
+  /**
+   * Extract casing bigrams.
+   */
+  extractCasingBigrams(words: TokenData[]): number[] {
+    const counts = new Array(9).fill(0);
+
+    if (words.length < 2) {
+      return counts;
+    }
+
+    const getCasingType = (word: string): number => {
+      if (word.length === 0) return 0;
+      const isAllUpper = word === word.toUpperCase();
+      const isTitle = word[0] === word[0].toUpperCase();
+
+      if (isAllUpper) return 2;
+      if (isTitle) return 1;
+      return 0;
+    };
+
+    for (let i = 0; i < words.length - 1; i++) {
+      const casingType1 = getCasingType(words[i].text || "");
+      const casingType2 = getCasingType(words[i + 1].text || "");
+      const idx = casingType1 * 3 + casingType2;
+      counts[idx]++;
+    }
+
+    const totalBigrams = words.length - 1;
+    return counts.map((c) => c / totalBigrams);
+  }
+
+  /**
+   * Stub implementations for BookNLP-dependent features.
+   * These return zero-filled arrays and will be properly implemented
+   * when BookNLP integration is added.
+   */
+
+  extractPOSFrequency(
+    tokens: TokenData[] | null
+  ): number[] {
+    const counts = new Array(this.ENG_POS_TAGS.length).fill(0);
+    if (!tokens || tokens.length === 0) return counts;
+
+    let total = 0;
+    for (const t of tokens) {
+      const tag = (t.fine_pos || t.pos || "").toString();
+      if (tag in this.ENG_POS_TAG_MAP) {
+        counts[this.ENG_POS_TAG_MAP[tag]]++;
+      }
+      total++;
+    }
+
+    if (total === 0) return counts;
+    return counts.map((c) => c / total);
+  }
+
+  extractPOSNgrams(tokens: TokenData[] | null): number[] {
+    const DIM = 995;
+    const counts = new Array(DIM).fill(0);
+    if (!tokens || tokens.length === 0) return counts;
+
+    // Use preloaded pos ngram map if available
+    const seq = tokens.map((t) => (t.fine_pos || t.pos || ""));
+
+    // Try to use map for matching ngrams up to length 3
+    const tryMatch = (ng: string) => {
+      if (!this._pos_features_map) return -1;
+      if (ng in this._pos_features_map) return this._pos_features_map[ng];
+      const norm = ng.replace(/\s+/g, "").replace(/\(|\)|"|'|\[/g, "").replace(/,/g, "_");
+      if (norm in this._pos_features_map) return this._pos_features_map[norm];
+      const undersc = ng.replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      if (undersc in this._pos_features_map) return this._pos_features_map[undersc];
+      return -1;
+    };
+
+    const ngramList: number[] = [];
+    for (let n = 1; n <= 3; n++) {
+      for (let i = 0; i + n <= seq.length; i++) {
+        const ng = seq.slice(i, i + n).join(",");
+        const idx = tryMatch(ng);
+        if (idx >= 0) ngramList.push(idx);
+      }
+    }
+
+    if (ngramList.length === 0) return counts;
+    for (const idx of ngramList) counts[idx]++;
+    const total = ngramList.length;
+    return counts.map((c) => c / total);
+  }
+
+  extractDependencyTreeStructure(
+    sentences: SentenceData[] | null
+  ): number[] {
+    const DIM = 92;
+    const out = new Array(DIM).fill(0);
+    if (!sentences || sentences.length === 0) return out;
+
+    // Collect simple stats: avg depth, max depth, avg branching
+    let totalDepth = 0;
+    let totalNodes = 0;
+    let maxDepth = 0;
+    let totalBranching = 0;
+
+    const walk = (node: any, depth: number) => {
+      totalDepth += depth;
+      totalNodes++;
+      maxDepth = Math.max(maxDepth, depth);
+      totalBranching += (node.children || []).length;
+      for (const c of node.children || []) walk(c, depth + 1);
+    };
+
+    for (const s of sentences) {
+      if (!s || !s.root) continue;
+      walk(s.root, 0);
+    }
+
+    if (totalNodes === 0) return out;
+
+    const avgDepth = totalDepth / totalNodes;
+    const avgBranch = totalBranching / totalNodes;
+
+    // Fill first slots with these normalized values
+    out[0] = avgDepth / (maxDepth || 1);
+    out[1] = maxDepth / 30;
+    out[2] = avgBranch / 5;
+
+    // Remaining dims: simple histograms via hashing of depth and branching
+    let idx = 3;
+    for (let d = 0; d < 44 && idx < DIM; d++, idx++) out[idx] = Math.min(1, (d === Math.floor(avgDepth) ? 1 : 0));
+    for (let b = 0; b < 45 && idx < DIM; b++, idx++) out[idx] = Math.min(1, (b === Math.floor(avgBranch) ? 1 : 0));
+
+    return out;
+  }
+
+  extractDependencyTreeRelations(
+    sentences: SentenceData[] | null
+  ): number[] {
+    const DIM = this._depTreeFeaturesTotal || 1319;
+    const out = new Array(DIM).fill(0);
+    if (!sentences || sentences.length === 0) return out;
+
+    const getAscendingPaths = (
+      token: SentenceToken,
+      pathNodes: string[],
+      pathRels: string[],
+      visited: Set<SentenceToken>
+    ) => {
+      if (visited.has(token)) return;
+      visited.add(token);
+      pathNodes.push(token.pos || "");
+
+      const pathLen = pathNodes.length;
+      // node n-grams (2-4)
+      for (let n = 2; n <= Math.min(4, pathLen); n++) {
+        const ng = pathNodes.slice(pathLen - n, pathLen);
+        const key = this._pythonTupleString(ng);
+        const idx = this._depTreeNgramMap.get(key);
+        if (idx !== undefined) out[idx]++;
+      }
+
+      const relLen = pathRels.length;
+      // relation n-grams (1-4)
+      for (let n = 1; n <= Math.min(4, relLen); n++) {
+        const ng = pathRels.slice(relLen - n, relLen);
+        const key = this._pythonTupleString(ng);
+        const idx = this._depTreeNgramMap.get(key);
+        if (idx !== undefined) out[idx]++;
+      }
+
+      // complete n-grams (node-rel-node alternating) (2-4 nodes -> length 2-4)
+      for (let n = 2; n <= Math.min(4, pathLen); n++) {
+        if (relLen >= n - 1) {
+          const completePath: string[] = [];
+          for (let i = 0; i < n; i++) {
+            completePath.push(pathNodes[pathLen - n + i]);
+            if (i < n - 1) {
+              completePath.push(pathRels[relLen - n + 1 + i]);
+            }
+          }
+          const key = this._pythonTupleString(completePath);
+          const idx = this._depTreeNgramMap.get(key);
+          if (idx !== undefined) out[idx]++;
+        }
+      }
+
+      for (const child of token.children || []) {
+        pathRels.push(child.dep || "");
+        getAscendingPaths(child, pathNodes, pathRels, visited);
+        pathRels.pop();
+      }
+
+      pathNodes.pop();
+      visited.delete(token);
+    };
+
+    for (const s of sentences) {
+      if (!s || !s.root) continue;
+      getAscendingPaths(s.root, [], [], new Set());
+    }
+
+    // normalize per-section as in Python implementation
+    const nodeSum = out.slice(0, this._nodeFeaturesEnd).reduce((a, b) => a + b, 0);
+    if (nodeSum > 0) {
+      for (let i = 0; i < this._nodeFeaturesEnd; i++) out[i] = out[i] / nodeSum;
+    }
+
+    const relationSum = out.slice(this._nodeFeaturesEnd, this._relationFeaturesEnd).reduce((a, b) => a + b, 0);
+    if (relationSum > 0) {
+      for (let i = this._nodeFeaturesEnd; i < this._relationFeaturesEnd; i++) out[i] = out[i] / relationSum;
+    }
+
+    const completeSum = out.slice(this._relationFeaturesEnd).reduce((a, b) => a + b, 0);
+    if (completeSum > 0) {
+      for (let i = this._relationFeaturesEnd; i < out.length; i++) out[i] = out[i] / completeSum;
+    }
+
+    return out;
+  }
+
+  extractNounPhraseLengths(words: TokenData[]): number[] {
+    // Returns 14-dimensional vector of noun-phrase length distribution
+    const DIM = 14;
+    const counts = new Array(DIM).fill(0);
+    if (words.length === 0) return counts;
+
+    // approximate by grouping adjacent capitalized tokens as NPs
+    let i = 0;
+    const n = words.length;
+    while (i < n) {
+      if (words[i].text[0] === words[i].text[0]?.toUpperCase()) {
+        let j = i + 1;
+        while (j < n && words[j].text[0] === words[j].text[0]?.toUpperCase()) j++;
+        const len = Math.min(j - i, DIM);
+        counts[len - 1]++;
+        i = j;
+      } else {
+        i++;
+      }
+    }
+
+    const total = counts.reduce((a, b) => a + b, 0) || 1;
+    return counts.map((c) => c / total);
+  }
+
+  extractEntityCategories(ctx: ExtCtx): number[] {
+    const counts = new Array(Object.keys(this.ENTITY_CATEGORY_MAP).length).fill(0);
+
+    if (!ctx || !Array.isArray(ctx.entities) || !Array.isArray(ctx.words) || ctx.words.length === 0) {
+      return counts;
+    }
+
+    const seenCorefs = new Set<any>();
+    const entities = ctx.entities as any[];
+    const total = ctx.words.length;
+
+    for (let i = 0; i < entities.length; i++) {
+      const ent = entities[i];
+      const coref = ent && ent.coref !== undefined ? ent.coref : `__ent_${i}`;
+      if (seenCorefs.has(coref)) continue;
+      seenCorefs.add(coref);
+      const cat = ent && ent.cat;
+      if (typeof cat === "string" && cat in this.ENTITY_CATEGORY_MAP) {
+        counts[this.ENTITY_CATEGORY_MAP[cat]]++;
+      }
+    }
+
+    return counts.map((c) => c / (total || 1));
+  }
+
+  extractEvents(tokens: TokenData[] | null): number {
+    if (!tokens || tokens.length === 0) return 0;
+    const ev = tokens.filter((t) => !!t.event).length;
+    return ev / tokens.length;
+  }
+
+  extractSupersense(ctx: ExtCtx): number[] {
+    const counts = new Array(this.SUPERSENSE_LABELS.length).fill(0);
+
+    if (!ctx || !Array.isArray((ctx as any).supersense) || !Array.isArray((ctx as any).words) || (ctx as any).words.length === 0) {
+      return counts;
+    }
+
+    const total = (ctx as any).words.length;
+    for (const ann of (ctx as any).supersense) {
+      // annotations expected as tuples like [start, end, label, score]
+      const label = Array.isArray(ann) && ann.length >= 3 ? ann[2] : ann;
+      if (typeof label === "string" && label in this.SUPERSENSE_LABEL_MAP) {
+        counts[this.SUPERSENSE_LABEL_MAP[label]]++;
+      }
+    }
+
+    return counts.map((c) => c / (total || 1));
+  }
+
+  extractTense(tokens: TokenData[] | null): number[] {
+    if (!tokens || tokens.length === 0) return [0, 0, 0, 0];
+    let past = 0;
+    let present = 0;
+    let future = 0;
+    let none = 0;
+    for (const t of tokens) {
+      const tense = casefold(t.morph_tense || "");
+      if (tense.includes("past")) past++;
+      else if (tense.includes("pres")) present++;
+      else if (tense.includes("fut")) future++;
+      else none++;
+    }
+    const total = tokens.length || 1;
+    return [past / total, present / total, future / total, none / total];
+  }
+
+  extractPolysemy(words: TokenData[]): number[] {
+    const DIM = 15;
+    const counts = new Array(DIM).fill(0);
+    if (!words || words.length === 0) return counts;
 
     for (const w of words) {
-      const n = getPolysemyCount(w);
+      const n = getPolysemyCount(w.text);
       const idx = Math.min(Math.max(0, Math.floor(n)), DIM - 1);
       counts[idx] += 1;
     }
 
     return counts.map((c) => c / words.length);
-  } catch (err) {
-    return new Array(DIM).fill(0);
-  }
-}
-
-export function extractWordConcreteness(words: string[]): number[] {
-  const DIM = 20;
-  const out = new Array(DIM + 1).fill(0);
-  if (!words || words.length === 0) return out;
-  const scores: number[] = [];
-
-  const multi = _concretenessMulti || {};
-  const single = _concretenessSingle || {};
-  const multiKeys = Object.keys(multi);
-  let maxMultiWords = 1;
-  for (const k of multiKeys) {
-    const len = k.split(/\s+/).length;
-    if (len > maxMultiWords) maxMultiWords = len;
   }
 
-  let i = 0;
-  while (i < words.length) {
-    let matched = false;
-    for (let w = maxMultiWords; w >= 1; w--) {
-      if (i + w > words.length) continue;
-      const phrase = casefold(words.slice(i, i + w).join(' '));
-      if (multi[phrase] !== undefined) {
-        scores.push(multi[phrase]);
-        i += w;
-        matched = true;
-        break;
+  extractWordConcreteness(ctx: ExtCtx): number[] {
+    const BINS = 20;
+    const out = new Array(BINS + 1).fill(0);
+    if (!Array.isArray(ctx.tokens) || !Array.isArray(ctx.words) || ctx.tokens.length === 0) {
+      return out;
+    }
+
+    // Use the prebuilt multiword trie to find longest matches (start,end inclusive,score)
+    const matches = this._multiwordTrie.findLongestMatches(
+      ctx.tokens.map((t) => ({ text: t.text, lemma: t.lemma || t.itext || t.text }))
+    );
+
+    if (!matches || matches.length === 0) return out;
+
+    const occurences = new Array(BINS).fill(0);
+    let totalScore = 0;
+    for (const [, , score] of matches) {
+      const idx = Math.min(Math.floor(score * BINS), BINS - 1);
+      occurences[idx] += 1;
+      totalScore += score;
+    }
+
+    // multiword_reduction = sum(end - start) (end inclusive)
+    let multiwordReduction = 0;
+    for (const [start, end] of matches) multiwordReduction += (end - start);
+
+    const effectiveWordCount = Math.max(1, ctx.words.length - multiwordReduction);
+
+    for (let j = 0; j < BINS; j++) out[j] = occurences[j] / effectiveWordCount;
+    out[BINS] = totalScore / matches.length;
+    return out;
+  }
+
+  extractPrepositionImageability(ctx: ExtCtx): number[] {
+    const BINS = 10;
+    const out = new Array(BINS + 1).fill(0);
+    if (!Array.isArray(ctx.tokens) || !Array.isArray(ctx.words) || ctx.tokens.length === 0) return out;
+
+    const tokens = ctx.tokens;
+    const imageabilityValues: number[] = [];
+    const matchedPositions = new Set<number>();
+
+    // Multiword exact matches (longest-first behavior handled by marking positions)
+    for (const [prepPhrase, imagVal] of Object.entries(this._prepMultiWordPatterns)) {
+      const phraseWords = (prepPhrase || "").split(/\s+/).filter(Boolean);
+      const phraseLen = phraseWords.length;
+      for (let i = 0; i <= tokens.length - phraseLen; i++) {
+        if (matchedPositions.has(i)) continue;
+        let ok = true;
+        for (let j = 0; j < phraseLen; j++) {
+          const tok = tokens[i + j];
+          const tokText = (tok.itext || tok.text || "").toString();
+          if (tokText !== phraseWords[j]) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+        // ensure no overlap
+        let overlap = false;
+        for (let pos = i; pos < i + phraseLen; pos++) if (matchedPositions.has(pos)) { overlap = true; break; }
+        if (overlap) continue;
+        imageabilityValues.push(imagVal);
+        for (let pos = i; pos < i + phraseLen; pos++) matchedPositions.add(pos);
       }
     }
-    if (!matched) {
-      const s = single[casefold(words[i])];
-      if (s !== undefined) scores.push(s);
-      i++;
-    }
-  }
 
-  if (scores.length === 0) return out;
-
-  // assume concreteness scores are in range ~1..5
-  const min = 1;
-  const max = 5;
-  const binSize = (max - min) / DIM;
-  for (const sc of scores) {
-    const idx = Math.min(DIM - 1, Math.max(0, Math.floor((sc - min) / binSize)));
-    out[idx]++;
-  }
-
-  const total = scores.length;
-  for (let j = 0; j < DIM; j++) out[j] = out[j] / total;
-  const avg = scores.reduce((a, b) => a + b, 0) / total;
-  out[DIM] = avg;
-  return out;
-}
-
-export function extractPrepositionImageability(words: string[]): number[] {
-  const BINS = 10;
-  const out = new Array(BINS + 1).fill(0);
-  if (!words || words.length === 0) return out;
-  if (!_prepositions || _prepositions.length === 0) return out;
-
-  // build map for quick lookup
-  const prepMap: Record<string, number> = {};
-  let maxMulti = 1;
-  for (const p of _prepositions) {
-    const key = casefold(p.pattern || '');
-    prepMap[key] = p.score;
-    const l = key.split(/\s+/).length;
-    if (l > maxMulti) maxMulti = l;
-  }
-
-  const scores: number[] = [];
-  let i = 0;
-  while (i < words.length) {
-    let matched = false;
-    for (let w = maxMulti; w >= 1; w--) {
-      if (i + w > words.length) continue;
-      const phrase = casefold(words.slice(i, i + w).join(' '));
-      if (prepMap[phrase] !== undefined) {
-        scores.push(prepMap[phrase]);
-        i += w;
-        matched = true;
-        break;
+    // Singleword regex
+    for (const [regexObj, imagVal] of this._prepCompiledRegexPatterns) {
+      for (let i = 0; i < tokens.length; i++) {
+        if (matchedPositions.has(i)) continue;
+        const tok = tokens[i];
+        const txt = (tok.itext || tok.text || "").toString();
+        if (regexObj.test(txt)) {
+          imageabilityValues.push(imagVal);
+          matchedPositions.add(i);
+        }
       }
     }
-    if (!matched) i++;
-  }
 
-  if (scores.length === 0) return out;
-
-  // assume scores roughly 1..5
-  const min = 1;
-  const max = 5;
-  const binSize = (max - min) / BINS;
-  for (const sc of scores) {
-    const idx = Math.min(BINS - 1, Math.max(0, Math.floor((sc - min) / binSize)));
-    out[idx]++;
-  }
-  const total = scores.length;
-  for (let j = 0; j < BINS; j++) out[j] = out[j] / total;
-  out[BINS] = scores.reduce((a, b) => a + b, 0) / total;
-  return out;
-}
-
-export function extractPlaces(words: string[]): number {
-  if (!words || words.length === 0) return 0;
-
-  const set = new Set(_placesList!.map((p) => casefold(p)));
-  // determine max phrase length in words
-  let maxLen = 1;
-  for (const p of _placesList!) {
-    const l = p.trim().split(/\s+/).length;
-    if (l > maxLen) maxLen = l;
-  }
-
-  let i = 0;
-  let matches = 0;
-  while (i < words.length) {
-    let matched = false;
-    for (let l = Math.min(maxLen, words.length - i); l >= 1; l--) {
-      const phrase = casefold(words.slice(i, i + l).join(" "));
-      if (set.has(phrase)) {
-        matches++;
-        i += l;
-        matched = true;
-        break;
+    // Singleword exact matches (itext or lemma)
+    for (let i = 0; i < tokens.length; i++) {
+      if (matchedPositions.has(i)) continue;
+      const token = tokens[i];
+      const itext = (token.itext || token.text || "").toString();
+      const lemma = (token.lemma || "").toString();
+      const key = itext in this._prepExactMatchPatterns ? itext : lemma in this._prepExactMatchPatterns ? lemma : null;
+      if (key === null) continue;
+      const [val, pos_adp, pos_nonadp] = this._prepExactMatchPatterns[key];
+      let finalVal: number | null = null;
+      if (token.pos === "ADP" && !Number.isNaN(pos_adp)) finalVal = pos_adp;
+      else if (token.pos !== "ADP" && !Number.isNaN(pos_nonadp)) finalVal = pos_nonadp;
+      else if (Number.isNaN(pos_adp) && Number.isNaN(pos_nonadp)) finalVal = val;
+      if (finalVal !== null) {
+        imageabilityValues.push(finalVal);
+        matchedPositions.add(i);
       }
     }
-    if (!matched) i++;
-  }
-  return matches / words.length;
-}
 
-export function extractCharNgrams(text: string): number[] {
-  const DIM = 1000;
-  const counts = new Array(DIM).fill(0);
-  if (!text) return counts;
+    if (imageabilityValues.length === 0) return out;
 
-  if (!_charFeaturesMap) return counts;
-
-  const s = casefold(text);
-  // generate char ngrams of length 3..5
-  for (let n = 3; n <= 5; n++) {
-    for (let i = 0; i + n <= s.length; i++) {
-      const ng = s.substring(i, i + n);
-      const idx = _charFeaturesMap[ng];
-      if (idx !== undefined) counts[idx]++;
+    const histCounts = new Array(BINS).fill(0);
+    let total = 0;
+    for (const imagVal of imageabilityValues) {
+      const binIdx = Math.min(Math.floor(imagVal * BINS), BINS - 1);
+      histCounts[binIdx]++;
+      total += imagVal;
     }
+
+    const wordCount = Math.max(1, ctx.words.length);
+    for (let j = 0; j < BINS; j++) out[j] = histCounts[j] / wordCount;
+    out[BINS] = total / imageabilityValues.length;
+    return out;
   }
 
-  const total = counts.reduce((a, b) => a + b, 0) || 1;
-  return counts.map((c) => c / total);
+  extractPlaces(words: TokenData[]): number {
+    if (!words || words.length === 0) return 0;
+
+    const tokens = words.map((w) => ({ text: w.text, lemma: (w.lemma || w.itext || w.text) }));
+    const matches = this._placesTrie.findLongestMatches(tokens as any);
+    return matches.length / words.length;
+  }
+
+  extractCharNgrams(text: string): number[] {
+    const DIM = 1000;
+    const counts = new Array(DIM).fill(0);
+    if (!text) return counts;
+
+    if (!charNgrams) return counts;
+
+    const s = casefold(text);
+    // generate char ngrams of length 3..5
+    for (let n = 3; n <= 5; n++) {
+      for (let i = 0; i + n <= s.length; i++) {
+        const ng = s.substring(i, i + n);
+        const idx = (charNgrams as any)[ng];
+        if (idx !== undefined) counts[idx]++;
+      }
+    }
+
+    const total = counts.reduce((a, b) => a + b, 0) || 1;
+    return counts.map((c) => c / total);
+  }
+
+
+  async _fetchSpaCyContext(texts: string[]): Promise<SpaCyContext[]> {
+    const res = await fetch(this.spacyCtxUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texts }),
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`spacy-ctx failed: ${res.status} ${txt}`);
+    }
+    const data = (await res.json()).contexts as SpaCyContext[];
+    return data;
+  }
+
+  /**
+   * High-level feature extraction for a single text. Synchronous and uses
+   * the individual extractor functions exported in this module. Returns
+   * an object with the original text and the assembled feature vector.
+   */
+  async extract(texts: string[]): Promise<number[][]> {
+    if (!this._ready) {
+      throw new Error("BookNLP or WordNet not ready");
+    }
+
+    const spaCyContexts = await this._fetchSpaCyContext(texts);
+
+    console.log("Extracting features for text");
+    const ctxs = (await this.bookNLP.process_batch(spaCyContexts)).map((c, i) => ExtCtx.fromBookNLPResult(c, texts[i]));
+    console.log("DONE");
+
+    const results: number[][] = [];
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i];
+      const ctx = ctxs[i];
+
+      const features: number[] = [];
+      features.push(this.extractQuoteRatio(text));
+      features.push(...this.extractCharNgrams(text));
+      features.push(...this.extractWordLengthByChar(ctx.words));
+      features.push(...this.extractNgramWordLengthByChar(ctx.words));
+      features.push(...this.extractSentenceLengthByWord(ctx));
+      features.push(this.extractNumericWordRatio(ctx.words));
+      features.push(this.extractTTR(ctx.words));
+      features.push(this.extractLexicalDensity(ctx));
+      features.push(...this.extractSyllableRatios(ctx.words));
+      features.push(this.extractStopwords(ctx.tokens));
+      features.push(...this.extractArticles(ctx.words));
+      features.push(...this.extractPunctuation(text));
+      features.push(this.extractContractions(ctx.tokens));
+      features.push(...this.extractCasing(ctx.tokens));
+      features.push(...this.extractCasingBigrams(ctx.words));
+      features.push(...this.extractPOSFrequency(ctx.tokens));
+      features.push(...this.extractPOSNgrams(ctx.tokens));
+      features.push(...this.extractDependencyTreeStructure(ctx.sents));
+      features.push(...this.extractDependencyTreeRelations(ctx.sents));
+      features.push(...this.extractNounPhraseLengths(ctx.words));
+      features.push(...this.extractEntityCategories(ctx));
+      features.push(this.extractEvents(ctx.tokens));
+      features.push(...this.extractSupersense(ctx));
+      features.push(...this.extractTense(ctx.tokens));
+      features.push(...this.extractPolysemy(ctx.words));
+      features.push(...this.extractWordConcreteness(ctx));
+      features.push(...this.extractPrepositionImageability(ctx));
+      features.push(this.extractPlaces(ctx.words));
+      results.push(features);
+    }
+    return results;
+  }
 }
 
-/**
- * High-level feature extraction for a single text. Synchronous and uses
- * the individual extractor functions exported in this module. Returns
- * an object with the original text and the assembled feature vector.
- */
-export async function extractFeaturesFromText(text: string): Promise<{ text: string; features: number[] }> {
-  const preprocessedText = preprocess(text);
-  await ensureFeatureResourcesLoaded();
-  const ctx = await getBookNLPContext(preprocessedText);
-  const words = (ctx.tokens || []).map((t: any) => t.itext || t.text || "").filter((w: any) => w.length > 0);
+export class FeatureService {
+  featureExtractor: FeatureExtractorPipeline;
+  embedMiniLM: FeatureExtractionPipeline | null = null;
 
-  const features: number[] = [];
+  constructor(spacyCtxUrl: string) {
+    this.featureExtractor = new FeatureExtractorPipeline(spacyCtxUrl);
+  }
 
-  features.push(...extractQuoteRatioFeature(text));
-  features.push(...extractCharNgrams(text));
-  features.push(...extractWordLengthByChar(words));
-  features.push(...extractNgramWordLengthByChar(words));
+  async init(cacheName: string = "feature-service", progressCallback: ProgressCallback): Promise<void> {
+    // Track each part's progress and report combined progress (0..1).
+    let extractorProgress = 0;
+    let pipelineProgress = 0;
+    const report = () => {
+      const combined = 0.5 * extractorProgress + 0.5 * pipelineProgress;
+      progressCallback(Math.min(Math.max(combined, 0), 1));
+    };
 
-  // Sentence length features not available here (needs sentence tokenizer)
-  features.push(...new Array(27).fill(0)); // 26 bins + avg
+    // Start both initialization promises concurrently and await them together.
+    const extractorPromise = this.featureExtractor.init(cacheName, (progress) => {
+      extractorProgress = Math.min(Math.max(progress ?? 0, 0), 1);
+      report();
+    });
 
-  features.push(extractNumericWordRatio(words));
-  features.push(extractTTR(words));
-  features.push(extractLexicalDensity(words));
-  features.push(...extractSyllableRatios(words));
-  features.push(extractStopwords(ctx.tokens));
-  features.push(...extractArticles(words));
-  features.push(...extractPunctuation(text));
-  features.push(extractContractions(ctx.tokens));
-  features.push(...extractCasing(ctx.tokens));
-  features.push(...extractCasingBigrams(words));
+    // @ts-ignore
+    const pipelinePromise = pipeline(
+      "feature-extraction",
+      "Xenova/all-MiniLM-L6-v2",
+      {
+        progress_callback: ((data: any) => {
+          if (data.progress !== undefined && data.file?.endsWith(".onnx")) {
+            pipelineProgress = Math.min(Math.max(data.progress ?? 0, 0), 1);
+            report();
+          }
+        }) as (data: any) => void,
+        dtype: "q8",
+        device: "wasm",
+      }
+    ) as Promise<FeatureExtractionPipeline>;
 
-  // BookNLP-dependent features using the extracted context
-  features.push(...extractPOSFrequency(ctx.tokens));
-  features.push(...extractPOSNgrams(ctx.tokens));
-  features.push(...extractDependencyTreeStructure(ctx.sentences));
-  features.push(...extractDependencyTreeRelations(ctx.sentences));
+    const [embed] = await Promise.all([pipelinePromise, extractorPromise]);
+    this.embedMiniLM = embed as FeatureExtractionPipeline;
+  }
 
-  features.push(...extractNounPhraseLengths(words));
-  features.push(...extractEntityCategories(ctx.tokens, words));
-  features.push(extractEvents(ctx.tokens));
-  features.push(...extractSupersense(ctx.tokens, words));
-  features.push(...extractTense(ctx.tokens));
-  features.push(...extractPolysemy(words));
-  features.push(...extractWordConcreteness(words));
-  features.push(...extractPrepositionImageability(words));
-  features.push(extractPlaces(words));
-
-  return { text, features: features.map((f) => (Number.isNaN(Number(f)) ? 0 : f)) };
+  async getFeatures(texts: string[]): Promise<number[][]> {
+    if (!this.embedMiniLM) {
+      throw new Error("Pipeline not initialized");
+    }
+    const [extractorFeatures, embeddingTensor] = await Promise.all([
+      this.featureExtractor.extract(texts),
+      this.embedMiniLM(texts, { pooling: "mean", normalize: true }),
+    ]);
+    const embeddings = embeddingTensor.tolist();
+    console.log("Obtained features and embeddings for all texts");
+    return extractorFeatures.map((featVec, i) => [...embeddings[i], ...featVec]);
+  }
 }

@@ -1,12 +1,14 @@
 import type { PipelineType } from "@huggingface/transformers";
 import type { Segment } from "~/types/common";
 import type { paths } from "~/types/schema";
+import type { ExtractMessage } from "~/types/text2features-worker";
 
 type SegmentResponse = paths["/api/process/seg/pdf"]["post"]["responses"]["200"]["content"]["application/json"];
 
 export type TransformersModelConfig = {
   huggingFaceId: string;
   modelFileName?: string;
+  subfolder?: string;
   pipeline: PipelineType;
   sizeMb: number;
   workerName: string;
@@ -29,6 +31,30 @@ export type TModelInfo = ModelInfo & {
   transformersConfig: TransformersModelConfig;
 };
 
+const workers = new Map<string, Worker | Promise<Worker>>();
+
+export async function initWorkers() {
+  console.info("Initializing workers...");
+  const { getOrLoadWorker } = useModelLoader();
+
+  workers.set("scorer", getOrLoadWorker({
+    workerName: "scorer",
+    modelUrl: "/assets/data/models/catboost.onnx",
+    subfolder: "onnx",
+    spacyCtxUrl: new URL("/api/spacy-ctx", useRuntimeConfig().public.apiBaseUrl).toString()
+  } as any).then(worker => {
+    workers.set("scorer", worker);
+    return worker;
+  }));
+  console.info("Scorer worker initialized");
+}
+
+export function terminateWorkers() {
+  const { terminateWorker } = useModelLoader();
+  terminateWorker("scorer");
+  terminateWorker("nli");
+}
+
 export const MODELS: ModelInfo[] = [
   {
     id: "minilm_catboost",
@@ -38,34 +64,54 @@ export const MODELS: ModelInfo[] = [
     disabled: false,
     description: "A fast model with medium quality for general use.",
     transformersConfig: {
-      huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-      modelFileName: "model_quantized.onnx",
-      pipeline: "zero-shot-classification",
+      huggingFaceId: "Xenova/all-MiniLM-L6-v2",
+      pipeline: "feature-extraction",
       sizeMb: 130,
-      workerName: "booknlp",
-    },
+      workerName: "scorer",
+      modelUrl: "/assets/data/models/catboost.onnx",
+      subfolder: "onnx",
+    } as any,
     apiUrl: "/api/process/seg/pdf",
     onSuccess: async (_data: SegmentResponse, model, _socket, _scoreSegment) => {
-      const { getOrLoadWorker, terminateWorker } = useModelLoader();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const worker = await getOrLoadWorker(model.transformersConfig!);
-      // const segments = (data as any).segments.map((seg: any) => seg.text);
-      // const nliClassifier = NLI_CLASSIFIERS[model.id];
-      // if (!nliClassifier) {
-      //   return;
-      // }
-      // await nliClassifier.evaluateSegmentsWithWorker(worker, segments, (batchIndex, totalBatches, batchResults) => {
-      //   console.log(`NLI batch ${batchIndex + 1}/${totalBatches} completed.`);
-      //   for (const result of batchResults) {
-      //     scoreSegment(result);
-      //   }
-      // });
-      terminateWorker(model.transformersConfig!.huggingFaceId);
+      const worker = await workers.get("scorer");
+      if (!worker) {
+        console.error("Scorer worker not found");
+        return;
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const messageHandler = (event: MessageEvent) => {
+          const { type, payload } = event.data;
+
+          switch (type) {
+          case "progress":
+            console.log(`Scorer batch ${payload.batchIndex + 1}/${payload.totalBatches} completed.`);
+            for (const result of payload.results) {
+              _scoreSegment(result);
+            }
+            break;
+          case "complete":
+            worker.removeEventListener("message", messageHandler);
+            resolve();
+            break;
+          case "error":
+            worker.removeEventListener("message", messageHandler);
+            reject(new Error(payload.message));
+            break;
+          }
+        };
+
+        worker.addEventListener("message", messageHandler);
+
+        worker.postMessage({
+          type: "evaluate",
+          payload: {
+            texts: _data.segments.map(seg => seg.text),
+            batchSize: 32,
+          }
+        } as ExtractMessage);
+      });
     },
-    onCancel: (model) => {
-      const { terminateWorker } = useModelLoader();
-      terminateWorker(model.transformersConfig!.huggingFaceId);
-    }
   },
   {
     id: "modernbert_finetuned",
@@ -119,20 +165,6 @@ export const MODELS: ModelInfo[] = [
     disabled: false,
     description: "Instant random selection for debugging.",
   },
-  {
-    id: "xenova_minilm",
-    label: "Xenova MiniLM",
-    speed: 4,
-    quality: 3,
-    disabled: false,
-    description: "Xenova all-MiniLM-L6-v2 feature-extraction model (browser-friendly).",
-    transformersConfig: {
-      huggingFaceId: "Xenova/all-MiniLM-L6-v2",
-      pipeline: "feature-extraction",
-      sizeMb: 30,
-      workerName: "text2features",
-    },
-  },
 ];
 
 export type ModelId = typeof MODELS[number]["id"];
@@ -155,7 +187,7 @@ export const WORDNETS: WordNetInfo[] = [
     label: "Open English WordNet (oewn:2025)",
     description: "English WordNet JSON dump (zipped) for polysemy counting.",
     sizeMb: 180,
-    downloadUrl: "https://en-word.net/static/english-wordnet-2025-json.zip",
+    downloadUrl: "/english-wordnet-2025-json.zip",
   },
 ];
 

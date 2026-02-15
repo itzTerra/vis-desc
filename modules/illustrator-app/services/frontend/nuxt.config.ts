@@ -23,6 +23,7 @@ export default defineNuxtConfig({
       commitHash: process.env.VITE_COMMIT_HASH || "unknown",
       buildTime: new Date().toISOString(),
       wsBaseUrl: process.env.VITE_API_WS_BASE_URL || "ws://localhost:8000",
+      apiBaseUrl: process.env.VITE_API_BASE_URL || "http://localhost:8000",
       openFetch: {
         api: {
           baseURL: process.env.VITE_API_BASE_URL || "http://localhost:8000",
@@ -46,12 +47,19 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: [
         "lodash-es",
-        "vue-pdf-embed"
+        "vue-pdf-embed",
+        "@huggingface/transformers",
+        "booknlp-ts",
+        "jszip",
+      ],
+      exclude: [
+        "onnxruntime-web",
       ]
     },
     build: {
       sourcemap: true // process.env.NODE_ENV === "development"
-    }
+    },
+    assetsInclude: ["**/*.onnx"],
   },
   sourcemap: {
     server: true,

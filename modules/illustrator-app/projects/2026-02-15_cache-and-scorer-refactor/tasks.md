@@ -83,22 +83,24 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 4: CacheManager (1.5 hours)
+## Phase 4: CacheManager (1.5 hours) ✅ COMPLETED
 
 **File**: Rename `ModelManager.vue` → `CacheManager.vue`
 
-- [ ] Update component name and imports
-- [ ] Import `MODEL_GROUPS` instead of `MODELS`
-- [ ] Loop: `v-for="group in MODEL_GROUPS"`
-- [ ] Display: `group.name` as title
-- [ ] Compute size: `group.downloadables.reduce((s, d) => s + d.sizeMb, 0)`
-- [ ] Update `queueDownload()` to accept `ModelGroup`
-- [ ] Use `useCacheController().downloadGroup()` 
-- [ ] Add CPU/GPU toggle:
-  - Create `providers` ref: `Record<string, boolean>`
-  - Load from localStorage: `onnx_providers`
-  - Add toggle UI per group
-  - Watch and save to localStorage
+- [x] Update component name and imports
+- [x] Import `MODEL_GROUPS` instead of `MODELS`
+- [x] Loop: `v-for="group in MODEL_GROUPS"`
+- [x] Display: `group.name` as title
+- [x] Compute size: `group.downloadables.reduce((s, d) => s + d.sizeMb, 0)`
+- [x] Update `queueDownload()` to accept `ModelGroup`
+- [x] Use `useCacheController().downloadGroup()` 
+- [x] Add CPU/GPU toggle:
+  - [x] Create `providers` ref: `Record<string, boolean>`
+  - [x] Load from localStorage: `onnx_providers`
+  - [x] Add toggle UI per group
+  - [x] Watch and save to localStorage
+- [x] Add remove and clear methods to CacheController
+- [x] All linting checks passing
 
 ---
 

@@ -35,6 +35,12 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 - [x] Export `useCacheEvents()`
 - [x] Event: `cache:model-needed` with `{ groupId }`
 
+**Correctness Fixes** ✓ 
+
+- [x] Fix progress calculation: divide callback range (0-100) by 100 in `downloadGroup()`
+- [x] Add error handling in event bus `emit()` to prevent handler errors blocking subsequent handlers
+- [x] Fix race condition in `init()` by caching the initialization Promise
+
 ---
 
 ## Phase 3: models.ts Rewrite (2 hours)

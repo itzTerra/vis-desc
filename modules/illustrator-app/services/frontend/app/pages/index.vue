@@ -11,7 +11,7 @@
           data-help-target="file"
           @change="handleFileUpload"
         >
-        <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
+        <ModelSelect v-model="selectedModel" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
       </div>
       <div class="flex items-center gap-3">
         <EvalProgress
@@ -19,6 +19,7 @@
           data-help-target="progress"
           :is-cancelled="isCancelled"
           :highlights="highlights"
+          :current-stage="currentStage"
           @cancel="cancelSegmentLoading"
         />
         <AutoIllustration
@@ -84,11 +85,9 @@
       <button v-else class="btn btn-circle btn-sm btn-info text-lg" title="Help" @click="toggleHelp(true)">
         ?
       </button>
-      <ModelManager
-        ref="modelManagerRef"
-        v-model:pending-model="pendingModel"
-        v-model:is-expanded="modelManagerExpanded"
-        @model-ready="onModelReady"
+      <CacheManager
+        ref="cacheManagerRef"
+        v-model:is-expanded="cacheManagerExpanded"
       />
       <button class="btn btn-circle btn-sm btn-warning" title="Debug" @click="$debugPanel.toggle()">
         <Icon name="uil:bug" size="20px" />
@@ -106,13 +105,6 @@
       </NuxtLink>
     </div>
     <HelpOverlay v-if="showHelp" :help-steps="helpSteps" @cancel="toggleHelp(false)" />
-    <ModelDownloadDialog
-      v-if="pendingModel && pendingModel.transformersConfig"
-      :is-open="showModelDownloadDialog"
-      :model-info="pendingModel"
-      @confirm="confirmModelDownload"
-      @cancel="cancelModelDownload"
-    />
     <BackToTop />
     <Alert />
   </div>
@@ -121,11 +113,10 @@
 <script setup lang="ts">
 import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
-import type { ModelManager } from "#components";
+import type { CacheManager } from "#components";
+import { SCORERS, MODEL_GROUPS } from "~/utils/models";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
-
-// SCORE_THRESHOLD-based autoselect removed. Auto-illustration composable controls selections now.
 
 const { $api: call, $config, $debugPanel } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
@@ -133,10 +124,12 @@ const runtimeConfig = useRuntimeConfig();
 const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
-const firstModel = MODELS.find(model => !model.disabled);
-const modelSelect = ref<ModelId>(firstModel ? firstModel.id : (MODELS[0]?.id ?? null));
-const pendingModel = ref<TModelInfo | null>(null);
-// Holds start timestamp (ms) when loading begins; null when idle
+const firstScorer = SCORERS.find(scorer => !scorer.disabled);
+const selectedModel = ref<string>(firstScorer ? firstScorer.id : (SCORERS[0]?.id ?? "random"));
+const selectedScorer = computed(() => 
+  SCORERS.find(s => s.id === selectedModel.value)
+);
+const currentStage = ref<string | undefined>(undefined);
 const isLoading = ref<number | null>(null);
 const isCancelled = ref(false);
 const highlights = reactive<Highlight[]>([]);
@@ -146,9 +139,8 @@ const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.v
 const showHelp = ref(false);
 const seenHelpOnce = useLocalStorage("seenHelpOnce", false);
 const highlightsHelpBackup: Highlight[] = [];
-const showModelDownloadDialog = ref(false);
-const modelManagerRef = ref<InstanceType<typeof ModelManager> | null>(null);
-const modelManagerExpanded = ref(false);
+const cacheManagerRef = ref<InstanceType<typeof CacheManager> | null>(null);
+const cacheManagerExpanded = ref(false);
 const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
 const { confirmExport } = useExport();
 
@@ -269,42 +261,88 @@ const handleFileUpload = async (event: any) => {
   fullReset();
 
   isLoading.value = Date.now();
+  currentStage.value = "Initializing...";
   pdfFile.value = file;
   pdfUrl.value = URL.createObjectURL(file);
+
+  const scorer = selectedScorer.value;
+  if (!scorer) {
+    useNotifier().error("No scorer selected.");
+    isLoading.value = null;
+    currentStage.value = undefined;
+    return;
+  }
+
+  if (scorer.disabled) {
+    useNotifier().error("Selected scorer is not available.");
+    isLoading.value = null;
+    currentStage.value = undefined;
+    return;
+  }
+
+  const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
+  if (modelGroup) {
+    const { checkGroupCached } = useCacheController();
+    const isCached = await checkGroupCached(modelGroup);
+    
+    if (!isCached) {
+      const { emit } = useCacheEvents();
+      emit("cache:model-needed", { groupId: modelGroup.id });
+      isLoading.value = null;
+      currentStage.value = undefined;
+      return;
+    }
+  }
+
   const formData = new FormData();
   formData.append("pdf", file, file.name);
-  formData.append("model", modelSelect.value);
-  const modelInfo = getModelById(modelSelect.value);
+  
+  try {
+    const data = await call("/api/pdf-upload" as any, {
+      method: "POST",
+      body: formData as any
+    });
 
-  if (!modelInfo || !modelInfo.apiUrl || modelInfo.disabled) {
-    useNotifier().error("Selected model is not available.");
-    isLoading.value = null;
-    return;
-  }
-
-  const canContinue = handleModelDownloadRequest(modelSelect.value);
-  if (!canContinue) {
-    isLoading.value = null;
-    return;
-  }
-
-  call(modelInfo.apiUrl as any, {
-    method: "POST",
-    body: formData as any
-  }).then((data: any) => {
-    // collect initial aligned segments with polygons if provided
     if (data?.segments && Array.isArray(data.segments)) {
       highlights.splice(0, highlights.length, ...data.segments);
     }
 
-    modelInfo.onSuccess?.(data, modelInfo, socket, scoreSegment);
-    // socket.open();
-    // socket.send(JSON.stringify({ ws_key: data.ws_key }));
-  }).catch((error) => {
+    if (scorer.id === "random") {
+      socket.open();
+      await new Promise<void>((resolve) => {
+        const checkOpen = () => {
+          if (socket.status.value === "OPEN") {
+            resolve();
+          } else {
+            setTimeout(checkOpen, 100);
+          }
+        };
+        checkOpen();
+      });
+    }
+    
+    const results = await scorer.score(
+      data,
+      (progress) => {
+        currentStage.value = progress.stage;
+      },
+      scorer.id === "random" ? socket : undefined
+    );
+
+    if (Array.isArray(results)) {
+      for (const segment of results) {
+        scoreSegment(segment);
+      }
+    }
+
     isLoading.value = null;
+    currentStage.value = undefined;
+  } catch (error) {
+    isLoading.value = null;
+    currentStage.value = undefined;
     console.error("Failed to process PDF:", error);
     useNotifier().error("Failed to process document. Please try again.");
-  });
+  }
 };
 
 const socket = useWebSocket(`${runtimeConfig.public.wsBaseUrl}/ws/progress/`, {
@@ -355,11 +393,14 @@ function cancelSegmentLoading() {
   }
   isCancelled.value = true;
   isLoading.value = null;
+  currentStage.value = undefined;
 
-  const modelInfo = getModelById(modelSelect.value);
-  modelInfo?.onCancel?.(modelInfo);
-  // socket.close();
-  // onDisconnected();
+  const scorer = selectedScorer.value;
+  if (scorer) {
+    scorer.dispose();
+  }
+  
+  socket.close();
 }
 
 function scoreSegment(segment: Segment) {
@@ -408,6 +449,7 @@ watch(autoIllustration.pendingOpenIds, async () => {
 
 function fullReset() {
   isCancelled.value = false;
+  currentStage.value = undefined;
   socket.close();
   onDisconnected();
   highlightNav.value?.reset();
@@ -452,45 +494,23 @@ async function handleExportConfirm() {
   }
 }
 
-function handleModelDownloadRequest(modelId: ModelId): boolean {
-  const modelInfo = getModelById(modelId);
-  if (!modelInfo || !("transformersConfig" in modelInfo) || !modelInfo.transformersConfig) {
-    return true;
+async function handleModelDownloadRequest(scorerId: string): Promise<void> {
+  const modelGroup = MODEL_GROUPS.find(g => g.id === scorerId);
+  if (!modelGroup) {
+    return;
   }
 
-  const { getModelCacheStatus } = useModelLoader();
-  const status = getModelCacheStatus(modelInfo.transformersConfig);
+  const { checkGroupCached } = useCacheController();
+  const isCached = await checkGroupCached(modelGroup);
 
-  if (status === "cached") {
-    return true;
+  if (isCached) {
+    const scorer = SCORERS.find(s => s.id === scorerId);
+    useNotifier().success(`${scorer?.label || "Model"} is ready to use`);
+    return;
   }
 
-  if (status === "downloading") {
-    useNotifier().info(`Model "${modelInfo.label}" is already downloading.`);
-    modelManagerExpanded.value = true;
-    return false;
-  }
-
-  pendingModel.value = modelInfo as TModelInfo;
-  showModelDownloadDialog.value = true;
-  return false;
-}
-
-function onModelReady(modelId: ModelId) {
-  useNotifier().success(`${getModelById(modelId).label} is now ready to use`);
-}
-
-function confirmModelDownload() {
-  if (!pendingModel.value) return;
-
-  modelManagerRef.value?.queueDownload(pendingModel.value);
-  showModelDownloadDialog.value = false;
-  pendingModel.value = null;
-}
-
-function cancelModelDownload() {
-  showModelDownloadDialog.value = false;
-  pendingModel.value = null;
+  cacheManagerRef.value?.queueDownload(modelGroup);
+  cacheManagerExpanded.value = true;
 }
 
 function onPdfRendered() {
@@ -501,6 +521,16 @@ function onPdfRendered() {
 }
 
 onMounted(() => {
+  const { on } = useCacheEvents();
+  on("cache:model-needed", (payload) => {
+    cacheManagerExpanded.value = true;
+    const group = MODEL_GROUPS.find(g => g.id === payload.groupId);
+    if (group) {
+      useNotifier().info(`Model "${group.name}" needs to be downloaded first.`);
+      cacheManagerRef.value?.queueDownload(group);
+    }
+  });
+
   $debugPanel.addAction(
     "📋 Print Highlights",
     () => {

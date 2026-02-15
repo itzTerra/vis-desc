@@ -1,28 +1,25 @@
 <template>
   <div v-if="isLoading || isCancelled" class="flex items-center ms-4">
     <div class="flex flex-col">
-      <!-- Stage 1: Initializing (no progress bar, no ETA) -->
-      <template v-if="!currentStage || currentStage === 'Initializing...'">
-        <span>{{ currentStage || "Initializing..." }}</span>
-      </template>
-
-      <!-- Stage 2: Scoring (with progress bar and ETA) -->
-      <template v-else-if="currentStage === 'Scoring...'">
+      <template v-if="currentStage === 'Scoring...'">
         <span>{{ currentStage }} {{ progressPercent }}%</span>
         <progress class="progress progress-info w-52" :value="scoredSegmentCount" :max="highlights.length" />
         <div class="flex justify-between mt-0.5 text-sm opacity-60">
-          <template v-if="!isCancelled && highlights.length">
-            <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
-            <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
-          </template>
-          <template v-else-if="!isCancelled">
-            <span>Loading...</span>
-          </template>
-          <template v-else>
+          <template v-if="isCancelled">
             <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
             <span>Loading canceled</span>
           </template>
+          <template v-else-if="highlights.length">
+            <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
+            <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
+          </template>
+          <template v-else>
+            <span>Loading...</span>
+          </template>
         </div>
+      </template>
+      <template v-else>
+        <span>{{ currentStage || "Initializing..." }}</span>
       </template>
     </div>
     <button v-if="!isCancelled" class="btn btn-error btn-sm ms-2" @click="$emit('cancel')">
@@ -54,14 +51,15 @@ const progressPercent = computed(() => {
   return Math.round((scoredSegmentCount.value / total) * 100);
 });
 
-const isFinished = computed(() => scoredSegmentCount.value === props.highlights.length);
-
-watchOnce(() => isFinished.value, isComplete => {
-  if (isComplete) {
-    useNotifier().success("Document processed successfully");
-    isLoading.value = null;
+watchOnce(
+  () => props.highlights.length > 0 && scoredSegmentCount.value === props.highlights.length,
+  isComplete => {
+    if (isComplete) {
+      useNotifier().success("Document processed successfully");
+      isLoading.value = null;
+    }
   }
-});
+);
 
 const etaMs = computed(() => {
   if (!isLoading.value) return 0;

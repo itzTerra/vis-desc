@@ -169,7 +169,7 @@
           </small>
           <button
             class="btn btn-error btn-sm btn-outline"
-            :disabled="hasActiveDownload || !hasCachedModels"
+            :disabled="hasActiveDownload || (!hasCachedModels && !hasCachedWordnets)"
             @click="clearAllCache"
           >
             <Icon name="lucide:trash-2" class="w-4 h-4" />

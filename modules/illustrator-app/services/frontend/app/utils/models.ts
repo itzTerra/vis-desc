@@ -156,14 +156,28 @@ abstract class Scorer {
     ];
   }
 
+  protected getProviders(): string[] {
+    const providers = JSON.parse(localStorage.getItem("onnx_providers") ?? "{}");
+    return providers[this.id] || ["wasm"];
+  }
+
+  dispose(): void {
+    if ((this as any).worker) {
+      (this as any).worker.terminate();
+      (this as any).worker = null;
+    }
+  }
+
   abstract score(
     data: any,
-    onProgress: (progress: ScorerProgress) => void
+    onProgress: (progress: ScorerProgress) => void,
+    socket?: any
   ): Promise<Segment[]>;
 }
 
 class MiniLMCatBoostScorer extends Scorer {
   private worker: Worker | null = null;
+  private scoring = false;
 
   constructor() {
     super(
@@ -180,95 +194,89 @@ class MiniLMCatBoostScorer extends Scorer {
     data: any,
     onProgress: (progress: ScorerProgress) => void
   ): Promise<Segment[]> {
-    const segments: Segment[] = data.segments || [];
-    const texts = segments.map((s: any) => s.text);
+    if (this.scoring) {
+      throw new Error("Scoring already in progress");
+    }
+    this.scoring = true;
+    try {
+      const segments: Segment[] = data.segments || [];
+      const texts = segments.map((s: any) => s.text);
 
-    if (!this.worker) {
-      onProgress({
-        stage: "Initializing...",
-        progress: 0,
-      });
+      if (!this.worker) {
+        onProgress({
+          stage: "Initializing...",
+          progress: 0,
+        });
 
-      this.worker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
-        type: "module",
-      });
+        this.worker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
+          type: "module",
+        });
 
-      const providers = this.getProviders();
-      await new Promise<void>((resolve, reject) => {
+        const providers = this.getProviders();
+        await new Promise<void>((resolve, reject) => {
+          const handler = (event: MessageEvent) => {
+            if (event.data.type === "ready") {
+              resolve();
+            } else if (event.data.type === "error") {
+              reject(new Error(event.data.payload.message));
+            }
+          };
+
+          this.worker!.addEventListener("message", handler, { once: true });
+          this.worker!.postMessage({
+            type: "init",
+            payload: {
+              spacyCtxUrl: "/assets/data/en_core_web_sm-3.7.1/",
+              cacheName: "feature-service",
+              providers,
+            },
+          });
+        });
+      }
+
+      return new Promise<Segment[]>((resolve, reject) => {
+        const results: Segment[] = [];
+
         const handler = (event: MessageEvent) => {
-          if (event.data.type === "ready") {
-            resolve();
-          } else if (event.data.type === "error") {
-            reject(new Error(event.data.payload.message));
+          const { type, payload } = event.data;
+
+          if (type === "progress") {
+            onProgress({
+              stage: "Scoring...",
+              progress: ((payload.batchIndex / payload.totalBatches) * 100),
+              eta: payload.eta,
+            });
+
+            for (const result of payload.results) {
+              results.push(result);
+            }
+          } else if (type === "complete") {
+            this.worker!.removeEventListener("message", handler);
+            resolve(results);
+          } else if (type === "error") {
+            this.worker!.removeEventListener("message", handler);
+            reject(new Error(payload.message));
           }
         };
 
-        this.worker!.addEventListener("message", handler, { once: true });
+        this.worker!.addEventListener("message", handler);
         this.worker!.postMessage({
-          type: "init",
+          type: "evaluate",
           payload: {
-            spacyCtxUrl: "/assets/data/en_core_web_sm-3.7.1/",
-            cacheName: "feature-service",
-            providers,
+            texts,
+            batchSize: 16,
           },
         });
       });
-    }
-
-    return new Promise<Segment[]>((resolve, reject) => {
-      const results: Segment[] = [];
-
-      const handler = (event: MessageEvent) => {
-        const { type, payload } = event.data;
-
-        if (type === "progress") {
-          onProgress({
-            stage: "Scoring...",
-            progress: ((payload.batchIndex / payload.totalBatches) * 100),
-            eta: payload.eta,
-          });
-
-          for (const result of payload.results) {
-            results.push(result);
-          }
-        } else if (type === "complete") {
-          this.worker!.removeEventListener("message", handler);
-          resolve(results);
-        } else if (type === "error") {
-          this.worker!.removeEventListener("message", handler);
-          reject(new Error(payload.message));
-        }
-      };
-
-      this.worker!.addEventListener("message", handler);
-      this.worker!.postMessage({
-        type: "evaluate",
-        payload: {
-          texts,
-          batchSize: 16,
-        },
-      });
-    });
-  }
-
-  private getProviders(): string[] {
-    const stored = localStorage.getItem(`onnx_providers_${this.id}`);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    return ["wasm"];
-  }
-
-  dispose(): void {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
+    } finally {
+      this.scoring = false;
     }
   }
 }
 
 class NLIRobertaScorer extends Scorer {
   private worker: Worker | null = null;
+  private scoring = false;
   private candidateLabels: string[] = ["not detailed", "detailed"];
   private hypothesisTemplate: string = "This text is {} in terms of visual details of characters, setting, or environment.";
 
@@ -287,101 +295,95 @@ class NLIRobertaScorer extends Scorer {
     data: any,
     onProgress: (progress: ScorerProgress) => void
   ): Promise<Segment[]> {
-    const segments: Segment[] = data.segments || [];
+    if (this.scoring) {
+      throw new Error("Scoring already in progress");
+    }
+    this.scoring = true;
+    try {
+      const segments: Segment[] = data.segments || [];
 
-    if (!this.worker) {
-      onProgress({
-        stage: "Initializing...",
-        progress: 0,
-      });
+      if (!this.worker) {
+        onProgress({
+          stage: "Initializing...",
+          progress: 0,
+        });
 
-      this.worker = new Worker(new URL("~/workers/nli.worker.ts", import.meta.url), {
-        type: "module",
-      });
+        this.worker = new Worker(new URL("~/workers/nli.worker.ts", import.meta.url), {
+          type: "module",
+        });
 
-      const providers = this.getProviders();
-      await new Promise<void>((resolve, reject) => {
+        const providers = this.getProviders();
+        await new Promise<void>((resolve, reject) => {
+          const handler = (event: MessageEvent) => {
+            if (event.data.type === "ready") {
+              resolve();
+            } else if (event.data.type === "error") {
+              reject(new Error(event.data.payload.message));
+            } else if (event.data.type === "progress") {
+              onProgress({
+                stage: "Initializing...",
+                progress: (event.data.payload.progress ?? 0) * 100,
+              });
+            }
+          };
+
+          this.worker!.addEventListener("message", handler, { once: true });
+          this.worker!.postMessage({
+            type: "load",
+            payload: {
+              pipeline: "zero-shot-classification",
+              huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
+              providers,
+            },
+          });
+        });
+      }
+
+      return new Promise<Segment[]>((resolve, reject) => {
+        const results: Segment[] = [];
+
         const handler = (event: MessageEvent) => {
-          if (event.data.type === "ready") {
-            resolve();
-          } else if (event.data.type === "error") {
-            reject(new Error(event.data.payload.message));
-          } else if (event.data.type === "progress") {
+          const { type, payload } = event.data;
+
+          if (type === "progress") {
             onProgress({
-              stage: "Initializing...",
-              progress: (event.data.payload.progress ?? 0) * 100,
+              stage: "Scoring...",
+              progress: ((payload.batchIndex / payload.totalBatches) * 100),
+              eta: payload.eta,
             });
+
+            for (const result of payload.results) {
+              results.push(result);
+            }
+          } else if (type === "complete") {
+            this.worker!.removeEventListener("message", handler);
+            resolve(results);
+          } else if (type === "error") {
+            this.worker!.removeEventListener("message", handler);
+            reject(new Error(payload.message));
           }
         };
 
         this.worker!.addEventListener("message", handler);
         this.worker!.postMessage({
-          type: "load",
+          type: "evaluate",
           payload: {
-            pipeline: "zero-shot-classification",
-            huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-            providers,
+            segments: segments.map((s: any) => s.text),
+            candidateLabels: this.candidateLabels,
+            hypothesisTemplate: this.hypothesisTemplate,
+            batchSize: 16,
           },
         });
       });
-    }
-
-    return new Promise<Segment[]>((resolve, reject) => {
-      const results: Segment[] = [];
-
-      const handler = (event: MessageEvent) => {
-        const { type, payload } = event.data;
-
-        if (type === "progress") {
-          onProgress({
-            stage: "Scoring...",
-            progress: ((payload.batchIndex / payload.totalBatches) * 100),
-            eta: payload.eta,
-          });
-
-          for (const result of payload.results) {
-            results.push(result);
-          }
-        } else if (type === "complete") {
-          this.worker!.removeEventListener("message", handler);
-          resolve(results);
-        } else if (type === "error") {
-          this.worker!.removeEventListener("message", handler);
-          reject(new Error(payload.message));
-        }
-      };
-
-      this.worker!.addEventListener("message", handler);
-      this.worker!.postMessage({
-        type: "evaluate",
-        payload: {
-          segments: segments.map((s: any) => s.text),
-          candidateLabels: this.candidateLabels,
-          hypothesisTemplate: this.hypothesisTemplate,
-          batchSize: 16,
-        },
-      });
-    });
-  }
-
-  private getProviders(): string[] {
-    const stored = localStorage.getItem(`onnx_providers_${this.id}`);
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    return ["wasm"];
-  }
-
-  dispose(): void {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
+    } finally {
+      this.scoring = false;
     }
   }
 }
 
 class RandomScorer extends Scorer {
   private socket: any = null;
+  private scoring = false;
 
   constructor() {
     super(
@@ -399,59 +401,67 @@ class RandomScorer extends Scorer {
     onProgress: (progress: ScorerProgress) => void,
     socket?: any
   ): Promise<Segment[]> {
-    const segments: Segment[] = data.segments || [];
-
-    onProgress({
-      stage: "Initializing...",
-      progress: 0,
-    });
-
-    if (!socket) {
-      throw new Error("WebSocket connection required for RandomScorer");
+    if (this.scoring) {
+      throw new Error("Scoring already in progress");
     }
+    this.scoring = true;
+    try {
+      const segments: Segment[] = data.segments || [];
 
-    this.socket = socket;
-
-    return new Promise<Segment[]>((resolve, reject) => {
-      const results: Segment[] = [];
-
-      const progressHandler = (payload: any) => {
-        onProgress({
-          stage: "Scoring...",
-          progress: (payload.progress ?? 0) * 100,
-          eta: payload.eta,
-        });
-      };
-
-      const completeHandler = (payload: any) => {
-        this.socket.off("score:progress", progressHandler);
-        this.socket.off("score:complete", completeHandler);
-        this.socket.off("score:error", errorHandler);
-
-        for (const result of payload.results || []) {
-          results.push(result);
-        }
-
-        resolve(results);
-      };
-
-      const errorHandler = (payload: any) => {
-        this.socket.off("score:progress", progressHandler);
-        this.socket.off("score:complete", completeHandler);
-        this.socket.off("score:error", errorHandler);
-
-        reject(new Error(payload.message || "Unknown error"));
-      };
-
-      this.socket.on("score:progress", progressHandler);
-      this.socket.on("score:complete", completeHandler);
-      this.socket.on("score:error", errorHandler);
-
-      this.socket.emit("score:request", {
-        scorer_id: this.id,
-        segments: segments.map((s: any) => ({ text: s.text })),
+      onProgress({
+        stage: "Initializing...",
+        progress: 0,
       });
-    });
+
+      if (!socket) {
+        throw new Error("WebSocket connection required for RandomScorer");
+      }
+
+      this.socket = socket;
+
+      return new Promise<Segment[]>((resolve, reject) => {
+        const results: Segment[] = [];
+
+        const progressHandler = (payload: any) => {
+          onProgress({
+            stage: "Scoring...",
+            progress: (payload.progress ?? 0) * 100,
+            eta: payload.eta,
+          });
+        };
+
+        const completeHandler = (payload: any) => {
+          this.socket.off("score:progress", progressHandler);
+          this.socket.off("score:complete", completeHandler);
+          this.socket.off("score:error", errorHandler);
+
+          for (const result of payload.results || []) {
+            results.push(result);
+          }
+
+          resolve(results);
+        };
+
+        const errorHandler = (payload: any) => {
+          this.socket.off("score:progress", progressHandler);
+          this.socket.off("score:complete", completeHandler);
+          this.socket.off("score:error", errorHandler);
+
+          reject(new Error(payload.message || "Unknown error"));
+        };
+
+        this.socket.on("score:progress", progressHandler);
+        this.socket.on("score:complete", completeHandler);
+        this.socket.on("score:error", errorHandler);
+
+        this.socket.emit("score:request", {
+          scorer_id: this.id,
+          segments: segments.map((s: any) => ({ text: s.text })),
+        });
+      });
+    } finally {
+      this.scoring = false;
+    }
   }
 }
 

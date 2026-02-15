@@ -125,26 +125,26 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 6: index.vue Integration (1 hour)
+## Phase 6: index.vue Integration (1 hour) ✅ COMPLETED
 
 **File**: `pages/index.vue`
 
-- [ ] Import `SCORERS` from models.ts
-- [ ] Replace `selectedModel` with:
+- [x] Import `SCORERS` from models.ts
+- [x] Replace `selectedModel` with:
   ```typescript
   const selectedScorer = computed(() => 
     SCORERS.find(s => s.id === selectedModel.value)
   );
   ```
-- [ ] Add `currentStage` ref
-- [ ] Update `handleProcessPdf()` to call `selectedScorer.value.score()`
+- [x] Add `currentStage` ref
+- [x] Update `handleProcessPdf()` to call `selectedScorer.value.score()`
   - Pass `data`, `socket` (for WebSocket scorers), and `onProgress` callback
   - `onProgress` updates `currentStage` and segment highlights
-- [ ] Pass `currentStage` to EvalProgress
-- [ ] Listen for `cache:model-needed` event
-- [ ] Auto-open CacheManager when model needed
-- [ ] Ensure WebSocket scorers receive socket connection
-- [ ] Ensure worker scorers do NOT require socket
+- [x] Pass `currentStage` to EvalProgress
+- [x] Listen for `cache:model-needed` event
+- [x] Auto-open CacheManager when model needed
+- [x] Ensure WebSocket scorers receive socket connection
+- [x] Ensure worker scorers do NOT require socket
 
 ---
 

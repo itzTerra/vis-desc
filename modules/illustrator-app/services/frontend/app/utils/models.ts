@@ -157,8 +157,11 @@ abstract class Scorer {
   }
 
   protected getProviders(): string[] {
-    const providers = JSON.parse(localStorage.getItem("onnx_providers") ?? "{}");
-    return providers[this.id] || ["wasm"];
+    try {
+      return [JSON.parse(localStorage.getItem("onnx_providers") ?? "{}")[this.id] || "wasm"];
+    } catch {
+      return ["wasm"];
+    }
   }
 
   dispose(): void {

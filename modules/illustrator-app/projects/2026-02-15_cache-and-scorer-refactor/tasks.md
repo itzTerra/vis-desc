@@ -148,16 +148,16 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 7: CPU/GPU Toggle (1 hour)
+## Phase 7: CPU/GPU Toggle (1 hour) ✅ COMPLETED
 
 **File**: `workers/scorer.worker.ts`
 
-- [ ] Read provider from postMessage payload
-- [ ] Pass to ONNX: `executionProviders: [provider]`
+- [x] Read provider from postMessage payload
+- [x] Pass to ONNX: `executionProviders: [provider]`
 
 **File**: `utils/models.ts` (scorer classes)
 
-- [ ] In scorer `score()` method:
+- [x] In scorer `score()` method:
   - Read from localStorage: `onnx_providers[this.id]`
   - Pass to worker in postMessage
 

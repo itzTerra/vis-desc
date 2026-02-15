@@ -1,20 +1,29 @@
 <template>
   <div v-if="isLoading || isCancelled" class="flex items-center ms-4">
     <div class="flex flex-col">
-      <progress class="progress progress-info w-52" :value="scoredSegmentCount" :max="highlights.length" />
-      <div class="flex justify-between mt-0.5 text-sm opacity-60">
-        <template v-if="!isCancelled && highlights.length">
-          <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
-          <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
-        </template>
-        <template v-else-if="!isCancelled">
-          <span>Loading...</span>
-        </template>
-        <template v-else>
-          <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
-          <span>Loading canceled</span>
-        </template>
-      </div>
+      <!-- Stage 1: Initializing (no progress bar, no ETA) -->
+      <template v-if="!currentStage || currentStage === 'Initializing...'">
+        <span>{{ currentStage || "Initializing..." }}</span>
+      </template>
+
+      <!-- Stage 2: Scoring (with progress bar and ETA) -->
+      <template v-else-if="currentStage === 'Scoring...'">
+        <span>{{ currentStage }} {{ progressPercent }}%</span>
+        <progress class="progress progress-info w-52" :value="scoredSegmentCount" :max="highlights.length" />
+        <div class="flex justify-between mt-0.5 text-sm opacity-60">
+          <template v-if="!isCancelled && highlights.length">
+            <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
+            <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
+          </template>
+          <template v-else-if="!isCancelled">
+            <span>Loading...</span>
+          </template>
+          <template v-else>
+            <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
+            <span>Loading canceled</span>
+          </template>
+        </div>
+      </template>
     </div>
     <button v-if="!isCancelled" class="btn btn-error btn-sm ms-2" @click="$emit('cancel')">
       Stop
@@ -26,6 +35,7 @@
 const props = defineProps<{
   isCancelled: boolean;
   highlights: { score?: number }[];
+  currentStage?: string;
 }>();
 
 defineEmits<{
@@ -37,6 +47,12 @@ const isLoading = defineModel<number | null>();
 const scoredSegmentCount = computed(() =>
   props.highlights.filter(h => typeof h.score === "number").length
 );
+
+const progressPercent = computed(() => {
+  const total = props.highlights.length;
+  if (total === 0) return 0;
+  return Math.round((scoredSegmentCount.value / total) * 100);
+});
 
 const isFinished = computed(() => scoredSegmentCount.value === props.highlights.length);
 

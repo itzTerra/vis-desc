@@ -83,7 +83,7 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 4: CacheManager (1.5 hours) ✅ COMPLETED
+## Phase 4: CacheManager (1.5 hours) ✅ COMPLETED & FIXED
 
 **File**: Rename `ModelManager.vue` → `CacheManager.vue`
 
@@ -95,12 +95,22 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 - [x] Update `queueDownload()` to accept `ModelGroup`
 - [x] Use `useCacheController().downloadGroup()` 
 - [x] Add CPU/GPU toggle:
-  - [x] Create `providers` ref: `Record<string, boolean>`
+  - [x] Create `providers` ref: `Record<string, string>` (now stores "webgpu" or "wasm")
   - [x] Load from localStorage: `onnx_providers`
   - [x] Add toggle UI per group
-  - [x] Watch and save to localStorage
+  - [x] Save to localStorage on change
 - [x] Add remove and clear methods to CacheController
 - [x] All linting checks passing
+
+**Phase 4 Bug Fixes** ✅:
+- [x] Remove redundant watch block with `{ deep: true }` that duplicates updateProvider() logic
+- [x] Wrap JSON.parse() in try-catch on mount for invalid JSON handling
+- [x] Add double-check pattern in queueDownload() after async checkCachedGroups() call
+- [x] Add try-catch around cacheController.init() and checkCachedGroups() in onMounted
+- [x] Fix queue position display from 0-indexed to 1-indexed
+- [x] Change provider storage from boolean to string: "webgpu" or "wasm"
+- [x] Update checkbox binding to check for "webgpu" value
+- [x] Update providers type annotation
 
 ---
 

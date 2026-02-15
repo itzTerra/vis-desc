@@ -43,7 +43,7 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 3: models.ts Rewrite (2 hours) ✓ COMPLETED
+## Phase 3: models.ts Rewrite (2 hours) ✅ COMPLETED & FIXED
 
 **File**: `utils/models.ts` (complete rewrite)
 
@@ -55,19 +55,31 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 - [x] Create `abstract class Scorer` with:
   - Constructor: `id`, `label`, `description`, `speed`, `quality`, `disabled`
   - `stages` property returning 2 stages: "Initializing..." and "Scoring..."
-  - Abstract `score(data, onProgress)` method
+  - Abstract `score(data, onProgress, socket?)` method
+  - `protected getProviders()` method for localStorage access
+  - `dispose()` method for cleanup
 - [x] Create `MiniLMCatBoostScorer` (worker-based):
   - Metadata: speed=5, quality=4, disabled=false
   - Spawns scorer.worker.ts, communicates via postMessage
+  - Concurrent scoring prevention with try-finally
 - [x] Create `NLIRobertaScorer` (worker-based):
   - Metadata: speed=3, quality=5, disabled=false
   - Spawns nli.worker.ts, zero-shot classification
+  - Concurrent scoring prevention with try-finally
 - [x] Create `RandomScorer` (WebSocket-based):
   - Metadata: speed=5, quality=1, disabled=false
   - Uses existing WebSocket connection, server-side random scores
+  - Concurrent scoring prevention with try-finally
 - [x] Create shared instances: `sharedFeatureService`
 - [x] Define `MODEL_GROUPS` array
 - [x] Export `SCORERS` array
+
+**Phase 3 Bug Fixes**:
+- [x] Fix memory leak: Add `{ once: true }` to addEventListener in init handlers
+- [x] Fix abstract method contract: Add optional `socket?: any` parameter
+- [x] Fix localStorage key format: Change from `onnx_providers_${id}` to `onnx_providers[id]`
+- [x] Fix DRY violation: Extract `getProviders()` and `dispose()` to base Scorer class
+- [x] Fix concurrent calls: Add `private scoring` flag with try-finally protection
 
 ---
 

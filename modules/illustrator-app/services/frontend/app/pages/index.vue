@@ -115,7 +115,6 @@ import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { CacheManager } from "#components";
 import { SCORERS, MODEL_GROUPS } from "~/utils/models";
-import { watch } from "vue";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
@@ -127,7 +126,7 @@ const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
 const firstScorer = SCORERS.find(scorer => !scorer.disabled);
 const selectedModel = ref<string>(firstScorer ? firstScorer.id : (SCORERS[0]?.id ?? "random"));
-const selectedScorer = computed(() => 
+const selectedScorer = computed(() =>
   SCORERS.find(s => s.id === selectedModel.value)
 );
 const currentStage = ref<string | undefined>(undefined);
@@ -284,7 +283,7 @@ const handleFileUpload = async (event: any) => {
   if (modelGroup) {
     const { checkGroupCached } = useCacheController();
     let isCached: boolean;
-    
+
     try {
       isCached = await checkGroupCached(modelGroup);
     } catch (error) {
@@ -294,7 +293,7 @@ const handleFileUpload = async (event: any) => {
       currentStage.value = undefined;
       return;
     }
-    
+
     if (!isCached) {
       const { emit } = useCacheEvents();
       emit("cache:model-needed", { groupId: modelGroup.id });
@@ -308,7 +307,7 @@ const handleFileUpload = async (event: any) => {
 
   const formData = new FormData();
   formData.append("pdf", file, file.name);
-  
+
   try {
     const data = await call("/api/pdf-upload" as any, {
       method: "POST",
@@ -345,7 +344,7 @@ const handleFileUpload = async (event: any) => {
         );
       });
     }
-    
+
     const results = await scorer.score(
       data,
       (progress) => {
@@ -424,7 +423,7 @@ function cancelSegmentLoading() {
   if (scorer) {
     scorer.dispose();
   }
-  
+
   socket.close();
 }
 

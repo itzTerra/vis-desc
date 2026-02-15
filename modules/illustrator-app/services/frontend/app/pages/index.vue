@@ -115,6 +115,7 @@ import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { CacheManager } from "#components";
 import { SCORERS, MODEL_GROUPS } from "~/utils/models";
+import { watch } from "vue";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
@@ -263,7 +264,6 @@ const handleFileUpload = async (event: any) => {
   isLoading.value = Date.now();
   currentStage.value = "Initializing...";
   pdfFile.value = file;
-  pdfUrl.value = URL.createObjectURL(file);
 
   const scorer = selectedScorer.value;
   if (!scorer) {
@@ -283,7 +283,17 @@ const handleFileUpload = async (event: any) => {
   const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
   if (modelGroup) {
     const { checkGroupCached } = useCacheController();
-    const isCached = await checkGroupCached(modelGroup);
+    let isCached: boolean;
+    
+    try {
+      isCached = await checkGroupCached(modelGroup);
+    } catch (error) {
+      console.error("Failed to verify model cache:", error);
+      useNotifier().error("Failed to verify model cache. Please try again.");
+      isLoading.value = null;
+      currentStage.value = undefined;
+      return;
+    }
     
     if (!isCached) {
       const { emit } = useCacheEvents();
@@ -293,6 +303,8 @@ const handleFileUpload = async (event: any) => {
       return;
     }
   }
+
+  pdfUrl.value = URL.createObjectURL(file);
 
   const formData = new FormData();
   formData.append("pdf", file, file.name);
@@ -307,17 +319,30 @@ const handleFileUpload = async (event: any) => {
       highlights.splice(0, highlights.length, ...data.segments);
     }
 
-    if (scorer.id === "random") {
+    const needsSocket = scorer.id === "random";
+    if (needsSocket) {
       socket.open();
-      await new Promise<void>((resolve) => {
-        const checkOpen = () => {
-          if (socket.status.value === "OPEN") {
-            resolve();
-          } else {
-            setTimeout(checkOpen, 100);
-          }
-        };
-        checkOpen();
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          stopWatcher();
+          reject(new Error("Socket connection timeout"));
+        }, 10000);
+
+        const stopWatcher = watch(
+          () => socket.status.value,
+          (status) => {
+            if (status === "OPEN") {
+              clearTimeout(timeout);
+              stopWatcher();
+              resolve();
+            } else if (status === "CLOSED") {
+              clearTimeout(timeout);
+              stopWatcher();
+              reject(new Error("Socket connection closed"));
+            }
+          },
+          { immediate: true }
+        );
       });
     }
     
@@ -326,7 +351,7 @@ const handleFileUpload = async (event: any) => {
       (progress) => {
         currentStage.value = progress.stage;
       },
-      scorer.id === "random" ? socket : undefined
+      needsSocket ? socket : undefined
     );
 
     if (Array.isArray(results)) {

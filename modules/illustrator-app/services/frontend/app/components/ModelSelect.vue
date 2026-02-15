@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Scorer } from "~/types/cache";
 import { SCORERS, MODEL_GROUPS } from "~/utils/models";
 
 const modelValue = defineModel<string>({ required: true });
@@ -49,7 +50,7 @@ const emit = defineEmits<{
   requestModelDownload: [scorerId: string];
 }>();
 
-function selectModel(model: { id: string; disabled: boolean }) {
+function selectModel(model: Scorer) {
   if (model.disabled) {
     return;
   }

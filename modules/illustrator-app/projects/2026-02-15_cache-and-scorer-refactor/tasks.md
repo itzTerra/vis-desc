@@ -114,14 +114,14 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 5: EvalProgress (30 min)
+## Phase 5: EvalProgress (30 min) ✅ COMPLETED
 
 **File**: `components/EvalProgress.vue`
 
-- [ ] Add prop: `currentStage?: string`
-- [ ] If stage === "Initializing...": Show text only, no ETA
-- [ ] If stage === "Scoring...": Show progress bar + ETA
-- [ ] Remove multi-stage logic
+- [x] Add prop: `currentStage?: string`
+- [x] If stage === "Initializing...": Show text only, no ETA
+- [x] If stage === "Scoring...": Show progress bar + ETA
+- [x] Remove multi-stage logic
 
 ---
 

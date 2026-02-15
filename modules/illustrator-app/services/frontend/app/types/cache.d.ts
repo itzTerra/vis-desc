@@ -25,3 +25,19 @@ export interface ScorerProgress {
   progress: number;
   eta?: number;
 }
+
+export interface Scorer {
+  id: string;
+  label: string;
+  description: string;
+  speed: number;
+  quality: number;
+  disabled: boolean;
+  stages: ScorerStage[];
+  score(
+    data: any,
+    onProgress: (progress: ScorerProgress) => void,
+    socket?: any
+  ): Promise<any[]>;
+  dispose(): void;
+}

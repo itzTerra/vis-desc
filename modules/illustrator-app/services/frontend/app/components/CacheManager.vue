@@ -99,7 +99,7 @@
                       <input
                         type="checkbox"
                         class="toggle toggle-sm"
-                        :checked="providers[group.id]"
+                        :checked="providers[group.id] === 'webgpu'"
                         @change="(e: any) => updateProvider(group.id, e.target.checked)"
                       >
                     </label>
@@ -181,7 +181,7 @@ const cacheController = new CacheController();
 const cacheManagerDialog = ref<HTMLDialogElement>();
 const downloadQueue = ref<DownloadQueueItem[]>([]);
 const isProcessingQueue = ref(false);
-const providers = ref<Record<string, boolean>>({});
+const providers = ref<Record<string, string>>({});
 const cachedGroups = ref<Set<string>>(new Set());
 
 const currentDownload = computed(() => downloadQueue.value[0] || null);
@@ -214,21 +214,13 @@ function getGroupProgress(group: ModelGroup): number {
 
 function getGroupQueuePosition(group: ModelGroup): number {
   const index = downloadQueue.value.findIndex((item) => item.group.id === group.id);
-  return index >= 0 ? index : -1;
+  return index >= 0 ? index + 1 : -1;
 }
 
 function updateProvider(groupId: string, enabled: boolean): void {
-  providers.value[groupId] = enabled;
+  providers.value[groupId] = enabled ? "webgpu" : "wasm";
   localStorage.setItem("onnx_providers", JSON.stringify(providers.value));
 }
-
-watch(
-  providers,
-  (newVal) => {
-    localStorage.setItem("onnx_providers", JSON.stringify(newVal));
-  },
-  { deep: true }
-);
 
 async function checkCachedGroups(): Promise<void> {
   const cached = new Set<string>();
@@ -246,6 +238,10 @@ async function queueDownload(group: ModelGroup): Promise<void> {
   }
 
   await checkCachedGroups();
+
+  if (downloadQueue.value.some((item) => item.group.id === group.id)) {
+    return;
+  }
 
   if (cachedGroups.value.has(group.id)) {
     useNotifier().info(`${group.name} is already cached`);
@@ -335,11 +331,20 @@ const dialogHandler = () => {
 onMounted(async () => {
   const stored = localStorage.getItem("onnx_providers");
   if (stored) {
-    providers.value = JSON.parse(stored);
+    try {
+      providers.value = JSON.parse(stored);
+    } catch {
+      // Invalid JSON, use defaults
+    }
   }
 
-  await cacheController.init();
-  await checkCachedGroups();
+  try {
+    await cacheController.init();
+    await checkCachedGroups();
+  } catch (error) {
+    console.error("Failed to initialize cache:", error);
+    useNotifier().error("Failed to initialize cache");
+  }
 
   if (isExpanded.value) {
     cacheManagerDialog.value?.showModal();

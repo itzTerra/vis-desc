@@ -24,7 +24,11 @@ class SimpleEventBus {
 
   emit<K extends keyof CacheEventMap>(event: K, payload: CacheEventMap[K]): void {
     this.listeners.get(event)?.forEach((handler) => {
-      handler(payload);
+      try {
+        handler(payload);
+      } catch (error) {
+        console.error(`Error in event handler for '${event}':`, error);
+      }
     });
   }
 }

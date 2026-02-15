@@ -3,21 +3,28 @@ import type { Downloadable, ModelGroup, ScorerProgress } from "~/types/cache";
 export class CacheController {
   private namespace = "transformers-cache";
   private cache: IDBDatabase | null = null;
+  private initPromise: Promise<void> | null = null;
 
   async init(): Promise<void> {
     if (this.cache) {
       return;
     }
 
-    return new Promise((resolve, reject) => {
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(this.namespace, 1);
 
       request.onerror = () => {
+        this.initPromise = null;
         reject(new Error(`Failed to open IndexedDB: ${request.error?.message || "Unknown error"}`));
       };
 
       request.onsuccess = () => {
         this.cache = request.result;
+        this.initPromise = null;
         resolve();
       };
 
@@ -76,7 +83,7 @@ export class CacheController {
 
             let totalDownloaded = 0;
             for (const dl of downloadables) {
-              totalDownloaded += dl.sizeMb * (downloadProgress[dl.id] ?? 0);
+              totalDownloaded += dl.sizeMb * ((downloadProgress[dl.id] ?? 0) / 100);
             }
 
             const overallProgress = totalSize > 0 ? totalDownloaded / totalSize : 0;

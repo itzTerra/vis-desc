@@ -120,12 +120,16 @@
                 </div>
               </div>
               <div class="mt-4">
-                <h3 class="font-semibold mb-2">WordNet Resources</h3>
+                <h3 class="font-semibold mb-2">
+                  WordNet Resources
+                </h3>
                 <div v-for="wn in wordnetModels" :key="wn.id" class="bg-base-200 rounded-lg p-4 border border-base-content/10 mb-2">
                   <div class="flex items-start justify-between gap-4">
                     <div class="flex-1">
                       <div class="flex items-center gap-2">
-                        <h4 class="font-semibold">{{ wn.label }}</h4>
+                        <h4 class="font-semibold">
+                          {{ wn.label }}
+                        </h4>
                         <span v-if="getWordNetDownloadStatus(wn) === 'cached'" class="badge badge-success">
                           <Icon name="lucide:check" class="w-3 h-3 mr-1" />
                           Cached
@@ -182,6 +186,7 @@
 
 <script setup lang="ts">
 import type { ModelId, TModelInfo } from "~/utils/models";
+import { WORDNETS } from "~/utils/models";
 
 interface DownloadQueueItem {
   model: TModelInfo;
@@ -204,7 +209,6 @@ const emit = defineEmits<{
 }>();
 
 const { getOrLoadModel, getModelCacheStatus, clearModelCache, clearAllCache: clearAllCacheFn, syncAllCacheState, getOrLoadWordNet, getWordNetCacheStatus, clearWordNetFromCache } = useModelLoader();
-import { WORDNETS } from "~/utils/models";
 
 const modelManagerDialog = ref<HTMLDialogElement>();
 const downloadQueue = ref<DownloadQueueItem[]>([]);
@@ -317,10 +321,10 @@ async function processQueue() {
     try {
       if (modelInfo.transformersConfig) {
         await getOrLoadModel(modelInfo.transformersConfig, {
-        onProgress: (progress: number) => {
-          current.progress = Math.round(progress);
-        },
-      });
+          onProgress: (progress: number) => {
+            current.progress = Math.round(progress);
+          },
+        });
 
       } else {
         // treat as wordnet resource

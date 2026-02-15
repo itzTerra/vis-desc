@@ -1,0 +1,157 @@
+# Cache and Scorer Refactor - Tasks
+
+Total: ~10 hours over 8 phases. NO backward compatibility.
+
+---
+
+## Phase 1: Types (30 min) ✓ COMPLETED
+
+**File**: `types/cache.d.ts` (new)
+
+- [x] Create `Downloadable` interface: `id`, `label`, `sizeMb`, `download(onProgress)`
+- [x] Create `ModelGroup` interface: `id`, `name`, `downloadables[]`
+- [x] Create `ScorerStage` interface: `label`, `isMain?`
+- [x] Create `ScorerProgress` interface: `stage`, `progress`, `eta?`
+
+---
+
+## Phase 2: CacheController (1 hour) ✓ COMPLETED
+
+**File**: `utils/CacheController.ts` (new)
+
+- [x] Class with constructor: `namespace = "transformers-cache"`
+- [x] `async init()`: Open cache
+- [x] `async exists(key)`: Check if cached
+- [x] `async downloadGroup(group, onProgress)`: Loop downloadables, aggregate progress
+
+**File**: `composables/useCacheController.ts` (new)
+
+- [x] Singleton instance
+- [x] Export composable with `downloadGroup()`, `checkGroupCached()`
+
+**File**: `plugins/cache-event-bus.ts` (new)
+
+- [x] Create event bus (SimpleEventBus - no mitt dependency)
+- [x] Export `useCacheEvents()`
+- [x] Event: `cache:model-needed` with `{ groupId }`
+
+---
+
+## Phase 3: models.ts Rewrite (2 hours)
+
+**File**: `utils/models.ts` (complete rewrite)
+
+- [ ] Delete ALL existing code
+- [ ] Create `abstract class Downloadable` with abstract `download(onProgress)`
+- [ ] Create `FeatureServiceDownloadable` with FeatureService.init()
+- [ ] Create `HuggingFacePipelineDownloadable` with transformers.js pipeline()
+- [ ] Create `OnnxDownloadable` for ONNX models
+- [ ] Create `abstract class Scorer` with:
+  - Constructor: `id`, `label`, `description`, `speed`, `quality`, `disabled`
+  - `stages` property returning 2 stages: "Initializing..." and "Scoring..."
+  - Abstract `score(data, onProgress)` method
+- [ ] Create `MiniLMCatBoostScorer` (worker-based):
+  - Metadata: speed=5, quality=4, disabled=false
+  - Spawns scorer.worker.ts, communicates via postMessage
+- [ ] Create `NLIRobertaScorer` (worker-based):
+  - Metadata: speed=3, quality=5, disabled=false
+  - Spawns nli.worker.ts, zero-shot classification
+- [ ] Create `RandomScorer` (WebSocket-based):
+  - Metadata: speed=5, quality=1, disabled=false
+  - Uses existing WebSocket connection, server-side random scores
+- [ ] Create shared instances: `sharedFeatureService`
+- [ ] Define `MODEL_GROUPS` array
+- [ ] Export `SCORERS` array
+
+---
+
+## Phase 4: CacheManager (1.5 hours)
+
+**File**: Rename `ModelManager.vue` → `CacheManager.vue`
+
+- [ ] Update component name and imports
+- [ ] Import `MODEL_GROUPS` instead of `MODELS`
+- [ ] Loop: `v-for="group in MODEL_GROUPS"`
+- [ ] Display: `group.name` as title
+- [ ] Compute size: `group.downloadables.reduce((s, d) => s + d.sizeMb, 0)`
+- [ ] Update `queueDownload()` to accept `ModelGroup`
+- [ ] Use `useCacheController().downloadGroup()` 
+- [ ] Add CPU/GPU toggle:
+  - Create `providers` ref: `Record<string, boolean>`
+  - Load from localStorage: `onnx_providers`
+  - Add toggle UI per group
+  - Watch and save to localStorage
+
+---
+
+## Phase 5: EvalProgress (30 min)
+
+**File**: `components/EvalProgress.vue`
+
+- [ ] Add prop: `currentStage?: string`
+- [ ] If stage === "Initializing...": Show text only, no ETA
+- [ ] If stage === "Scoring...": Show progress bar + ETA
+- [ ] Remove multi-stage logic
+
+---
+
+## Phase 6: index.vue Integration (1 hour)
+
+**File**: `pages/index.vue`
+
+- [ ] Import `SCORERS` from models.ts
+- [ ] Replace `selectedModel` with:
+  ```typescript
+  const selectedScorer = computed(() => 
+    SCORERS.find(s => s.id === selectedModel.value)
+  );
+  ```
+- [ ] Add `currentStage` ref
+- [ ] Update `handleProcessPdf()` to call `selectedScorer.value.score()`
+  - Pass `data`, `socket` (for WebSocket scorers), and `onProgress` callback
+  - `onProgress` updates `currentStage` and segment highlights
+- [ ] Pass `currentStage` to EvalProgress
+- [ ] Listen for `cache:model-needed` event
+- [ ] Auto-open CacheManager when model needed
+- [ ] Ensure WebSocket scorers receive socket connection
+- [ ] Ensure worker scorers do NOT require socket
+
+---
+
+## Phase 7: CPU/GPU Toggle (1 hour)
+
+**File**: `workers/scorer.worker.ts`
+
+- [ ] Read provider from postMessage payload
+- [ ] Pass to ONNX: `executionProviders: [provider]`
+
+**File**: `utils/models.ts` (scorer classes)
+
+- [ ] In scorer `score()` method:
+  - Read from localStorage: `onnx_providers[this.id]`
+  - Pass to worker in postMessage
+
+---
+
+## Phase 8: Testing (2 hours)
+
+**Cleanup**:
+- [ ] Delete `composables/useModelLoader.ts`
+- [ ] Remove all imports of useModelLoader
+- [ ] Remove old `transformersConfig` references
+
+**End-to-end testing**:
+- [ ] Test MiniLM-CatBoost download and scoring
+- [ ] Test NLI-RoBERTa download and scoring
+- [ ] Test Random scorer
+- [ ] Test CPU/GPU toggle
+- [ ] Test cache persistence
+- [ ] Test stage transitions
+- [ ] Test error handling (cache disabled, network errors, worker failures)
+
+**Completion**:
+- [ ] No TypeScript errors
+- [ ] No console errors
+- [ ] All scorers functional
+- [ ] CPU/GPU toggle working
+- [ ] UI matches old ModelManager

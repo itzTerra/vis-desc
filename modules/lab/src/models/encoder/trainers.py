@@ -1015,10 +1015,24 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         input_names = ["input_ids", "attention_mask", "features"]
         output_names = ["logits"]
 
+        export_dir = model_path.parent / model_path.stem
+        export_dir.mkdir(parents=True, exist_ok=True)
+
+        self.tokenizer.save_pretrained(str(export_dir))
+        hf_config = {
+            "model_type": "modernbert",
+            "feature_count": FeatureExtractorPipeline.FEATURE_COUNT,
+            "vocab_size": getattr(
+                getattr(self.model, "config", None), "vocab_size", None
+            ),
+        }
+        with open(export_dir / "config.json", "w") as f:
+            json.dump(hf_config, f, indent=2)
+
         torch.onnx.export(
             scaled_model,
             (dummy_input_ids, dummy_attention_mask, dummy_features),
-            model_path,
+            export_dir / "model.onnx",
             input_names=input_names,
             output_names=output_names,
             dynamic_axes={
@@ -1030,9 +1044,9 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
             opset_version=18,
             dynamo=False,
         )
-        print(f"ONNX model saved to {model_path}")
+        print(f"ONNX model saved to {export_dir / 'model.onnx'}")
 
-        sess = rt.InferenceSession(str(model_path))
+        sess = rt.InferenceSession(str(export_dir / "model.onnx"))
 
         with torch.no_grad():
             outputs = scaled_model(

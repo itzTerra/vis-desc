@@ -8,10 +8,10 @@ repos:
     rev: v0.9.6
     hooks:
       - id: ruff
-        exclude: .*api\/.*migrations\/.*
+        exclude: .*api\/.*migrations\/.*|.*api/core/protos/.*
         args: [--fix]
       - id: ruff-format
-        exclude: .*api\/.*migrations\/.*
+        exclude: .*api\/.*migrations\/.*|.*api/core/protos/.*
 
   - repo: local
     hooks:

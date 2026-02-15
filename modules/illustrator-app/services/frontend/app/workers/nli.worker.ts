@@ -107,7 +107,6 @@ async function evaluateSegments(data: EvaluateMessage["payload"]) {
         text: segment,
         score: scores[index]
       }));
-      console.log("BATCH RESULTS:", JSON.stringify(batchResults));
 
       self.postMessage({
         type: "progress",

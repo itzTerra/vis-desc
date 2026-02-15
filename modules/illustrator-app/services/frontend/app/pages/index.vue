@@ -15,8 +15,8 @@
       </div>
       <div class="flex items-center gap-3">
         <EvalProgress
+          v-model="isLoading"
           data-help-target="progress"
-          :is-loading="isLoading"
           :is-cancelled="isCancelled"
           :highlights="highlights"
           @cancel="cancelSegmentLoading"
@@ -339,7 +339,6 @@ const socket = useWebSocket(`${runtimeConfig.public.wsBaseUrl}/ws/progress/`, {
     case "success":
       console.log("WS[SUCCESS]:", data.content);
       ws.close();
-      useNotifier().success("Document processed successfully");
       break;
     }
   },

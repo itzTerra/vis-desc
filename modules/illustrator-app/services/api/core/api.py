@@ -5,6 +5,18 @@ import spacy
 
 from ninja import File, Form, NinjaAPI, UploadedFile
 from django.conf import settings
+from django.http import HttpResponse
+
+# The generated Python protobuf module must be created with protoc:
+# protoc --proto_path=services/api/core/protos --python_out=services/api/core/protos services/api/core/protos/spacy.proto
+try:
+    from core.protos import spacy_pb2  # type: ignore
+
+    _HAS_SPACY_PB2 = True
+except Exception as e:
+    spacy_pb2 = None  # type: ignore
+    _HAS_SPACY_PB2 = False
+    print(f"Error importing spacy_pb2: {e}")
 
 from core.tools.book_segmenting import TextSegmenter
 from core.schemas import (
@@ -233,3 +245,84 @@ def spacy_context(request, body: TextBody):
         {"contexts": [serialize_tag_result(*res) for res in batch_results]},
         status=200,
     )
+
+
+@api.post("/spacy-ctx/proto")
+def spacy_context_proto(request, body: TextBody):
+    """Binary protobuf endpoint. This is a new, separate endpoint from `/spacy-ctx`.
+
+    Requires generated Python protobuf bindings (`core.protos.spacy_pb2`).
+    Generate them with protoc before enabling this endpoint.
+    """
+    if not _HAS_SPACY_PB2:
+        return api.create_response(
+            request,
+            {
+                "error": "Protobuf bindings not generated. Run protoc to create core.protos.spacy_pb2."
+            },
+            status=500,
+        )
+
+    texts = body.texts
+    try:
+        preprocessed_texts = [preprocess(text) for text in texts]
+        batch_results = spacy_pipeline.batch_tag(preprocessed_texts)
+    except Exception as e:
+        return api.create_response(request, {"error": str(e)}, status=500)
+
+    msg = spacy_pb2.SpaCyContexts()
+    for c in [serialize_tag_result(*res) for res in batch_results]:
+        ctx = msg.contexts.add()
+        for t in c.get("tokens", []):
+            tok = ctx.tokens.add()
+            tok.paragraph_id = int(t.get("paragraphId") or 0)
+            tok.sentence_id = int(t.get("sentenceId") or 0)
+            tok.within_sentence_id = int(t.get("withinSentenceId") or 0)
+            tok.token_id = int(t.get("tokenId") or 0)
+            tok.text = t.get("text") or ""
+            tok.pos = t.get("pos") or ""
+            tok.fine_pos = t.get("finePos") or ""
+            tok.lemma = t.get("lemma") or ""
+            tok.deprel = t.get("deprel") or ""
+            tok.dephead = int(t.get("dephead") or 0)
+            tok.ner = t.get("ner") or ""
+            tok.start_byte = int(t.get("startByte") or 0)
+            tok.end_byte = int(t.get("endByte") or 0)
+            morph = t.get("morph") or {}
+            if isinstance(morph, dict):
+                for mk, mv in morph.items():
+                    try:
+                        tok.morph[mk] = str(mv)
+                    except Exception:
+                        pass
+            tok.like_num = bool(t.get("likeNum"))
+            tok.is_stop = bool(t.get("isStop"))
+            tok.itext = t.get("itext") or ""
+            tok.in_quote = bool(t.get("inQuote"))
+            tok.event = bool(t.get("event"))
+
+        for s in c.get("sentences", []):
+            sent = ctx.sentences.add()
+
+            def _fill_senttoken(dst, src):
+                if not src:
+                    return
+                dst.text = src.get("text") or ""
+                dst.pos_ = src.get("pos_") or ""
+                dst.dep_ = src.get("dep_") or ""
+                for child in src.get("children", []):
+                    ch = dst.children.add()
+                    _fill_senttoken(ch, child)
+
+            _fill_senttoken(sent.root, s.get("root"))
+            sent.start = int(s.get("start") or 0)
+            sent.end = int(s.get("end") or 0)
+
+        for nc in c.get("nounChunks", []):
+            nn = ctx.noun_chunks.add()
+            nn.start = int(nc.get("start") or 0)
+            nn.end = int(nc.get("end") or 0)
+            nn.text = nc.get("text") or ""
+
+    data = msg.SerializeToString()
+    return HttpResponse(data, content_type="application/x-protobuf")

@@ -68,6 +68,11 @@ async function evaluateSegments(data: ExtractMessage["payload"]): Promise<void> 
   const totalBatches = Math.ceil(texts.length / batchSize);
 
   try {
+    const batches = Array.from({ length: totalBatches }, (_, i) => texts.slice(i * batchSize, (i + 1) * batchSize));
+
+    // Do not await here - we want to start preloading while we process batches sequentially
+    featureService.getFeaturesAllBatchPreload(batches);
+
     for (let i = 0; i < texts.length; i += batchSize) {
       const batchTexts = texts.slice(i, i + batchSize);
 
@@ -98,8 +103,6 @@ async function evaluateSegments(data: ExtractMessage["payload"]): Promise<void> 
         const score = scoresArray.length === batchCount ? scoresArray[idx] : scoresArray[idx * (scoresArray.length / batchCount)];
         return { text, score: score / 5 } as TextEvaluationResult;
       });
-
-      console.log("BATCH RESULTS:", JSON.stringify(results));
 
       const progressPayload: ExtractProgressPayload = {
         batchIndex: Math.floor(i / batchSize) + 1,

@@ -51,6 +51,7 @@ export default defineNuxtConfig({
         "@huggingface/transformers",
         "booknlp-ts",
         "jszip",
+        "protobufjs",
       ],
       exclude: [
         "onnxruntime-web",

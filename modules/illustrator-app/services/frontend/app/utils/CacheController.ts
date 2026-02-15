@@ -35,6 +35,8 @@ export class CacheController {
         }
       };
     });
+
+    return this.initPromise;
   }
 
   async exists(key: string): Promise<boolean> {
@@ -94,9 +96,9 @@ export class CacheController {
           });
 
           await this.cacheDownloadable(downloadable);
-          downloadProgress[downloadable.id] = 1;
+          downloadProgress[downloadable.id] = 100;
         } else {
-          downloadProgress[downloadable.id] = 1;
+          downloadProgress[downloadable.id] = 100;
         }
       }
     } catch (error) {

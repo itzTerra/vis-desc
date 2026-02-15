@@ -5,6 +5,7 @@ export interface LoadMessage {
     cacheName?: string;
     modelUrl?: string; // Optional URL for the ONNX model, used in scorer.worker
     spacyCtxUrl: string;
+    providers?: string[];
   };
 }
 

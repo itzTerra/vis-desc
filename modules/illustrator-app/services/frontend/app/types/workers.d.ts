@@ -13,6 +13,7 @@ interface LoadMessage extends WorkerMessage {
     huggingFaceId: string;
     modelFileName?: string;
     pipeline: PipelineType;
+    providers?: string[];
   };
 }
 

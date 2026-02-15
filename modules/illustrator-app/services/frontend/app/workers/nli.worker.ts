@@ -57,7 +57,7 @@ async function loadModel(config: LoadMessage["payload"]) {
           }
         },
         dtype: "q8",
-        device: "wasm"
+        device: config.providers?.[0] || "wasm"
       }
     ) as any;
 

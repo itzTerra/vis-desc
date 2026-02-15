@@ -25,7 +25,7 @@ async function loadModel(config: LoadMessage["payload"]): Promise<void> {
 
     try {
       ortSession = await ort.InferenceSession.create(catboostModel, {
-        executionProviders: ["wasm"],
+        executionProviders: config.providers?.length ? config.providers : ["wasm"],
       } as any);
     } catch (err) {
       self.postMessage({
@@ -127,6 +127,7 @@ async function evaluateSegments(data: ExtractMessage["payload"]): Promise<void> 
  */
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   switch (event.data.type) {
+  case "init":
   case "load":
     await loadModel((event.data as LoadMessage).payload);
     break;

@@ -1,4 +1,7 @@
 onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - esbuild
   - onnxruntime-node
   - protobufjs
   - sharp
+  - unrs-resolver

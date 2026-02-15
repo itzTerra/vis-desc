@@ -59,3 +59,6 @@ export interface AlertOptions {
   message: string;
   duration?: number;
 }
+
+// progress: 0 to 1
+export type ProgressCallback = (progress: number) => void;

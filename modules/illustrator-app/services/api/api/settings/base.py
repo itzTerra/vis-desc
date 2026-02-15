@@ -181,7 +181,7 @@ DRAMATIQ_BROKER = {
         "dramatiq.middleware.Retries",
         "dramatiq.middleware.CurrentMessage",
         "django_dramatiq.middleware.DbConnectionsMiddleware",
-        "core.dramatiq.middleware.WorkerInitializationMiddleware",
+        # "core.dramatiq.middleware.WorkerInitializationMiddleware",
     ],
 }
 
@@ -199,6 +199,7 @@ POLYGON_PADDING_PX = 1
 # Use HF_HOME for huggingface
 MODEL_CACHE_DIR = env.str("MODEL_CACHE_DIR", default="/app/model_cache")
 ENABLE_DRAMATIQ = env.bool("ENABLE_DRAMATIQ", default=True)
+SPACY_MODEL = env.str("SPACY_MODEL", default="en_core_web_sm")
 
 # LLM Configuration for text enhancement
 EINFRA_API_KEY = env.str("EINFRA_API_KEY", default="")

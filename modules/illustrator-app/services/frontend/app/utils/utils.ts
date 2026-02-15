@@ -1,5 +1,7 @@
 export const DEFAULT_PAGE_ASPECT_RATIO = 1.4142; // A4 fallback (height / width)
 
+export const IS_WEBGPU_AVAILABLE = typeof navigator !== "undefined" && "gpu" in navigator;
+
 function easeInExpo(x: number): number {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
 }
@@ -148,4 +150,19 @@ function lerp(start: number, end: number, t: number): number {
   return start + (end - start) * t;
 }
 
-export { easeInExpo, assertIsDefined, scrollIntoView, clamp, lerp };
+/**
+ * Unicode-aware casefold helper using NFKC normalization and small mappings.
+ * This is a conservative casefold implementation suitable for feature extraction.
+ */
+function casefold(s: string): string {
+  if (!s) return s;
+  // Normalize to NFKC to combine compatibility characters
+  let v = s.normalize("NFKC");
+  // Basic mappings (extend if needed)
+  v = v.replace(/\u00DF/g, "ss"); // German sharp s
+  v = v.replace(/\u017F/g, "s"); // long s
+  // Final lowercase (locale-insensitive)
+  return v.toLowerCase();
+}
+
+export { easeInExpo, assertIsDefined, scrollIntoView, clamp, lerp, casefold };

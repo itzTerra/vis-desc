@@ -1,43 +1,19 @@
 <template>
   <div>
     <div
-      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col sm:flex-row gap-3 justify-between sm:items-center sticky top-0 z-50 h-[114px] sm:h-[58px]"
+      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-[58px]"
     >
-      <div class="flex items-center flex-grow-1 w-100">
-        <div class="flex items-end gap-4 flex-grow-1">
-          <input
-            type="file"
-            accept="application/pdf"
-            class="file-input file-input-primary"
-            data-help-target="file"
-            @change="handleFileUpload"
-          >
-          <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
-          <AutoIllustration
-            v-model:enabled="autoIllustration.enabled.value"
-            v-model:min-gap-pages="autoIllustration.minGapPages.value"
-            v-model:max-gap-pages="autoIllustration.maxGapPages.value"
-            v-model:min-score="autoIllustration.minScore.value"
-            v-model:enable-enhance="autoIllustration.enableEnhance.value"
-            v-model:enable-generate="autoIllustration.enableGenerate.value"
-            :run-pass="autoIllustration.runPass"
-            :clear-auto-selections="autoIllustration.clearAutoSelections"
-            :progress="autoIllustration.progress.value"
-            :is-active="(autoIllustration.isActive?.value) ?? (((autoIllustration.progress?.value?.enhancedCount ?? 0) > 0) || ((autoIllustration.progress?.value?.generatedCount ?? 0) > 0))"
-            data-help-target="auto-illustration"
-          />
-          <button
-            v-if="pdfUrl"
-            class="btn btn-primary btn-outline"
-            title="Export as HTML"
-            data-help-target="export"
-            :disabled="isLoading !== null || highlights.length === 0"
-            @click="handleExportConfirm"
-          >
-            <Icon name="lucide:download" size="18" />
-            Export
-          </button>
-        </div>
+      <div class="flex items-center gap-3">
+        <input
+          type="file"
+          accept="application/pdf"
+          class="file-input file-input-primary"
+          data-help-target="file"
+          @change="handleFileUpload"
+        >
+        <ModelSelect v-model="modelSelect" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
+      </div>
+      <div class="flex items-center gap-3">
         <EvalProgress
           data-help-target="progress"
           :is-loading="isLoading"
@@ -45,8 +21,32 @@
           :highlights="highlights"
           @cancel="cancelSegmentLoading"
         />
+        <AutoIllustration
+          v-model:enabled="autoIllustration.enabled.value"
+          v-model:min-gap-pages="autoIllustration.minGapPages.value"
+          v-model:max-gap-pages="autoIllustration.maxGapPages.value"
+          v-model:min-score="autoIllustration.minScore.value"
+          v-model:enable-enhance="autoIllustration.enableEnhance.value"
+          v-model:enable-generate="autoIllustration.enableGenerate.value"
+          :run-pass="autoIllustration.runPass"
+          :clear-auto-selections="autoIllustration.clearAutoSelections"
+          :progress="autoIllustration.progress.value"
+          :is-active="(autoIllustration.isActive?.value) ?? (((autoIllustration.progress?.value?.enhancedCount ?? 0) > 0) || ((autoIllustration.progress?.value?.generatedCount ?? 0) > 0))"
+          data-help-target="auto-illustration"
+        />
+        <button
+          v-if="pdfUrl"
+          class="btn btn-primary btn-outline"
+          title="Export as HTML"
+          data-help-target="export"
+          :disabled="isLoading !== null || highlights.length === 0"
+          @click="handleExportConfirm"
+        >
+          <Icon name="lucide:download" size="18" />
+          Export
+        </button>
       </div>
-      <div class="flex items-center gap-3 self-end">
+      <div class="flex items-center gap-3 ms-auto">
         <HighlightNav
           ref="highlightNav"
           data-help-target="nav"
@@ -541,6 +541,8 @@ onMounted(() => {
     },
     "Load example PDF and segments"
   );
+
+  initializeApp();
 });
 
 function onEditorStateChange(nextState: any) {

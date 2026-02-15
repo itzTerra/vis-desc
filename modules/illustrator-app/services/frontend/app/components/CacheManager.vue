@@ -9,11 +9,11 @@
         </button>
       </div>
       <!-- Minimized download progress bar (Steam-like) -->
-      <div v-else class="bg-base-200 rounded-lg shadow-xl border border-base-content/20 min-w-[400px] max-w-[600px] cursor-pointer" @click="isExpanded = true">
+      <div v-else class="bg-base-200 rounded-lg shadow-xl border border-base-content/20 min-w-100 max-w-150 cursor-pointer" @click="isExpanded = true">
         <div class="flex items-center justify-between px-4 pt-2 pb-1">
           <div class="flex items-center gap-2 flex-1">
             <div class="text-sm font-semibold text-base-content/80">
-              <Icon name="lucide:download" class="w-4 h-4 mr-1 mb-[-2px]" />
+              <Icon name="lucide:download" class="w-4 h-4 mr-1 -mb-0.5" />
               Downloading {{ currentDownload?.group.name }} |
             </div>
             <div class="text-xs text-base-content/60">
@@ -293,7 +293,13 @@ async function removeGroupFromCache(group: ModelGroup): Promise<void> {
 
   try {
     for (const downloadable of group.downloadables) {
-      await cacheController.remove(downloadable.id);
+      const existsInOtherGroup = MODEL_GROUPS.some(
+        (g) => g.id !== group.id && cachedGroups.value.has(g.id) && g.downloadables.some((d) => d.id === downloadable.id)
+      );
+
+      if (!existsInOtherGroup) {
+        await cacheController.remove(downloadable.id);
+      }
     }
     useNotifier().success("Group removed from cache");
     await checkCachedGroups();
@@ -351,7 +357,7 @@ onMounted(async () => {
   }
 
   if (cacheManagerDialog.value) {
-    cacheManagerDialog.value.addEventListener("close", dialogHandler, { once: true });
+    cacheManagerDialog.value.addEventListener("close", dialogHandler);
   }
 });
 

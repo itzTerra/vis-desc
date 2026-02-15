@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ping */
+        get: operations["core_api_ping"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/process/seg/pdf": {
         parameters: {
             query?: never;
@@ -83,6 +100,49 @@ export interface paths {
         put?: never;
         /** Enhance Text */
         post: operations["core_api_enhance_text"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/spacy-ctx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Spacy Context
+         * @description Return a JSON object matching the SpaCyContext shape defined in the frontend types.
+         */
+        post: operations["core_api_spacy_context"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/spacy-ctx/proto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Spacy Context Proto
+         * @description Binary protobuf endpoint. This is a new, separate endpoint from `/spacy-ctx`.
+         *
+         *     Requires generated Python protobuf bindings (`core.protos.spacy_pb2`).
+         *     Generate them with protoc before enabling this endpoint.
+         */
+        post: operations["core_api_spacy_context_proto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -157,6 +217,84 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** NounChunk */
+        NounChunk: {
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+            /** Text */
+            text: string;
+        };
+        /** SentToken */
+        SentToken: {
+            /** Text */
+            text: string;
+            /** Pos */
+            pos_: string;
+            /** Dep */
+            dep_: string;
+            /** Children */
+            children: components["schemas"]["SentToken"][];
+        };
+        /** SpaCyContext */
+        SpaCyContext: {
+            /** Tokens */
+            tokens: components["schemas"]["SpaCyToken"][];
+            /** Sentences */
+            sentences: components["schemas"]["SpacySent"][];
+            /** Nounchunks */
+            nounChunks: components["schemas"]["NounChunk"][];
+        };
+        /** SpaCyToken */
+        SpaCyToken: {
+            /** Text */
+            text: string;
+            /** Startbyte */
+            startByte: number;
+            /** Endbyte */
+            endByte: number;
+            /** Pos */
+            pos: string;
+            /** Finepos */
+            finePos: string;
+            /** Lemma */
+            lemma: string;
+            /** Deprel */
+            deprel: string;
+            /** Dephead */
+            dephead: number;
+            /** Morph */
+            morph: {
+                [key: string]: string;
+            };
+            /** Likenum */
+            likeNum: boolean;
+            /** Isstop */
+            isStop: boolean;
+            /** Sentenceid */
+            sentenceId: number;
+            /** Withinsentenceid */
+            withinSentenceId: number;
+        };
+        /** SpacyContextResponse */
+        SpacyContextResponse: {
+            /** Contexts */
+            contexts: components["schemas"]["SpaCyContext"][];
+        };
+        /** SpacySent */
+        SpacySent: {
+            root: components["schemas"]["SentToken"];
+            /** Start */
+            start: number;
+            /** End */
+            end: number;
+        };
+        /** TextBody */
+        TextBody: {
+            /** Texts */
+            texts: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -167,6 +305,24 @@ export interface components {
 export type $defs = Record<string, never>;
 export interface operations {
     core_api_health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    core_api_ping: {
         parameters: {
             query?: never;
             header?: never;
@@ -299,6 +455,52 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["BatchEnhanceItem"][];
                 };
+            };
+        };
+    };
+    core_api_spacy_context: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpacyContextResponse"];
+                };
+            };
+        };
+    };
+    core_api_spacy_context_proto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

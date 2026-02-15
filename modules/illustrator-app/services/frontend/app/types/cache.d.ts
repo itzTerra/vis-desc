@@ -2,6 +2,9 @@
  * Download/cache related types for the cache and scorer system.
  */
 
+import type { DataType, PipelineType } from "@huggingface/transformers";
+import type { ExecutionProvider } from "booknlp-ts";
+
 export interface Downloadable {
   id: string;
   label: string;
@@ -40,4 +43,12 @@ export interface Scorer {
     socket?: any
   ): Promise<any[]>;
   dispose(): void;
+}
+
+export interface HFPipelineConfig {
+  model: string;
+  type: PipelineType;
+  dtype: DataType;
+  device?: ExecutionProvider;
+  subfolder?: string;
 }

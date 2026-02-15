@@ -2,7 +2,7 @@ import { getPolysemyCount, downloadAndLoadWordNet } from "~/utils/wordnet";
 import { estimate as estimateSyllables } from "~/utils/syllables";
 import { WORDNETS } from "~/utils/models";
 import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
-import { BookNLP, type BookNLPResult, type SpaCyContext } from "booknlp-ts";
+import { BookNLP, type BookNLPResult, type ExecutionProvider, type SpaCyContext } from "booknlp-ts";
 import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
 import charNgrams from "~/assets/data/features/char_ngrams_features.json";
 import posNgrams from "~/assets/data/features/pos_ngrams_features.json";
@@ -14,6 +14,7 @@ import concretenessMulti from "~/assets/data/features/concreteness/multiword.jso
 import concretenessPrepositions from "~/assets/data/features/concreteness/prepositions.json";
 import concretenessPlaces from "~/assets/data/features/concreteness/places.json";
 import type { ProgressCallback } from "~/types/common";
+import type { HFPipelineConfig } from "~/types/cache";
 
 interface TokenData {
   text: string;
@@ -176,7 +177,7 @@ class WorkerPool {
   next = 0;
 
   constructor(n: number) {
-    this.workers = Array.from({ length: n }, () => new Worker(new URL("./spacy-worker.ts", import.meta.url), { type: "module" }));
+    this.workers = Array.from({ length: n }, () => new Worker(new URL("~/workers/spacy-worker.ts", import.meta.url), { type: "module" }));
   }
 
   request(action: "fetchJson"|"fetchProto", url: string, texts: string[]): Promise<any[]> {
@@ -505,20 +506,22 @@ class FeatureExtractorPipeline {
     return `(${parts.map((p) => `'${p}'`).join(", ")})`;
   }
 
-  async init(cacheName: string, progressCallback: ProgressCallback): Promise<void> {
+  async init({progressCallback, providers}: {progressCallback?: ProgressCallback, providers?: ExecutionProvider[]} = {}): Promise<void> {
     this.spacyWorkerPool = new WorkerPool(4);
 
     let booknlpProgress = 0;
     let wordnetProgress = 0;
     const report = () => {
       const combined = 0.5 * booknlpProgress + 0.5 * wordnetProgress;
-      progressCallback(Math.min(Math.max(combined, 0), 1));
+      if (progressCallback) {
+        progressCallback(Math.min(Math.max(combined, 0), 1));
+      }
     };
 
     const bookNLPPromise = this.bookNLP.initialize({
       pipeline: ["entity", "supersense", "event"],
-      executionProviders: ["wasm"],
-      cacheName: cacheName,
+      executionProviders: providers?.length ? providers : ["wasm"],
+      cacheName: CACHE_NAME,
       dtype: "fp32",
     }, (progress) => {
       booknlpProgress = progress;
@@ -526,7 +529,7 @@ class FeatureExtractorPipeline {
     });
 
     const defaultWn = WORDNETS[0];
-    const wordnetPromise = downloadAndLoadWordNet(defaultWn.id, defaultWn.downloadUrl, cacheName, (progress) => {
+    const wordnetPromise = downloadAndLoadWordNet(defaultWn.id, defaultWn.downloadUrl, CACHE_NAME, (progress) => {
       wordnetProgress = progress;
       report();
     });
@@ -1289,23 +1292,6 @@ class FeatureExtractorPipeline {
     return counts.map((c) => c / total);
   }
 
-
-  async fetchSpaCyContexts(texts: string[]): Promise<SpaCyContext[]> {
-    // Offload fetch+parse to worker to avoid blocking main thread
-    return this.spacyWorkerPool!.request("fetchJson", this.spacyCtxUrl, texts);
-  }
-
-  /**
-   * New: Fetch SpaCy contexts from the dedicated protobuf endpoint `/spacy-ctx/proto`.
-   * This function is separate from `fetchSpaCyContexts` and expects a binary
-   * protobuf response. It uses a bundled `SPACY_PROTO` string and `protobufjs`
-   * (statically imported) so nothing is dynamically imported at runtime.
-   */
-  async fetchSpaCyContextsProto(texts: string[]): Promise<SpaCyContext[]> {
-    // Use worker to fetch + decode protobuf off-main-thread
-    return this.spacyWorkerPool!.request("fetchProto", this.spacyCtxUrl.replace("/spacy-ctx", "/spacy-ctx/proto"), texts);
-  }
-
   private _hashBatch = (batch: string[]): string => {
     // Join with a control character to avoid collisions from simple separators
     const s = batch.join("\u0001");
@@ -1316,6 +1302,17 @@ class FeatureExtractorPipeline {
     }
     return (h >>> 0).toString(16);
   };
+
+  async fetchSpaCyContexts(texts: string[]): Promise<any[]> {
+    if (!this.spacyWorkerPool) {
+      throw new Error("SpaCy worker pool not initialized");
+    }
+    const p = this.spacyCtxUrl.endsWith("/proto")
+      ? this.spacyWorkerPool.request("fetchProto", this.spacyCtxUrl, texts)
+      : this.spacyWorkerPool.request("fetchJson", this.spacyCtxUrl, texts);
+    this.spacyCtxCache[this._hashBatch(texts)] = p;
+    return await p;
+  }
 
   /**
    * Prefetch SpaCy contexts into local cache for all batches of texts, one batch at a time
@@ -1329,14 +1326,14 @@ class FeatureExtractorPipeline {
 
     for (const batch of textBatches) {
       const key = this._hashBatch(batch);
+      // @ts-ignore
       if (this.spacyCtxCache[key]) continue;
 
       const taskPromise = (async () => {
-        const p = this.fetchSpaCyContextsProto(batch);
-        this.spacyCtxCache[key] = p;
+        const p = this.fetchSpaCyContexts(batch);
         try {
           await p;
-          console.log(`Prefetched SpaCy contexts for batch with hash ${key}`);
+          // console.log(`Prefetched SpaCy contexts for batch with hash ${key}`);
           return { id: key, ok: true };
         } catch (err) {
           // remove failed entry so callers can retry
@@ -1374,11 +1371,8 @@ class FeatureExtractorPipeline {
       throw new Error("BookNLP or WordNet not ready");
     }
 
-    console.log(`Extracting features for ${texts.length} texts with BookNLP...`);
-    console.log("cache:", this.spacyCtxCache, "current hash:", this._hashBatch(texts));
     const spacyPromise = this.spacyCtxCache[this._hashBatch(texts)];
     const spaCyContexts = spacyPromise ? (await spacyPromise) : await this.fetchSpaCyContexts(texts);
-    console.log("Received SpaCy contexts, processing with BookNLP and extracting features...");
 
     const results: number[][] = [];
     for (let i = 0; i < texts.length; i++) {
@@ -1429,25 +1423,27 @@ export class FeatureService {
     this.featureExtractor = new FeatureExtractorPipeline(spacyCtxUrl);
   }
 
-  async init(cacheName: string = "feature-service", progressCallback: ProgressCallback): Promise<void> {
+  async init(embeddingPipelineConfig: HFPipelineConfig, {progressCallback, providers, }: {progressCallback?: ProgressCallback, providers?: ExecutionProvider[]} = {}): Promise<void> {
     // Track each part's progress and report combined progress (0..1).
     let extractorProgress = 0;
     let pipelineProgress = 0;
     const report = () => {
       const combined = 0.5 * extractorProgress + 0.5 * pipelineProgress;
-      progressCallback(Math.min(Math.max(combined, 0), 1));
+      if (progressCallback) {
+        progressCallback(Math.min(Math.max(combined, 0), 1));
+      }
     };
 
     // Start both initialization promises concurrently and await them together.
-    const extractorPromise = this.featureExtractor.init(cacheName, (progress) => {
+    const extractorPromise = this.featureExtractor.init({ progressCallback: (progress) => {
       extractorProgress = Math.min(Math.max(progress ?? 0, 0), 1);
       report();
-    });
+    }, providers });
 
     // @ts-ignore
     const pipelinePromise = pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2",
+      embeddingPipelineConfig.type,
+      embeddingPipelineConfig.model,
       {
         progress_callback: ((data: any) => {
           if (data.progress !== undefined && data.file?.endsWith(".onnx")) {
@@ -1455,8 +1451,8 @@ export class FeatureService {
             report();
           }
         }) as (data: any) => void,
-        dtype: "fp32",
-        device: "wasm",
+        dtype: embeddingPipelineConfig.dtype,
+        device: embeddingPipelineConfig.device as any,
       }
     ) as Promise<FeatureExtractionPipeline>;
 

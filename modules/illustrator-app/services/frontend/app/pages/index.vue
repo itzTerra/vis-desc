@@ -1,7 +1,7 @@
 <template>
   <div>
     <div
-      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-[58px]"
+      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-14.5"
     >
       <div class="flex items-center gap-3">
         <input
@@ -71,7 +71,7 @@
     <div class="bottom-bar">
       <div v-if="!seenHelpOnce" class="tooltip tooltip-open tooltip-info tooltip-left">
         <div class="tooltip-content pointer-events-auto p-0">
-          <div class="relative flex items-end px-2 pb-2 h-[40px]">
+          <div class="relative flex items-end px-2 pb-2 h-10">
             Start a 1-minute guided tour now!
             <button class="absolute right-1 top-0 cursor-pointer text-xs" @click="seenHelpOnce = true">
               ✕
@@ -100,7 +100,7 @@
         <Icon name="uil:github" size="34px" />
         <div class="pe-2 text-xs/3 flex flex-col grow-0 font-light font-mono">
           <span class="text-base-content/70">v{{ $config.public.appVersion }}</span>
-          <small class="truncate text-base-content/50 max-w-[60px]">#{{ $config.public.commitHash }}</small>
+          <small class="truncate text-base-content/50 max-w-15">#{{ $config.public.commitHash }}</small>
         </div>
       </NuxtLink>
     </div>
@@ -524,18 +524,12 @@ async function handleModelDownloadRequest(scorerId: string): Promise<void> {
   if (!modelGroup) {
     return;
   }
-
   const { checkGroupCached } = useCacheController();
   const isCached = await checkGroupCached(modelGroup);
-
-  if (isCached) {
-    const scorer = SCORERS.find(s => s.id === scorerId);
-    useNotifier().success(`${scorer?.label || "Model"} is ready to use`);
-    return;
+  if (!isCached) {
+    const { emit } = useCacheEvents();
+    emit("cache:model-needed", { groupId: modelGroup.id });
   }
-
-  cacheManagerRef.value?.queueDownload(modelGroup);
-  cacheManagerExpanded.value = true;
 }
 
 function onPdfRendered() {

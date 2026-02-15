@@ -1,8 +1,10 @@
 import { pipeline, env } from "@huggingface/transformers";
-import type { PipelineType } from "@huggingface/transformers";
 import { FeatureService } from "~/utils/text2features";
-import type { Downloadable, ModelGroup, ScorerStage, ScorerProgress } from "~/types/cache";
+import type { Downloadable, ModelGroup, ScorerStage, ScorerProgress, HFPipelineConfig } from "~/types/cache";
 import type { Segment } from "~/types/common";
+import type { paths } from "~/types/schema";
+import type { EvaluateMessage, CatboostLoadMessage, NLILoadMessage } from "~/types/scorer-worker";
+import type { ExecutionProvider } from "booknlp-ts";
 
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
@@ -23,64 +25,51 @@ abstract class BaseDownloadable implements Downloadable {
 }
 
 class FeatureServiceDownloadable extends BaseDownloadable {
-  private spacyCtxUrl: string;
-  private cacheName: string;
-
-  constructor(
-    id: string,
-    label: string,
-    sizeMb: number,
-    spacyCtxUrl: string = "/assets/data/en_core_web_sm-3.7.1/",
-    cacheName: string = "feature-service"
-  ) {
-    super(id, label, sizeMb);
-    this.spacyCtxUrl = spacyCtxUrl;
-    this.cacheName = cacheName;
-  }
+  spacyCtxUrl: keyof paths = "/api/spacy-ctx";
+  embeddingPipelineConfig: HFPipelineConfig = {
+    model: "Xenova/all-MiniLM-L6-v2",
+    type: "feature-extraction",
+    dtype: "fp32",
+    device: "wasm",
+  };
 
   async download(onProgress: (progress: number) => void): Promise<void> {
     const featureService = new FeatureService(this.spacyCtxUrl);
-    await featureService.init(this.cacheName, (progress) => {
+    await featureService.init(this.embeddingPipelineConfig, { progressCallback: (progress) => {
       onProgress(progress * 100);
-    });
+    } });
   }
 }
 
 class HuggingFacePipelineDownloadable extends BaseDownloadable {
-  private huggingFaceId: string;
-  private pipelineType: PipelineType;
-  private subfolder?: string;
+  pipelineConfig: HFPipelineConfig;
 
   constructor(
     id: string,
     label: string,
     sizeMb: number,
-    huggingFaceId: string,
-    pipelineType: PipelineType,
-    subfolder?: string
+    pipelineConfig: HFPipelineConfig
   ) {
     super(id, label, sizeMb);
-    this.huggingFaceId = huggingFaceId;
-    this.pipelineType = pipelineType;
-    this.subfolder = subfolder;
+    this.pipelineConfig = pipelineConfig;
   }
 
   async download(onProgress: (progress: number) => void): Promise<void> {
-    await pipeline(this.pipelineType, this.huggingFaceId, {
-      subfolder: this.subfolder || "",
+    await pipeline(this.pipelineConfig.type, this.pipelineConfig.model, {
+      subfolder: this.pipelineConfig.subfolder || "",
       progress_callback: (data: any) => {
         if (data.progress !== undefined && data.file.endsWith(".onnx")) {
           onProgress(data.progress * 100);
         }
       },
-      dtype: "q8",
-      device: "wasm",
+      dtype: this.pipelineConfig.dtype,
+      device: this.pipelineConfig.device as any,
     });
   }
 }
 
 class OnnxDownloadable extends BaseDownloadable {
-  private modelUrl: string;
+  modelUrl: string;
 
   constructor(
     id: string,
@@ -156,11 +145,11 @@ abstract class Scorer {
     ];
   }
 
-  protected getProviders(): string[] {
+  protected getExecutionProvider(): ExecutionProvider {
     try {
-      return [JSON.parse(localStorage.getItem("onnx_providers") ?? "{}")[this.id] || "wasm"];
+      return JSON.parse(localStorage.getItem("onnx_providers") ?? "{}")[this.id] || "wasm";
     } catch {
-      return ["wasm"];
+      return "wasm";
     }
   }
 
@@ -187,7 +176,7 @@ class MiniLMCatBoostScorer extends Scorer {
       "minilm_catboost",
       "MiniLM-CatBoost",
       "Fast local inference with feature extraction",
-      5,
+      4,
       4,
       false
     );
@@ -215,7 +204,7 @@ class MiniLMCatBoostScorer extends Scorer {
           type: "module",
         });
 
-        const providers = this.getProviders();
+        const provider = this.getExecutionProvider();
         await new Promise<void>((resolve, reject) => {
           const handler = (event: MessageEvent) => {
             if (event.data.type === "ready") {
@@ -226,14 +215,16 @@ class MiniLMCatBoostScorer extends Scorer {
           };
 
           this.worker!.addEventListener("message", handler, { once: true });
-          this.worker!.postMessage({
-            type: "init",
+          const loadMsg: CatboostLoadMessage = {
+            type: "load",
             payload: {
-              spacyCtxUrl: "/assets/data/en_core_web_sm-3.7.1/",
-              cacheName: "feature-service",
-              providers,
+              scorerId: "minilm_catboost",
+              spacyCtxUrl: sharedFeatureServiceDownloadable.spacyCtxUrl,
+              catboostProvider: provider,
+              featureServiceEmbeddingConfig: minilmDownloadable.pipelineConfig,
             },
-          });
+          };
+          this.worker!.postMessage(loadMsg);
         });
       }
 
@@ -263,13 +254,15 @@ class MiniLMCatBoostScorer extends Scorer {
         };
 
         this.worker!.addEventListener("message", handler);
-        this.worker!.postMessage({
+        const evalMsg: EvaluateMessage = {
           type: "evaluate",
           payload: {
+            scorerId: "minilm_catboost",
             texts,
             batchSize: 16,
           },
-        });
+        };
+        this.worker!.postMessage(evalMsg);
       });
     } finally {
       this.scoring = false;
@@ -289,7 +282,7 @@ class NLIRobertaScorer extends Scorer {
       "NLI-RoBERTa",
       "Zero-shot classification with NLI",
       3,
-      5,
+      3,
       false
     );
   }
@@ -311,11 +304,11 @@ class NLIRobertaScorer extends Scorer {
           progress: 0,
         });
 
-        this.worker = new Worker(new URL("~/workers/nli.worker.ts", import.meta.url), {
+        this.worker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
           type: "module",
         });
 
-        const providers = this.getProviders();
+        const provider = this.getExecutionProvider();
         await new Promise<void>((resolve, reject) => {
           const handler = (event: MessageEvent) => {
             if (event.data.type === "ready") {
@@ -331,14 +324,19 @@ class NLIRobertaScorer extends Scorer {
           };
 
           this.worker!.addEventListener("message", handler, { once: true });
-          this.worker!.postMessage({
+          const loadMsg: NLILoadMessage = {
             type: "load",
             payload: {
-              pipeline: "zero-shot-classification",
-              huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-              providers,
+              scorerId: "nli_roberta",
+              pipelineConfig: {
+                model: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
+                type: "zero-shot-classification",
+                dtype: "q8",
+                device: provider,
+              }
             },
-          });
+          };
+          this.worker!.postMessage(loadMsg);
         });
       }
 
@@ -368,15 +366,17 @@ class NLIRobertaScorer extends Scorer {
         };
 
         this.worker!.addEventListener("message", handler);
-        this.worker!.postMessage({
+        const evalMsg: EvaluateMessage = {
           type: "evaluate",
           payload: {
+            scorerId: "nli_roberta",
             segments: segments.map((s: any) => s.text),
             candidateLabels: this.candidateLabels,
             hypothesisTemplate: this.hypothesisTemplate,
             batchSize: 16,
           },
-        });
+        };
+        this.worker!.postMessage(evalMsg);
       });
     } finally {
       this.scoring = false;
@@ -394,7 +394,7 @@ class RandomScorer extends Scorer {
       "Random [debug]",
       "Server-side random scoring (demo)",
       5,
-      1,
+      0,
       false
     );
   }
@@ -468,10 +468,22 @@ class RandomScorer extends Scorer {
   }
 }
 
-export const sharedFeatureService = new FeatureServiceDownloadable(
+const sharedFeatureServiceDownloadable = new FeatureServiceDownloadable(
   "feature_service",
   "Feature Service",
-  0.5
+  65
+);
+const minilmDownloadable = new HuggingFacePipelineDownloadable(
+  "minilm_pipeline",
+  "MiniLM Pipeline",
+  90,
+  { model: "Xenova/all-MiniLM-L6-v2", type: "feature-extraction", subfolder: "onnx", dtype: "fp32" }
+);
+const nliRobertaDownloadable = new HuggingFacePipelineDownloadable(
+  "roberta_pipeline",
+  "RoBERTa Pipeline",
+  125,
+  { model: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX", type: "zero-shot-classification", dtype: "q8" }
 );
 
 export const MODEL_GROUPS: ModelGroup[] = [
@@ -479,18 +491,12 @@ export const MODEL_GROUPS: ModelGroup[] = [
     id: "minilm_catboost",
     name: "MiniLM-CatBoost",
     downloadables: [
-      sharedFeatureService,
-      new HuggingFacePipelineDownloadable(
-        "minilm_pipeline",
-        "MiniLM Pipeline",
-        500,
-        "Xenova/all-MiniLM-L6-v2",
-        "feature-extraction"
-      ),
+      sharedFeatureServiceDownloadable,
+      minilmDownloadable,
       new OnnxDownloadable(
         "catboost_model",
         "CatBoost Model",
-        50,
+        0,
         "/assets/data/models/catboost.onnx"
       ),
     ],
@@ -499,14 +505,8 @@ export const MODEL_GROUPS: ModelGroup[] = [
     id: "nli_roberta",
     name: "NLI-RoBERTa",
     downloadables: [
-      sharedFeatureService,
-      new HuggingFacePipelineDownloadable(
-        "roberta_pipeline",
-        "RoBERTa Pipeline",
-        600,
-        "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-        "zero-shot-classification"
-      ),
+      sharedFeatureServiceDownloadable,
+      nliRobertaDownloadable,
     ],
   },
 ];

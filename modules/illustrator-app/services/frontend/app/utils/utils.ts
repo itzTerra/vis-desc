@@ -2,6 +2,8 @@ export const DEFAULT_PAGE_ASPECT_RATIO = 1.4142; // A4 fallback (height / width)
 
 export const IS_WEBGPU_AVAILABLE = typeof navigator !== "undefined" && "gpu" in navigator;
 
+export const CACHE_NAME = "transformers-cache";
+
 function easeInExpo(x: number): number {
   return x === 0 ? 0 : Math.pow(2, 10 * x - 10);
 }

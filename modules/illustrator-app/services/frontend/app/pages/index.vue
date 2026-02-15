@@ -594,8 +594,6 @@ onMounted(() => {
     },
     "Load example PDF and segments"
   );
-
-  initializeApp();
 });
 
 function onEditorStateChange(nextState: any) {

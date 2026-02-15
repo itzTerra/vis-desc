@@ -166,9 +166,9 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 ## Phase 8: Testing (2 hours)
 
 **Cleanup**:
-- [ ] Delete `composables/useModelLoader.ts`
-- [ ] Remove all imports of useModelLoader
-- [ ] Remove old `transformersConfig` references
+- [x] Delete `composables/useModelLoader.ts`
+- [x] Remove all imports of useModelLoader
+- [x] Remove old `transformersConfig` references
 
 **End-to-end testing**:
 - [ ] Test MiniLM-CatBoost download and scoring

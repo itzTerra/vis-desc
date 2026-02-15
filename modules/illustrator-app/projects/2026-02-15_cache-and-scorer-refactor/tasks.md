@@ -43,31 +43,31 @@ Total: ~10 hours over 8 phases. NO backward compatibility.
 
 ---
 
-## Phase 3: models.ts Rewrite (2 hours)
+## Phase 3: models.ts Rewrite (2 hours) ✓ COMPLETED
 
 **File**: `utils/models.ts` (complete rewrite)
 
-- [ ] Delete ALL existing code
-- [ ] Create `abstract class Downloadable` with abstract `download(onProgress)`
-- [ ] Create `FeatureServiceDownloadable` with FeatureService.init()
-- [ ] Create `HuggingFacePipelineDownloadable` with transformers.js pipeline()
-- [ ] Create `OnnxDownloadable` for ONNX models
-- [ ] Create `abstract class Scorer` with:
+- [x] Delete ALL existing code
+- [x] Create `abstract class Downloadable` with abstract `download(onProgress)`
+- [x] Create `FeatureServiceDownloadable` with FeatureService.init()
+- [x] Create `HuggingFacePipelineDownloadable` with transformers.js pipeline()
+- [x] Create `OnnxDownloadable` for ONNX models
+- [x] Create `abstract class Scorer` with:
   - Constructor: `id`, `label`, `description`, `speed`, `quality`, `disabled`
   - `stages` property returning 2 stages: "Initializing..." and "Scoring..."
   - Abstract `score(data, onProgress)` method
-- [ ] Create `MiniLMCatBoostScorer` (worker-based):
+- [x] Create `MiniLMCatBoostScorer` (worker-based):
   - Metadata: speed=5, quality=4, disabled=false
   - Spawns scorer.worker.ts, communicates via postMessage
-- [ ] Create `NLIRobertaScorer` (worker-based):
+- [x] Create `NLIRobertaScorer` (worker-based):
   - Metadata: speed=3, quality=5, disabled=false
   - Spawns nli.worker.ts, zero-shot classification
-- [ ] Create `RandomScorer` (WebSocket-based):
+- [x] Create `RandomScorer` (WebSocket-based):
   - Metadata: speed=5, quality=1, disabled=false
   - Uses existing WebSocket connection, server-side random scores
-- [ ] Create shared instances: `sharedFeatureService`
-- [ ] Define `MODEL_GROUPS` array
-- [ ] Export `SCORERS` array
+- [x] Create shared instances: `sharedFeatureService`
+- [x] Define `MODEL_GROUPS` array
+- [x] Export `SCORERS` array
 
 ---
 

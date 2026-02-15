@@ -115,6 +115,7 @@ import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { CacheManager } from "#components";
 import { SCORERS, MODEL_GROUPS } from "~/utils/models";
+import { useCacheEvents } from "~/plugins/cache-event-bus.client";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 

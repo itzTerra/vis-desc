@@ -171,9 +171,42 @@ class ExtCtx {
   }
 }
 
+class WorkerPool {
+  workers: Worker[];
+  next = 0;
+
+  constructor(n: number) {
+    this.workers = Array.from({ length: n }, () => new Worker(new URL("./spacy-worker.ts", import.meta.url), { type: "module" }));
+  }
+
+  request(action: "fetchJson"|"fetchProto", url: string, texts: string[]): Promise<any[]> {
+    const worker = this.workers[this.next];
+    this.next = (this.next + 1) % this.workers.length;
+    const id = Math.random().toString(36).slice(2);
+    return new Promise((resolve, reject) => {
+      const onmsg = (ev: MessageEvent) => {
+        const d = ev.data as any;
+        if (d.id !== id) return;
+        worker.removeEventListener("message", onmsg);
+        if (d.ok) resolve(d.contexts);
+        else reject(new Error(d.error || "worker error"));
+      };
+      worker.addEventListener("message", onmsg);
+      worker.postMessage({ id, action, url, texts });
+    });
+  }
+
+  terminate() {
+    for (const w of this.workers) w.terminate();
+  }
+}
+
 class FeatureExtractorPipeline {
   bookNLP: BookNLP;
   spacyCtxUrl: string;
+  // Cache maps a batch-hash -> Promise resolving to an array of SpaCyContext
+  spacyCtxCache: Record<string, Promise<SpaCyContext[]>> = {};
+  spacyWorkerPool: WorkerPool | null = null;
   ENG_POS_TAGS: string[];
   ENG_POS_TAG_MAP: Record<string, number>;
   ENTITY_CATEGORY_MAP: Record<string, number>;
@@ -473,6 +506,8 @@ class FeatureExtractorPipeline {
   }
 
   async init(cacheName: string, progressCallback: ProgressCallback): Promise<void> {
+    this.spacyWorkerPool = new WorkerPool(4);
+
     let booknlpProgress = 0;
     let wordnetProgress = 0;
     const report = () => {
@@ -482,7 +517,7 @@ class FeatureExtractorPipeline {
 
     const bookNLPPromise = this.bookNLP.initialize({
       pipeline: ["entity", "supersense", "event"],
-      executionProviders: ["wasm", "webgpu"],
+      executionProviders: ["wasm"],
       cacheName: cacheName,
       dtype: "fp32",
     }, (progress) => {
@@ -1255,18 +1290,78 @@ class FeatureExtractorPipeline {
   }
 
 
-  async _fetchSpaCyContext(texts: string[]): Promise<SpaCyContext[]> {
-    const res = await fetch(this.spacyCtxUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texts }),
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`spacy-ctx failed: ${res.status} ${txt}`);
+  async fetchSpaCyContexts(texts: string[]): Promise<SpaCyContext[]> {
+    // Offload fetch+parse to worker to avoid blocking main thread
+    return this.spacyWorkerPool!.request("fetchJson", this.spacyCtxUrl, texts);
+  }
+
+  /**
+   * New: Fetch SpaCy contexts from the dedicated protobuf endpoint `/spacy-ctx/proto`.
+   * This function is separate from `fetchSpaCyContexts` and expects a binary
+   * protobuf response. It uses a bundled `SPACY_PROTO` string and `protobufjs`
+   * (statically imported) so nothing is dynamically imported at runtime.
+   */
+  async fetchSpaCyContextsProto(texts: string[]): Promise<SpaCyContext[]> {
+    // Use worker to fetch + decode protobuf off-main-thread
+    return this.spacyWorkerPool!.request("fetchProto", this.spacyCtxUrl.replace("/spacy-ctx", "/spacy-ctx/proto"), texts);
+  }
+
+  private _hashBatch = (batch: string[]): string => {
+    // Join with a control character to avoid collisions from simple separators
+    const s = batch.join("\u0001");
+    // djb2-like hashing
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) + h) ^ s.charCodeAt(i);
     }
-    const data = (await res.json()).contexts as SpaCyContext[];
-    return data;
+    return (h >>> 0).toString(16);
+  };
+
+  /**
+   * Prefetch SpaCy contexts into local cache for all batches of texts, one batch at a time
+   */
+  async prefetchSpaCyContexts(textBatches: string[][]): Promise<void> {
+    this.spacyCtxCache = {};
+    const concurrency = this.spacyWorkerPool ? Math.max(1, this.spacyWorkerPool.workers.length) : 1;
+
+    // Maintain up to `concurrency` active requests; start the next as soon as any finishes.
+    const active: { id: string; promise: Promise<{ id: string; ok: boolean; err?: any }> }[] = [];
+
+    for (const batch of textBatches) {
+      const key = this._hashBatch(batch);
+      if (this.spacyCtxCache[key]) continue;
+
+      const taskPromise = (async () => {
+        const p = this.fetchSpaCyContextsProto(batch);
+        this.spacyCtxCache[key] = p;
+        try {
+          await p;
+          console.log(`Prefetched SpaCy contexts for batch with hash ${key}`);
+          return { id: key, ok: true };
+        } catch (err) {
+          // remove failed entry so callers can retry
+          delete this.spacyCtxCache[key];
+          return { id: key, ok: false, err };
+        }
+      })();
+
+      active.push({ id: key, promise: taskPromise });
+
+      if (active.length >= concurrency) {
+        const res = await Promise.race(active.map((a) => a.promise));
+        const idx = active.findIndex((a) => a.id === res.id);
+        if (idx >= 0) active.splice(idx, 1);
+        if (!res.ok) throw res.err;
+      }
+    }
+
+    // Wait for remaining active tasks, handling each as it finishes.
+    while (active.length > 0) {
+      const res = await Promise.race(active.map((a) => a.promise));
+      const idx = active.findIndex((a) => a.id === res.id);
+      if (idx >= 0) active.splice(idx, 1);
+      if (!res.ok) throw res.err;
+    }
   }
 
   /**
@@ -1279,16 +1374,17 @@ class FeatureExtractorPipeline {
       throw new Error("BookNLP or WordNet not ready");
     }
 
-    const spaCyContexts = await this._fetchSpaCyContext(texts);
-
-    console.log("Extracting features for text");
-    const ctxs = (await this.bookNLP.process_batch(spaCyContexts)).map((c, i) => ExtCtx.fromBookNLPResult(c, texts[i]));
-    console.log("DONE");
+    console.log(`Extracting features for ${texts.length} texts with BookNLP...`);
+    console.log("cache:", this.spacyCtxCache, "current hash:", this._hashBatch(texts));
+    const spacyPromise = this.spacyCtxCache[this._hashBatch(texts)];
+    const spaCyContexts = spacyPromise ? (await spacyPromise) : await this.fetchSpaCyContexts(texts);
+    console.log("Received SpaCy contexts, processing with BookNLP and extracting features...");
 
     const results: number[][] = [];
     for (let i = 0; i < texts.length; i++) {
       const text = texts[i];
-      const ctx = ctxs[i];
+      const spacyCtx = spaCyContexts[i];
+      const ctx = ExtCtx.fromBookNLPResult(await this.bookNLP.process(spacyCtx), text);
 
       const features: number[] = [];
       features.push(this.extractQuoteRatio(text));
@@ -1359,7 +1455,7 @@ export class FeatureService {
             report();
           }
         }) as (data: any) => void,
-        dtype: "q8",
+        dtype: "fp32",
         device: "wasm",
       }
     ) as Promise<FeatureExtractionPipeline>;
@@ -1368,10 +1464,15 @@ export class FeatureService {
     this.embedMiniLM = embed as FeatureExtractionPipeline;
   }
 
+  async getFeaturesAllBatchPreload(textBatches: string[][]): Promise<void> {
+    await this.featureExtractor.prefetchSpaCyContexts(textBatches);
+  }
+
   async getFeatures(texts: string[]): Promise<number[][]> {
     if (!this.embedMiniLM) {
       throw new Error("Pipeline not initialized");
     }
+
     const [extractorFeatures, embeddingTensor] = await Promise.all([
       this.featureExtractor.extract(texts),
       this.embedMiniLM(texts, { pooling: "mean", normalize: true }),

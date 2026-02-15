@@ -22,6 +22,7 @@ dependencies = [
     "semantic-text-splitter>=0.27.0",
     "syllables>=1.1.1",
     "wn>=0.13.0",
+    "protobuf>=4.23.0",
 ]
 
 [dependency-groups]

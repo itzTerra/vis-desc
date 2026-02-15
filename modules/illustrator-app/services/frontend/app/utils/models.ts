@@ -31,30 +31,6 @@ export type TModelInfo = ModelInfo & {
   transformersConfig: TransformersModelConfig;
 };
 
-const workers = new Map<string, Worker | Promise<Worker>>();
-
-export async function initWorkers() {
-  console.info("Initializing workers...");
-  const { getOrLoadWorker } = useModelLoader();
-
-  workers.set("scorer", getOrLoadWorker({
-    workerName: "scorer",
-    modelUrl: "/assets/data/models/catboost.onnx",
-    subfolder: "onnx",
-    spacyCtxUrl: new URL("/api/spacy-ctx", useRuntimeConfig().public.apiBaseUrl).toString()
-  } as any).then(worker => {
-    workers.set("scorer", worker);
-    return worker;
-  }));
-  console.info("Scorer worker initialized");
-}
-
-export function terminateWorkers() {
-  const { terminateWorker } = useModelLoader();
-  terminateWorker("scorer");
-  terminateWorker("nli");
-}
-
 export const MODELS: ModelInfo[] = [
   {
     id: "minilm_catboost",
@@ -73,7 +49,7 @@ export const MODELS: ModelInfo[] = [
     } as any,
     apiUrl: "/api/process/seg/pdf",
     onSuccess: async (_data: SegmentResponse, model, _socket, _scoreSegment) => {
-      const worker = await workers.get("scorer");
+      const worker = await getWorker("scorer");
       if (!worker) {
         console.error("Scorer worker not found");
         return;
@@ -85,7 +61,7 @@ export const MODELS: ModelInfo[] = [
 
           switch (type) {
           case "progress":
-            console.log(`Scorer batch ${payload.batchIndex + 1}/${payload.totalBatches} completed.`);
+            console.log(`Scorer batch ${payload.batchIndex}/${payload.totalBatches} completed.`);
             for (const result of payload.results) {
               _scoreSegment(result);
             }
@@ -107,7 +83,7 @@ export const MODELS: ModelInfo[] = [
           type: "evaluate",
           payload: {
             texts: _data.segments.map(seg => seg.text),
-            batchSize: 32,
+            batchSize: 16,
           }
         } as ExtractMessage);
       });
@@ -130,7 +106,7 @@ export const MODELS: ModelInfo[] = [
     description: "Runs in-browser using transformers.js. High-quality zero-shot classification model.",
     transformersConfig: {
       huggingFaceId: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-      modelFileName: "model_quantized.onnx",
+      modelFileName: "",
       pipeline: "zero-shot-classification",
       sizeMb: 130,
       workerName: "nli",
@@ -145,7 +121,7 @@ export const MODELS: ModelInfo[] = [
         return;
       }
       await nliClassifier.evaluateSegmentsWithWorker(worker, segments, (batchIndex, totalBatches, batchResults) => {
-        console.log(`NLI batch ${batchIndex + 1}/${totalBatches} completed.`);
+        console.log(`NLI batch ${batchIndex}/${totalBatches} completed.`);
         for (const result of batchResults) {
           scoreSegment(result);
         }

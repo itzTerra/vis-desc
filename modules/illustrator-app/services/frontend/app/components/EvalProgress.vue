@@ -24,7 +24,6 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  isLoading: number | null;
   isCancelled: boolean;
   highlights: { score?: number }[];
 }>();
@@ -33,17 +32,28 @@ defineEmits<{
   cancel: [];
 }>();
 
+const isLoading = defineModel<number | null>();
+
 const scoredSegmentCount = computed(() =>
   props.highlights.filter(h => typeof h.score === "number").length
 );
 
+const isFinished = computed(() => scoredSegmentCount.value === props.highlights.length);
+
+watchOnce(() => isFinished.value, isComplete => {
+  if (isComplete) {
+    useNotifier().success("Document processed successfully");
+    isLoading.value = null;
+  }
+});
+
 const etaMs = computed(() => {
-  if (!props.isLoading) return 0;
+  if (!isLoading.value) return 0;
   const scored = scoredSegmentCount.value;
   const total = props.highlights.length;
   const remaining = total - scored;
   if (scored <= 0 || remaining <= 0) return 0;
-  const elapsed = Date.now() - props.isLoading;
+  const elapsed = Date.now() - isLoading.value;
   if (elapsed <= 0) return 0;
   return (elapsed / scored) * remaining;
 });

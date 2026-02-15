@@ -186,7 +186,7 @@ class SpacyPipeline:
     def batch_tag(
         self, texts: Sequence[str]
     ) -> List[Tuple[List[Token], Sequence, Sequence]]:
-        docs = list(self.spacy_nlp.pipe(texts, batch_size=32, n_process=-1))
+        docs = list(self.spacy_nlp.pipe(texts, batch_size=8, n_process=-1))
         return [(self.process_doc(doc), doc.sents, doc.noun_chunks) for doc in docs]
 
     def process_doc(self, doc: Doc) -> List[Token]:

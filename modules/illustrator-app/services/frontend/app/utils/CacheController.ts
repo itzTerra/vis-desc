@@ -130,4 +130,44 @@ export class CacheController {
       };
     });
   }
+
+  async remove(key: string): Promise<void> {
+    if (!this.cache) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.cache!.transaction(["downloads"], "readwrite");
+      const store = transaction.objectStore("downloads");
+      const request = store.delete(`${this.namespace}:${key}`);
+
+      request.onerror = () => {
+        reject(new Error(`Failed to remove from cache: ${request.error?.message || "Unknown error"}`));
+      };
+
+      request.onsuccess = () => {
+        resolve();
+      };
+    });
+  }
+
+  async clear(): Promise<void> {
+    if (!this.cache) {
+      await this.init();
+    }
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.cache!.transaction(["downloads"], "readwrite");
+      const store = transaction.objectStore("downloads");
+      const request = store.clear();
+
+      request.onerror = () => {
+        reject(new Error(`Failed to clear cache: ${request.error?.message || "Unknown error"}`));
+      };
+
+      request.onsuccess = () => {
+        resolve();
+      };
+    });
+  }
 }

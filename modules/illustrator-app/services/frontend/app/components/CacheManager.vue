@@ -1,6 +1,6 @@
 <template>
   <div class="z-100">
-    <div v-if="!isExpanded">
+    <div>
       <!-- No download in progress -->
       <div v-if="!hasActiveDownload">
         <button class="btn btn-sm btn-accent btn-outline" title="Manage Downloads" @click="isExpanded = true">
@@ -113,8 +113,8 @@
                     Download
                   </button>
                   <button
+                    v-if="getGroupDownloadStatus(group) === 'cached'"
                     class="btn btn-error btn-sm btn-outline"
-                    :disabled="getGroupDownloadStatus(group) !== 'cached'"
                     @click="removeGroupFromCache(group)"
                   >
                     <Icon name="lucide:trash-2" class="w-4 h-4" />
@@ -160,16 +160,14 @@ interface DownloadQueueItem {
   progress: number;
 }
 
-const isExpanded = defineModel<boolean>("isExpanded", {
-  default: false,
-  set: (v) => {
-    if (v) {
-      cacheManagerDialog.value?.showModal();
-    } else {
-      cacheManagerDialog.value?.close();
-    }
-    return v;
-  },
+const isExpanded = defineModel<boolean>("isExpanded", { default: false });
+
+watch(isExpanded, (v) => {
+  if (v) {
+    cacheManagerDialog.value?.showModal();
+  } else {
+    cacheManagerDialog.value?.close();
+  }
 });
 
 const emit = defineEmits<{
@@ -187,10 +185,6 @@ const cachedGroups = ref<Set<string>>(new Set());
 const currentDownload = computed(() => downloadQueue.value[0] || null);
 const hasActiveDownload = computed(() => downloadQueue.value.length > 0);
 const hasCachedGroups = computed(() => cachedGroups.value.size > 0);
-
-function getGroupSize(group: ModelGroup): number {
-  return group.downloadables.reduce((sum, dl) => sum + dl.sizeMb, 0);
-}
 
 function isOnnxGroup(group: ModelGroup): boolean {
   return group.downloadables.some((dl) => dl.id.includes("catboost") || dl.id.includes("roberta"));
@@ -369,5 +363,6 @@ onUnmounted(() => {
 
 defineExpose({
   queueDownload,
+  getGroupDownloadStatus,
 });
 </script>

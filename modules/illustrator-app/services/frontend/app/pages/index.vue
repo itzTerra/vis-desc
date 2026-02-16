@@ -11,7 +11,7 @@
           data-help-target="file"
           @change="handleFileUpload"
         >
-        <ModelSelect v-model="selectedModel" data-help-target="model" @request-model-download="handleModelDownloadRequest" />
+        <ModelSelect v-model="selectedModel" data-help-target="model" @request-model-download="(scorerId) => checkScorer(SCORERS.find(s => s.id === scorerId)!)" />
       </div>
       <div class="flex items-center gap-3">
         <EvalProgress
@@ -105,6 +105,12 @@
       </NuxtLink>
     </div>
     <HelpOverlay v-if="showHelp" :help-steps="helpSteps" @cancel="toggleHelp(false)" />
+    <DownloadConfirmDialog
+      v-if="groupInConfirmation"
+      :model-info="groupInConfirmation"
+      @confirm="confirmModelDownload"
+      @cancel="cancelModelDownload"
+    />
     <BackToTop />
     <Alert />
   </div>
@@ -114,12 +120,12 @@
 import type { Highlight, Segment } from "~/types/common";
 import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { CacheManager } from "#components";
-import { SCORERS, MODEL_GROUPS } from "~/utils/models";
-import { useCacheEvents } from "~/plugins/cache-event-bus.client";
+import { SCORERS, MODEL_GROUPS, type Scorer } from "~/utils/models";
+import type { ModelGroup } from "~/types/cache";
 
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
-const { $api: call, $config, $debugPanel } = useNuxtApp();
+const { $api: call, $config, $debugPanel, callHook, hook } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
 const pdfUrl = ref<string | null>(null);
@@ -140,6 +146,7 @@ const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.v
 const showHelp = ref(false);
 const seenHelpOnce = useLocalStorage("seenHelpOnce", false);
 const highlightsHelpBackup: Highlight[] = [];
+const groupInConfirmation = ref<ModelGroup | null>(null);
 const cacheManagerRef = ref<InstanceType<typeof CacheManager> | null>(null);
 const cacheManagerExpanded = ref(false);
 const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
@@ -273,35 +280,10 @@ const handleFileUpload = async (event: any) => {
     return;
   }
 
-  if (scorer.disabled) {
-    useNotifier().error("Selected scorer is not available.");
+  if (!checkScorer(scorer)) {
     isLoading.value = null;
     currentStage.value = undefined;
     return;
-  }
-
-  const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
-  if (modelGroup) {
-    const { checkGroupCached } = useCacheController();
-    let isCached: boolean;
-
-    try {
-      isCached = await checkGroupCached(modelGroup);
-    } catch (error) {
-      console.error("Failed to verify model cache:", error);
-      useNotifier().error("Failed to verify model cache. Please try again.");
-      isLoading.value = null;
-      currentStage.value = undefined;
-      return;
-    }
-
-    if (!isCached) {
-      const { emit } = useCacheEvents();
-      emit("cache:model-needed", { groupId: modelGroup.id });
-      isLoading.value = null;
-      currentStage.value = undefined;
-      return;
-    }
   }
 
   pdfUrl.value = URL.createObjectURL(file);
@@ -519,17 +501,25 @@ async function handleExportConfirm() {
   }
 }
 
-async function handleModelDownloadRequest(scorerId: string): Promise<void> {
-  const modelGroup = MODEL_GROUPS.find(g => g.id === scorerId);
-  if (!modelGroup) {
-    return;
+function checkScorer(scorer: Scorer) {
+  const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
+  if (scorer.disabled || !modelGroup) {
+    useNotifier().error("Selected scorer is not available.");
+    return false;
   }
-  const { checkGroupCached } = useCacheController();
-  const isCached = await checkGroupCached(modelGroup);
-  if (!isCached) {
-    const { emit } = useCacheEvents();
-    emit("cache:model-needed", { groupId: modelGroup.id });
+
+  const groupStatus = cacheManagerRef.value?.getGroupDownloadStatus(modelGroup);
+
+  if (groupStatus === "downloading") {
+    cacheManagerExpanded.value = true;
+    return false;
   }
+
+  if (groupStatus !== "cached") {
+    callHook("custom:downloadNeeded", modelGroup.id);
+    return false;
+  }
+  return true;
 }
 
 function onPdfRendered() {
@@ -539,14 +529,20 @@ function onPdfRendered() {
   }
 }
 
+function cancelModelDownload() {
+  groupInConfirmation.value = null;
+}
+
+function confirmModelDownload() {
+  cacheManagerRef.value?.queueDownload(groupInConfirmation.value!);
+  groupInConfirmation.value = null;
+}
+
 onMounted(() => {
-  const { on } = useCacheEvents();
-  on("cache:model-needed", (payload) => {
-    cacheManagerExpanded.value = true;
-    const group = MODEL_GROUPS.find(g => g.id === payload.groupId);
+  hook("custom:downloadNeeded", (groupId: string) => {
+    const group = MODEL_GROUPS.find(g => g.id === groupId);
     if (group) {
-      useNotifier().info(`Model "${group.name}" needs to be downloaded first.`);
-      cacheManagerRef.value?.queueDownload(group);
+      groupInConfirmation.value = group;
     }
   });
 

@@ -1,74 +1,70 @@
-import type { Downloadable, ModelGroup, ScorerProgress } from "~/types/cache";
+import type { ModelGroup, ScorerProgress } from "~/types/cache";
+import { CACHE_NAME } from "~/utils/utils";
+
+export function getGroupSize(group: ModelGroup): number {
+  return group.downloadables.reduce((sum, dl) => sum + dl.sizeMb, 0);
+}
 
 export class CacheController {
-  private namespace = "transformers-cache";
-  private cache: IDBDatabase | null = null;
+  private cacheName = CACHE_NAME;
+  private cache: Cache | null = null;
   private initPromise: Promise<void> | null = null;
+  private keyMap: Map<string, string[]> = new Map([
+    [DOWNLOADABLES.featureService.id, [
+      "english-wordnet-2025-json.zip",
+      "Terraa/entities_google_bert_uncased_L-4_H-256_A-4-v1.0-ONNX/resolve/main/onnx/model.onnx",
+      "Terraa/entities_google_bert_uncased_L-4_H-256_A-4-v1.0-ONNX/resolve/main/config.json",
+      "Terraa/entities_google_bert_uncased_L-4_H-256_A-4-v1.0-ONNX/resolve/main/vocab.txt",
+      "Terraa/entities_google_bert_uncased_L-4_H-256_A-4-v1.0-ONNX/resolve/main/vocab.txt::meta",
+      "Xenova/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx",
+      "Xenova/all-MiniLM-L6-v2/resolve/main/config.json",
+      "Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer.json",
+      "Xenova/all-MiniLM-L6-v2/resolve/main/tokenizer_config.json"
+    ]],
+    [DOWNLOADABLES.catboost.id, []],
+    [DOWNLOADABLES.nliRoberta.id, [
+      "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX/resolve/main/model_quantized.onnx",
+      "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX/resolve/main/config.json",
+      "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX/resolve/main/tokenizer.json",
+      "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX/resolve/main/tokenizer_config.json"
+    ]]
+  ]);
+
+  private getKeys(key: string): string[] {
+    if (!this.keyMap.has(key)) {
+      console.error(`Unknown downloadable ID: ${key}`);
+      return ["NON_EXISTENT_KEY_SO_THAT_THIS_DOWNLOADABLE_IS_ALWAYS_MISSING"];
+    }
+    return this.keyMap.get(key)!;
+  }
 
   async init(): Promise<void> {
-    if (this.cache) {
-      return;
-    }
+    if (this.cache) return;
+    if (this.initPromise) return this.initPromise;
 
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.namespace, 1);
-
-      request.onerror = () => {
-        this.initPromise = null;
-        reject(new Error(`Failed to open IndexedDB: ${request.error?.message || "Unknown error"}`));
-      };
-
-      request.onsuccess = () => {
-        this.cache = request.result;
-        this.initPromise = null;
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (!db.objectStoreNames.contains("downloads")) {
-          db.createObjectStore("downloads", { keyPath: "key" });
-        }
-      };
-    });
+    this.initPromise = (async () => {
+      this.cache = await caches.open(this.cacheName);
+      this.initPromise = null;
+    })();
 
     return this.initPromise;
   }
 
-  async exists(key: string): Promise<boolean> {
-    if (!this.cache) {
-      await this.init();
-    }
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.cache!.transaction(["downloads"], "readonly");
-      const store = transaction.objectStore("downloads");
-      const request = store.get(`${this.namespace}:${key}`);
-
-      request.onerror = () => {
-        reject(new Error(`Failed to check cache: ${request.error?.message || "Unknown error"}`));
-      };
-
-      request.onsuccess = () => {
-        resolve(!!request.result);
-      };
-    });
+  async exists(downloadableId: string): Promise<boolean> {
+    await this.init();
+    const keys = this.getKeys(downloadableId);
+    const cacheKeys = await this.cache!.keys();
+    return keys.every((key) => cacheKeys.some((request) => request.url.includes(key)));
   }
 
   async downloadGroup(
     group: ModelGroup,
     onProgress: (progress: ScorerProgress) => void
   ): Promise<void> {
-    if (!this.cache) {
-      await this.init();
-    }
+    await this.init();
 
     const downloadables = group.downloadables;
-    const totalSize = downloadables.reduce((sum, d) => sum + d.sizeMb, 0);
+    const totalSize = getGroupSize(group);
     const downloadProgress: Record<string, number> = {};
 
     for (const downloadable of downloadables) {
@@ -94,80 +90,35 @@ export class CacheController {
               progress: Math.min(100, Math.floor(overallProgress * 100)),
             });
           });
-
-          await this.cacheDownloadable(downloadable);
-          downloadProgress[downloadable.id] = 100;
-        } else {
-          downloadProgress[downloadable.id] = 100;
         }
+        downloadProgress[downloadable.id] = 100;
       }
     } catch (error) {
       throw new Error(`Failed to download group ${group.id}: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 
-  private async cacheDownloadable(downloadable: Downloadable): Promise<void> {
-    if (!this.cache) {
-      await this.init();
+  async remove(downloadableId: string): Promise<void> {
+    await this.init();
+    const keys = this.getKeys(downloadableId);
+    const cacheKeys = await this.cache!.keys();
+    for (const key of keys) {
+      let found = false;
+      for (const request of cacheKeys) {
+        if (request.url.includes(key)) {
+          await this.cache!.delete(request);
+          found = true;
+        }
+      }
+      if (!found) {
+        console.warn(`No cached entry found for key fragment: ${key}`);
+      }
     }
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.cache!.transaction(["downloads"], "readwrite");
-      const store = transaction.objectStore("downloads");
-      const request = store.put({
-        key: `${this.namespace}:${downloadable.id}`,
-        id: downloadable.id,
-        label: downloadable.label,
-        timestamp: Date.now(),
-      });
-
-      request.onerror = () => {
-        reject(new Error(`Failed to cache downloadable: ${request.error?.message || "Unknown error"}`));
-      };
-
-      request.onsuccess = () => {
-        resolve();
-      };
-    });
-  }
-
-  async remove(key: string): Promise<void> {
-    if (!this.cache) {
-      await this.init();
-    }
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.cache!.transaction(["downloads"], "readwrite");
-      const store = transaction.objectStore("downloads");
-      const request = store.delete(`${this.namespace}:${key}`);
-
-      request.onerror = () => {
-        reject(new Error(`Failed to remove from cache: ${request.error?.message || "Unknown error"}`));
-      };
-
-      request.onsuccess = () => {
-        resolve();
-      };
-    });
   }
 
   async clear(): Promise<void> {
-    if (!this.cache) {
-      await this.init();
-    }
-
-    return new Promise((resolve, reject) => {
-      const transaction = this.cache!.transaction(["downloads"], "readwrite");
-      const store = transaction.objectStore("downloads");
-      const request = store.clear();
-
-      request.onerror = () => {
-        reject(new Error(`Failed to clear cache: ${request.error?.message || "Unknown error"}`));
-      };
-
-      request.onsuccess = () => {
-        resolve();
-      };
-    });
+    // delete the whole cache for simplicity
+    await caches.delete(this.cacheName);
+    this.cache = null;
   }
 }

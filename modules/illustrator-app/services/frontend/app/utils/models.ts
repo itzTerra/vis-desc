@@ -219,9 +219,9 @@ class MiniLMCatBoostScorer extends Scorer {
             type: "load",
             payload: {
               scorerId: "minilm_catboost",
-              spacyCtxUrl: sharedFeatureServiceDownloadable.spacyCtxUrl,
+              spacyCtxUrl: DOWNLOADABLES.featureService.spacyCtxUrl,
               catboostProvider: provider,
-              featureServiceEmbeddingConfig: minilmDownloadable.pipelineConfig,
+              featureServiceEmbeddingConfig: DOWNLOADABLES.featureService.embeddingPipelineConfig,
             },
           };
           this.worker!.postMessage(loadMsg);
@@ -468,45 +468,40 @@ class RandomScorer extends Scorer {
   }
 }
 
-const sharedFeatureServiceDownloadable = new FeatureServiceDownloadable(
-  "feature_service",
-  "Feature Service",
-  65
-);
-const minilmDownloadable = new HuggingFacePipelineDownloadable(
-  "minilm_pipeline",
-  "MiniLM Pipeline",
-  90,
-  { model: "Xenova/all-MiniLM-L6-v2", type: "feature-extraction", subfolder: "onnx", dtype: "fp32" }
-);
-const nliRobertaDownloadable = new HuggingFacePipelineDownloadable(
-  "roberta_pipeline",
-  "RoBERTa Pipeline",
-  125,
-  { model: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX", type: "zero-shot-classification", dtype: "q8" }
-);
+export const DOWNLOADABLES = {
+  featureService: new FeatureServiceDownloadable(
+    "feature_service",
+    "Feature Service",
+    155
+  ),
+  nliRoberta: new HuggingFacePipelineDownloadable(
+    "roberta_pipeline",
+    "RoBERTa Pipeline",
+    125,
+    { model: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX", type: "zero-shot-classification", dtype: "q8" }
+  ),
+  catboost: new OnnxDownloadable(
+    "catboost_model",
+    "CatBoost Model",
+    0,
+    "/assets/data/models/catboost.onnx"
+  ),
+};
 
 export const MODEL_GROUPS: ModelGroup[] = [
   {
     id: "minilm_catboost",
     name: "MiniLM-CatBoost",
     downloadables: [
-      sharedFeatureServiceDownloadable,
-      minilmDownloadable,
-      new OnnxDownloadable(
-        "catboost_model",
-        "CatBoost Model",
-        0,
-        "/assets/data/models/catboost.onnx"
-      ),
+      DOWNLOADABLES.featureService,
+      DOWNLOADABLES.catboost,
     ],
   },
   {
     id: "nli_roberta",
     name: "NLI-RoBERTa",
     downloadables: [
-      sharedFeatureServiceDownloadable,
-      nliRobertaDownloadable,
+      DOWNLOADABLES.nliRoberta,
     ],
   },
 ];

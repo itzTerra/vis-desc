@@ -1,4 +1,5 @@
-import type { ModelGroup, ScorerProgress } from "~/types/cache";
+import type { ModelGroup } from "~/types/cache";
+import type { ProgressCallback } from "~/types/common";
 import { CACHE_NAME } from "~/utils/utils";
 
 export function getGroupSize(group: ModelGroup): number {
@@ -59,7 +60,7 @@ export class CacheController {
 
   async downloadGroup(
     group: ModelGroup,
-    onProgress: (progress: ScorerProgress) => void
+    onProgress: ProgressCallback
   ): Promise<void> {
     await this.init();
 
@@ -85,10 +86,7 @@ export class CacheController {
             }
 
             const overallProgress = totalSize > 0 ? totalDownloaded / totalSize : 0;
-            onProgress({
-              stage: `Downloading ${group.name}...`,
-              progress: Math.min(100, Math.floor(overallProgress * 100)),
-            });
+            onProgress(Math.min(100, Math.floor(overallProgress * 100)));
           });
         }
         downloadProgress[downloadable.id] = 100;

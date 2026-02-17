@@ -1,5 +1,5 @@
 import { pipeline, env, type Pipeline } from "@huggingface/transformers";
-import type { EvaluateMessage, LoadMessage, WorkerMessage, ScorerType, CatboostLoadMessage, NLILoadMessage } from "~/types/scorer-worker";
+import type { SendMessage, RecvMessage, ScorerType, EvaluateMessage, LoadMessage, NLILoadPayload, CatboostLoadPayload, NLIEvaluatePayload, CatboostEvaluatePayload } from "~/types/scorer-worker";
 import { FeatureService } from "~/utils/text2features";
 import * as ort from "onnxruntime-web";
 import catboostModel from "~/assets/data/models/catboost.onnx?url";
@@ -7,6 +7,8 @@ import catboostModel from "~/assets/data/models/catboost.onnx?url";
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
+
+console.info("Scorer worker spawned");
 
 interface ScorerState {
   type: ScorerType;
@@ -49,73 +51,62 @@ function probsToScore(probs: number[]): number {
   return expectedPos;
 }
 
-async function loadMiniLMCatBoost(config: CatboostLoadMessage["payload"]): Promise<void> {
+async function loadMiniLMCatBoost(config: CatboostLoadPayload): Promise<void> {
   try {
-    const scorerState: ScorerState = { type: "minilm_catboost" };
+    let scorerState = scorers.get("minilm_catboost");
+    if (!scorerState) {
+      scorerState = { type: "minilm_catboost" };
 
-    const featureService = new FeatureService(config.spacyCtxUrl!);
-    await featureService.init(config.featureServiceEmbeddingConfig, { progressCallback: (progress) => {
-      self.postMessage({
-        type: "progress",
-        payload: { progress },
-      });
-    } });
+      const featureService = new FeatureService(config.spacyCtxUrl!);
+      await featureService.init(config.featureServiceEmbeddingConfig, { provider: config.provider });
+      scorerState.featureService = featureService;
 
-    const ortSession = await ort.InferenceSession.create(catboostModel, {
-      executionProviders: [config.catboostProvider],
-    } as any);
+      const ortSession = await ort.InferenceSession.create(catboostModel, {
+        executionProviders: [config.provider],
+      } as any);
+      scorerState.catboostOrt = ortSession;
 
-    scorerState.featureService = featureService;
-    scorerState.catboostOrt = ortSession;
-    scorers.set("minilm_catboost", scorerState);
+      scorers.set("minilm_catboost", scorerState);
+    }
 
-    self.postMessage({ type: "ready", payload: { success: true } });
+    // Preload SpaCy contexts without awaiting
+    const totalBatches = Math.ceil(config.texts.length / config.batchSize);
+    const batches = Array.from({ length: totalBatches }, (_, i) =>
+      config.texts.slice(i * config.batchSize, (i + 1) * config.batchSize)
+    );
+    scorerState.featureService!.getFeaturesAllBatchPreload(batches);
+
+    postRecv({ type: "ready", payload: { success: true } });
   } catch (error) {
-    self.postMessage({
-      type: "error",
-      payload: { message: (error as Error).message },
-    });
+    postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
-async function loadNLIRoberta(config: NLILoadMessage["payload"]): Promise<void> {
+async function loadNLIRoberta(config: NLILoadPayload): Promise<void> {
   try {
-    const nliPipeline = (await pipeline(
-      config.pipelineConfig.type,
-      config.pipelineConfig.model,
-      {
-        subfolder: config.pipelineConfig.subfolder || "",
-        progress_callback: (data: any) => {
-          if (data.progress !== undefined && data.file.endsWith(".onnx")) {
-            self.postMessage({
-              type: "progress",
-              payload: {
-                progress: data.progress
-              }
-            });
-          }
-        },
-        dtype: config.pipelineConfig.dtype,
-        device: config.pipelineConfig.device as any,
-      }
-    )) as any;
+    let scorerState = scorers.get("nli_roberta");
+    if (!scorerState) {
+      const nliPipeline = (await pipeline(
+        config.pipelineConfig.type,
+        config.pipelineConfig.model,
+        {
+          subfolder: config.pipelineConfig.subfolder || "",
+          dtype: config.pipelineConfig.dtype,
+          device: config.pipelineConfig.device as any,
+        }
+      )) as any;
 
-    const scorerState: ScorerState = {
-      type: "nli_roberta",
-      nliPipeline,
-    };
+      scorerState = {
+        type: "nli_roberta",
+        nliPipeline,
+      };
 
-    scorers.set("nli_roberta", scorerState);
+      scorers.set("nli_roberta", scorerState);
+    }
 
-    self.postMessage({
-      type: "ready",
-      payload: { success: true }
-    });
+    postRecv({ type: "ready", payload: { success: true } });
   } catch (error) {
-    self.postMessage({
-      type: "error",
-      payload: { message: (error as Error).message }
-    });
+    postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
@@ -123,24 +114,18 @@ async function loadModel(config: LoadMessage["payload"]): Promise<void> {
   const scorerId = config.scorerId;
 
   if (scorerId === "minilm_catboost") {
-    await loadMiniLMCatBoost(config as CatboostLoadMessage["payload"]);
+    await loadMiniLMCatBoost(config as CatboostLoadPayload);
   } else if (scorerId === "nli_roberta") {
-    await loadNLIRoberta(config as NLILoadMessage["payload"]);
+    await loadNLIRoberta(config as NLILoadPayload);
   } else {
-    self.postMessage({
-      type: "error",
-      payload: { message: `Unknown scorer type: ${scorerId}` }
-    });
+    postRecv({ type: "error", payload: { message: `Unknown scorer type: ${scorerId}` } });
   }
 }
 
-async function evaluateMiniLMCatBoost(data: EvaluateMessage["payload"]): Promise<void> {
+async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<void> {
   const scorerState = scorers.get("minilm_catboost");
   if (!scorerState || !scorerState.featureService || !scorerState.catboostOrt) {
-    self.postMessage({
-      type: "error",
-      payload: { message: "MiniLM-CatBoost scorer not loaded" }
-    });
+    postRecv({ type: "error", payload: { message: "MiniLM-CatBoost scorer not loaded" } });
     return;
   }
 
@@ -148,12 +133,6 @@ async function evaluateMiniLMCatBoost(data: EvaluateMessage["payload"]): Promise
   const totalBatches = Math.ceil(texts.length / batchSize);
 
   try {
-    const batches = Array.from({ length: totalBatches }, (_, i) =>
-      texts.slice(i * batchSize, (i + 1) * batchSize)
-    );
-
-    scorerState.featureService.getFeaturesAllBatchPreload(batches);
-
     for (let i = 0; i < texts.length; i += batchSize) {
       const batchTexts = texts.slice(i, i + batchSize);
 
@@ -184,43 +163,30 @@ async function evaluateMiniLMCatBoost(data: EvaluateMessage["payload"]): Promise
         return { text, score: score / 5 };
       });
 
-      self.postMessage({
-        type: "progress",
-        payload: {
-          batchIndex: Math.floor(i / batchSize) + 1,
-          totalBatches,
-          results,
-        }
-      });
+      postRecv({ type: "progress", payload: { batchIndex: Math.floor(i / batchSize) + 1, totalBatches, results } });
     }
 
-    self.postMessage({ type: "complete", payload: { success: true } });
+    postRecv({ type: "complete", payload: { success: true } });
   } catch (error) {
-    self.postMessage({
-      type: "error",
-      payload: { message: (error as Error).message + (error as Error).stack },
-    });
+    postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
-async function evaluateNLIRoberta(data: EvaluateMessage["payload"]): Promise<void> {
+async function evaluateNLIRoberta(data: NLIEvaluatePayload): Promise<void> {
   const scorerState = scorers.get("nli_roberta");
   if (!scorerState || !scorerState.nliPipeline) {
-    self.postMessage({
-      type: "error",
-      payload: { message: "NLI-RoBERTa scorer not loaded" }
-    });
+    postRecv({ type: "error", payload: { message: "NLI-RoBERTa scorer not loaded" } });
     return;
   }
 
-  const { segments = [], candidateLabels = [], hypothesisTemplate = "", batchSize } = data;
-  const totalBatches = Math.ceil(segments.length / batchSize);
+  const { texts = [], candidateLabels = [], hypothesisTemplate = "", batchSize } = data;
+  const totalBatches = Math.ceil(texts.length / batchSize);
 
   try {
-    for (let i = 0; i < segments.length; i += batchSize) {
-      const batchSegments = segments.slice(i, i + batchSize);
+    for (let i = 0; i < texts.length; i += batchSize) {
+      const batchTexts = texts.slice(i, i + batchSize);
 
-      const results = await scorerState.nliPipeline(batchSegments, candidateLabels, {
+      const results = await scorerState.nliPipeline(batchTexts, candidateLabels, {
         hypothesis_template: hypothesisTemplate,
       });
 
@@ -234,30 +200,17 @@ async function evaluateNLIRoberta(data: EvaluateMessage["payload"]): Promise<voi
 
       const scores = segmentProbs.map((probs: any) => probsToScore(probs));
 
-      const batchResults = batchSegments.map((segment, index) => ({
-        text: segment,
+      const batchResults = batchTexts.map((text, index) => ({
+        text,
         score: scores[index]
       }));
 
-      self.postMessage({
-        type: "progress",
-        payload: {
-          batchIndex: i / batchSize + 1,
-          totalBatches,
-          results: batchResults
-        }
-      });
+      postRecv({ type: "progress", payload: { batchIndex: i / batchSize + 1, totalBatches, results: batchResults } });
     }
 
-    self.postMessage({
-      type: "complete",
-      payload: { success: true }
-    });
+    postRecv({ type: "complete", payload: { success: true } });
   } catch (error) {
-    self.postMessage({
-      type: "error",
-      payload: { message: (error as Error).message }
-    });
+    postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
@@ -265,18 +218,19 @@ async function evaluateSegments(data: EvaluateMessage["payload"]): Promise<void>
   const scorerId = data.scorerId;
 
   if (scorerId === "minilm_catboost") {
-    await evaluateMiniLMCatBoost(data);
+    await evaluateMiniLMCatBoost(data as CatboostEvaluatePayload);
   } else if (scorerId === "nli_roberta") {
-    await evaluateNLIRoberta(data);
+    await evaluateNLIRoberta(data as NLIEvaluatePayload);
   } else {
-    self.postMessage({
-      type: "error",
-      payload: { message: `Unknown scorer type: ${scorerId}` }
-    });
+    postRecv({ type: "error", payload: { message: `Unknown scorer type: ${scorerId}` } });
   }
 }
 
-self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
+function postRecv(msg: RecvMessage) {
+  self.postMessage(msg);
+}
+
+self.onmessage = async (event: MessageEvent<SendMessage>) => {
   switch (event.data.type) {
   case "load":
     await loadModel((event.data as LoadMessage).payload);

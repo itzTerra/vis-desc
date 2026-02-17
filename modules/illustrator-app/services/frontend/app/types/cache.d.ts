@@ -4,6 +4,7 @@
 
 import type { DataType, PipelineType } from "@huggingface/transformers";
 import type { ExecutionProvider } from "booknlp-ts";
+import type { Segment } from "~/types/common";
 
 export interface Downloadable {
   id: string;
@@ -25,8 +26,8 @@ export interface ScorerStage {
 
 export interface ScorerProgress {
   stage: string;
-  progress: number;
-  eta?: number;
+  startedAt: number;
+  results?: Segment[];
 }
 
 // export interface Scorer {

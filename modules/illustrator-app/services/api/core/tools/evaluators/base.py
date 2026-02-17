@@ -1,6 +1,12 @@
+import abc
 from typing import Iterable
 
 
-class BaseEvaluator:
+class BaseEvaluator(abc.ABC):
+    @abc.abstractmethod
     def evaluate_segments(self, segments: list[str]) -> Iterable[tuple[str, float]]:
-        raise NotImplementedError
+        pass
+
+    @abc.abstractmethod
+    def uses_dramatiq(self) -> bool:
+        pass

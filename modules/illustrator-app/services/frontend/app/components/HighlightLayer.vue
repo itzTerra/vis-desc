@@ -56,8 +56,8 @@
                 <Icon :name="getSparkleIndex(highlight.score) >= 5 ? 'lucide:sparkles' : 'lucide:sparkle'" size="26" class="self-center" /> <!-- 0 0-19, 5 95-100 sparkles -->
                 <Icon v-if="getSparkleIndex(highlight.score) >= 1" name="lucide:sparkle" size="18" class="self-end" /> <!-- 1 20-39 -->
                 <Icon v-if="getSparkleIndex(highlight.score) >= 2" name="lucide:sparkle" size="22" class="self-start" /> <!-- 2 40-59 -->
-                <Icon v-if="getSparkleIndex(highlight.score) >= 3" name="lucide:sparkle" size="12" class="self-end ms-[-4px]" /> <!-- 3 60-79 -->
-                <Icon v-if="getSparkleIndex(highlight.score) >= 4" name="lucide:sparkle" size="10" class="self-start ms-[-8px]" /> <!-- 4 80-94 -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 3" name="lucide:sparkle" size="12" class="self-end -ms-1" /> <!-- 3 60-79 -->
+                <Icon v-if="getSparkleIndex(highlight.score) >= 4" name="lucide:sparkle" size="10" class="self-start -ms-2" /> <!-- 4 80-94 -->
               </div>
             </div>
             <button

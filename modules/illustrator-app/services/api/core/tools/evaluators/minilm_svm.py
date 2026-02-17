@@ -22,3 +22,6 @@ class MiniLMSVMEvaluator(BaseEvaluator, OnnxMixin):
         # Inverse lerp from [0,5] to [0,1]
         scores = scores / 5.0
         return list(zip(segments, scores.tolist()))
+
+    def uses_dramatiq(self) -> bool:
+        return True

@@ -60,7 +60,7 @@ export function useAutoIllustration(opts: {
     return y * pageUnit;
   }
 
-  const resolveHighlights = () => unref(highlights) || [];
+  const resolveHighlights = () => (unref(highlights).filter(h => h.score !== undefined && h.score !== null) || []) as (Highlight & { score: number })[];
 
   const resolveSelected = (): Set<number> => unref(selectedHighlights) as Set<number>;
 
@@ -106,7 +106,7 @@ export function useAutoIllustration(opts: {
       const it = list[i];
       const yc = it ? getYCenterNorm(it) : NaN;
       yCenters[i] = Number.isFinite(yc) ? yc : NaN;
-      scores[i] = it && typeof it.score === "number" ? it.score : -Infinity;
+      scores[i] = it.score;
     }
 
     for (let i = 0; i < n; i++) {
@@ -130,7 +130,7 @@ export function useAutoIllustration(opts: {
         const candY = yCenters[j];
         if (!Number.isFinite(candY)) continue;
         const s = scores[j];
-        if (minScoreVal !== null && (s === -Infinity || s < minScoreVal)) continue;
+        if (minScoreVal !== null && s < minScoreVal) continue;
         if (s > bestScore || (s === bestScore && (bestIdx === -1 || j < bestIdx))) {
           bestScore = s;
           bestIdx = j;
@@ -144,7 +144,7 @@ export function useAutoIllustration(opts: {
         const candY = yCenters[j];
         if (!Number.isFinite(candY)) continue;
         const s = scores[j];
-        if (minScoreVal !== null && (s === -Infinity || s < minScoreVal)) continue;
+        if (minScoreVal !== null && s < minScoreVal) continue;
         candidates.push({ idx: j, score: s, y: candY });
       }
 
@@ -264,7 +264,7 @@ export function useAutoIllustration(opts: {
       const it = list[i];
       const yc = it ? getYCenterNorm(it) : NaN;
       yCenters[i] = Number.isFinite(yc) ? yc : NaN;
-      scores[i] = it && typeof it.score === "number" ? it.score : -Infinity;
+      scores[i] = it.score;
     }
 
     // Greedy earliest-pick algorithm maximizes count under spacing constraint.
@@ -276,7 +276,7 @@ export function useAutoIllustration(opts: {
         continue;
       }
       const s = scores[i];
-      if (minScoreVal !== null && (s === -Infinity || s < minScoreVal)) {
+      if (minScoreVal !== null && s < minScoreVal) {
         i++;
         continue;
       }

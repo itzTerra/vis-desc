@@ -3,46 +3,6 @@ import type { HFPipelineConfig } from "~/types/cache";
 
 export type ScorerType = "minilm_catboost" | "nli_roberta";
 
-export interface LoadMessage {
-  type: "load";
-  payload: {
-    scorerId: ScorerType;
-  };
-}
-
-export interface NLILoadMessage extends LoadMessage {
-  payload: {
-    scorerId: "nli_roberta";
-    pipelineConfig: HFPipelineConfig;
-  };
-}
-
-export interface CatboostLoadMessage extends LoadMessage {
-  payload: {
-    scorerId: "minilm_catboost";
-    featureServiceEmbeddingConfig: HFPipelineConfig;
-    catboostProvider: ExecutionProvider;
-    spacyCtxUrl: string;
-  };
-}
-
-export interface EvaluateMessage {
-  type: "evaluate";
-  payload: {
-    scorerId: ScorerType;
-    texts?: string[];
-    segments?: string[];
-    candidateLabels?: string[];
-    hypothesisTemplate?: string;
-    batchSize: number;
-  };
-}
-
-export interface WorkerMessage {
-  type: "load" | "evaluate" | "progress" | "ready" | "complete" | "error";
-  payload: any;
-}
-
 export interface TextEvaluationResult {
   text: string;
   score: number;
@@ -53,3 +13,60 @@ export interface ExtractProgressPayload {
   totalBatches: number;
   results: TextEvaluationResult[];
 }
+
+// --- Messages sent TO the worker ---
+export type NLILoadPayload = {
+  scorerId: "nli_roberta";
+  pipelineConfig: HFPipelineConfig;
+};
+
+export type CatboostLoadPayload = {
+  scorerId: "minilm_catboost";
+  featureServiceEmbeddingConfig: HFPipelineConfig;
+  // For both BookNLP and Catboost
+  provider: ExecutionProvider;
+  spacyCtxUrl: string;
+  // For SpaCy context preload
+  texts: string[];
+  batchSize: number;
+};
+
+export type LoadPayload = NLILoadPayload | CatboostLoadPayload;
+
+export type LoadMessage = {
+  type: "load";
+  payload: LoadPayload;
+};
+
+export type NLIEvaluatePayload = {
+  scorerId: "nli_roberta";
+  texts: string[];
+  candidateLabels: string[];
+  hypothesisTemplate: string;
+  batchSize: number;
+};
+
+export type CatboostEvaluatePayload = {
+  scorerId: "minilm_catboost";
+  texts: string[];
+  batchSize: number;
+};
+
+export type EvaluatePayload = NLIEvaluatePayload | CatboostEvaluatePayload;
+
+export type EvaluateMessage = {
+  type: "evaluate";
+  payload: EvaluatePayload;
+};
+
+export type SendMessage = LoadMessage | EvaluateMessage;
+
+// --- Messages received FROM the worker ---
+export type ReadyMessage = { type: "ready"; payload: { success: boolean } };
+export type ProgressEvalMessage = { type: "progress"; payload: ExtractProgressPayload };
+export type CompleteMessage = { type: "complete"; payload: { success: boolean } };
+export type ErrorMessage = { type: "error"; payload: { message: string; stack?: string } };
+
+export type RecvMessage = ReadyMessage | ProgressEvalMessage | CompleteMessage | ErrorMessage;
+
+export type { LoadMessage as _LoadMessage, EvaluateMessage as _EvaluateMessage };

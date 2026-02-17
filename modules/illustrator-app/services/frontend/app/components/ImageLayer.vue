@@ -1,7 +1,7 @@
 <template>
   <div
     ref="imagesContainer"
-    class="w-[512px] select-none"
+    class="w-lg select-none"
   >
     <div class="relative">
       <ImageEditor

@@ -506,7 +506,7 @@ class FeatureExtractorPipeline {
     return `(${parts.map((p) => `'${p}'`).join(", ")})`;
   }
 
-  async init({progressCallback, providers}: {progressCallback?: ProgressCallback, providers?: ExecutionProvider[]} = {}): Promise<void> {
+  async init({progressCallback, provider}: {progressCallback?: ProgressCallback, provider?: ExecutionProvider} = {}): Promise<void> {
     this.spacyWorkerPool = new WorkerPool(4);
 
     let booknlpProgress = 0;
@@ -520,7 +520,7 @@ class FeatureExtractorPipeline {
 
     const bookNLPPromise = this.bookNLP.initialize({
       pipeline: ["entity", "supersense", "event"],
-      executionProviders: providers?.length ? providers : ["wasm"],
+      executionProviders: provider ? [provider] : undefined,
       cacheName: CACHE_NAME,
       dtype: "fp32",
     }, (progress) => {
@@ -1423,7 +1423,7 @@ export class FeatureService {
     this.featureExtractor = new FeatureExtractorPipeline(spacyCtxUrl);
   }
 
-  async init(embeddingPipelineConfig: HFPipelineConfig, {progressCallback, providers, }: {progressCallback?: ProgressCallback, providers?: ExecutionProvider[]} = {}): Promise<void> {
+  async init(embeddingPipelineConfig: HFPipelineConfig, {progressCallback, provider, }: {progressCallback?: ProgressCallback, provider?: ExecutionProvider} = {}): Promise<void> {
     // Track each part's progress and report combined progress (0..1).
     let extractorProgress = 0;
     let pipelineProgress = 0;
@@ -1438,7 +1438,7 @@ export class FeatureService {
     const extractorPromise = this.featureExtractor.init({ progressCallback: (progress) => {
       extractorProgress = Math.min(Math.max(progress ?? 0, 0), 1);
       report();
-    }, providers });
+    }, provider });
 
     // @ts-ignore
     const pipelinePromise = pipeline(
@@ -1474,7 +1474,6 @@ export class FeatureService {
       this.embedMiniLM(texts, { pooling: "mean", normalize: true }),
     ]);
     const embeddings = embeddingTensor.tolist();
-    console.log("Obtained features and embeddings for all texts");
     return extractorFeatures.map((featVec, i) => [...embeddings[i], ...featVec]);
   }
 }

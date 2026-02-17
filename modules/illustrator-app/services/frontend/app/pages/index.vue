@@ -269,7 +269,7 @@ const handleFileUpload = async (event: any) => {
   fullReset();
 
   isLoading.value = Date.now();
-  currentStage.value = "Initializing...";
+  currentStage.value = "Processing PDF...";
   pdfFile.value = file;
 
   const scorer = selectedScorer.value;
@@ -288,11 +288,14 @@ const handleFileUpload = async (event: any) => {
 
   pdfUrl.value = URL.createObjectURL(file);
 
+  const needsSocket = scorer.id === "random";
+
   const formData = new FormData();
   formData.append("pdf", file, file.name);
+  formData.append("model", selectedModel.value);
 
   try {
-    const data = await call("/api/pdf-upload" as any, {
+    const data = await call(needsSocket ? "/api/process/pdf" : "/api/process/seg/pdf", {
       method: "POST",
       body: formData as any
     });
@@ -301,9 +304,9 @@ const handleFileUpload = async (event: any) => {
       highlights.splice(0, highlights.length, ...data.segments);
     }
 
-    const needsSocket = scorer.id === "random";
     if (needsSocket) {
       socket.open();
+      // Wait for socket to open
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => {
           stopWatcher();
@@ -326,24 +329,25 @@ const handleFileUpload = async (event: any) => {
           { immediate: true }
         );
       });
+      socket.send(JSON.stringify({ ws_key: (data as any).ws_key }));
+
+      currentStage.value = "Scoring...";
+      isLoading.value = Date.now();
+    } else {
+      await scorer.score(
+        data,
+        (progress) => {
+          currentStage.value = progress.stage;
+          isLoading.value = progress.startedAt;
+          for (const segment of progress.results || []) {
+            scoreSegment(segment);
+          }
+        },
+        needsSocket ? socket : undefined
+      );
+      isLoading.value = null;
+      currentStage.value = undefined;
     }
-
-    const results = await scorer.score(
-      data,
-      (progress) => {
-        currentStage.value = progress.stage;
-      },
-      needsSocket ? socket : undefined
-    );
-
-    if (Array.isArray(results)) {
-      for (const segment of results) {
-        scoreSegment(segment);
-      }
-    }
-
-    isLoading.value = null;
-    currentStage.value = undefined;
   } catch (error) {
     isLoading.value = null;
     currentStage.value = undefined;
@@ -384,6 +388,8 @@ const socket = useWebSocket(`${runtimeConfig.public.wsBaseUrl}/ws/progress/`, {
     case "success":
       console.log("WS[SUCCESS]:", data.content);
       ws.close();
+      isLoading.value = null;
+      currentStage.value = undefined;
       break;
     }
   },
@@ -392,6 +398,7 @@ const socket = useWebSocket(`${runtimeConfig.public.wsBaseUrl}/ws/progress/`, {
 function onDisconnected() {
   console.log("WS: disconnected");
   isLoading.value = null;
+  currentStage.value = undefined;
 }
 
 function cancelSegmentLoading() {
@@ -502,19 +509,20 @@ async function handleExportConfirm() {
 }
 
 function checkScorer(scorer: Scorer) {
-  const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
-  if (scorer.disabled || !modelGroup) {
+  if (scorer.disabled) {
     useNotifier().error("Selected scorer is not available.");
     return false;
   }
+  const modelGroup = MODEL_GROUPS.find(g => g.id === scorer.id);
+  if (!modelGroup) {
+    return true;
+  }
 
   const groupStatus = cacheManagerRef.value?.getGroupDownloadStatus(modelGroup);
-
   if (groupStatus === "downloading") {
     cacheManagerExpanded.value = true;
     return false;
   }
-
   if (groupStatus !== "cached") {
     callHook("custom:downloadNeeded", modelGroup.id);
     return false;
@@ -539,6 +547,8 @@ function confirmModelDownload() {
 }
 
 onMounted(() => {
+  initApp();
+
   hook("custom:downloadNeeded", (groupId: string) => {
     const group = MODEL_GROUPS.find(g => g.id === groupId);
     if (group) {

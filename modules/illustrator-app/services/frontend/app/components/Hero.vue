@@ -1,6 +1,6 @@
 <template>
   <div class="hero bg-custom">
-    <div class="hero-content flex-col lg:flex-row-reverse max-w-[64rem]">
+    <div class="hero-content flex-col lg:flex-row-reverse max-w-5xl">
       <img src="/vis-desc-image.png" alt="hero-image" width="400" height="400">
       <div>
         <h1 class="text-5xl font-bold">

@@ -2,8 +2,7 @@ import { pipeline, env } from "@huggingface/transformers";
 import { FeatureService } from "~/utils/text2features";
 import type { Downloadable, ModelGroup, ScorerStage, ScorerProgress, HFPipelineConfig } from "~/types/cache";
 import type { Segment } from "~/types/common";
-import type { paths } from "~/types/schema";
-import type { EvaluateMessage, CatboostLoadMessage, NLILoadMessage } from "~/types/scorer-worker";
+import type { SendMessage, RecvMessage } from "~/types/scorer-worker";
 import type { ExecutionProvider } from "booknlp-ts";
 
 env.allowLocalModels = false;
@@ -25,7 +24,6 @@ abstract class BaseDownloadable implements Downloadable {
 }
 
 class FeatureServiceDownloadable extends BaseDownloadable {
-  spacyCtxUrl: keyof paths = "/api/spacy-ctx";
   embeddingPipelineConfig: HFPipelineConfig = {
     model: "Xenova/all-MiniLM-L6-v2",
     type: "feature-extraction",
@@ -34,7 +32,7 @@ class FeatureServiceDownloadable extends BaseDownloadable {
   };
 
   async download(onProgress: (progress: number) => void): Promise<void> {
-    const featureService = new FeatureService(this.spacyCtxUrl);
+    const featureService = new FeatureService(""); // spacyCtxUrl is not needed for downloading to cache
     await featureService.init(this.embeddingPipelineConfig, { progressCallback: (progress) => {
       onProgress(progress * 100);
     } });
@@ -147,7 +145,7 @@ abstract class Scorer {
 
   protected getExecutionProvider(): ExecutionProvider {
     try {
-      return JSON.parse(localStorage.getItem("onnx_providers") ?? "{}")[this.id] || "wasm";
+      return JSON.parse(localStorage.getItem("onnx_provider") ?? "{}")[this.id] || "wasm";
     } catch {
       return "wasm";
     }
@@ -168,8 +166,10 @@ abstract class Scorer {
 }
 
 class MiniLMCatBoostScorer extends Scorer {
-  private worker: Worker | null = null;
+  private isLoaded = false;
   private scoring = false;
+  private batchSize = 16;
+  private spacyCtxUrl?: string;
 
   constructor() {
     super(
@@ -194,76 +194,92 @@ class MiniLMCatBoostScorer extends Scorer {
       const segments: Segment[] = data.segments || [];
       const texts = segments.map((s: any) => s.text);
 
-      if (!this.worker) {
+      const scorerWorker = getScorerWorker();
+
+      if (!this.isLoaded) {
+        if (!this.spacyCtxUrl) {
+          this.spacyCtxUrl = new URL("/api/spacy-ctx", useRuntimeConfig().public.apiBaseUrl).toString();
+        }
         onProgress({
           stage: "Initializing...",
-          progress: 0,
+          startedAt: Date.now(),
         });
-
-        this.worker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
-          type: "module",
-        });
+        this.isLoaded = true;
 
         const provider = this.getExecutionProvider();
         await new Promise<void>((resolve, reject) => {
-          const handler = (event: MessageEvent) => {
+          const handler = (event: MessageEvent<RecvMessage>) => {
             if (event.data.type === "ready") {
               resolve();
             } else if (event.data.type === "error") {
               reject(new Error(event.data.payload.message));
+              this.isLoaded = false;
             }
           };
 
-          this.worker!.addEventListener("message", handler, { once: true });
-          const loadMsg: CatboostLoadMessage = {
+          scorerWorker.addEventListener("message", handler, { once: true });
+          const loadMsg: SendMessage = {
             type: "load",
             payload: {
               scorerId: "minilm_catboost",
-              spacyCtxUrl: DOWNLOADABLES.featureService.spacyCtxUrl,
-              catboostProvider: provider,
+              spacyCtxUrl: this.spacyCtxUrl!,
+              provider,
               featureServiceEmbeddingConfig: DOWNLOADABLES.featureService.embeddingPipelineConfig,
+              texts,
+              batchSize: this.batchSize,
             },
           };
-          this.worker!.postMessage(loadMsg);
+          scorerWorker.postMessage(loadMsg);
         });
       }
+
+      const scoringStartTime = Date.now();
+      onProgress({
+        stage: "Scoring...",
+        startedAt: scoringStartTime,
+        results: [],
+      });
 
       return new Promise<Segment[]>((resolve, reject) => {
         const results: Segment[] = [];
 
-        const handler = (event: MessageEvent) => {
-          const { type, payload } = event.data;
+        const handler = (event: MessageEvent<RecvMessage>) => {
+          const { type, payload } = event.data as RecvMessage;
 
           if (type === "progress") {
             onProgress({
               stage: "Scoring...",
-              progress: ((payload.batchIndex / payload.totalBatches) * 100),
-              eta: payload.eta,
+              startedAt: scoringStartTime,
+              results: payload.results,
             });
 
             for (const result of payload.results) {
               results.push(result);
             }
           } else if (type === "complete") {
-            this.worker!.removeEventListener("message", handler);
+            scorerWorker.removeEventListener("message", handler);
             resolve(results);
           } else if (type === "error") {
-            this.worker!.removeEventListener("message", handler);
+            scorerWorker.removeEventListener("message", handler);
             reject(new Error(payload.message));
           }
         };
 
-        this.worker!.addEventListener("message", handler);
-        const evalMsg: EvaluateMessage = {
+        scorerWorker.addEventListener("message", handler);
+        const evalMsg: SendMessage = {
           type: "evaluate",
           payload: {
             scorerId: "minilm_catboost",
             texts,
-            batchSize: 16,
+            batchSize: this.batchSize,
           },
         };
-        this.worker!.postMessage(evalMsg);
+        scorerWorker.postMessage(evalMsg);
       });
+    } catch (e) {
+      useNotifier().error("An error occurred during scoring: " + (e as Error).message);
+      console.error("Error in MiniLMCatBoostScorer:", e);
+      return [];
     } finally {
       this.scoring = false;
     }
@@ -271,10 +287,11 @@ class MiniLMCatBoostScorer extends Scorer {
 }
 
 class NLIRobertaScorer extends Scorer {
-  private worker: Worker | null = null;
+  private isLoaded = false;
   private scoring = false;
   private candidateLabels: string[] = ["not detailed", "detailed"];
   private hypothesisTemplate: string = "This text is {} in terms of visual details of characters, setting, or environment.";
+  private batchSize = 16;
 
   constructor() {
     super(
@@ -298,33 +315,28 @@ class NLIRobertaScorer extends Scorer {
     try {
       const segments: Segment[] = data.segments || [];
 
-      if (!this.worker) {
+      const scorerWorker = getScorerWorker();
+
+      if (!this.isLoaded) {
         onProgress({
           stage: "Initializing...",
-          progress: 0,
+          startedAt: Date.now(),
         });
-
-        this.worker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
-          type: "module",
-        });
+        this.isLoaded = true;
 
         const provider = this.getExecutionProvider();
         await new Promise<void>((resolve, reject) => {
-          const handler = (event: MessageEvent) => {
+          const handler = (event: MessageEvent<RecvMessage>) => {
             if (event.data.type === "ready") {
               resolve();
             } else if (event.data.type === "error") {
               reject(new Error(event.data.payload.message));
-            } else if (event.data.type === "progress") {
-              onProgress({
-                stage: "Initializing...",
-                progress: (event.data.payload.progress ?? 0) * 100,
-              });
+              this.isLoaded = false;
             }
           };
 
-          this.worker!.addEventListener("message", handler, { once: true });
-          const loadMsg: NLILoadMessage = {
+          scorerWorker.addEventListener("message", handler, { once: true });
+          const loadMsg: SendMessage = {
             type: "load",
             payload: {
               scorerId: "nli_roberta",
@@ -336,47 +348,54 @@ class NLIRobertaScorer extends Scorer {
               }
             },
           };
-          this.worker!.postMessage(loadMsg);
+          scorerWorker.postMessage(loadMsg);
         });
       }
+
+      const scoringStartTime = Date.now();
+      onProgress({
+        stage: "Scoring...",
+        startedAt: scoringStartTime,
+        results: [],
+      });
 
       return new Promise<Segment[]>((resolve, reject) => {
         const results: Segment[] = [];
 
-        const handler = (event: MessageEvent) => {
-          const { type, payload } = event.data;
+        const handler = (event: MessageEvent<RecvMessage>) => {
+          const { type, payload } = event.data as RecvMessage;
 
           if (type === "progress") {
             onProgress({
               stage: "Scoring...",
-              progress: ((payload.batchIndex / payload.totalBatches) * 100),
-              eta: payload.eta,
+              startedAt: scoringStartTime,
+              results: payload.results,
             });
 
             for (const result of payload.results) {
               results.push(result);
             }
           } else if (type === "complete") {
-            this.worker!.removeEventListener("message", handler);
+            scorerWorker.removeEventListener("message", handler);
             resolve(results);
           } else if (type === "error") {
-            this.worker!.removeEventListener("message", handler);
+            scorerWorker.removeEventListener("message", handler);
             reject(new Error(payload.message));
           }
         };
 
-        this.worker!.addEventListener("message", handler);
-        const evalMsg: EvaluateMessage = {
+        scorerWorker.addEventListener("message", handler);
+        const evalMsg: SendMessage = {
           type: "evaluate",
           payload: {
             scorerId: "nli_roberta",
-            segments: segments.map((s: any) => s.text),
+            texts: segments.map((s: any) => s.text),
             candidateLabels: this.candidateLabels,
             hypothesisTemplate: this.hypothesisTemplate,
-            batchSize: 16,
+            batchSize: this.batchSize,
           },
         };
-        this.worker!.postMessage(evalMsg);
+        scorerWorker.postMessage(evalMsg);
       });
     } finally {
       this.scoring = false;
@@ -385,9 +404,6 @@ class NLIRobertaScorer extends Scorer {
 }
 
 class RandomScorer extends Scorer {
-  private socket: any = null;
-  private scoring = false;
-
   constructor() {
     super(
       "random",
@@ -399,72 +415,8 @@ class RandomScorer extends Scorer {
     );
   }
 
-  async score(
-    data: any,
-    onProgress: (progress: ScorerProgress) => void,
-    socket?: any
-  ): Promise<Segment[]> {
-    if (this.scoring) {
-      throw new Error("Scoring already in progress");
-    }
-    this.scoring = true;
-    try {
-      const segments: Segment[] = data.segments || [];
-
-      onProgress({
-        stage: "Initializing...",
-        progress: 0,
-      });
-
-      if (!socket) {
-        throw new Error("WebSocket connection required for RandomScorer");
-      }
-
-      this.socket = socket;
-
-      return new Promise<Segment[]>((resolve, reject) => {
-        const results: Segment[] = [];
-
-        const progressHandler = (payload: any) => {
-          onProgress({
-            stage: "Scoring...",
-            progress: (payload.progress ?? 0) * 100,
-            eta: payload.eta,
-          });
-        };
-
-        const completeHandler = (payload: any) => {
-          this.socket.off("score:progress", progressHandler);
-          this.socket.off("score:complete", completeHandler);
-          this.socket.off("score:error", errorHandler);
-
-          for (const result of payload.results || []) {
-            results.push(result);
-          }
-
-          resolve(results);
-        };
-
-        const errorHandler = (payload: any) => {
-          this.socket.off("score:progress", progressHandler);
-          this.socket.off("score:complete", completeHandler);
-          this.socket.off("score:error", errorHandler);
-
-          reject(new Error(payload.message || "Unknown error"));
-        };
-
-        this.socket.on("score:progress", progressHandler);
-        this.socket.on("score:complete", completeHandler);
-        this.socket.on("score:error", errorHandler);
-
-        this.socket.emit("score:request", {
-          scorer_id: this.id,
-          segments: segments.map((s: any) => ({ text: s.text })),
-        });
-      });
-    } finally {
-      this.scoring = false;
-    }
+  async score(): Promise<Segment[]> {
+    return [];
   }
 }
 
@@ -503,7 +455,7 @@ export const MODEL_GROUPS: ModelGroup[] = [
     downloadables: [
       DOWNLOADABLES.nliRoberta,
     ],
-  },
+  }
 ];
 
 export const SCORERS: Scorer[] = [

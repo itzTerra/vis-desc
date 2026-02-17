@@ -1,7 +1,7 @@
 <template>
-  <div ref="pdfViewer" class="flex bg-base-100 max-w-[1440px] mx-auto">
+  <div ref="pdfViewer" class="flex bg-base-100 max-w-360 mx-auto">
     <ClientOnly>
-      <div ref="pdfEmbedWrapper" class="flex-grow pdf-wrapper bg-base-200" :style="{ width: `${pdfWidth}px`}" data-help-target="viewer">
+      <div ref="pdfEmbedWrapper" class="grow pdf-wrapper bg-base-200" :style="{ width: `${pdfWidth}px`}" data-help-target="viewer">
         <div
           v-for="pageNum in pageNums"
           :key="pageNum"
@@ -20,7 +20,7 @@
               width: `${pdfWidthScaled}px`,
               height: `${pdfPageHeight}px`,
             }"
-            @rendered="$emit('pdf:rendered')"
+            @rendered="onRendered"
           />
           <div
             v-else
@@ -34,7 +34,7 @@
           />
         </div>
         <HighlightLayer
-          v-if="highlights.length"
+          v-if="isPdfRendered && highlights.length"
           ref="highlightLayer"
           :key="highlightLayerKey"
           :highlights="highlights"
@@ -383,6 +383,16 @@ function updateHeatmapOffset() {
     top,
     height: Math.max(0, window.innerHeight - top)
   };
+}
+
+const isPdfRendered = ref(false);
+
+function onRendered() {
+  if (!isPdfRendered.value) {
+    isPdfRendered.value = true;
+    pageResizeHandler();
+  }
+  emit("pdf:rendered");
 }
 
 onMounted(() => {

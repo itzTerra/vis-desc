@@ -1,4 +1,5 @@
-import type { ModelGroup, ScorerProgress } from "~/types/cache";
+import type { ModelGroup } from "~/types/cache";
+import type { ProgressCallback } from "~/types/common";
 import { CacheController } from "~/utils/CacheController";
 
 let cacheControllerInstance: CacheController | null = null;
@@ -15,7 +16,7 @@ export function useCacheController() {
 
   const downloadGroup = async (
     group: ModelGroup,
-    onProgress: (progress: ScorerProgress) => void
+    onProgress: ProgressCallback
   ): Promise<void> => {
     return controller.downloadGroup(group, onProgress);
   };

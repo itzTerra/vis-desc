@@ -9,27 +9,24 @@ from dramatiq_abort import abort
 from redis.asyncio import from_url as redis_from_url
 from django.conf import settings
 from core.tools.evaluate import EVALUATOR_TO_BATCH_SIZE, evaluate_segments
+from core.schemas import Evaluator
+from core.tools.evaluators.random_eval import RandomEvaluator
+# from core.tools.evaluators.nli_roberta import NLIRoberta
 
 
-consumer_resources = {}
-if not settings.ENABLE_DRAMATIQ:
-    from core.schemas import Evaluator
-
-    # from core.tools.evaluators.nli_roberta import NLIRoberta
-    from core.tools.evaluators.random_eval import RandomEvaluator
-
-    # consumer_resources["feature_service"] = FeatureService(
+consumer_resources = {
+    # "feature_service": FeatureService(
     #     feature_pipeline_resources=FEATURE_PIPELINE_RESOURCES,
     #     cache_dir=settings.MODEL_CACHE_DIR,
     # )
-
-    consumer_resources["evaluators"] = {
-        # Evaluator.minilm_svm: MiniLMSVMEvaluator(
-        #     feature_service=consumer_resources["feature_service"]
-        # ),
-        # Evaluator.nli_roberta: NLIRoberta(),
-        Evaluator.random: RandomEvaluator(),
-    }
+}
+consumer_resources["evaluators"] = {
+    # Evaluator.minilm_svm: MiniLMSVMEvaluator(
+    #     feature_service=consumer_resources["feature_service"]
+    # ),
+    # Evaluator.nli_roberta: NLIRoberta(),
+    Evaluator.random: RandomEvaluator(),
+}
 
 
 class SegmentConsumer(AsyncJsonWebsocketConsumer):
@@ -41,6 +38,7 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         self._pending_messages: list[dict] = []
         self._flush_task: asyncio.Task | None = None
         self._finished_batches = 0
+        self._batches_to_process = 0
 
     async def connect(self):
         self.logger.info(f"WebSocket connected with channel name: {self.channel_name}")
@@ -114,6 +112,12 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
             await self.close()
             return
 
+        evaluator = consumer_resources["evaluators"].get(data.model)
+        if not evaluator:
+            await self.send_json({"error": f"Unsupported model: {data.model}"})
+            await self.close()
+            return
+
         self.authenticated = True
 
         # Distribute segments to process across workers
@@ -125,7 +129,7 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
         self._finished_batches = 0
         self._batches_to_process = len(worker_batches)
 
-        if settings.ENABLE_DRAMATIQ:
+        if settings.ENABLE_DRAMATIQ and evaluator.uses_dramatiq():
             for i, batch in enumerate(worker_batches):
                 msg = process_segment_batch.send(
                     batch, i, data.model, self.channel_name
@@ -137,7 +141,7 @@ class SegmentConsumer(AsyncJsonWebsocketConsumer):
                 "content": "WebSocket authenticated and started scoring segments",
             }
         )
-        if not settings.ENABLE_DRAMATIQ:
+        if not settings.ENABLE_DRAMATIQ or not evaluator.uses_dramatiq():
             for i, batch in enumerate(worker_batches):
                 evaluator = consumer_resources["evaluators"].get(data.model)
 

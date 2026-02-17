@@ -49,21 +49,6 @@
           </div>
           <div class="mb-2">
             <label class="label">
-              <span class="label-text">Actions</span>
-            </label>
-            <div class="flex flex-col gap-2">
-              <label class="flex items-center gap-2">
-                <input v-model="enableEnhance" type="checkbox" class="toggle toggle-sm toggle-secondary">
-                <span class="text-sm">Enhance</span>
-              </label>
-              <label class="flex items-center gap-2">
-                <input v-model="enableGenerate" type="checkbox" class="toggle toggle-sm toggle-secondary">
-                <span class="text-sm">Generate</span>
-              </label>
-            </div>
-          </div>
-          <div class="mb-2">
-            <label class="label">
               <span class="label-text">Min score (optional)</span>
             </label>
             <input
@@ -80,6 +65,16 @@
             <p v-if="minScoreInvalid" id="auto-min-score-error" class="text-xs text-warning mt-1" role="alert">
               Min score must be an integer percentage (enter values like 75 for 75%).
             </p>
+          </div>
+          <div class="flex flex-col gap-2 mb-2">
+            <label class="flex items-center gap-2">
+              <input v-model="enableEnhance" type="checkbox" class="toggle toggle-sm toggle-secondary">
+              <span class="text-sm">Enhance</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input v-model="enableGenerate" type="checkbox" class="toggle toggle-sm toggle-secondary">
+              <span class="text-sm">Generate</span>
+            </label>
           </div>
           <div class="flex justify-between mt-2">
             <button class="btn btn-sm btn-error" @click="clearAutoSelections">

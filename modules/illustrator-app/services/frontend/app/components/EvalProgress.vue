@@ -2,16 +2,16 @@
   <div v-if="isLoading || isCancelled" class="flex items-center ms-4">
     <div class="flex flex-col">
       <template v-if="currentStage === 'Scoring...'">
-        <span>{{ currentStage }} {{ progressPercent }}%</span>
         <progress class="progress progress-info w-52" :value="scoredSegmentCount" :max="highlights.length" />
-        <div class="flex justify-between mt-0.5 text-sm opacity-60">
+        <div class="flex justify-between mt-0.5 text-sm opacity-60 gap-1">
           <template v-if="isCancelled">
             <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
             <span>Loading canceled</span>
           </template>
           <template v-else-if="highlights.length">
+            <span>{{ currentStage }}</span>
             <span>{{ scoredSegmentCount }}/{{ highlights.length }}</span>
-            <span>~{{ formatEta(etaMs) }}&nbsp;remaining</span>
+            <span>ETA&nbsp;{{ formatEta(etaMs) }}</span>
           </template>
           <template v-else>
             <span>Loading...</span>
@@ -44,12 +44,6 @@ const isLoading = defineModel<number | null>();
 const scoredSegmentCount = computed(() =>
   props.highlights.filter(h => typeof h.score === "number").length
 );
-
-const progressPercent = computed(() => {
-  const total = props.highlights.length;
-  if (total === 0) return 0;
-  return Math.round((scoredSegmentCount.value / total) * 100);
-});
 
 watchOnce(
   () => props.highlights.length > 0 && scoredSegmentCount.value === props.highlights.length,

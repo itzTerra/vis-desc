@@ -99,7 +99,7 @@
                       <input
                         type="checkbox"
                         class="toggle toggle-sm"
-                        :checked="providers[group.id] === 'webgpu'"
+                        :checked="provider[group.id] === 'webgpu'"
                         @change="(e: any) => updateProvider(group.id, e.target.checked)"
                       >
                     </label>
@@ -179,7 +179,7 @@ const cacheController = new CacheController();
 const cacheManagerDialog = ref<HTMLDialogElement>();
 const downloadQueue = ref<DownloadQueueItem[]>([]);
 const isProcessingQueue = ref(false);
-const providers = ref<Record<string, string>>({});
+const provider = ref<Record<string, string>>({});
 const cachedGroups = ref<Set<string>>(new Set());
 
 const currentDownload = computed(() => downloadQueue.value[0] || null);
@@ -212,8 +212,8 @@ function getGroupQueuePosition(group: ModelGroup): number {
 }
 
 function updateProvider(groupId: string, enabled: boolean): void {
-  providers.value[groupId] = enabled ? "webgpu" : "wasm";
-  localStorage.setItem("onnx_providers", JSON.stringify(providers.value));
+  provider.value[groupId] = enabled ? "webgpu" : "wasm";
+  localStorage.setItem("onnx_provider", JSON.stringify(provider.value));
 }
 
 async function checkCachedGroups(): Promise<void> {
@@ -260,8 +260,8 @@ async function processQueue(): Promise<void> {
     const group = current.group;
 
     try {
-      await downloadGroup(group, (progressPayload) => {
-        current.progress = progressPayload.progress;
+      await downloadGroup(group, (progress) => {
+        current.progress = progress;
       });
 
       useNotifier().success(`${group.name} downloaded successfully`);
@@ -329,10 +329,10 @@ const dialogHandler = () => {
 };
 
 onMounted(async () => {
-  const stored = localStorage.getItem("onnx_providers");
+  const stored = localStorage.getItem("onnx_provider");
   if (stored) {
     try {
-      providers.value = JSON.parse(stored);
+      provider.value = JSON.parse(stored);
     } catch {
       // Invalid JSON, use defaults
     }

@@ -8,7 +8,7 @@
       <Icon name="lucide:component" />
       {{ SCORERS.find(m => m.id === modelValue)?.label ?? "??" }}
     </div>
-    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-96 ml-[-1px]">
+    <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow bg-base-300 rounded-box w-96 -ml-px">
       <li class="menu-title">
         <div class="grid grid-cols-[1fr_50px_50px] gap-4 text-sm text-accent/80 font-semibold">
           <span>Model</span>
@@ -24,10 +24,10 @@
         >
           <div class="grid grid-cols-[1fr_50px_50px] gap-4 text-sm items-center">
             <span>{{ model.label }}</span>
-            <div class="grid grid-cols-5 border border-base-content/20 gap-x-[1px] h-4">
+            <div class="grid grid-cols-5 border border-base-content/20 gap-x-px h-4">
               <div v-for="i in model.speed" :key="i" class="bg-secondary" :class="{ 'opacity-50': model.disabled }" />
             </div>
-            <div class="grid grid-cols-5 border border-base-content/20 gap-x-[1px] h-4">
+            <div class="grid grid-cols-5 border border-base-content/20 gap-x-px h-4">
               <div v-for="i in model.quality" :key="i" class="bg-primary" :class="{ 'opacity-50': model.disabled }" />
             </div>
           </div>
@@ -41,8 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import type { Scorer } from "~/types/cache";
-import { SCORERS, MODEL_GROUPS } from "~/utils/models";
+import { SCORERS, MODEL_GROUPS, type Scorer } from "~/utils/models";
 
 const modelValue = defineModel<string>({ required: true });
 

@@ -2,6 +2,7 @@
 
 import requests
 from django.conf import settings
+import time
 
 
 LLM_MODEL_NAME = "gpt-oss-120b"
@@ -70,10 +71,17 @@ def enhance_text_with_llm(text: str) -> str:
         "max_tokens": 512,
     }
 
-    response = requests.post(url, json=payload, headers=headers, timeout=30)
-    response.raise_for_status()
-
-    result = response.json()
-    enhanced_text = result["choices"][0]["message"]["content"].strip()
-
-    return f"{enhanced_text}, {DEFAULT_PROMPT_KEYWORDS}"
+    max_retries = settings.LLM_API_MAX_RETRIES
+    delay = settings.LLM_API_RETRY_DELAY_SECONDS
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+            enhanced_text = result["choices"][0]["message"]["content"].strip()
+            return f"{enhanced_text}, {DEFAULT_PROMPT_KEYWORDS}"
+        except Exception:
+            if attempt < max_retries:
+                time.sleep(delay)
+            else:
+                raise

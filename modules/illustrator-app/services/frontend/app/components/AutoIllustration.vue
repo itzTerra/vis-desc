@@ -3,7 +3,7 @@
     <div class="inline-flex items-center gap-2">
       <label class="flex items-center gap-2">
         <input v-model="enabled" type="checkbox" class="toggle toggle-sm toggle-secondary">
-        <span class="text-sm whitespace-nowrap">Auto-illustration</span>
+        <span class="text-sm whitespace-nowrap">Auto-illustrate</span>
       </label>
       <div class="dropdown">
         <div
@@ -16,7 +16,7 @@
         </div>
         <div
           tabindex="-1"
-          class="dropdown-content card p-3 mt-2 bg-base-100 shadow-lg w-56 z-50"
+          class="dropdown-content card p-3 mt-2 bg-base-300 shadow-lg w-56 z-50"
         >
           <div class="mb-2">
             <label class="label">

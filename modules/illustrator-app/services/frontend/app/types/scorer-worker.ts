@@ -59,7 +59,10 @@ export type EvaluateMessage = {
   payload: EvaluatePayload;
 };
 
-export type SendMessage = LoadMessage | EvaluateMessage;
+type PauseMessage = { type: "pause" };
+type ContinueMessage = { type: "continue" };
+
+export type SendMessage = LoadMessage | EvaluateMessage | PauseMessage | ContinueMessage;
 
 // --- Messages received FROM the worker ---
 export type ReadyMessage = { type: "ready"; payload: { success: boolean } };

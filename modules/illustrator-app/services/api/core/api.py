@@ -144,8 +144,8 @@ def enhance_text(request, body: BatchTextsBody) -> List[BatchEnhanceItem]:
         try:
             enhanced = enhance_text_with_llm(t)
             results.append({"ok": True, "text": enhanced})
-        except Exception:
-            results.append({"ok": False, "error": "enhance failed"})
+        except Exception as e:
+            results.append({"ok": False, "error": f"enhance failed: {str(e)}"})
 
     return api.create_response(request, results, status=200)
 

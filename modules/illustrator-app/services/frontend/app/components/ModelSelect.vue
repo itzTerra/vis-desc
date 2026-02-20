@@ -3,12 +3,12 @@
     <div
       tabindex="0"
       role="button"
-      class="btn btn-accent btn-outline w-auto text-nowrap ps-2"
+      class="btn btn-accent btn-outline w-auto text-nowrap"
     >
       <Icon name="lucide:component" />
       {{ SCORERS.find(m => m.id === modelValue)?.label ?? "??" }}
     </div>
-    <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow bg-base-300 rounded-box w-96 -ml-px">
+    <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow bg-base-300 rounded-box w-82 -ml-px">
       <li class="menu-title">
         <div class="grid grid-cols-[1fr_50px_50px] gap-4 text-sm text-accent/80 font-semibold">
           <span>Model</span>

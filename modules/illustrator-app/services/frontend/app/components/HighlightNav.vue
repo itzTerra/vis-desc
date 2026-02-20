@@ -6,7 +6,7 @@
           <Icon name="lucide:chevron-down" class="swap-on" />
           <Icon name="lucide:chevron-right" class="swap-off" />
         </div>
-        <label class="input input-ghost join-item" @click.stop>
+        <label class="input input-ghost join-item px-1 gap-1" @click.stop>
           <input
             v-model="searchInput"
             type="text"
@@ -14,18 +14,18 @@
             class="truncate"
             :title="searchInput"
           >
-          <span class="label">{{ currentSearchSet.length === 0 ? 0 : currentIndex + 1 }}/{{ currentSearchSet.length }}</span>
+          <span class="label ms-0 ps-1 pe-2">{{ currentSearchSet.length === 0 ? 0 : currentIndex + 1 }}/{{ currentSearchSet.length }}</span>
         </label>
         <div class="join-item flex flex-row" @click.stop>
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Previous Segment" @click.stop="onPrev">
+          <button class="btn btn-ghost px-1" :disabled="!currentSearchSet.length" title="Previous Segment" @click.stop="onPrev">
             <Icon name="lucide:chevron-up" size="20px" />
           </button>
-          <button class="btn btn-ghost px-2" :disabled="!currentSearchSet.length" title="Next Segment" @click.stop="onNext">
+          <button class="btn btn-ghost px-1" :disabled="!currentSearchSet.length" title="Next Segment" @click.stop="onNext">
             <Icon name="lucide:chevron-down" size="20px" />
           </button>
         </div>
       </summary>
-      <div class="menu dropdown-content bg-base-300 rounded-b-box w-full p-2 shadow flex flex-col gap-2 max-h-[90vh]">
+      <div class="menu dropdown-content bg-base-300 rounded-b-box w-full min-w-58 p-2 shadow flex flex-col gap-2 max-h-[90vh]">
         <label class="label space-x-1">
           <input v-model="filterSelectedOnly" type="checkbox" class="toggle toggle-sm toggle-primary">
           <span>Selected only</span>
@@ -34,10 +34,10 @@
           <legend class="fieldset-legend py-1">
             Score filter
           </legend>
-          <div class="join items-center bg-base-200 rounded-box p-1">
-            <input v-model="scoreFilter.min" type="number" class="input input-sm input-ghost join-item" placeholder="Min">
+          <div class="join items-center bg-base-200 rounded-box">
+            <input v-model="scoreFilter.min" type="number" class="input input-sm input-ghost join-item px-1 min-w-16 max-w-60" placeholder="Min">
             <span class="join-item px-2">..</span>
-            <input v-model="scoreFilter.max" type="number" class="input input-sm input-ghost join-item" placeholder="Max">
+            <input v-model="scoreFilter.max" type="number" class="input input-sm input-ghost join-item px-1 min-w-16 max-w-60" placeholder="Max">
           </div>
         </fieldset>
         <div class="w-full h-100 overflow-auto">
@@ -194,11 +194,6 @@ defineExpose({
 });
 </script>
 <style scoped>
-.input {
-  min-width: 100px;
-  max-width: 250px;
-}
-
 /* Fixed column widths for index and score; middle column flexes */
 col.col-index { width: 2.75rem; }
 col.col-score { width: 3.15rem; }

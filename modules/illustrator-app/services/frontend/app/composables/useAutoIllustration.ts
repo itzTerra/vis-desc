@@ -29,13 +29,13 @@ export function useAutoIllustration(opts: {
     for (const id of ids) generatedIds.value.add(id);
   });
 
-  const enabled = ref(false);
-  const enableEnhance = ref(true);
-  const enableGenerate = ref(true);
-  // Gap settings are measured in pages (fractional pages allowed).
-  const minGapPages = ref(1);
-  const maxGapPages = ref(5);
-  const minScore = ref<number | null>(null);
+  const { autoIllustration: storage } = useAppStorage();
+  const enabled = storage.enabled;
+  const enableEnhance = storage.enableEnhance;
+  const enableGenerate = storage.enableGenerate;
+  const minGapPages = storage.minGapPages;
+  const maxGapPages = storage.maxGapPages;
+  const minScore = storage.minScore;
 
   // Tracks IDs by what actions have been requested for them.
   // selectedIds: editors opened; enhancedIds: queued for enhance; generatedIds: queued for generate.

@@ -10,6 +10,7 @@
         ref="editorRefs"
         :highlight-id="editorId"
         :initial-text="getHighlightText(editorId)"
+        :score="highlightMap[editorId]?.score"
         :enhance-state="getEnhanceState(editorId)"
         :generate-state="getGenerateState(editorId)"
         :style="getEditorPositionStyle(editorId)"

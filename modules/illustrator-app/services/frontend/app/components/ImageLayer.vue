@@ -16,7 +16,8 @@
         @bring-to-front="bringImageToFront(editorId)"
         @pointer-down="onEditorPointerDown($event, editorId)"
         @state-change="handleEditorStateChange"
-        @enhanced="handleEditorEnhanced"
+        @enhance="onEnhance(editorId)"
+        @generate="onGenerate(editorId)"
       />
     </div>
   </div>
@@ -39,15 +40,63 @@ const props = defineProps<{
 const emit = defineEmits<{
   "close-editor": [highlightId: number];
   "editor-state-change": [state: EditorImageState];
-  "editor-enhanced": [highlightId: number];
 }>();
 
-const { $api } = useNuxtApp();
+
+const { $api, $config, hook } = useNuxtApp();
 
 const EDITOR_NO_IMAGE_HEIGHT = 156; // controls height when no image
 const EDITOR_MAX_POSSIBLE_HEIGHT = 512 + EDITOR_NO_IMAGE_HEIGHT; // Image + controls
 
+
 const imagesContainer = ref<HTMLElement | null>(null);
+
+interface EnhanceQueueRecord {
+  highlightId: number;
+  auto?: boolean;
+}
+interface GenerateQueueRecord {
+  highlightId: number;
+  auto?: boolean;
+}
+
+const enhanceQueue = reactive<EnhanceQueueRecord[]>([]);
+const generateQueue = reactive<GenerateQueueRecord[]>([]);
+
+// --- Throughput/Batch/Interval Calculation ---
+const ENHANCE_THROUGHPUT = $config.public.enhanceThroughput;
+const GENERATE_THROUGHPUT = $config.public.generateThroughput;
+const BATCH_LIMIT = 8;
+function calcBatchAndInterval(throughput: number) {
+  // throughput: things/sec
+  // Want to maximize batch size up to BATCH_LIMIT, but not exceed throughput per second
+  // Choose interval so that batchSize/interval = throughput/sec
+  // For best efficiency, batchSize = min(BATCH_LIMIT, throughput)
+  // If throughput > BATCH_LIMIT, batchSize = BATCH_LIMIT, interval = (BATCH_LIMIT/throughput) sec
+  // If throughput < BATCH_LIMIT, batchSize = throughput, interval = 1 sec
+  let batchSize = Math.min(BATCH_LIMIT, Math.max(1, Math.round(throughput)));
+  let intervalMs = 1000;
+  if (throughput > BATCH_LIMIT) {
+    batchSize = BATCH_LIMIT;
+    intervalMs = Math.round(1000 * (BATCH_LIMIT / throughput));
+  } else {
+    batchSize = Math.max(1, Math.round(throughput));
+    intervalMs = 1000;
+  }
+  return { batchSize, intervalMs };
+}
+
+const enhanceConfig = calcBatchAndInterval(ENHANCE_THROUGHPUT);
+const generateConfig = calcBatchAndInterval(GENERATE_THROUGHPUT);
+// --- Event Handlers for Editor ---
+function onEnhance(highlightId: number, auto: boolean = false) {
+  enhanceQueue.push({ highlightId, auto });
+}
+
+function onGenerate(highlightId: number, auto: boolean = false) {
+  // Default requireEnhanced to false; will be set true by runAutoActions if needed
+  generateQueue.push({ highlightId, auto });
+}
 
 const highlightMap = computed(() => {
   const map: Record<number, Highlight> = {};
@@ -61,26 +110,6 @@ function getHighlightText(highlightId: number): string {
   const highlight = highlightMap.value[highlightId];
   return highlight?.text || "";
 }
-
-// function getEditorPositionStyle(highlightId: number) {
-//   const highlight = highlightMap.value[highlightId];
-//   if (!highlight) return {};
-
-//   const polygons = highlight.polygons[props.currentPage - 1];
-//   if (!polygons || !polygons[0]) return {};
-
-//   // Vertical position: align with highlight's Y coordinate (minimum Y of all polygon points)
-//   const minY = Math.min(...polygons.map(p => p[1]));
-//   const topOffset = minY * props.pageHeight;
-
-//   return {
-//     top: `${topOffset}px`,
-//     left: "0",
-//     width: `${EDITOR_WIDTH}px`,
-//     position: "absolute" as const,
-//     touchAction: "none" as const,
-//   };
-// }
 
 function getEditorTop(highlightId: number) {
   // Try user-overridden drag positions
@@ -247,6 +276,15 @@ function onScrollWhileDragging() {
 
 onMounted(() => {
   window.addEventListener("scroll", onScrollWhileDragging, { passive: true });
+
+  hook("custom:clearAutoImageEditors", () => {
+    // Clear queues and close all editors
+    enhanceQueue.splice(0, enhanceQueue.length);
+    generateQueue.splice(0, generateQueue.length);
+    for (const id of props.openEditorIds) {
+      emit("close-editor", id);
+    }
+  });
 });
 
 onBeforeUnmount(() => {
@@ -267,52 +305,113 @@ function handleEditorStateChange(state: EditorImageState) {
   emit("editor-state-change", state);
 }
 
-function handleEditorEnhanced(highlightId: number) {
-  emit("editor-enhanced", highlightId);
-}
+
+// Global reactive map from highlightId to editor instance
+const idToEditor = reactive(new Map<number, InstanceType<typeof ImageEditor>>());
 
 const editorRefs = ref<Array<InstanceType<typeof ImageEditor> | null>>([]);
 
-// Batch config and helpers
-const BATCH_LIMIT = 32;
-function chunkArray<T>(arr: T[], size: number) {
-  const out: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
+// Track enhanced texts for each highlightId
+const enhancedTexts = new Map<number, string>();
 
-async function processChunks(
-  endpoint: "/api/enhance" | "/api/gen-image-bytes",
-  idOrder: number[],
-  idToEditor: Map<number, InstanceType<typeof ImageEditor>>,
-  mapResponseToApplyArgs: (r: any) => [string],
-  applyMethodName: "applyEnhanceResult" | "applyGenerateResult",
-  resultArray: number[]
-) {
-  const chunks = chunkArray(idOrder, BATCH_LIMIT);
-  for (const chunk of chunks) {
-    const texts = chunk.map(id => {
-      const ed = idToEditor.get(id);
-      if (ed && typeof ed.getCurrentPrompt === "function") return ed.getCurrentPrompt();
-      return getHighlightText(id);
-    });
-    if (texts.length === 0) continue;
-    const res = await $api(endpoint, { method: "POST", body: { texts } });
-    for (let i = 0; i < (res?.length || 0); i++) {
-      const r = res[i];
-      const id = chunk[i];
-      const ed = idToEditor.get(id);
-      if (r && r.ok) {
-        if (ed && typeof ed[applyMethodName] === "function") {
-          try { await ed[applyMethodName](...(mapResponseToApplyArgs(r))); } catch (e) { console.error(e); }
-        }
-        resultArray.push(id);
-      } else {
-        console.error(`${endpoint} error`, r?.error);
+async function processEnhanceQueue() {
+  if (enhanceQueue.length === 0) return;
+  const batch = enhanceQueue.splice(0, enhanceConfig.batchSize);
+  const ids = batch.map(r => r.highlightId);
+  const texts = ids.map(id => {
+    const ed = idToEditor.get(id);
+    if (ed && typeof ed.getCurrentPrompt === "function") return ed.getCurrentPrompt();
+    return getHighlightText(id);
+  });
+  if (texts.length === 0) return;
+  const res = await $api("/api/enhance", { method: "POST", body: { texts } });
+  const failedIds: number[] = [];
+  for (let i = 0; i < (res?.length || 0); i++) {
+    const r = res[i];
+    const id = ids[i];
+    const ed = idToEditor.get(id);
+    if (r && r.ok && r.text !== undefined && r.text !== null && ed && typeof ed.applyEnhanceResult === "function") {
+      ed?.applyEnhanceResult(r.text);
+      // Track enhanced text for this highlightId
+      enhancedTexts.set(id, r.text);
+      if (!batch[i].auto) {
+        useNotifier().success("Prompt enhanced");
       }
+    } else {
+      console.error("/api/enhance error", r?.error);
+      failedIds.push(id);
+    }
+    if (failedIds.length > 0) {
+      useNotifier().error(`Enhance failed for ${failedIds.length}/${ids.length} item(s).`);
     }
   }
 }
+
+async function processGenerateQueue() {
+  if (generateQueue.length === 0) return;
+  // Only process up to generateConfig.batchSize at a time, skipping those with requireEnhanced=true if not enhanced
+  const readyBatch: GenerateQueueRecord[] = [];
+  for (const rec of generateQueue) {
+    if (readyBatch.length >= generateConfig.batchSize) break;
+    if (rec.auto) {
+      // Check if enhanced: look up enhancedTexts for this highlightId
+      const ed = idToEditor.get(rec.highlightId);
+      const currentPrompt = ed && typeof ed.getCurrentPrompt === "function" ? ed.getCurrentPrompt() : getHighlightText(rec.highlightId);
+      const enhancedText = enhancedTexts.get(rec.highlightId);
+      if (!enhancedText || currentPrompt !== enhancedText) continue;
+    }
+    readyBatch.push(rec);
+  }
+  if (readyBatch.length === 0) return;
+  // Remove processed from queue
+  for (const rec of readyBatch) {
+    const idx = generateQueue.findIndex(r => r.highlightId === rec.highlightId);
+    if (idx !== -1) generateQueue.splice(idx, 1);
+  }
+  const ids = readyBatch.map(r => r.highlightId);
+  const texts = ids.map(id => {
+    const ed = idToEditor.get(id);
+    if (ed && typeof ed.getCurrentPrompt === "function") return ed.getCurrentPrompt();
+    return getHighlightText(id);
+  });
+  if (texts.length === 0) return;
+  const res = await $api("/api/gen-image-bytes", { method: "POST", body: { texts } });
+  const failedIds: number[] = [];
+  for (let i = 0; i < (res?.length || 0); i++) {
+    const r = res[i];
+    const id = ids[i];
+    const ed = idToEditor.get(id);
+    if (r && r.ok && r.image_b64 && ed && typeof ed.applyGenerateResult === "function") {
+      ed.applyGenerateResult(r.image_b64);
+      if (!readyBatch[i].auto) {
+        useNotifier().success("Image generated");
+      }
+    } else {
+      console.error("/api/gen-image-bytes error", r?.error);
+      failedIds.push(id);
+    }
+    if (failedIds.length > 0) {
+      useNotifier().error(`Image generation failed for ${failedIds.length}/${ids.length} item(s).`);
+    }
+  }
+}
+
+// Polling for queue processing
+let enhanceInterval: ReturnType<typeof setInterval> | null = null;
+let generateInterval: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  window.addEventListener("scroll", onScrollWhileDragging, { passive: true });
+  enhanceInterval = setInterval(processEnhanceQueue, enhanceConfig.intervalMs);
+  generateInterval = setInterval(processGenerateQueue, generateConfig.intervalMs);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("pointermove", onEditorPointerMove);
+  window.removeEventListener("scroll", onScrollWhileDragging);
+  if (enhanceInterval) clearInterval(enhanceInterval);
+  if (generateInterval) clearInterval(generateInterval);
+});
 
 function getExportImages(): Record<number, Blob> {
   const result: Record<number, Blob> = {};
@@ -324,40 +423,53 @@ function getExportImages(): Record<number, Blob> {
       result[exportData.highlightId] = exportData.imageBlob;
     }
   }
-
   return result;
 }
 
 defineExpose({
   getExportImages,
-  runAutoActions: async (ids: number[] = [], opts: { enhance?: boolean; generate?: boolean } = {}) => {
+  runAutoActions: (ids: number[] = [], opts: { enhance?: boolean; generate?: boolean } = {}) => {
     if (!Array.isArray(ids) || ids.length === 0) return { enhancedIds: [], generatedIds: [] };
     const enhance = !!opts.enhance;
     const generate = !!opts.generate;
-    const enhancedIds: number[] = [];
-    const generatedIds: number[] = [];
-    try {
-      // Build map of highlightId -> editor instance for requested ids
-      const idToEditor = new Map<number, InstanceType<typeof ImageEditor>>();
-      for (const editor of editorRefs.value) {
-        if (!editor) continue;
-        const id = typeof editor.getHighlightId === "function" ? editor.getHighlightId() : (editor?.$props?.highlightId ?? null);
-        if (id == null) continue;
-        if (ids.includes(id)) idToEditor.set(id, editor as any);
+    // Add to queues instead of direct API calls
+    if (enhance) {
+      for (const id of ids) {
+        // Trigger enhance in the editor
+        const ed = idToEditor.get(id);
+        if (!ed || typeof ed.triggerEnhance !== "function") {
+          console.error("Editor not found in runAutoActions for enhance", id);
+          continue;
+        }
+        ed!.triggerEnhance(true);
       }
-
-      const order = Array.from(idToEditor.keys());
-      if (enhance && order.length > 0) {
-        await processChunks("/api/enhance", order, idToEditor, (r: any) => [r.text], "applyEnhanceResult", enhancedIds);
-      }
-      if (generate && order.length > 0) {
-        await processChunks("/api/gen-image-bytes", order, idToEditor, (r: any) => [r.image_b64], "applyGenerateResult", generatedIds);
-      }
-    } catch (e) {
-      console.error("runAutoActions error", e);
     }
-    return { enhancedIds, generatedIds };
+    if (generate) {
+      for (const id of ids) {
+        // Trigger generate in the editor, with requireEnhanced=true so it waits for enhance if needed
+        const ed = idToEditor.get(id);
+        if (!ed || typeof ed.triggerGenerate !== "function") {
+          console.error("Editor not found in runAutoActions for generate", id);
+          continue;
+        }
+        ed!.triggerGenerate(true);
+      }
+    }
   }
 });
+// Keep idToEditor map in sync with editorRefs
+watch(
+  () => editorRefs.value,
+  (editors) => {
+    for (const editor of editors) {
+      if (!editor) continue;
+      const id = editor.getHighlightId?.();
+      if (id != null) {
+        idToEditor.set(id, editor);
+      }
+    }
+  },
+  { immediate: true, deep: true }
+);
 </script>
 

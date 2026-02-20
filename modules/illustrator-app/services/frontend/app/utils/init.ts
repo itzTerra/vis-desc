@@ -3,6 +3,10 @@
 let scorerWorker: Worker | null = null;
 
 export function initApp() {
+  // Ping API to wake it up
+  const { $api } = useNuxtApp();
+  $api("/api/ping", { method: "GET" });
+
   if (scorerWorker === null) {
     scorerWorker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
       type: "module",

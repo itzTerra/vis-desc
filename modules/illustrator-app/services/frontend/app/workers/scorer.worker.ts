@@ -122,6 +122,21 @@ async function loadModel(config: LoadMessage["payload"]): Promise<void> {
   }
 }
 
+// Pause/continue logic
+let pauseRequested = false;
+let pausePromise: Promise<void> | null = null;
+let pauseResolve: (() => void) | null = null;
+
+function waitIfPaused(): Promise<void> {
+  if (!pauseRequested) return Promise.resolve();
+  if (!pausePromise) {
+    pausePromise = new Promise(resolve => {
+      pauseResolve = resolve;
+    });
+  }
+  return pausePromise;
+}
+
 async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<void> {
   const scorerState = scorers.get("minilm_catboost");
   if (!scorerState || !scorerState.featureService || !scorerState.catboostOrt) {
@@ -134,6 +149,7 @@ async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<vo
 
   try {
     for (let i = 0; i < texts.length; i += batchSize) {
+      await waitIfPaused();
       const batchTexts = texts.slice(i, i + batchSize);
 
       const featureArrays = (await scorerState.featureService.getFeatures(batchTexts)).map(
@@ -184,6 +200,7 @@ async function evaluateNLIRoberta(data: NLIEvaluatePayload): Promise<void> {
 
   try {
     for (let i = 0; i < texts.length; i += batchSize) {
+      await waitIfPaused();
       const batchTexts = texts.slice(i, i + batchSize);
 
       const results = await scorerState.nliPipeline(batchTexts, candidateLabels, {
@@ -237,6 +254,24 @@ self.onmessage = async (event: MessageEvent<SendMessage>) => {
     break;
   case "evaluate":
     await evaluateSegments((event.data as EvaluateMessage).payload);
+    break;
+  case "pause":
+    pauseRequested = true;
+    (globalThis as any).__featureExtractorPauseRequested = true;
+    break;
+  case "continue":
+    pauseRequested = false;
+    (globalThis as any).__featureExtractorPauseRequested = false;
+    if ((globalThis as any).__featureExtractorPauseResolve) {
+      (globalThis as any).__featureExtractorPauseResolve();
+      (globalThis as any).__featureExtractorPausePromise = null;
+      (globalThis as any).__featureExtractorPauseResolve = null;
+    }
+    if (pauseResolve) {
+      pauseResolve();
+      pausePromise = null;
+      pauseResolve = null;
+    }
     break;
   }
 };

@@ -1,25 +1,26 @@
 <template>
   <div>
     <div
-      class="top-bar w-full px-4 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-14.5"
+      class="top-bar w-full px-3 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-14.5"
     >
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 min-w-44">
         <input
           type="file"
           accept="application/pdf"
-          class="file-input file-input-primary"
+          class="file-input file-input-primary min-w-12"
           data-help-target="file"
           @change="handleFileUpload"
         >
         <ModelSelect v-model="selectedModel" data-help-target="model" @request-model-download="(scorerId) => checkScorer(SCORERS.find(s => s.id === scorerId)!)" />
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2">
         <EvalProgress
           v-model="isLoading"
           data-help-target="progress"
           :is-cancelled="isCancelled"
           :highlights="highlights"
           :current-stage="currentStage"
+          :scorer="selectedScorer"
           @cancel="cancelSegmentLoading"
         />
         <AutoIllustration
@@ -40,19 +41,20 @@
           class="btn btn-primary btn-outline"
           title="Export as HTML"
           data-help-target="export"
-          :disabled="isLoading !== null || highlights.length === 0"
+          :disabled="!pdfFile || !pdfViewer"
           @click="handleExportConfirm"
         >
           <Icon name="lucide:download" size="18" />
           Export
         </button>
       </div>
-      <div class="flex items-center gap-3 ms-auto">
+      <div class="flex items-center gap-2 ms-auto min-w-58">
         <HighlightNav
           ref="highlightNav"
           data-help-target="nav"
           :highlights="highlights"
           :selected-highlights="selectedHighlights"
+          class="min-w-48"
         />
         <ThemeToggle data-help-target="theme" />
       </div>
@@ -64,8 +66,6 @@
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
       @pdf:rendered="onPdfRendered"
-      @editor-state-change="onEditorStateChange"
-      @editor-enhanced="onEditorEnhanced"
     />
     <Hero v-else @file-selected="handleFileUpload" />
     <div class="bottom-bar">
@@ -288,14 +288,12 @@ const handleFileUpload = async (event: any) => {
 
   pdfUrl.value = URL.createObjectURL(file);
 
-  const needsSocket = scorer.id === "random";
-
   const formData = new FormData();
   formData.append("pdf", file, file.name);
   formData.append("model", selectedModel.value);
 
   try {
-    const data = await call(needsSocket ? "/api/process/pdf" : "/api/process/seg/pdf", {
+    const data = await call(scorer.socketBased ? "/api/process/pdf" : "/api/process/seg/pdf", {
       method: "POST",
       body: formData as any
     });
@@ -304,7 +302,7 @@ const handleFileUpload = async (event: any) => {
       highlights.splice(0, highlights.length, ...data.segments);
     }
 
-    if (needsSocket) {
+    if (scorer.socketBased) {
       socket.open();
       // Wait for socket to open
       await new Promise<void>((resolve, reject) => {
@@ -343,7 +341,7 @@ const handleFileUpload = async (event: any) => {
             scoreSegment(segment);
           }
         },
-        needsSocket ? socket : undefined
+        scorer.socketBased ? socket : undefined
       );
       isLoading.value = null;
       currentStage.value = undefined;
@@ -433,33 +431,26 @@ const pageAspectRatioRef = computed(() => {
 });
 
 // instantiate auto-illustration composable
-const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef });
-
 // when composable requests editors to be opened, forward to PdfViewer's exposed method
-watch(autoIllustration.pendingOpenIds, async () => {
-  const list = autoIllustration.consumePendingOpenIds();
-  if (!Array.isArray(list) || list.length === 0) return;
-  pdfViewer.value?.openEditors?.(list);
+const onNewPendingOpenIds = async (ids: number[]) => {
+  if (!Array.isArray(ids) || ids.length === 0) return;
+  pdfViewer.value?.openImageEditors?.(ids);
   // wait for editors to mount
-  await nextTick();
-  const enhance = (autoIllustration.enableEnhance?.value ?? true);
-  const generate = (autoIllustration.enableGenerate?.value ?? true);
-  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
-  if (layer && typeof layer.runAutoActions === "function") {
-    // run auto actions on the newly opened editors and update counts based on results
-    try {
-      const res = await layer.runAutoActions(list, { enhance, generate });
-      if (res && Array.isArray(res.enhancedIds) && res.enhancedIds.length) {
-        autoIllustration.markEnhanced?.(res.enhancedIds || []);
-      }
-      if (res && Array.isArray(res.generatedIds) && res.generatedIds.length) {
-        autoIllustration.markGenerated?.(res.generatedIds || []);
-      }
-    } catch (e) {
-      console.error("auto actions failed", e);
-    }
-  }
-});
+  // await nextTick();
+  // const enhance = (autoIllustration.enableEnhance?.value ?? true);
+  // const generate = (autoIllustration.enableGenerate?.value ?? true);
+  // const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  // if (layer && typeof layer.runAutoActions === "function") {
+  //   try {
+  //     layer.runAutoActions(ids, { enhance, generate });
+  //   } catch (e) {
+  //     console.error("auto actions failed", e);
+  //   }
+  // }
+};
+const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef, onNewPendingOpenIds });
+
+
 
 function fullReset() {
   isCancelled.value = false;
@@ -596,18 +587,6 @@ onMounted(() => {
     "Load example PDF and segments"
   );
 });
-
-function onEditorStateChange(nextState: any) {
-  if (!nextState || typeof nextState.highlightId !== "number") return;
-  if (nextState.hasImage) {
-    autoIllustration.markGenerated?.([nextState.highlightId]);
-  }
-}
-
-function onEditorEnhanced(highlightId: number) {
-  if (typeof highlightId !== "number") return;
-  autoIllustration.markEnhanced?.([highlightId]);
-}
 </script>
 <style scoped>
 .bottom-bar {

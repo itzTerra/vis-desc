@@ -17,7 +17,7 @@
       <div v-show="isOpen" class="flex-1 overflow-y-auto shadow border-2 rounded border-base-300">
         <!-- Top Bar -->
         <div class="flex items-center bg-base-200 overflow-hidden">
-          <div class="flex-grow w-full cursor-grab active:cursor-grabbing select-none" @pointerdown="(e) => emit('pointerDown', e)">
+          <div class="grow w-full cursor-grab active:cursor-grabbing select-none" @pointerdown="(e) => emit('pointerDown', e)">
             &nbsp;
           </div>
           <div class="join join-horizontal ms-auto">
@@ -49,7 +49,6 @@
               class="textarea textarea-bordered w-full h-24 resize-none"
               placeholder="Enter or paste image prompt..."
               :disabled="enhanceLoading || generateLoading"
-              @keydown.ctrl.enter="handleGenerate"
             />
           </div>
           <div class="flex justify-between gap-2 my-1">
@@ -57,7 +56,7 @@
               class="btn btn-sm btn-secondary flex-1"
               :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
               :aria-busy="enhanceLoading"
-              @click="handleEnhance"
+              @click="() => handleEnhance()"
             >
               <span v-if="enhanceLoading" class="loading loading-spinner loading-sm" />
               <Icon v-else name="lucide:wand" size="18" />
@@ -92,7 +91,7 @@
               :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
               :aria-busy="generateLoading"
               title="Generate image"
-              @click="handleGenerate"
+              @click="() => handleGenerate()"
             >
               <span v-if="generateLoading" class="loading loading-spinner loading-sm" />
               <Icon v-else name="lucide:book-image" size="18" />
@@ -129,10 +128,9 @@ const emit = defineEmits<{
   bringToFront: [];
   pointerDown: [event: PointerEvent];
   "state-change": [state: EditorImageState];
-  enhanced: [highlightId: number];
+  enhance: [highlightId: number, auto: boolean];
+  generate: [highlightId: number, auto: boolean];
 }>();
-
-const { $api } = useNuxtApp();
 
 const isOpen = ref(true);
 const isExpanded = ref(false);
@@ -179,64 +177,22 @@ watch(currentHistoryItem, (item) => {
   }
 });
 
-async function handleEnhance(): Promise<boolean> {
+function handleEnhance(auto: boolean = false) {
+  if (enhanceLoading.value) return;
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return false;
+  if (prompt === "") return;
 
   enhanceLoading.value = true;
-  try {
-    const res = (await $api("/api/enhance", {
-      method: "POST",
-      body: { texts: [prompt] },
-    }))[0];
-
-    if (!res || !res.ok) {
-      useNotifier().error("Enhance failed: " + (res?.error || "Unknown error"));
-      return false;
-    }
-
-    currentPrompt.value = res.text!;
-    addToHistory(currentPrompt.value);
-
-    useNotifier().success("Prompt enhanced");
-    emit("enhanced", props.highlightId);
-    return true;
-  } catch (error) {
-    useNotifier().error("Enhance request failed");
-    console.error(error);
-    return false;
-  } finally {
-    enhanceLoading.value = false;
-  }
+  emit("enhance", props.highlightId, auto);
 }
 
-async function handleGenerate(): Promise<boolean> {
+function handleGenerate(auto: boolean = false) {
+  if (generateLoading.value) return;
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return false;
+  if (prompt === "") return;
 
   generateLoading.value = true;
-  try {
-    const res = (await $api("/api/gen-image-bytes", {
-      method: "POST",
-      body: { texts: [prompt] },
-    }))[0];
-    if (!res || !res.ok) {
-      useNotifier().error("Image generation failed: " + (res?.error || "Unknown error"));
-      return false;
-    }
-    // const blob = new Blob([res as any], { type: "image/png" });
-    // const url = URL.createObjectURL(blob);
-    const blob = undefined;
-    const url = res.image_b64 ? `data:image/png;base64,${res.image_b64}` : undefined;
-    addToHistory(prompt, url, blob);
-    return true;
-  } catch (error) {
-    useNotifier().error("Image generation failed. Please try again.");
-    console.error(error);
-    return false;
-  } finally {
-    generateLoading.value = false;
-  }
+  emit("generate", props.highlightId, auto);
 }
 
 function handleDelete() {
@@ -253,18 +209,18 @@ function getExportImage() {
 }
 
 // Helpers to apply batched API results from parent
-async function applyEnhanceResult(text: string) {
+function applyEnhanceResult(text: string) {
+  enhanceLoading.value = false;
   currentPrompt.value = text;
   addToHistory(currentPrompt.value);
-  useNotifier().success("Prompt enhanced");
-  emit("enhanced", props.highlightId);
-  return true;
+  return;
 }
 
-async function applyGenerateResult(image_b64: string) {
+function applyGenerateResult(image_b64: string) {
+  generateLoading.value = false;
   const url = `data:image/png;base64,${image_b64}`;
   addToHistory(currentPrompt.value.trim(), url, undefined);
-  return true;
+  return;
 }
 
 function getCurrentPrompt() {
@@ -274,14 +230,8 @@ function getCurrentPrompt() {
 defineExpose({
   getExportImage,
   getHighlightId: () => props.highlightId,
-  triggerEnhance: async (): Promise<boolean> => {
-    if (enhanceLoading.value) return false;
-    return await handleEnhance();
-  },
-  triggerGenerate: async (): Promise<boolean> => {
-    if (generateLoading.value) return false;
-    return await handleGenerate();
-  },
+  triggerEnhance: handleEnhance,
+  triggerGenerate: handleGenerate,
   applyEnhanceResult,
   applyGenerateResult,
   getCurrentPrompt,

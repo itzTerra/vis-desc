@@ -205,6 +205,9 @@ SPACY_MODEL = env.str("SPACY_MODEL", default="en_core_web_sm")
 # LLM Configuration for text enhancement
 EINFRA_API_KEY = env.str("EINFRA_API_KEY", default="")
 EINFRA_BASE_URL = env.str("EINFRA_BASE_URL", default="")
+# LLM API retry parameters
+LLM_API_MAX_RETRIES = env.int("LLM_API_MAX_RETRIES", default=3)
+LLM_API_RETRY_DELAY_SECONDS = env.int("LLM_API_RETRY_DELAY_SECONDS", default=2)
 
 POLLINATIONS_API_KEY = env.str("POLLINATIONS_API_KEY", default=None)
 CLOUDFLARE_ACCOUNT_ID = env.str("CLOUDFLARE_ACCOUNT_ID", default=None)

@@ -119,6 +119,7 @@ abstract class Scorer {
   speed: number;
   quality: number;
   disabled: boolean;
+  socketBased: boolean;
 
   constructor(
     id: string,
@@ -126,7 +127,8 @@ abstract class Scorer {
     description: string,
     speed: number,
     quality: number,
-    disabled: boolean = false
+    disabled: boolean = false,
+    socketBased: boolean = false
   ) {
     this.id = id;
     this.label = label;
@@ -134,6 +136,7 @@ abstract class Scorer {
     this.speed = speed;
     this.quality = quality;
     this.disabled = disabled;
+    this.socketBased = socketBased;
   }
 
   get stages(): ScorerStage[] {
@@ -174,10 +177,11 @@ class MiniLMCatBoostScorer extends Scorer {
   constructor() {
     super(
       "minilm_catboost",
-      "MiniLM-CatBoost",
+      "CatBoost",
       "Fast local inference with feature extraction",
       4,
       4,
+      false,
       false
     );
   }
@@ -300,6 +304,7 @@ class NLIRobertaScorer extends Scorer {
       "Zero-shot classification with NLI",
       3,
       3,
+      false,
       false
     );
   }
@@ -407,11 +412,12 @@ class RandomScorer extends Scorer {
   constructor() {
     super(
       "random",
-      "Random [debug]",
+      "Random",
       "Server-side random scoring (demo)",
       5,
       0,
-      false
+      false,
+      true
     );
   }
 
@@ -443,7 +449,7 @@ export const DOWNLOADABLES = {
 export const MODEL_GROUPS: ModelGroup[] = [
   {
     id: "minilm_catboost",
-    name: "MiniLM-CatBoost",
+    name: "CatBoost",
     downloadables: [
       DOWNLOADABLES.featureService,
       DOWNLOADABLES.catboost,

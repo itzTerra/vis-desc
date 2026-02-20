@@ -1321,10 +1321,22 @@ class FeatureExtractorPipeline {
     this.spacyCtxCache = {};
     const concurrency = this.spacyWorkerPool ? Math.max(1, this.spacyWorkerPool.workers.length) : 1;
 
+    // Pause/continue support
+    async function waitIfFeatureExtractorPaused() {
+      if (!(globalThis as any).__featureExtractorPauseRequested) return;
+      if (!(globalThis as any).__featureExtractorPausePromise) {
+        (globalThis as any).__featureExtractorPausePromise = new Promise(resolve => {
+          (globalThis as any).__featureExtractorPauseResolve = resolve;
+        });
+      }
+      await (globalThis as any).__featureExtractorPausePromise;
+    }
+
     // Maintain up to `concurrency` active requests; start the next as soon as any finishes.
     const active: { id: string; promise: Promise<{ id: string; ok: boolean; err?: any }> }[] = [];
 
     for (const batch of textBatches) {
+      await waitIfFeatureExtractorPaused();
       const key = this._hashBatch(batch);
       // @ts-ignore
       if (this.spacyCtxCache[key]) continue;
@@ -1354,6 +1366,7 @@ class FeatureExtractorPipeline {
 
     // Wait for remaining active tasks, handling each as it finishes.
     while (active.length > 0) {
+      await waitIfFeatureExtractorPaused();
       const res = await Promise.race(active.map((a) => a.promise));
       const idx = active.findIndex((a) => a.id === res.id);
       if (idx >= 0) active.splice(idx, 1);

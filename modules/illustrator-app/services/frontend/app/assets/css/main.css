@@ -12,6 +12,10 @@ input[type=number] {
   -moz-appearance:textfield; /* Firefox */
 }
 
+.btn {
+  --btn-p: 0.65rem;
+}
+
 .hero {
   min-height: calc(100vh - 114px);
 }

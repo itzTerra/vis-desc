@@ -43,7 +43,7 @@
           :page-visibility="pageVisibility"
           :default-page-size="{ width: pdfWidthScaled, height: pdfPageHeight }"
           @select="toggleHighlightSelection"
-          @open-editor="openImageEditor"
+          @open-editor="(id) => openImageEditors([id])"
         />
       </div>
     </ClientOnly>
@@ -58,9 +58,8 @@
       :current-page="currentPage"
       :style="{ width: IMAGES_WIDTH + 'px' }"
       data-help-target="images"
-      @close-editor="closeImageEditor"
+      @close-editor="(id) => closeImageEditors([id])"
       @editor-state-change="updateEditorState"
-      @editor-enhanced="handleEditorEnhanced"
     />
     <HeatmapViewer
       class="z-40"
@@ -122,8 +121,6 @@ const IMAGES_WIDTH = 512;
 
 const emit = defineEmits<{
   "pdf:rendered": [];
-  "editor-state-change": [state: EditorImageState];
-  "editor-enhanced": [highlightId: number];
 }>();
 const PRELOAD_PAGES = 3;
 
@@ -161,24 +158,28 @@ const heatmapStyle = computed(() => ({
   height: `${heatmapOffset.value.height}px`
 }));
 
-function openImageEditor(highlightId: number) {
-  openEditorIds.value = new Set([...openEditorIds.value, highlightId]);
+function openImageEditors(highlightIds: number[]) {
+  openEditorIds.value = new Set([...openEditorIds.value, ...highlightIds]);
   // Initialize state immediately so dots appear right away
-  if (!editorStates.value.some(state => state.highlightId === highlightId)) {
-    editorStates.value.push({
-      highlightId,
-      imageUrl: null,
-      hasImage: false,
-    });
+  for (const highlightId of highlightIds) {
+    if (!editorStates.value.some(state => state.highlightId === highlightId)) {
+      editorStates.value.push({
+        highlightId,
+        imageUrl: null,
+        hasImage: false,
+      });
+    }
   }
 }
 
-function closeImageEditor(highlightId: number) {
+function closeImageEditors(highlightIds: number[]) {
   const newSet = new Set(openEditorIds.value);
-  newSet.delete(highlightId);
+  for (const highlightId of highlightIds) {
+    newSet.delete(highlightId);
+  }
   openEditorIds.value = newSet;
   // Remove editor state so dots vanish
-  editorStates.value = editorStates.value.filter(state => state.highlightId !== highlightId);
+  editorStates.value = editorStates.value.filter(state => !highlightIds.includes(state.highlightId));
 }
 
 function updateEditorState(nextState: EditorImageState) {
@@ -189,10 +190,6 @@ function updateEditorState(nextState: EditorImageState) {
   }
 
   editorStates.value[index] = nextState;
-}
-
-function handleEditorEnhanced(highlightId: number) {
-  emit("editor-enhanced", highlightId);
 }
 
 async function setPdfScale(scale: number) {
@@ -412,12 +409,8 @@ onBeforeUnmount(() => {
 defineExpose({
   getPageCount: () => pageNums.value.length,
   imageLayer,
-  openEditors: (ids: number[] = []) => {
-    if (!Array.isArray(ids)) return;
-    for (const id of ids) {
-      openImageEditor(id);
-    }
-  },
+  openImageEditors,
+  closeImageEditors,
   // expose sizing helpers for parent components
   pageAspectRatio,
   pageRefs,

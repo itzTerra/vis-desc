@@ -62,6 +62,7 @@
       @editor-state-change="updateEditorState"
     />
     <HeatmapViewer
+      v-if="isPdfRendered"
       class="z-40"
       :style="heatmapStyle"
       :highlights="highlights"
@@ -160,15 +161,15 @@ const heatmapStyle = computed(() => ({
 
 function openImageEditors(highlightIds: number[]) {
   openEditorIds.value = new Set([...openEditorIds.value, ...highlightIds]);
-  // Initialize state immediately so dots appear right away
-  for (const highlightId of highlightIds) {
-    if (!editorStates.value.some(state => state.highlightId === highlightId)) {
-      editorStates.value.push({
-        highlightId,
-        imageUrl: null,
-        hasImage: false,
-      });
-    }
+  // Initialize state immediately so dots appear right away.
+  // Batch all new entries into a single reactive write to avoid queuing
+  // PdfViewer/HeatmapViewer for update once per highlight.
+  const existingIds = new Set(editorStates.value.map(s => s.highlightId));
+  const newEntries = highlightIds
+    .filter(id => !existingIds.has(id))
+    .map(id => ({ highlightId: id, imageUrl: null as string | null, hasImage: false }));
+  if (newEntries.length > 0) {
+    editorStates.value = [...editorStates.value, ...newEntries];
   }
 }
 

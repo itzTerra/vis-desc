@@ -154,70 +154,23 @@ const viewportRectHeight = computed(() => {
   return Math.max(rectHeight, 20);
 });
 
-const trackHeight = computed(() => {
-  return Math.max(0, heatmapHeight.value - viewportRectHeight.value);
-});
-
-const actualContentHeight = computed(() => {
-  // Calculate real-time content height from first to last page
-  const lastPageElement = props.pageRefs[props.pageRefs.length - 1];
-  if (!lastPageElement) {
-    return totalHeight.value;
-  }
-
-  // Depend on scrollOffset to trigger re-evaluation on scroll
-  const _ = scrollOffset.value;
-
-  const lastPageRect = lastPageElement.getBoundingClientRect();
-  const lastPageAbsoluteBottom = lastPageRect.bottom + window.scrollY;
-  return lastPageAbsoluteBottom - pageTop.value;
-});
 
 const scrollableHeight = computed(() => {
-  return Math.max(0, actualContentHeight.value - viewportHeight.value);
+  const lastPage = props.pageRefs[props.pageRefs.length - 1];
+  const contentHeight = lastPage
+    ? lastPage.getBoundingClientRect().bottom + window.scrollY - pageTop.value
+    : totalHeight.value;
+  return Math.max(0, contentHeight - viewportHeight.value);
 });
 
 // Map document scroll position to heatmap viewport rectangle Y coordinate
 // Linear mapping: scroll ratio (0-1) → vertical position in heatmap track
 const viewportY = computed(() => {
-  if (scrollableHeight.value <= 0 || trackHeight.value <= 0) {
+  const track = Math.max(0, heatmapHeight.value - viewportRectHeight.value);
+  if (scrollableHeight.value <= 0 || track <= 0) {
     return 0;
   }
-
-  const result = clamp(
-    (scrollOffset.value / scrollableHeight.value) * trackHeight.value,
-    0,
-    trackHeight.value
-  );
-
-  // Debug logging
-  // const lastPageRect = props.pageRefs[props.pageRefs.length - 1]?.getBoundingClientRect();
-  // const lastPageBottom = lastPageRect ? lastPageRect.bottom + window.scrollY : 0;
-  // const lastPageIndex = props.pageRefs.length - 1;
-
-  // console.log("[HeatmapViewer]", {
-  //   scrollOffset: scrollOffset.value,
-  //   scrollableHeight: scrollableHeight.value,
-  //   trackHeight: trackHeight.value,
-  //   viewportRectHeight: viewportRectHeight.value,
-  //   heatmapHeight: heatmapHeight.value,
-  //   totalHeight: totalHeight.value,
-  //   viewportHeight: viewportHeight.value,
-  //   viewportY: result,
-  //   bottomGap: heatmapHeight.value - (result + viewportRectHeight.value),
-  //   windowScrollY: window.scrollY,
-  //   pageTop: pageTop.value,
-  //   stickyHeaderOffset: stickyHeaderOffset.value,
-  //   bottomOffset: bottomOffset.value,
-  //   documentScrollHeight: documentScrollHeight.value,
-  //   lastPageBottom,
-  //   viewportBottom: window.scrollY + viewportHeight.value,
-  //   numPageRefs: props.pageRefs.length,
-  //   lastPageIndex,
-  //   totalPages: totalPages.value,
-  // });
-
-  return result;
+  return clamp((scrollOffset.value / scrollableHeight.value) * track, 0, track);
 });
 
 const segmentDots = computed<SegmentDot[]>(() => {
@@ -352,7 +305,7 @@ function handleHeatmapClick(event: PointerEvent) {
   );
 
   window.scrollTo({
-    top: pageTop.value + normalized.normalizedY * actualContentHeight.value
+    top: pageTop.value + normalized.normalizedY * (scrollableHeight.value + viewportHeight.value)
   });
 
   startDrag(event);
@@ -479,17 +432,8 @@ watchDebounced(
   { debounce: 200, deep: true }
 );
 
-watch(
-  () => actualContentHeight.value,
-  () => {
-    if (isExpanded.value) {
-      renderHeatmap();
-    }
-  }
-);
-
-watchEffect(() => {
-  if (isExpanded.value && canvasElement.value) {
+watch(isExpanded, () => {
+  if (canvasElement.value) {
     renderHeatmap();
   }
 });
@@ -499,7 +443,7 @@ onMounted(() => {
   window.addEventListener("scroll", handleScroll, { passive: true });
   window.addEventListener("resize", measureLayout);
   if (isExpanded.value) {
-    renderHeatmap();
+    nextTick(() => renderHeatmap());
   }
 });
 

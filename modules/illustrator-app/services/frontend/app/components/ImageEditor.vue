@@ -156,15 +156,6 @@ addToHistory(props.initialText);
 const imageUrl = computed(() => currentHistoryItem.value?.imageUrl ?? "");
 const hasImage = computed(() => imageUrl.value !== "");
 
-watchEffect(() => {
-  const currentImageUrl = imageUrl.value === "" ? null : imageUrl.value;
-  emit("state-change", {
-    highlightId: props.highlightId,
-    imageUrl: currentImageUrl,
-    hasImage: currentImageUrl !== null,
-  });
-});
-
 watchImmediate(isOpen, (open) => {
   if (open) {
     isExpanded.value = !hasImage.value;
@@ -175,6 +166,15 @@ watch(currentHistoryItem, (item) => {
   if (item) {
     currentPrompt.value = item.text;
   }
+
+});
+
+watch(() => currentHistoryItem.value?.imageUrl, () => {
+  emit("state-change", {
+    highlightId: props.highlightId,
+    imageUrl: imageUrl.value,
+    hasImage: hasImage.value,
+  });
 });
 
 function handleEnhance(auto: boolean = false) {

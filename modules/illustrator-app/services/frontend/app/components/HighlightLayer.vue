@@ -38,7 +38,7 @@
           </svg>
         </div>
         <div
-          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box p-2 shadow-sm w-32"
+          class="dropdown-content highlight-dropdown-content bg-base-300 hover:bg-base-200 rounded-box p-2 shadow-sm w-32 -ml-0.5"
           v-on="highlight.hasSiblings ? {
             mouseenter: (e: any) => onMouseEnter(e.currentTarget, highlight.id),
             mouseleave: (e: any) => onMouseLeave(e.currentTarget, highlight.id),

@@ -17,8 +17,9 @@
       <div v-show="isOpen" class="flex-1 overflow-y-auto shadow border-2 rounded border-base-300">
         <!-- Top Bar -->
         <div class="flex items-center bg-base-200 overflow-hidden">
-          <div class="grow w-full cursor-grab active:cursor-grabbing select-none" @pointerdown="(e) => emit('pointerDown', e)">
-            &nbsp;
+          <div class="grow w-full min-w-0 cursor-grab active:cursor-grabbing select-none flex items-center gap-1.5 px-1.5 overflow-hidden" @pointerdown="(e) => emit('pointerDown', e)">
+            <span v-if="props.score !== undefined" class="badge badge-sm badge-secondary badge-soft shrink-0 font-mono">{{ (props.score * 100).toFixed(0) }}</span>
+            <span class="text-xs text-base-content/40 truncate">{{ props.initialText }}</span>
           </div>
           <div class="join join-horizontal ms-auto">
             <button
@@ -124,6 +125,7 @@ import { useEditorHistory } from "~/composables/useEditorHistory";
 const props = defineProps<{
   highlightId: number;
   initialText: string;
+  score?: number;
   enhanceState?: ActionState;
   generateState?: ActionState;
 }>();

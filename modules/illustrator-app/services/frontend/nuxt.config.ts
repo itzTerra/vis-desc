@@ -29,8 +29,8 @@ export default defineNuxtConfig({
           baseURL: process.env.VITE_API_BASE_URL || "http://localhost:8000",
         },
       },
-      enhanceThroughput: process.env.VITE_ENHANCE_THROUGHPUT ? parseInt(process.env.VITE_ENHANCE_THROUGHPUT) : 1,
-      generateThroughput: process.env.VITE_GENERATE_THROUGHPUT ? parseInt(process.env.VITE_GENERATE_THROUGHPUT) : 1,
+      enhanceThroughput: process.env.VITE_ENHANCE_THROUGHPUT ? parseFloat(process.env.VITE_ENHANCE_THROUGHPUT) : 0.2,
+      generateThroughput: process.env.VITE_GENERATE_THROUGHPUT ? parseFloat(process.env.VITE_GENERATE_THROUGHPUT) : 0.2,
     },
     app: {
       baseURL: "/"

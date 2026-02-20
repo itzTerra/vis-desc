@@ -82,7 +82,7 @@
             </button>
             <div class="space-x-2">
               <button class="btn btn-sm btn-primary" @click="runPass">
-                <Icon name="lucide:play" size="16" /> Run Now
+                <Icon name="lucide:play" size="16" /> Run
               </button>
             </div>
           </div>

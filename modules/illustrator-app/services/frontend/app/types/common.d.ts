@@ -1,5 +1,7 @@
 export type Segment = { text: string, score: number };
 
+export type ActionState = 'idle' | 'queued' | 'processing';
+
 export type TextMapping = {
   start: number;
   end: number;

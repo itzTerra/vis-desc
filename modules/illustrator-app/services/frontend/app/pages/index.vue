@@ -132,8 +132,7 @@ const runtimeConfig = useRuntimeConfig();
 const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
-const firstScorer = SCORERS.find(scorer => !scorer.disabled);
-const selectedModel = ref<string>(firstScorer ? firstScorer.id : (SCORERS[0]?.id ?? "random"));
+const { selectedModel } = useAppStorage();
 const selectedScorer = computed(() =>
   SCORERS.find(s => s.id === selectedModel.value)
 );

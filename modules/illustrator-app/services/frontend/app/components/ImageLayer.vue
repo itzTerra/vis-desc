@@ -10,14 +10,16 @@
         ref="editorRefs"
         :highlight-id="editorId"
         :initial-text="getHighlightText(editorId)"
+        :enhance-state="getEnhanceState(editorId)"
+        :generate-state="getGenerateState(editorId)"
         :style="getEditorPositionStyle(editorId)"
         class="absolute pointer-events-auto"
         @delete="closeImageEditor(editorId)"
         @bring-to-front="bringImageToFront(editorId)"
         @pointer-down="onEditorPointerDown($event, editorId)"
         @state-change="handleEditorStateChange"
-        @enhance="onEnhance(editorId)"
-        @generate="onGenerate(editorId)"
+        @enhance="onEnhance"
+        @generate="onGenerate"
       />
     </div>
   </div>
@@ -25,7 +27,7 @@
 
 <script setup lang="ts">
 import type { ImageEditor } from "#components";
-import type { EditorImageState, Highlight } from "~/types/common";
+import type { ActionState, EditorImageState, Highlight } from "~/types/common";
 
 const props = defineProps<{
   pdfEmbedWrapper: HTMLElement | null;
@@ -35,6 +37,7 @@ const props = defineProps<{
   pageHeight: number;
   currentPage: number;
   pageRefs?: Element[];
+  autoEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -48,20 +51,32 @@ const { $api, $config, hook } = useNuxtApp();
 const EDITOR_NO_IMAGE_HEIGHT = 156; // controls height when no image
 const EDITOR_MAX_POSSIBLE_HEIGHT = 512 + EDITOR_NO_IMAGE_HEIGHT; // Image + controls
 
-
 const imagesContainer = ref<HTMLElement | null>(null);
 
 interface EnhanceQueueRecord {
   highlightId: number;
+  prompt: string;
   auto?: boolean;
 }
 interface GenerateQueueRecord {
   highlightId: number;
+  prompt: string;
   auto?: boolean;
 }
 
 const enhanceQueue = reactive<EnhanceQueueRecord[]>([]);
 const generateQueue = reactive<GenerateQueueRecord[]>([]);
+
+const enhanceStates = reactive<Record<number, ActionState>>({});
+const generateStates = reactive<Record<number, ActionState>>({});
+
+function getEnhanceState(id: number): ActionState {
+  return enhanceStates[id] ?? "idle";
+}
+
+function getGenerateState(id: number): ActionState {
+  return generateStates[id] ?? "idle";
+}
 
 // --- Throughput/Batch/Interval Calculation ---
 const ENHANCE_THROUGHPUT = $config.public.enhanceThroughput;
@@ -71,31 +86,41 @@ function calcBatchAndInterval(throughput: number) {
   // throughput: things/sec
   // Want to maximize batch size up to BATCH_LIMIT, but not exceed throughput per second
   // Choose interval so that batchSize/interval = throughput/sec
-  // For best efficiency, batchSize = min(BATCH_LIMIT, throughput)
-  // If throughput > BATCH_LIMIT, batchSize = BATCH_LIMIT, interval = (BATCH_LIMIT/throughput) sec
-  // If throughput < BATCH_LIMIT, batchSize = throughput, interval = 1 sec
-  let batchSize = Math.min(BATCH_LIMIT, Math.max(1, Math.round(throughput)));
-  let intervalMs = 1000;
-  if (throughput > BATCH_LIMIT) {
-    batchSize = BATCH_LIMIT;
-    intervalMs = Math.round(1000 * (BATCH_LIMIT / throughput));
+  // If throughput > BATCH_LIMIT: batchSize = BATCH_LIMIT, interval = BATCH_LIMIT/throughput sec
+  // If 1 <= throughput <= BATCH_LIMIT: batchSize = round(throughput), interval = 1 sec
+  // If throughput < 1: batchSize = 1, interval = 1/throughput sec
+  if (throughput >= BATCH_LIMIT) {
+    return { batchSize: BATCH_LIMIT, intervalMs: Math.round(1000 * (BATCH_LIMIT / throughput)) };
+  } else if (throughput >= 1) {
+    return { batchSize: Math.round(throughput), intervalMs: 1000 };
   } else {
-    batchSize = Math.max(1, Math.round(throughput));
-    intervalMs = 1000;
+    return { batchSize: 1, intervalMs: Math.round(1000 / throughput) };
   }
-  return { batchSize, intervalMs };
 }
 
 const enhanceConfig = calcBatchAndInterval(ENHANCE_THROUGHPUT);
 const generateConfig = calcBatchAndInterval(GENERATE_THROUGHPUT);
 // --- Event Handlers for Editor ---
-function onEnhance(highlightId: number, auto: boolean = false) {
-  enhanceQueue.push({ highlightId, auto });
+function onEnhance(highlightId: number, prompt: string, auto: boolean = false) {
+  const existingIdx = enhanceQueue.findIndex(r => r.highlightId === highlightId && r.prompt === prompt);
+  if (existingIdx !== -1) {
+    enhanceQueue.splice(existingIdx, 1);
+    enhanceStates[highlightId] = "idle";
+  } else {
+    enhanceQueue.push({ highlightId, prompt, auto });
+    enhanceStates[highlightId] = "queued";
+  }
 }
 
-function onGenerate(highlightId: number, auto: boolean = false) {
-  // Default requireEnhanced to false; will be set true by runAutoActions if needed
-  generateQueue.push({ highlightId, auto });
+function onGenerate(highlightId: number, prompt: string, auto: boolean = false) {
+  const existingIdx = generateQueue.findIndex(r => r.highlightId === highlightId && r.prompt === prompt);
+  if (existingIdx !== -1) {
+    generateQueue.splice(existingIdx, 1);
+    generateStates[highlightId] = "idle";
+  } else {
+    generateQueue.push({ highlightId, prompt, auto });
+    generateStates[highlightId] = "queued";
+  }
 }
 
 const highlightMap = computed(() => {
@@ -278,9 +303,11 @@ onMounted(() => {
   window.addEventListener("scroll", onScrollWhileDragging, { passive: true });
 
   hook("custom:clearAutoImageEditors", () => {
-    // Clear queues and close all editors
+    // Clear queues, reset states, and close all editors
     enhanceQueue.splice(0, enhanceQueue.length);
     generateQueue.splice(0, generateQueue.length);
+    for (const id in enhanceStates) enhanceStates[Number(id)] = "idle";
+    for (const id in generateStates) generateStates[Number(id)] = "idle";
     for (const id of props.openEditorIds) {
       emit("close-editor", id);
     }
@@ -316,13 +343,21 @@ const enhancedTexts = new Map<number, string>();
 
 async function processEnhanceQueue() {
   if (enhanceQueue.length === 0) return;
-  const batch = enhanceQueue.splice(0, enhanceConfig.batchSize);
+  const skipAuto = !props.autoEnabled;
+  // Build batch without removing auto records when the toggle is off
+  const batch: EnhanceQueueRecord[] = [];
+  for (let i = 0; i < enhanceQueue.length && batch.length < enhanceConfig.batchSize; i++) {
+    if (skipAuto && enhanceQueue[i].auto) continue;
+    batch.push(enhanceQueue[i]);
+  }
+  for (const rec of batch) {
+    const idx = enhanceQueue.indexOf(rec);
+    if (idx !== -1) enhanceQueue.splice(idx, 1);
+    enhanceStates[rec.highlightId] = "processing";
+  }
+  if (batch.length === 0) return;
   const ids = batch.map(r => r.highlightId);
-  const texts = ids.map(id => {
-    const ed = idToEditor.get(id);
-    if (ed && typeof ed.getCurrentPrompt === "function") return ed.getCurrentPrompt();
-    return getHighlightText(id);
-  });
+  const texts = batch.map(r => r.prompt);
   if (texts.length === 0) return;
   const res = await $api("/api/enhance", { method: "POST", body: { texts } });
   const failedIds: number[] = [];
@@ -341,6 +376,7 @@ async function processEnhanceQueue() {
       console.error("/api/enhance error", r?.error);
       failedIds.push(id);
     }
+    enhanceStates[id] = "idle";
     if (failedIds.length > 0) {
       useNotifier().error(`Enhance failed for ${failedIds.length}/${ids.length} item(s).`);
     }
@@ -349,10 +385,13 @@ async function processEnhanceQueue() {
 
 async function processGenerateQueue() {
   if (generateQueue.length === 0) return;
-  // Only process up to generateConfig.batchSize at a time, skipping those with requireEnhanced=true if not enhanced
+  const skipAuto = !props.autoEnabled;
+  // Only process up to generateConfig.batchSize at a time, skipping auto records when disabled
+  // and those with requireEnhanced=true if not yet enhanced
   const readyBatch: GenerateQueueRecord[] = [];
   for (const rec of generateQueue) {
     if (readyBatch.length >= generateConfig.batchSize) break;
+    if (skipAuto && rec.auto) continue;
     if (rec.auto) {
       // Check if enhanced: look up enhancedTexts for this highlightId
       const ed = idToEditor.get(rec.highlightId);
@@ -363,10 +402,11 @@ async function processGenerateQueue() {
     readyBatch.push(rec);
   }
   if (readyBatch.length === 0) return;
-  // Remove processed from queue
+  // Remove processed from queue and mark as processing
   for (const rec of readyBatch) {
     const idx = generateQueue.findIndex(r => r.highlightId === rec.highlightId);
     if (idx !== -1) generateQueue.splice(idx, 1);
+    generateStates[rec.highlightId] = "processing";
   }
   const ids = readyBatch.map(r => r.highlightId);
   const texts = ids.map(id => {
@@ -390,6 +430,7 @@ async function processGenerateQueue() {
       console.error("/api/gen-image-bytes error", r?.error);
       failedIds.push(id);
     }
+    generateStates[id] = "idle";
     if (failedIds.length > 0) {
       useNotifier().error(`Image generation failed for ${failedIds.length}/${ids.length} item(s).`);
     }

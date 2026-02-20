@@ -78,7 +78,12 @@ def enhance_text_with_llm(text: str) -> str:
             response = requests.post(url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
             result = response.json()
-            enhanced_text = result["choices"][0]["message"]["content"].strip()
+            content = (
+                result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            )
+            if not content or not isinstance(content, str) or content.strip() == "":
+                raise ValueError("LLM API response is missing content")
+            enhanced_text = content.strip()
             return f"{enhanced_text}, {DEFAULT_PROMPT_KEYWORDS}"
         except Exception:
             if attempt < max_retries:

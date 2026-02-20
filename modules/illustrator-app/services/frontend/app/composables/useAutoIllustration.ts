@@ -9,9 +9,10 @@ export function useAutoIllustration(opts: {
   selectedHighlights: Set<number>;
   // optional page sizing helpers from PdfViewer
   pageAspectRatio?: Ref<number> | number | null;
-  onNewPendingOpenIds?: (ids: number[]) => void; // callback to request UI open editors for these ids
+  onNewPendingOpenIds?: (ids: number[], actionOpts: { enhance: boolean; generate: boolean }) => void; // callback to open editors + run actions for new ids
+  onCatchupActions?: (ids: number[], actionOpts: { enhance: boolean; generate: boolean }) => void; // callback to run actions on already-open editors
 }) {
-  const { highlights, selectedHighlights, onNewPendingOpenIds } = opts;
+  const { highlights, selectedHighlights, onNewPendingOpenIds, onCatchupActions } = opts;
   const pageAspectRatioRef = (opts.pageAspectRatio ?? null) as Ref<number> | number | null;
 
   const pageAspectRatioValue = computed(() => {
@@ -36,7 +37,9 @@ export function useAutoIllustration(opts: {
   const maxGapPages = ref(5);
   const minScore = ref<number | null>(null);
 
-  const autoAddedIds = ref(new Set<number>());
+  // Tracks IDs by what actions have been requested for them.
+  // selectedIds: editors opened; enhancedIds: queued for enhance; generatedIds: queued for generate.
+  const selectedIds = ref(new Set<number>());
   const enhancedIds = ref(new Set<number>());
   const generatedIds = ref(new Set<number>());
 
@@ -196,26 +199,51 @@ export function useAutoIllustration(opts: {
 
   function runPass() {
     const ids = runSelectionOnce();
-    const newlyAdded: number[] = [];
+    const newlySelected: number[] = [];
+    const catchupEnhance: number[] = [];
+    const catchupGenerate: number[] = [];
+
     for (const id of ids) {
-      if (!selectedHighlights.has(id)) {
+      if (!selectedIds.value.has(id)) {
         selectedHighlights.add(id);
-        autoAddedIds.value.add(id);
-        newlyAdded.push(id);
+        selectedIds.value.add(id);
+        newlySelected.push(id);
+        if (enableEnhance.value) enhancedIds.value.add(id);
+        if (enableGenerate.value) generatedIds.value.add(id);
+      } else {
+        if (enableEnhance.value && !enhancedIds.value.has(id)) {
+          enhancedIds.value.add(id);
+          catchupEnhance.push(id);
+        }
+        if (enableGenerate.value && !generatedIds.value.has(id)) {
+          generatedIds.value.add(id);
+          catchupGenerate.push(id);
+        }
       }
     }
-    console.log(`[AutoIllustration] Selected ${newlyAdded.length} new highlights`);
-    // request UI to open editors for newly added ids
-    if (newlyAdded.length && onNewPendingOpenIds) onNewPendingOpenIds(newlyAdded);
-    return newlyAdded;
+
+    console.log(`[AutoIllustration] Selected ${newlySelected.length} new, ${catchupEnhance.length} catchup-enhance, ${catchupGenerate.length} catchup-generate`);
+
+    if (newlySelected.length && onNewPendingOpenIds) {
+      onNewPendingOpenIds(newlySelected, { enhance: enableEnhance.value, generate: enableGenerate.value });
+    }
+
+    if (catchupEnhance.length && onCatchupActions) {
+      onCatchupActions(catchupEnhance, { enhance: true, generate: false });
+    }
+    if (catchupGenerate.length && onCatchupActions) {
+      onCatchupActions(catchupGenerate, { enhance: false, generate: true });
+    }
+
+    return newlySelected;
   }
 
   function clearAutoSelections() {
-    for (const id of autoAddedIds.value) selectedHighlights.delete(id);
-    callHook("custom:clearAutoImageEditors", Array.from(autoAddedIds.value));
+    for (const id of selectedIds.value) selectedHighlights.delete(id);
+    callHook("custom:clearAutoImageEditors", Array.from(selectedIds.value));
+    selectedIds.value.clear();
     enhancedIds.value.clear();
     generatedIds.value.clear();
-    autoAddedIds.value.clear();
   }
 
   // reactively run when highlights change, but only if enabled
@@ -278,7 +306,7 @@ export function useAutoIllustration(opts: {
     enableGenerate,
     progress: computed(() => {
       return {
-        selectedCount: autoAddedIds.value.size,
+        selectedCount: selectedIds.value.size,
         enhancedCount: enhancedCount.value,
         generatedCount: generatedCount.value,
         maxPossible: getMaxPossible(),

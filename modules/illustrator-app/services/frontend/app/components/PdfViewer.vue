@@ -56,6 +56,7 @@
       :page-refs="pageRefs"
       :page-height="pdfPageHeight"
       :current-page="currentPage"
+      :auto-enabled="props.autoEnabled"
       :style="{ width: IMAGES_WIDTH + 'px' }"
       data-help-target="images"
       @close-editor="(id) => closeImageEditors([id])"
@@ -127,6 +128,7 @@ const PRELOAD_PAGES = 3;
 
 const props = defineProps<{
   pdfUrl: string;
+  autoEnabled?: boolean;
 }>();
 
 watch(() => props.pdfUrl, () => {

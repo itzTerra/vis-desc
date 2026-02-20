@@ -65,6 +65,7 @@
       v-model:highlights="highlights"
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
+      :auto-enabled="autoIllustration.enabled.value"
       @pdf:rendered="onPdfRendered"
     />
     <Hero v-else @file-selected="handleFileUpload" />
@@ -432,25 +433,32 @@ const pageAspectRatioRef = computed(() => {
 
 // instantiate auto-illustration composable
 // when composable requests editors to be opened, forward to PdfViewer's exposed method
-const onNewPendingOpenIds = async (ids: number[]) => {
+const onNewPendingOpenIds = async (ids: number[], actionOpts: { enhance: boolean; generate: boolean }) => {
   if (!Array.isArray(ids) || ids.length === 0) return;
   pdfViewer.value?.openImageEditors?.(ids);
   // wait for editors to mount
-  // await nextTick();
-  // const enhance = (autoIllustration.enableEnhance?.value ?? true);
-  // const generate = (autoIllustration.enableGenerate?.value ?? true);
-  // const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
-  // if (layer && typeof layer.runAutoActions === "function") {
-  //   try {
-  //     layer.runAutoActions(ids, { enhance, generate });
-  //   } catch (e) {
-  //     console.error("auto actions failed", e);
-  //   }
-  // }
+  await nextTick();
+  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  if (layer && typeof layer.runAutoActions === "function") {
+    try {
+      layer.runAutoActions(ids, actionOpts);
+    } catch (e) {
+      console.error("auto actions failed", e);
+    }
+  }
 };
-const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef, onNewPendingOpenIds });
-
-
+const onCatchupActions = (ids: number[], actionOpts: { enhance: boolean; generate: boolean }) => {
+  if (!Array.isArray(ids) || ids.length === 0) return;
+  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  if (layer && typeof layer.runAutoActions === "function") {
+    try {
+      layer.runAutoActions(ids, actionOpts);
+    } catch (e) {
+      console.error("catchup actions failed", e);
+    }
+  }
+};
+const autoIllustration = useAutoIllustration({ highlights, selectedHighlights, pageAspectRatio: pageAspectRatioRef, onNewPendingOpenIds, onCatchupActions });
 
 function fullReset() {
   isCancelled.value = false;

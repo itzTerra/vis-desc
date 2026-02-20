@@ -54,13 +54,15 @@
           <div class="flex justify-between gap-2 my-1">
             <button
               class="btn btn-sm btn-secondary flex-1"
-              :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
+              :disabled="enhanceLoading || (enhanceState !== 'queued' && currentPrompt === '')"
               :aria-busy="enhanceLoading"
+              :title="enhanceState === 'queued' ? 'Cancel enhance' : 'Enhance prompt'"
               @click="() => handleEnhance()"
             >
               <span v-if="enhanceLoading" class="loading loading-spinner loading-sm" />
+              <Icon v-else-if="enhanceState === 'queued'" name="lucide:x" size="18" />
               <Icon v-else name="lucide:wand" size="18" />
-              Enhance
+              {{ enhanceState === 'queued' ? 'Cancel' : 'Enhance' }}
             </button>
             <!-- History Display -->
             <div v-if="history.length > 1" class="flex gap-2 items-center">
@@ -88,14 +90,15 @@
             </div>
             <button
               class="btn btn-sm btn-primary flex-1"
-              :disabled="enhanceLoading || generateLoading || currentPrompt === ''"
+              :disabled="generateLoading || (generateState !== 'queued' && currentPrompt === '')"
               :aria-busy="generateLoading"
-              title="Generate image"
+              :title="generateState === 'queued' ? 'Cancel generation' : 'Generate image'"
               @click="() => handleGenerate()"
             >
               <span v-if="generateLoading" class="loading loading-spinner loading-sm" />
+              <Icon v-else-if="generateState === 'queued'" name="lucide:x" size="18" />
               <Icon v-else name="lucide:book-image" size="18" />
-              Generate
+              {{ generateState === 'queued' ? 'Cancel' : 'Generate' }}
             </button>
           </div>
         </div>
@@ -114,13 +117,15 @@
 </template>
 
 <script setup lang="ts">
-import type { EditorImageState } from "~/types/common";
+import type { ActionState, EditorImageState } from "~/types/common";
 
 import { useEditorHistory } from "~/composables/useEditorHistory";
 
 const props = defineProps<{
   highlightId: number;
   initialText: string;
+  enhanceState?: ActionState;
+  generateState?: ActionState;
 }>();
 
 const emit = defineEmits<{
@@ -128,15 +133,15 @@ const emit = defineEmits<{
   bringToFront: [];
   pointerDown: [event: PointerEvent];
   "state-change": [state: EditorImageState];
-  enhance: [highlightId: number, auto: boolean];
-  generate: [highlightId: number, auto: boolean];
+  enhance: [highlightId: number, prompt: string, auto: boolean];
+  generate: [highlightId: number, prompt: string, auto: boolean];
 }>();
 
 const isOpen = ref(true);
 const isExpanded = ref(false);
 
-const enhanceLoading = ref(false);
-const generateLoading = ref(false);
+const enhanceLoading = computed(() => props.enhanceState === "processing");
+const generateLoading = computed(() => props.generateState === "processing");
 
 const currentPrompt = ref(props.initialText);
 
@@ -180,19 +185,15 @@ watch(() => currentHistoryItem.value?.imageUrl, () => {
 function handleEnhance(auto: boolean = false) {
   if (enhanceLoading.value) return;
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return;
-
-  enhanceLoading.value = true;
-  emit("enhance", props.highlightId, auto);
+  if (prompt === "" && props.enhanceState !== "queued") return;
+  emit("enhance", props.highlightId, prompt, auto);
 }
 
 function handleGenerate(auto: boolean = false) {
   if (generateLoading.value) return;
   const prompt = currentPrompt.value.trim();
-  if (prompt === "") return;
-
-  generateLoading.value = true;
-  emit("generate", props.highlightId, auto);
+  if (prompt === "" && props.generateState !== "queued") return;
+  emit("generate", props.highlightId, prompt, auto);
 }
 
 function handleDelete() {
@@ -210,17 +211,13 @@ function getExportImage() {
 
 // Helpers to apply batched API results from parent
 function applyEnhanceResult(text: string) {
-  enhanceLoading.value = false;
   currentPrompt.value = text;
   addToHistory(currentPrompt.value);
-  return;
 }
 
 function applyGenerateResult(image_b64: string) {
-  generateLoading.value = false;
   const url = `data:image/png;base64,${image_b64}`;
   addToHistory(currentPrompt.value.trim(), url, undefined);
-  return;
 }
 
 function getCurrentPrompt() {

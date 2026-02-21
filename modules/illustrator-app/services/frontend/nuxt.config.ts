@@ -12,6 +12,7 @@ export default defineNuxtConfig({
       ]
     }
   },
+  spaLoadingTemplate: true,
   ssr: false,
   compatibilityDate: "2024-11-01",
   devtools: { enabled: false },
@@ -31,6 +32,7 @@ export default defineNuxtConfig({
       },
       enhanceThroughput: process.env.VITE_ENHANCE_THROUGHPUT ? parseFloat(process.env.VITE_ENHANCE_THROUGHPUT) : 0.2,
       generateThroughput: process.env.VITE_GENERATE_THROUGHPUT ? parseFloat(process.env.VITE_GENERATE_THROUGHPUT) : 0.2,
+      loginPassword: process.env.NUXT_PUBLIC_LOGIN_PASSWORD || "admin",
     },
     app: {
       baseURL: "/"

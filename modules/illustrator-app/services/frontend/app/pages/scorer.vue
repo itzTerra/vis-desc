@@ -202,6 +202,7 @@ async function handleScore() {
       body: {
         text: inputText.value,
         model: selectedModel.value as any,
+        split: useSplitter.value,
       },
     });
 

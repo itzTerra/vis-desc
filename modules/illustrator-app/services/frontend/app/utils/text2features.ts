@@ -1,9 +1,9 @@
-import { getPolysemyCount, downloadAndLoadWordNet } from "~/utils/wordnet";
-import { estimate as estimateSyllables } from "~/utils/syllables";
-import { WORDNETS } from "~/utils/models";
-import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
+import type { ProgressCallback } from "~/types/common";
+import type { HFPipelineConfig } from "~/types/cache";
+
 import { BookNLP, type BookNLPResult, type ExecutionProvider, type SpaCyContext } from "booknlp-ts";
 import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
+
 import charNgrams from "~/assets/data/features/char_ngrams_features.json";
 import posNgrams from "~/assets/data/features/pos_ngrams_features.json";
 import depNodeNgrams from "~/assets/data/features/dep_tree_node_ngrams_features.json";
@@ -13,8 +13,8 @@ import concretenessWords from "~/assets/data/features/concreteness/words.json";
 import concretenessMulti from "~/assets/data/features/concreteness/multiword.json";
 import concretenessPrepositions from "~/assets/data/features/concreteness/prepositions.json";
 import concretenessPlaces from "~/assets/data/features/concreteness/places.json";
-import type { ProgressCallback } from "~/types/common";
-import type { HFPipelineConfig } from "~/types/cache";
+
+import SpacyWorker from "~/workers/spacy-worker.ts?worker";
 
 interface TokenData {
   text: string;
@@ -177,7 +177,7 @@ class WorkerPool {
   next = 0;
 
   constructor(n: number) {
-    this.workers = Array.from({ length: n }, () => new Worker(new URL("../workers/spacy-worker.ts", import.meta.url), { type: "module" }));
+    this.workers = Array.from({ length: n }, () => new SpacyWorker());
   }
 
   request(action: "fetchJson"|"fetchProto", url: string, texts: string[]): Promise<any[]> {

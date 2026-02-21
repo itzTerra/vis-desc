@@ -470,16 +470,4 @@ export const SCORERS: Scorer[] = [
   new RandomScorer(),
 ];
 
-export type WordNetInfo = {
-  id: string;
-  downloadUrl: string;
-};
-
-export const WORDNETS: WordNetInfo[] = [
-  {
-    id: "oewn",
-    downloadUrl: "/english-wordnet-2025-json.zip",
-  },
-];
-
 export { Scorer, FeatureServiceDownloadable, HuggingFacePipelineDownloadable, OnnxDownloadable };

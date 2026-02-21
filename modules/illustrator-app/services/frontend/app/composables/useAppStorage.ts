@@ -7,7 +7,7 @@ export const AUTO_ILLUSTRATION_DEFAULTS = {
   enabled: false,
   minGapPages: 1.5,
   maxGapPages: 8,
-  minScore: null as number | null,
+  minScore: 0.25,
   enableEnhance: true,
   enableGenerate: true,
 };

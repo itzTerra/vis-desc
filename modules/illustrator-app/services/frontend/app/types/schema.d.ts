@@ -38,7 +38,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/process/seg/pdf": {
+    "/api/segment/pdf": {
         parameters: {
             query?: never;
             header?: never;
@@ -47,8 +47,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Process Pdf Segments Only */
-        post: operations["core_api_process_pdf_segments_only"];
+        /** Segment Pdf */
+        post: operations["core_api_segment_pdf"];
         delete?: never;
         options?: never;
         head?: never;
@@ -340,7 +340,7 @@ export interface operations {
             };
         };
     };
-    core_api_process_pdf_segments_only: {
+    core_api_segment_pdf: {
         parameters: {
             query?: never;
             header?: never;

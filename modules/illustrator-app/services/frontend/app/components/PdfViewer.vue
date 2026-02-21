@@ -72,7 +72,7 @@
       :page-refs="pageRefs"
       :editor-states="editorStates"
     />
-    <div class="fixed bottom-0 left-0 flex justify-center z-200">
+    <div class="fixed bottom-0 left-0 flex justify-center z-120">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">
         <button class="join-item btn btn-sm px-3 me-0" :disabled="currentPage <= 1" title="Previous Page" @click="setCurrentPage(currentPage - 1)">
           <Icon name="lucide:chevron-up" size="16" />

@@ -1,5 +1,6 @@
-import uuid
+import base64
 import json
+import uuid
 from typing import List, Sequence
 import spacy
 
@@ -23,13 +24,15 @@ from core.schemas import (
     ProcessPdfBody,
     ProcessPdfResponse,
     ProcessPdfSegmentsOnlyResponse,
+    ProcessTxtSegmentsOnlyResponse,
+    ProcessTxtResponse,
     BatchTextsBody,
     BatchEnhanceItem,
     BatchImageItem,
     SpacyContextResponse,
     TextScorerBody,
 )
-from core.tools.book_preprocessing import PdfBookPreprocessor
+from core.tools.book_preprocessing import PdfBookPreprocessor, TxtBookPreprocessor
 from core.tools.redis import get_redis_client
 from core.tools.text2image import (
     ProviderError,
@@ -47,6 +50,7 @@ pdf_preprocessor = PdfBookPreprocessor(
     polygon_x_smooth_max_gap_px=settings.POLYGON_X_SMOOTH_MAX_GAP_PX,
     polygon_padding_px=settings.POLYGON_PADDING_PX,
 )
+txt_preprocessor = TxtBookPreprocessor()
 text_segmenter = TextSegmenter((settings.SEGMENT_CHARS_MIN, settings.SEGMENT_CHARS_MAX))
 
 # Load spaCy model (disable NER per request) and wrap with our pipeline helper
@@ -96,6 +100,49 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
         "expires_in": settings.WS_KEY_EXPIRY_SEC,
         "segment_count": len(segments),
         "segments": segments_with_pos,
+    }
+
+
+def get_segments_boxes_from_txt(
+    txt: UploadedFile,
+) -> tuple[list[str], list[dict], bytes]:
+    cleaned_text, normalized_full_text, removed_ranges = (
+        txt_preprocessor.extract_from_memory(txt)
+    )
+    segments = text_segmenter.segment_text(cleaned_text)
+    segments_with_pos, pdf_bytes = txt_preprocessor.create_pdf_and_align(
+        segments, (cleaned_text, normalized_full_text, removed_ranges), pdf_preprocessor
+    )
+    return segments, segments_with_pos, pdf_bytes
+
+
+@api.post("/segment/txt", response=ProcessTxtSegmentsOnlyResponse)
+def segment_txt(request, txt: File[UploadedFile], model: Form[ProcessPdfBody]):
+    segments, segments_with_pos, pdf_bytes = get_segments_boxes_from_txt(txt)
+    return {
+        "segment_count": len(segments),
+        "segments": segments_with_pos,
+        "pdf_base64": base64.b64encode(pdf_bytes).decode(),
+    }
+
+
+@api.post("/process/txt", response=ProcessTxtResponse)
+def process_txt(request, txt: File[UploadedFile], model: Form[ProcessPdfBody]):
+    ws_key = str(uuid.uuid4())
+
+    segments, segments_with_pos, pdf_bytes = get_segments_boxes_from_txt(txt)
+
+    redis_client.set(
+        f"ws_key:{ws_key}",
+        value=json.dumps({"segments": segments, "model": model.model}),
+        ex=settings.WS_KEY_EXPIRY_SEC,
+    )
+    return {
+        "ws_key": ws_key,
+        "expires_in": settings.WS_KEY_EXPIRY_SEC,
+        "segment_count": len(segments),
+        "segments": segments_with_pos,
+        "pdf_base64": base64.b64encode(pdf_bytes).decode(),
     }
 
 

@@ -14,22 +14,22 @@
 
 ## Backend: TxtBookPreprocessor
 
-- [ ] Add `extract_from_memory(self, txt_file) -> tuple[str, str, list[tuple[int, int]]]` to `TxtBookPreprocessor` in `services/api/core/tools/book_preprocessing.py` -- reads bytes from `txt_file.read()`, decodes with UTF-8 (falling back to Latin-1 on `UnicodeDecodeError`), runs `self.clean_text(..., return_split_with_removed=True)` on the decoded string, computes `normalized_full_text` and `removed_ranges` (same logic as `PdfBookPreprocessor._get_from_doc` but for the full text in one pass), returns `(cleaned_text, normalized_full_text, removed_ranges)`
-- [ ] Add `create_pdf_and_align(self, segments: list[str], txt_ctx: tuple[str, str, list[tuple[int, int]]], pdf_preprocessor: PdfBookPreprocessor) -> tuple[list[dict], bytes]` -- unpacks `txt_ctx` into `(cleaned_text, normalized_full_text, removed_ranges)`, creates a pymupdf PDF from `cleaned_text` (readable font, reasonable size), saves to `pdf_bytes`. Constructs `ExtractionContext(pdf_bytes=pdf_bytes, cleaned_text=cleaned_text, normalized_full_text=normalized_full_text, removed_ranges=removed_ranges)` directly from the already-computed normalization data -- does NOT call `pdf_preprocessor.extract_from_memory` (avoids double-cleaning risk where page-by-page extraction could produce different normalization). Calls `pdf_preprocessor.align_segments_with_pages(segments, ctx)`. Returns `(segments_with_pos, pdf_bytes)`.
+- [x] Add `extract_from_memory(self, txt_file) -> tuple[str, str, list[tuple[int, int]]]` to `TxtBookPreprocessor` in `services/api/core/tools/book_preprocessing.py` -- reads bytes from `txt_file.read()`, decodes with UTF-8 (falling back to Latin-1 on `UnicodeDecodeError`), runs `self.clean_text(..., return_split_with_removed=True)` on the decoded string, computes `normalized_full_text` and `removed_ranges` (same logic as `PdfBookPreprocessor._get_from_doc` but for the full text in one pass), returns `(cleaned_text, normalized_full_text, removed_ranges)`
+- [x] Add `create_pdf_and_align(self, segments: list[str], txt_ctx: tuple[str, str, list[tuple[int, int]]], pdf_preprocessor: PdfBookPreprocessor) -> tuple[list[dict], bytes]` -- unpacks `txt_ctx` into `(cleaned_text, normalized_full_text, removed_ranges)`, creates a pymupdf PDF from `cleaned_text` (readable font, reasonable size), saves to `pdf_bytes`. Constructs `ExtractionContext(pdf_bytes=pdf_bytes, cleaned_text=cleaned_text, normalized_full_text=normalized_full_text, removed_ranges=removed_ranges)` directly from the already-computed normalization data -- does NOT call `pdf_preprocessor.extract_from_memory` (avoids double-cleaning risk where page-by-page extraction could produce different normalization). Calls `pdf_preprocessor.align_segments_with_pages(segments, ctx)`. Returns `(segments_with_pos, pdf_bytes)`.
 
 ## Backend: Schemas
 
-- [ ] Add `ProcessTxtSegmentsOnlyResponse(ProcessPdfSegmentsOnlyResponse)` schema in `services/api/core/schemas.py` -- inherits all fields from `ProcessPdfSegmentsOnlyResponse`, adds only `pdf_base64: str`
-- [ ] Add `ProcessTxtResponse(ProcessPdfResponse)` schema -- inherits all fields from `ProcessPdfResponse`, adds only `pdf_base64: str`
-- [ ] Import new schemas in `services/api/core/api.py`
+- [x] Add `ProcessTxtSegmentsOnlyResponse(ProcessPdfSegmentsOnlyResponse)` schema in `services/api/core/schemas.py` -- inherits all fields from `ProcessPdfSegmentsOnlyResponse`, adds only `pdf_base64: str`
+- [x] Add `ProcessTxtResponse(ProcessPdfResponse)` schema -- inherits all fields from `ProcessPdfResponse`, adds only `pdf_base64: str`
+- [x] Import new schemas in `services/api/core/api.py`
 
 ## Backend: API Endpoints
 
-- [ ] Instantiate `TxtBookPreprocessor` singleton in `services/api/core/api.py` (no polygon settings needed -- it delegates to `pdf_preprocessor`)
-- [ ] Add `get_segments_boxes_from_txt(txt: UploadedFile) -> tuple[list[str], list[dict], bytes]` helper in `services/api/core/api.py` -- calls `txt_ctx = txt_preprocessor.extract_from_memory(txt)`, then `segments = text_segmenter.segment_text(txt_ctx[0])`, then `segments_with_pos, pdf_bytes = txt_preprocessor.create_pdf_and_align(segments, txt_ctx, pdf_preprocessor)`. Returns `(segments, segments_with_pos, pdf_bytes)`.
-- [ ] Add `POST /api/segment/txt` endpoint with `response=ProcessTxtSegmentsOnlyResponse` -- accepts `txt: File[UploadedFile]` and `model: Form[ProcessPdfBody]` (reuses ProcessPdfBody). Calls `get_segments_boxes_from_txt(txt)`. Returns `{"segment_count": ..., "segments": segments_with_pos, "pdf_base64": base64.b64encode(pdf_bytes).decode()}`
-- [ ] Add `POST /api/process/txt` endpoint with `response=ProcessTxtResponse` -- accepts `txt: File[UploadedFile]` and `model: Form[ProcessPdfBody]`. Calls `get_segments_boxes_from_txt(txt)`, stores segments + model in Redis under ws_key. Returns `{"ws_key": ..., "expires_in": ..., "segment_count": ..., "segments": segments_with_pos, "pdf_base64": base64.b64encode(pdf_bytes).decode()}`
-- [ ] Import `base64` and `BytesIO` (`from io import BytesIO`) at top of `services/api/core/api.py`
+- [x] Instantiate `TxtBookPreprocessor` singleton in `services/api/core/api.py` (no polygon settings needed -- it delegates to `pdf_preprocessor`)
+- [x] Add `get_segments_boxes_from_txt(txt: UploadedFile) -> tuple[list[str], list[dict], bytes]` helper in `services/api/core/api.py` -- calls `txt_ctx = txt_preprocessor.extract_from_memory(txt)`, then `segments = text_segmenter.segment_text(txt_ctx[0])`, then `segments_with_pos, pdf_bytes = txt_preprocessor.create_pdf_and_align(segments, txt_ctx, pdf_preprocessor)`. Returns `(segments, segments_with_pos, pdf_bytes)`.
+- [x] Add `POST /api/segment/txt` endpoint with `response=ProcessTxtSegmentsOnlyResponse` -- accepts `txt: File[UploadedFile]` and `model: Form[ProcessPdfBody]` (reuses ProcessPdfBody). Calls `get_segments_boxes_from_txt(txt)`. Returns `{"segment_count": ..., "segments": segments_with_pos, "pdf_base64": base64.b64encode(pdf_bytes).decode()}`
+- [x] Add `POST /api/process/txt` endpoint with `response=ProcessTxtResponse` -- accepts `txt: File[UploadedFile]` and `model: Form[ProcessPdfBody]`. Calls `get_segments_boxes_from_txt(txt)`, stores segments + model in Redis under ws_key. Returns `{"ws_key": ..., "expires_in": ..., "segment_count": ..., "segments": segments_with_pos, "pdf_base64": base64.b64encode(pdf_bytes).decode()}`
+- [x] Import `base64` at top of `services/api/core/api.py`
 
 ## Frontend: File Inputs
 

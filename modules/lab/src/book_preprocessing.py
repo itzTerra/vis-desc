@@ -1,4 +1,6 @@
 from __future__ import annotations
+import html
+import io
 import re
 import logging
 import pymupdf
@@ -92,6 +94,11 @@ class BookPreprocessor:
         }
         self.text_keywords = {"!", "?", '"', ":"}
         self.short_line_threshold = 10
+
+    def _normalize(self, s: str) -> str:
+        return re.sub(
+            r"[\s\-‐‑‒–—]+", "", s.translate(self.before_clean_translation_table)
+        )
 
     def clean_text(
         self, text: str, prev_line: str = "", return_split_with_removed=False
@@ -374,10 +381,11 @@ class PdfBookPreprocessor(BookPreprocessor):
                 for i, seg in enumerate(segments)
             ]
 
-        seg_to_page_to_polygon = self._segments_to_page_polygons(
-            doc, segments, ctx.normalized_full_text, ctx.removed_ranges
-        )
-        if doc is not None:
+        try:
+            seg_to_page_to_polygon = self._segments_to_page_polygons(
+                doc, segments, ctx.normalized_full_text, ctx.removed_ranges
+            )
+        finally:
             doc.close()
         return [
             {
@@ -605,11 +613,6 @@ class PdfBookPreprocessor(BookPreprocessor):
 
         return False
 
-    def _normalize(self, s: str) -> str:
-        return re.sub(
-            r"[\s\-‐‑‒–—]+", "", s.translate(self.before_clean_translation_table)
-        )
-
     def _smooth_boundary(
         self,
         boundary: list[tuple[float, float]],
@@ -695,3 +698,62 @@ class TxtBookPreprocessor(BookPreprocessor):
         """Remove extra newlines"""
         text = super()._before_clean(text)
         return re.sub(r"\S\n\n[ \t]*", lambda m: m.group(0).rstrip() + " ", text)
+
+    def extract_from_memory(self, txt_file) -> tuple[str, str, list[tuple[int, int]]]:
+        """Read a TXT file and return (cleaned_text, normalized_full_text, removed_ranges)."""
+        raw_bytes = txt_file.read()
+        try:
+            text = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw_bytes.decode("latin-1")
+
+        cleaned_text, lines, removed_lines = self.clean_text(
+            text, return_split_with_removed=True
+        )
+
+        normalized_full_text = ""
+        removed_ranges: list[tuple[int, int]] = []
+        for j, line in enumerate(lines):
+            normalized_line = self._normalize(line)
+            normalized_full_text += normalized_line
+            if j in removed_lines:
+                start = len(normalized_full_text) - len(normalized_line)
+                end = len(normalized_full_text)
+                removed_ranges.append((start, end))
+
+        return cleaned_text, normalized_full_text, removed_ranges
+
+    def create_pdf_and_align(
+        self,
+        segments: list[str],
+        txt_ctx: tuple[str, str, list[tuple[int, int]]],
+        pdf_preprocessor: PdfBookPreprocessor,
+    ) -> tuple[list[dict], bytes]:
+        """Create a PDF from cleaned text and align segments with pages."""
+        cleaned_text, normalized_full_text, removed_ranges = txt_ctx
+        pdf_bytes = self._text_to_pdf(cleaned_text)
+        ctx = ExtractionContext(
+            pdf_bytes=pdf_bytes,
+            cleaned_text=cleaned_text,
+            normalized_full_text=normalized_full_text,
+            removed_ranges=removed_ranges,
+        )
+        segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments, ctx)
+        return segments_with_pos, pdf_bytes
+
+    def _text_to_pdf(self, text: str) -> bytes:
+        """Generate a PDF from plain text using pymupdf Story API."""
+        page_rect = pymupdf.Rect(0, 0, 612, 792)
+        clip = pymupdf.Rect(72, 72, 540, 720)
+        buf = io.BytesIO()
+        writer = pymupdf.DocumentWriter(buf)
+        story = pymupdf.Story(f"<p>{html.escape(text)}</p>")
+        more = True
+        while more:
+            device = writer.begin_page(page_rect)
+            more, _ = story.place(clip)
+            story.draw(device)
+            writer.end_page()
+        writer.close()
+        buf.seek(0)
+        return buf.read()

@@ -38,6 +38,14 @@ class ProcessPdfResponse(Schema):
     segments: list[SegmentWithPos]
 
 
+class ProcessTxtSegmentsOnlyResponse(ProcessPdfSegmentsOnlyResponse):
+    pdf_base64: str
+
+
+class ProcessTxtResponse(ProcessPdfResponse):
+    pdf_base64: str
+
+
 class ProcessPdfBody(Schema):
     model: Evaluator
 

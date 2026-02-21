@@ -259,6 +259,14 @@ class PdfExtractionConfig:
     max_pages: int | None = None  # limit for debugging
 
 
+@dataclass
+class ExtractionContext:
+    pdf_bytes: bytes
+    cleaned_text: str
+    normalized_full_text: str
+    removed_ranges: list[tuple[int, int]]
+
+
 class PdfBookPreprocessor(BookPreprocessor):
     def __init__(
         self, polygon_x_smooth_max_gap_px: int = 12, polygon_padding_px: int = 1
@@ -267,16 +275,16 @@ class PdfBookPreprocessor(BookPreprocessor):
         self.polygon_x_smooth_max_gap_px = polygon_x_smooth_max_gap_px
         self.polygon_padding_px = polygon_padding_px
         self.logger = logging.getLogger("django")
-        self._normalized_full_text = ""
-        self._removed_ranges: list[tuple[int, int]] = []
 
-    def _get_from_doc(self, doc, page_limit: int | None = None) -> str:
+    def _get_from_doc(
+        self, doc, page_limit: int | None = None
+    ) -> tuple[str, str, list[tuple[int, int]]]:
         if page_limit is None:
             page_limit = len(doc)
         pages: list[str] = []
         last_line_of_last_page = ""
-        self._normalized_full_text = ""
-        self._removed_ranges = []
+        normalized_full_text = ""
+        removed_ranges: list[tuple[int, int]] = []
         for i in range(page_limit):
             try:
                 page = doc[i]
@@ -285,14 +293,14 @@ class PdfBookPreprocessor(BookPreprocessor):
                     page_text, last_line_of_last_page, return_split_with_removed=True
                 )
 
-                # Fill _normalized_full_text and _removed_ranges
-                for i, line in enumerate(lines):
+                # Fill normalized_full_text and removed_ranges
+                for j, line in enumerate(lines):
                     normalized_line = self._normalize(line)
-                    self._normalized_full_text += normalized_line
-                    if i in removed_lines:
-                        start = len(self._normalized_full_text) - len(normalized_line)
-                        end = len(self._normalized_full_text)
-                        self._removed_ranges.append((start, end))
+                    normalized_full_text += normalized_line
+                    if j in removed_lines:
+                        start = len(normalized_full_text) - len(normalized_line)
+                        end = len(normalized_full_text)
+                        removed_ranges.append((start, end))
 
                 # Join pages that cut a sentence in half
                 if (
@@ -315,41 +323,35 @@ class PdfBookPreprocessor(BookPreprocessor):
             except Exception as e:
                 self.logger.warning("Skipping page %d due to error: %s", i, e)
 
-        return "".join(pages)
+        cleaned_text = "".join(pages)
+        return cleaned_text, normalized_full_text, removed_ranges
 
     def extract_from_memory(
         self, pdf_file, config: PdfExtractionConfig | None = None
-    ) -> str:
+    ) -> ExtractionContext:
         if config is None:
             config = PdfExtractionConfig()
 
         try:
             pdf_bytes = pdf_file.read()
-            self._last_pdf_bytes = pdf_bytes
             with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
-                cleaned = self._get_from_doc(doc, config.max_pages)
+                cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
+                    doc, config.max_pages
+                )
         except Exception:
             self.logger.exception("Failed to open PDF")
             raise
 
-        return cleaned
+        return ExtractionContext(
+            pdf_bytes=pdf_bytes,
+            cleaned_text=cleaned_text,
+            normalized_full_text=normalized_full_text,
+            removed_ranges=removed_ranges,
+        )
 
-    def extract_from_path(
-        self, pdf_path: str, config: PdfExtractionConfig | None = None
-    ) -> str:
-        if config is None:
-            config = PdfExtractionConfig()
-
-        try:
-            with pymupdf.open(pdf_path) as doc:
-                cleaned = self._get_from_doc(doc, config.max_pages)
-        except Exception:
-            self.logger.exception("Failed to open PDF")
-            raise
-
-        return cleaned
-
-    def align_segments_with_pages(self, segments: list[str]) -> list[dict]:
+    def align_segments_with_pages(
+        self, segments: list[str], ctx: ExtractionContext
+    ) -> list[dict]:
         """Map cleaned segments to original page polygons.
         Returns a list of dicts:
         {
@@ -358,12 +360,9 @@ class PdfBookPreprocessor(BookPreprocessor):
             'polygons': { page_index: [(x1, y1), (x2, y2), ...]  }  # normalized coordinates
         }
         """
-        if not self._last_pdf_bytes:
-            raise RuntimeError("A book must be processed before alignment")
-
         doc = None
         try:
-            doc = pymupdf.open(stream=self._last_pdf_bytes, filetype="pdf")
+            doc = pymupdf.open(stream=ctx.pdf_bytes, filetype="pdf")
         except Exception:
             self.logger.exception("Failed to reopen PDF for polygons")
             return [
@@ -375,7 +374,9 @@ class PdfBookPreprocessor(BookPreprocessor):
                 for i, seg in enumerate(segments)
             ]
 
-        seg_to_page_to_polygon = self._segments_to_page_polygons(doc, segments)
+        seg_to_page_to_polygon = self._segments_to_page_polygons(
+            doc, segments, ctx.normalized_full_text, ctx.removed_ranges
+        )
         if doc is not None:
             doc.close()
         return [
@@ -388,7 +389,11 @@ class PdfBookPreprocessor(BookPreprocessor):
         ]
 
     def _segments_to_page_polygons(
-        self, doc, segments: list[str]
+        self,
+        doc,
+        segments: list[str],
+        normalized_full_text: str,
+        removed_ranges: list[tuple[int, int]],
     ) -> dict[int, list[tuple[float, float]]]:
         """Convert a segment of text into page polygons."""
         segments = [self._normalize(s) for s in segments]
@@ -409,9 +414,7 @@ class PdfBookPreprocessor(BookPreprocessor):
                 if not norm_wtext:
                     continue
 
-                if not self._normalized_full_text.startswith(
-                    norm_wtext, original_text_idx
-                ):
+                if not normalized_full_text.startswith(norm_wtext, original_text_idx):
                     self.logger.warning(
                         f"Word '{wtext}' does not match word at original_text_idx {original_text_idx}"
                     )
@@ -419,7 +422,9 @@ class PdfBookPreprocessor(BookPreprocessor):
 
                 original_text_idx += len(norm_wtext)
                 word_in_removed_range = self._word_overlaps_removed_ranges(
-                    original_text_idx - len(norm_wtext), original_text_idx
+                    original_text_idx - len(norm_wtext),
+                    original_text_idx,
+                    removed_ranges,
                 )
                 if word_in_removed_range:
                     continue
@@ -569,15 +574,20 @@ class PdfBookPreprocessor(BookPreprocessor):
 
         return seg_to_page_to_polygon
 
-    def _word_overlaps_removed_ranges(self, word_start: int, word_end: int) -> bool:
+    def _word_overlaps_removed_ranges(
+        self,
+        word_start: int,
+        word_end: int,
+        removed_ranges: list[tuple[int, int]],
+    ) -> bool:
         """Efficiently check if a word range overlaps with any removed range."""
-        if not self._removed_ranges:
+        if not removed_ranges:
             return False
 
-        left, right = 0, len(self._removed_ranges)
+        left, right = 0, len(removed_ranges)
         while left < right:
             mid = (left + right) // 2
-            range_start, range_end = self._removed_ranges[mid]
+            range_start, range_end = removed_ranges[mid]
 
             if range_end <= word_start:
                 # This range ends before our word starts, look right
@@ -586,8 +596,8 @@ class PdfBookPreprocessor(BookPreprocessor):
                 # This range might overlap, look left
                 right = mid
 
-        for i in range(left, len(self._removed_ranges)):
-            range_start, range_end = self._removed_ranges[i]
+        for i in range(left, len(removed_ranges)):
+            range_start, range_end = removed_ranges[i]
             if range_start >= word_end:
                 break
             if range_start < word_end and range_end > word_start:

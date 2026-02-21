@@ -55,9 +55,9 @@ spacy_pipeline = SpacyPipeline(spacy_nlp)
 
 
 def get_segments_with_boxes(pdf: UploadedFile) -> tuple[list[str], list[dict]]:
-    book_text = pdf_preprocessor.extract_from_memory(pdf)
-    segments = text_segmenter.segment_text(book_text)
-    segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments)
+    ctx = pdf_preprocessor.extract_from_memory(pdf)
+    segments = text_segmenter.segment_text(ctx.cleaned_text)
+    segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments, ctx)
     return segments, segments_with_pos
 
 

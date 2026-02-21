@@ -194,3 +194,15 @@ export async function clearWordNetCache(idOrUrl: string) {
     console.warn("Failed to clear WordNet cache", err);
   }
 }
+
+export type WordNetInfo = {
+  id: string;
+  downloadUrl: string;
+};
+
+export const WORDNETS: WordNetInfo[] = [
+  {
+    id: "oewn",
+    downloadUrl: "/english-wordnet-2025-json.zip",
+  },
+];

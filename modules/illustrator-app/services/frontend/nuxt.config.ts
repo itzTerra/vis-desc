@@ -63,6 +63,9 @@ export default defineNuxtConfig({
       sourcemap: process.env.NODE_ENV === "development"
     },
     assetsInclude: ["**/*.onnx"],
+    worker: {
+      format: "es",
+    }
   },
   sourcemap: {
     server: process.env.NODE_ENV === "development",

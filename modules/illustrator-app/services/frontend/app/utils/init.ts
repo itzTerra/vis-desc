@@ -1,22 +1,17 @@
-// Spawn the scorer worker
+import { setScorerWorker } from "~/utils/scorerWorker";
+import ScorerWorker from "~/workers/scorer.worker.ts?worker";
 
-let scorerWorker: Worker | null = null;
+let scorerWorkerSet = false;
 
 export function initApp() {
   // Ping API to wake it up
   const { $api } = useNuxtApp();
   $api("/api/ping", { method: "GET" });
 
-  if (scorerWorker === null) {
-    scorerWorker = new Worker(new URL("../workers/scorer.worker.ts", import.meta.url), {
-      type: "module",
-    });
+  if (!scorerWorkerSet) {
+    const scorerWorker = new ScorerWorker();
+    setScorerWorker(scorerWorker);
+    scorerWorkerSet = true;
   }
 }
 
-export function getScorerWorker(): Worker {
-  if (scorerWorker === null) {
-    throw new Error("Scorer worker not initialized. Call initApp() first.");
-  }
-  return scorerWorker as Worker;
-}

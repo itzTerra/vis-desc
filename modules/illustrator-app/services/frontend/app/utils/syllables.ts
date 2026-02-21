@@ -174,7 +174,7 @@ const reAddSyllables: RegExp[] = addSyllables.map(pattern => new RegExp(pattern)
  * @param word - The English-language word to estimate syllables for
  * @returns The estimated number of syllables in the word
  */
-export function estimate(word: string): number {
+export function estimateSyllables(word: string): number {
   const lowerWord = word.toLowerCase();
   const parts = lowerWord.split(/[^aeiouy]+/);
   const validParts = parts.filter(part => part !== "");

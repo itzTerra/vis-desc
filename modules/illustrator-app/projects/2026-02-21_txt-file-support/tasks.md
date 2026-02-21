@@ -50,9 +50,9 @@
 
 ## Sync and Verify
 
-- [ ] Regenerate OpenAPI types: `docker compose run --rm frontend pnpm gen-types`
-- [ ] Verify `services/frontend/app/types/schema.d.ts` includes the new `ProcessTxtSegmentsOnlyResponse` and `ProcessTxtResponse` types (no `ProcessTxtBody` -- reuses `ProcessPdfBody`)
-- [ ] Run `pre-commit run --all-files` to verify linting and formatting
+- [x] Regenerate OpenAPI types: `docker compose run --rm frontend pnpm gen-types`
+- [x] Verify `services/frontend/app/types/schema.d.ts` includes the new `ProcessTxtSegmentsOnlyResponse` and `ProcessTxtResponse` types (no `ProcessTxtBody` -- reuses `ProcessPdfBody`)
+- [x] Run `pre-commit run --all-files` to verify linting and formatting
 - [ ] Manual test: upload a PDF and confirm existing flow is unchanged (thread-safety refactor is transparent)
 - [ ] Manual test: upload a `.txt` file (e.g., a Project Gutenberg book) and confirm generated PDF renders with segment highlights
 - [ ] Manual test: upload a `.txt` file and confirm export works correctly (filename derives from original `.txt` name)

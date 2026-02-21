@@ -56,6 +56,12 @@ class BatchEnhanceItem(Schema):
     error: Optional[str] = None
 
 
+class TextScorerBody(Schema):
+    text: str
+    model: Optional[Evaluator] = "random"
+    split: bool = False
+
+
 class BatchTextsBody(Schema):
     texts: list[str]
 

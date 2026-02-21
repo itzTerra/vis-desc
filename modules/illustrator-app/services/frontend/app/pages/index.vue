@@ -125,8 +125,6 @@ import type { ModelGroup } from "~/types/cache";
 
 type ImageLayer = InstanceType<typeof import("~/components/ImageLayer.vue").default>;
 
-type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
-
 const { $api: call, $config, $debugPanel, callHook, hook } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
 
@@ -451,6 +449,14 @@ onMounted(() => {
       groupInConfirmation.value = group;
     }
   });
+
+  $debugPanel.addAction(
+    "🔬 Text Scorer",
+    () => {
+      navigateTo("/scorer");
+    },
+    "Open the text scorer page"
+  );
 
   $debugPanel.addAction(
     "📋 Print Highlights",

@@ -27,6 +27,7 @@ from core.schemas import (
     BatchEnhanceItem,
     BatchImageItem,
     SpacyContextResponse,
+    TextScorerBody,
 )
 from core.tools.book_preprocessing import PdfBookPreprocessor
 from core.tools.redis import get_redis_client
@@ -95,6 +96,61 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
         "expires_in": settings.WS_KEY_EXPIRY_SEC,
         "segment_count": len(segments),
         "segments": segments_with_pos,
+    }
+
+
+@api.post("/scorer/segment/text", response=ProcessPdfSegmentsOnlyResponse)
+def scorer_segment_text(request, body: TextScorerBody):
+    text = body.text
+    if not text:
+        return api.create_response(request, {"error": "text is required"}, status=400)
+
+    segments = text_segmenter.segment_text(text) if body.split else [text]
+    segments_data = [
+        {
+            "id": idx + 1,
+            "text": seg,
+            "polygons": {},
+        }
+        for idx, seg in enumerate(segments)
+    ]
+
+    return {
+        "segment_count": len(segments),
+        "segments": segments_data,
+    }
+
+
+@api.post("/scorer/process/text", response=ProcessPdfResponse)
+def scorer_process_text(request, body: TextScorerBody):
+    ws_key = str(uuid.uuid4())
+
+    text = body.text
+    if not text:
+        return api.create_response(request, {"error": "text is required"}, status=400)
+
+    model = body.model if hasattr(body, "model") and body.model else "random"
+
+    segments = text_segmenter.segment_text(text) if body.split else [text]
+    segments_data = [
+        {
+            "id": idx + 1,
+            "text": seg,
+            "polygons": {},
+        }
+        for idx, seg in enumerate(segments)
+    ]
+
+    redis_client.set(
+        f"ws_key:{ws_key}",
+        value=json.dumps({"segments": segments, "model": model}),
+        ex=settings.WS_KEY_EXPIRY_SEC,
+    )
+    return {
+        "ws_key": ws_key,
+        "expires_in": settings.WS_KEY_EXPIRY_SEC,
+        "segment_count": len(segments),
+        "segments": segments_data,
     }
 
 

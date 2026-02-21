@@ -148,7 +148,7 @@ const normalized = computed(() => {
 });
 
 const tooltipText = computed(() => {
-  return `Selected: ${selectedCount.value} | Enhanced: ${enhancedCount.value} | Generated: ${generatedCount.value} | Active: ${isActive.value ? "✓" : "✕"}`;
+  return `Selected: ${selectedCount.value}/${maxPossible.value} | Enhanced: ${enhancedCount.value} | Generated: ${generatedCount.value} | Active: ${isActive.value ? "✓" : "✕"}`;
 });
 
 // Present `minScore` as an integer percent (0..100) in the UI while storing 0..1
@@ -201,12 +201,6 @@ const minScoreInvalid = computed(() => {
 }
 
 .auto-illustration-status {
-  --ai-selected-start: #60a5fa;
-  --ai-selected-end: #3b82f6;
-  --ai-enhanced-start: #34d399;
-  --ai-enhanced-end: #10b981;
-  --ai-generated-start: #f97316;
-  --ai-generated-end: #fb923c;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -224,19 +218,26 @@ const minScoreInvalid = computed(() => {
 .segment {
   height: 100%;
   position: relative;
-  border-radius: inherit;
+}
+.segment:first-child {
+  border-top-left-radius: inherit;
+  border-bottom-left-radius: inherit;
+}
+.segment:last-child {
+  border-top-right-radius: inherit;
+  border-bottom-right-radius: inherit;
 }
 
 .segment.selected {
-  background: linear-gradient(90deg, var(--ai-selected-start, #60a5fa), var(--ai-selected-end, #3b82f6));
+  background: var(--color-primary);
 }
 
 .segment.enhanced {
-  background: linear-gradient(90deg, var(--ai-enhanced-start, #34d399), var(--ai-enhanced-end, #10b981));
+  background: var(--color-secondary);
 }
 
 .segment.generated {
-  background: linear-gradient(90deg, var(--ai-generated-start, #f97316), var(--ai-generated-end, #fb923c));
+  background: var(--color-success);
 }
 
 .segment.active {

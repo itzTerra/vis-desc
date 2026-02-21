@@ -123,6 +123,8 @@ import type { CacheManager } from "#components";
 import { SCORERS, MODEL_GROUPS, type Scorer } from "~/utils/models";
 import type { ModelGroup } from "~/types/cache";
 
+type ImageLayer = InstanceType<typeof import("~/components/ImageLayer.vue").default>;
+
 type SocketMessage = { content: unknown, type: "segment" | "batch" | "info" | "error" | "success" };
 
 const { $api: call, $config, $debugPanel, callHook, hook } = useNuxtApp();
@@ -333,7 +335,7 @@ const onNewPendingOpenIds = async (ids: number[], actionOpts: { enhance: boolean
   pdfViewer.value?.openImageEditors?.(ids);
   // wait for editors to mount
   await nextTick();
-  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  const layer = (pdfViewer.value as any)?.imageLayer as ImageLayer | undefined;
   if (layer && typeof layer.runAutoActions === "function") {
     try {
       layer.runAutoActions(ids, actionOpts);
@@ -344,7 +346,7 @@ const onNewPendingOpenIds = async (ids: number[], actionOpts: { enhance: boolean
 };
 const onCatchupActions = (ids: number[], actionOpts: { enhance: boolean; generate: boolean }) => {
   if (!Array.isArray(ids) || ids.length === 0) return;
-  const layer = (pdfViewer.value as any)?.imageLayer as any | undefined;
+  const layer = (pdfViewer.value as any)?.imageLayer as ImageLayer | undefined;
   if (layer && typeof layer.runAutoActions === "function") {
     try {
       layer.runAutoActions(ids, actionOpts);
@@ -382,18 +384,18 @@ async function handleExportConfirm() {
       return;
     }
 
-    const imageLayer = pdfViewer.value.$refs.imageLayer;
+    const imageLayer = pdfViewer.value.$refs.imageLayer as ImageLayer | undefined;
     if (!imageLayer || typeof (imageLayer as any).getExportImages !== "function") {
       useNotifier().error("Image layer is not ready");
       return;
     }
 
-    const imageBlobs = (imageLayer as any).getExportImages();
+    const imageUrls = imageLayer.getExportImages();
 
     await confirmExport(
       pdfFile.value,
       highlights,
-      imageBlobs,
+      imageUrls,
       `${pdfFile.value.name.replace(/\.pdf$/i, "")}-export`
     );
   } catch (error) {

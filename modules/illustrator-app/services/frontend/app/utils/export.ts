@@ -12,15 +12,6 @@ interface ExportSnapshot {
   highlights: ExportHighlight[];
 }
 
-export async function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
 function arrayBufferToBase64Chunked(arrayBuffer: ArrayBuffer): string {
   const bytes = new Uint8Array(arrayBuffer);
   const chunkSize = 8192;
@@ -37,7 +28,7 @@ function arrayBufferToBase64Chunked(arrayBuffer: ArrayBuffer): string {
 export async function createExportSnapshot(
   pdfFile: File | null,
   highlights: Highlight[],
-  imageBlobs: Record<number, Blob>
+  imageUrls: Record<number, string>
 ): Promise<ExportSnapshot> {
   if (!pdfFile) {
     throw new Error("PDF file is required for export");
@@ -46,15 +37,10 @@ export async function createExportSnapshot(
   const pdfArrayBuffer = await pdfFile.arrayBuffer();
   const pdfBase64 = arrayBufferToBase64Chunked(pdfArrayBuffer);
 
-  const imageDataUrlMap: Record<number, string> = {};
-  for (const [highlightId, blob] of Object.entries(imageBlobs)) {
-    imageDataUrlMap[highlightId as unknown as number] = await blobToDataUrl(blob);
-  }
-
   const exportHighlights: ExportHighlight[] = highlights.map((h) => ({
     id: h.id,
     text: h.text,
-    imageUrl: imageDataUrlMap[h.id],
+    imageUrl: imageUrls[h.id],
     polygons: h.polygons,
   }));
 

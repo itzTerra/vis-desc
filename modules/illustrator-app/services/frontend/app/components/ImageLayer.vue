@@ -376,6 +376,12 @@ async function processEnhanceQueue() {
     } else {
       console.error("/api/enhance error", r?.error);
       failedIds.push(id);
+      // If there is a corresponding record waiting in the generate queue, remove it since enhance failed and generate likely won't work
+      const genIdx = generateQueue.findIndex(r => r.highlightId === id);
+      if (genIdx !== -1) {
+        generateQueue.splice(genIdx, 1);
+        generateStates[id] = "idle";
+      }
     }
     enhanceStates[id] = "idle";
     if (failedIds.length > 0) {
@@ -455,14 +461,14 @@ onBeforeUnmount(() => {
   if (generateInterval) clearInterval(generateInterval);
 });
 
-function getExportImages(): Record<number, Blob> {
-  const result: Record<number, Blob> = {};
+function getExportImages(): Record<number, string> {
+  const result: Record<number, string> = {};
 
   for (const editor of editorRefs.value) {
     if (!editor) continue;
     const exportData = editor.getExportImage();
     if (exportData) {
-      result[exportData.highlightId] = exportData.imageBlob;
+      result[exportData.highlightId] = exportData.imageUrl;
     }
   }
   return result;

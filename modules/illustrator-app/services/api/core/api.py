@@ -106,12 +106,14 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
 def get_segments_boxes_from_txt(
     txt: UploadedFile,
 ) -> tuple[list[str], list[dict], bytes]:
-    cleaned_text, normalized_full_text, removed_ranges = (
+    full_text, cleaned_text, normalized_full_text, removed_ranges = (
         txt_preprocessor.extract_from_memory(txt)
     )
     segments = text_segmenter.segment_text(cleaned_text)
     segments_with_pos, pdf_bytes = txt_preprocessor.create_pdf_and_align(
-        segments, (cleaned_text, normalized_full_text, removed_ranges), pdf_preprocessor
+        segments,
+        (full_text, cleaned_text, normalized_full_text, removed_ranges),
+        pdf_preprocessor,
     )
     return segments, segments_with_pos, pdf_bytes
 

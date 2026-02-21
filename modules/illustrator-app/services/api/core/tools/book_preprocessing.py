@@ -13,6 +13,7 @@ class BookPreprocessor:
         self.before_clean_translation_table = str.maketrans(
             {
                 "\r": None,
+                "\ufeff": None,
                 "’": "'",
                 "“": '"',
                 "”": '"',
@@ -269,6 +270,7 @@ class PdfExtractionConfig:
 @dataclass
 class ExtractionContext:
     pdf_bytes: bytes
+    full_text: str
     cleaned_text: str
     normalized_full_text: str
     removed_ranges: list[tuple[int, int]]
@@ -285,9 +287,10 @@ class PdfBookPreprocessor(BookPreprocessor):
 
     def _get_from_doc(
         self, doc, page_limit: int | None = None
-    ) -> tuple[str, str, list[tuple[int, int]]]:
+    ) -> tuple[str, str, str, list[tuple[int, int]]]:
         if page_limit is None:
             page_limit = len(doc)
+        full_text = io.StringIO()
         pages: list[str] = []
         last_line_of_last_page = ""
         normalized_full_text = ""
@@ -299,6 +302,7 @@ class PdfBookPreprocessor(BookPreprocessor):
                 cleaned_page_text, lines, removed_lines = self.clean_text(
                     page_text, last_line_of_last_page, return_split_with_removed=True
                 )
+                full_text.write(page_text)
 
                 # Fill normalized_full_text and removed_ranges
                 for j, line in enumerate(lines):
@@ -331,7 +335,7 @@ class PdfBookPreprocessor(BookPreprocessor):
                 self.logger.warning("Skipping page %d due to error: %s", i, e)
 
         cleaned_text = "".join(pages)
-        return cleaned_text, normalized_full_text, removed_ranges
+        return str(full_text), cleaned_text, normalized_full_text, removed_ranges
 
     def extract_from_memory(
         self, pdf_file, config: PdfExtractionConfig | None = None
@@ -342,8 +346,8 @@ class PdfBookPreprocessor(BookPreprocessor):
         try:
             pdf_bytes = pdf_file.read()
             with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
-                cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
-                    doc, config.max_pages
+                full_text, cleaned_text, normalized_full_text, removed_ranges = (
+                    self._get_from_doc(doc, config.max_pages)
                 )
         except Exception:
             self.logger.exception("Failed to open PDF")
@@ -351,6 +355,7 @@ class PdfBookPreprocessor(BookPreprocessor):
 
         return ExtractionContext(
             pdf_bytes=pdf_bytes,
+            full_text=full_text,
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
@@ -699,8 +704,10 @@ class TxtBookPreprocessor(BookPreprocessor):
         text = super()._before_clean(text)
         return re.sub(r"\S\n\n[ \t]*", lambda m: m.group(0).rstrip() + " ", text)
 
-    def extract_from_memory(self, txt_file) -> tuple[str, str, list[tuple[int, int]]]:
-        """Read a TXT file and return (cleaned_text, normalized_full_text, removed_ranges)."""
+    def extract_from_memory(
+        self, txt_file
+    ) -> tuple[str, str, str, list[tuple[int, int]]]:
+        """Read a TXT file and return (raw_text, cleaned_text, normalized_full_text, removed_ranges)."""
         raw_bytes = txt_file.read()
         try:
             text = raw_bytes.decode("utf-8")
@@ -721,19 +728,20 @@ class TxtBookPreprocessor(BookPreprocessor):
                 end = len(normalized_full_text)
                 removed_ranges.append((start, end))
 
-        return cleaned_text, normalized_full_text, removed_ranges
+        return text, cleaned_text, normalized_full_text, removed_ranges
 
     def create_pdf_and_align(
         self,
         segments: list[str],
-        txt_ctx: tuple[str, str, list[tuple[int, int]]],
+        txt_ctx: tuple[str, str, str, list[tuple[int, int]]],
         pdf_preprocessor: PdfBookPreprocessor,
     ) -> tuple[list[dict], bytes]:
         """Create a PDF from cleaned text and align segments with pages."""
-        cleaned_text, normalized_full_text, removed_ranges = txt_ctx
-        pdf_bytes = self._text_to_pdf(cleaned_text)
+        full_text, cleaned_text, normalized_full_text, removed_ranges = txt_ctx
+        pdf_bytes = self._text_to_pdf(full_text)
         ctx = ExtractionContext(
             pdf_bytes=pdf_bytes,
+            full_text=full_text,
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
@@ -742,12 +750,25 @@ class TxtBookPreprocessor(BookPreprocessor):
         return segments_with_pos, pdf_bytes
 
     def _text_to_pdf(self, text: str) -> bytes:
-        """Generate a PDF from plain text using pymupdf Story API."""
+        """
+        Generate a PDF from plain text using pymupdf Story API.
+        Each newline in the input text is treated as a paragraph break.
+        """
         page_rect = pymupdf.Rect(0, 0, 612, 792)
-        clip = pymupdf.Rect(72, 72, 540, 720)
+        clip = pymupdf.Rect(56, 56, 540, 720)
         buf = io.BytesIO()
         writer = pymupdf.DocumentWriter(buf)
-        story = pymupdf.Story(f"<p>{html.escape(text)}</p>")
+        # Split text into paragraphs by double newlines, escape HTML, and wrap each in <p>
+        paragraphs = [f"<p>{html.escape(line)}</p>" for line in text.split("\n")]
+        story = pymupdf.Story(
+            "".join(paragraphs),
+            user_css="""
+            p {
+                margin-top: 0;
+                margin-bottom: 2pt;
+            }
+            """,
+        )
         more = True
         while more:
             device = writer.begin_page(page_rect)

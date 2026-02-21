@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/segment/txt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Segment Txt */
+        post: operations["core_api_segment_txt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/process/txt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Txt */
+        post: operations["core_api_process_txt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gen-image-bytes": {
         parameters: {
             query?: never;
@@ -193,6 +227,28 @@ export interface components {
             segment_count: number;
             /** Segments */
             segments: components["schemas"]["SegmentWithPos"][];
+        };
+        /** ProcessTxtSegmentsOnlyResponse */
+        ProcessTxtSegmentsOnlyResponse: {
+            /** Segment Count */
+            segment_count: number;
+            /** Segments */
+            segments: components["schemas"]["SegmentWithPos"][];
+            /** Pdf Base64 */
+            pdf_base64: string;
+        };
+        /** ProcessTxtResponse */
+        ProcessTxtResponse: {
+            /** Ws Key */
+            ws_key: string;
+            /** Expires In */
+            expires_in: number;
+            /** Segment Count */
+            segment_count: number;
+            /** Segments */
+            segments: components["schemas"]["SegmentWithPos"][];
+            /** Pdf Base64 */
+            pdf_base64: string;
         };
         /** BatchImageItem */
         BatchImageItem: {
@@ -406,6 +462,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProcessPdfResponse"];
+                };
+            };
+        };
+    };
+    core_api_segment_txt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Txt
+                     * Format: binary
+                     */
+                    txt: string;
+                    /**
+                     * Evaluator
+                     * @enum {string}
+                     */
+                    model: "minilm_catboost" | "nli_roberta" | "random";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessTxtSegmentsOnlyResponse"];
+                };
+            };
+        };
+    };
+    core_api_process_txt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Txt
+                     * Format: binary
+                     */
+                    txt: string;
+                    /**
+                     * Evaluator
+                     * @enum {string}
+                     */
+                    model: "minilm_catboost" | "nli_roberta" | "random";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessTxtResponse"];
                 };
             };
         };

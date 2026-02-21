@@ -177,7 +177,7 @@ class WorkerPool {
   next = 0;
 
   constructor(n: number) {
-    this.workers = Array.from({ length: n }, () => new Worker(new URL("~/workers/spacy-worker.ts", import.meta.url), { type: "module" }));
+    this.workers = Array.from({ length: n }, () => new Worker(new URL("../workers/spacy-worker.ts", import.meta.url), { type: "module" }));
   }
 
   request(action: "fetchJson"|"fetchProto", url: string, texts: string[]): Promise<any[]> {

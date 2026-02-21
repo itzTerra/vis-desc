@@ -8,7 +8,7 @@ export function initApp() {
   $api("/api/ping", { method: "GET" });
 
   if (scorerWorker === null) {
-    scorerWorker = new Worker(new URL("~/workers/scorer.worker.ts", import.meta.url), {
+    scorerWorker = new Worker(new URL("../workers/scorer.worker.ts", import.meta.url), {
       type: "module",
     });
   }

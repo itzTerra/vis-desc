@@ -4,7 +4,7 @@
       <img src="/vis-desc-image.png" alt="hero-image" width="400" height="400">
       <div>
         <h1 class="text-5xl font-bold">
-          Upload a file in PDF format to get started
+          Upload a PDF or TXT file to get started
         </h1>
         <p class="py-6">
           The tool is is designed to evaluate literature in English language, specially fiction, travel and history genres. Results for other types of content may vary.
@@ -16,10 +16,10 @@
             <span class="flex items-center space-x-2 ">
               <Icon name="lucide:upload" />
               <span class="font-medium">
-                Drop a file here or click in this area
+                Drop a PDF or TXT file here or click in this area
               </span>
             </span>
-            <input type="file" accept="application/pdf" name="file_upload" class="hidden" @change="$emit('fileSelected', $event)">
+            <input type="file" accept="application/pdf,.txt,text/plain" name="file_upload" class="hidden" @change="$emit('fileSelected', $event)">
           </label>
         </div>
       </div>

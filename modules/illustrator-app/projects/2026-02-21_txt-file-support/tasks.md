@@ -33,20 +33,20 @@
 
 ## Frontend: File Inputs
 
-- [ ] Update top-bar file input `accept` attribute in `services/frontend/app/pages/index.vue` from `"application/pdf"` to `"application/pdf,.txt,text/plain"`
-- [ ] Update Hero file input `accept` attribute in `services/frontend/app/components/Hero.vue` from `"application/pdf"` to `"application/pdf,.txt,text/plain"`
-- [ ] Update Hero heading from "Upload a file in PDF format to get started" to "Upload a PDF or TXT file to get started"
-- [ ] Update Hero drop zone hint text to mention both formats (e.g., "Drop a PDF or TXT file here or click in this area")
+- [x] Update top-bar file input `accept` attribute in `services/frontend/app/pages/index.vue` from `"application/pdf"` to `"application/pdf,.txt,text/plain"`
+- [x] Update Hero file input `accept` attribute in `services/frontend/app/components/Hero.vue` from `"application/pdf"` to `"application/pdf,.txt,text/plain"`
+- [x] Update Hero heading from "Upload a file in PDF format to get started" to "Upload a PDF or TXT file to get started"
+- [x] Update Hero drop zone hint text to mention both formats (e.g., "Drop a PDF or TXT file here or click in this area")
 
 ## Frontend: handleFileUpload
 
-- [ ] Add file type detection at the start of `handleFileUpload` -- `const isTxt = file.name.endsWith('.txt') || file.type === 'text/plain'`
-- [ ] For `.txt` files: set `currentStage.value` to `"Processing TXT..."` instead of `"Processing PDF..."`
-- [ ] For `.txt` files: do NOT set `pdfFile.value = file` before the API call (the raw `.txt` File would break export/PdfViewer if the call fails). Do NOT set `pdfUrl.value` either. Hero stays visible during processing.
-- [ ] For `.txt` files: build FormData with `formData.append("txt", file, file.name)` and call `/api/process/txt` or `/api/segment/txt`
-- [ ] For `.txt` files: after receiving the response, decode `data.pdf_base64` -- `const pdfBytes = Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))`
-- [ ] For `.txt` files: construct `pdfFile.value = new File([pdfBytes], file.name.replace(/\.txt$/i, '.pdf'), { type: 'application/pdf' })` and set `pdfUrl.value = URL.createObjectURL(pdfFile.value)` -- both set only after successful response
-- [ ] For PDF files: keep existing behavior unchanged (set `pdfFile.value = file` and `pdfUrl.value` immediately from the local file before the API call)
+- [x] Add file type detection at the start of `handleFileUpload` -- `const isTxt = file.name.endsWith('.txt') || file.type === 'text/plain'`
+- [x] For `.txt` files: set `currentStage.value` to `"Processing TXT..."` instead of `"Processing PDF..."`
+- [x] For `.txt` files: do NOT set `pdfFile.value = file` before the API call (the raw `.txt` File would break export/PdfViewer if the call fails). Do NOT set `pdfUrl.value` either. Hero stays visible during processing.
+- [x] For `.txt` files: build FormData with `formData.append("txt", file, file.name)` and call `/api/process/txt` or `/api/segment/txt`
+- [x] For `.txt` files: after receiving the response, decode `data.pdf_base64` -- `const pdfBytes = Uint8Array.from(atob(data.pdf_base64), c => c.charCodeAt(0))`
+- [x] For `.txt` files: construct `pdfFile.value = new File([pdfBytes], file.name.replace(/\.txt$/i, '.pdf'), { type: 'application/pdf' })` and set `pdfUrl.value = URL.createObjectURL(pdfFile.value)` -- both set only after successful response
+- [x] For PDF files: keep existing behavior unchanged (set `pdfFile.value = file` and `pdfUrl.value` immediately from the local file before the API call)
 
 ## Sync and Verify
 

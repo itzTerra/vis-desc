@@ -2,12 +2,12 @@ name: Build Frontend
 
 on:
   push:
-    branches: [ main, preview ]
+    branches: [main, preview]
     paths:
-      - 'modules/illustrator-app/services/frontend/**'
-      - 'modules/illustrator-app/package.json'
-      - 'modules/illustrator-app/pnpm-lock.yaml'
-      - '.github/workflows/build-fe.yml'
+      - "modules/illustrator-app/services/frontend/**"
+      - "modules/illustrator-app/package.json"
+      - "modules/illustrator-app/pnpm-lock.yaml"
+      - ".github/workflows/build-fe.yml"
   workflow_dispatch: {}
 
 permissions:
@@ -34,7 +34,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Set up Node (for eslint hook)
         uses: actions/setup-node@v4
@@ -78,7 +78,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: |
             modules/illustrator-app/services/frontend/pnpm-lock.yaml
 
@@ -96,6 +96,8 @@ jobs:
 
       - name: Build (production)
         env:
+          NODE_ENV: production
+          NODE_OPTIONS: --max_old_space_size=4096
           VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
           VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
         run: pnpm run build

@@ -6,7 +6,7 @@
       <div class="flex items-center gap-2 min-w-44">
         <input
           type="file"
-          accept="application/pdf"
+          accept="application/pdf,.txt,text/plain"
           class="file-input file-input-primary min-w-12"
           data-help-target="file"
           @change="handleFileUpload"
@@ -164,9 +164,14 @@ const handleFileUpload = async (event: any) => {
   event.target.value = "";
   fullReset();
 
+  const isTxt = file.name.endsWith(".txt") || file.type === "text/plain";
+
   isLoading.value = Date.now();
-  currentStage.value = "Processing PDF...";
-  pdfFile.value = file;
+  currentStage.value = isTxt ? "Processing TXT..." : "Processing PDF...";
+
+  if (!isTxt) {
+    pdfFile.value = file;
+  }
 
   const scorer = selectedScorer.value;
   if (!scorer) {
@@ -182,17 +187,29 @@ const handleFileUpload = async (event: any) => {
     return;
   }
 
-  pdfUrl.value = URL.createObjectURL(file);
+  if (!isTxt) {
+    pdfUrl.value = URL.createObjectURL(file);
+  }
 
   const formData = new FormData();
-  formData.append("pdf", file, file.name);
+  formData.append(isTxt ? "txt" : "pdf", file, file.name);
   formData.append("model", selectedModel.value);
 
+  const endpoint = isTxt
+    ? (scorer.socketBased ? "/api/process/txt" : "/api/segment/txt")
+    : (scorer.socketBased ? "/api/process/pdf" : "/api/segment/pdf");
+
   try {
-    const data = await call(scorer.socketBased ? "/api/process/pdf" : "/api/segment/pdf", {
+    const data = await call(endpoint, {
       method: "POST",
       body: formData as any
     });
+
+    if (isTxt && (data as any)?.pdf_base64) {
+      const pdfBytes = Uint8Array.from(atob((data as any).pdf_base64), c => c.charCodeAt(0));
+      pdfFile.value = new File([pdfBytes], file.name.replace(/\.txt$/i, ".pdf"), { type: "application/pdf" });
+      pdfUrl.value = URL.createObjectURL(pdfFile.value);
+    }
 
     if (data?.segments && Array.isArray(data.segments)) {
       highlights.splice(0, highlights.length, ...data.segments);

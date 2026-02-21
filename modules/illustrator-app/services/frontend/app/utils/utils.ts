@@ -1,5 +1,7 @@
 export const DEFAULT_PAGE_ASPECT_RATIO = 1.4142; // A4 fallback (height / width)
 
+export const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const IS_WEBGPU_AVAILABLE = typeof navigator !== "undefined" && "gpu" in navigator;
 
 export const CACHE_NAME = "transformers-cache";
@@ -167,4 +169,19 @@ function casefold(s: string): string {
   return v.toLowerCase();
 }
 
-export { easeInExpo, assertIsDefined, scrollIntoView, clamp, lerp, casefold };
+function computeClipPathFromRect(rect: DOMRect): string {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const x1 = (rect.left / w) * 100;
+  const y1 = (rect.top / h) * 100;
+  const x2 = ((rect.left + rect.width) / w) * 100;
+  const y2 = ((rect.top + rect.height) / h) * 100;
+  return `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ${x1}% ${y1}%, ${x1}% ${y2}%, ${x2}% ${y2}%, ${x2}% ${y1}%, ${x1}% ${y1}%)`;
+}
+
+function computeClipPathFromElement(el: Element): string {
+  return computeClipPathFromRect(el.getBoundingClientRect());
+}
+
+export { easeInExpo, assertIsDefined, scrollIntoView, clamp, lerp, casefold, computeClipPathFromRect, computeClipPathFromElement };
+

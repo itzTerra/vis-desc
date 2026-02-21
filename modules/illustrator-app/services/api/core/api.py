@@ -70,10 +70,8 @@ def ping(request):
     return "pong"
 
 
-@api.post("/process/seg/pdf", response=ProcessPdfSegmentsOnlyResponse)
-def process_pdf_segments_only(
-    request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]
-):
+@api.post("/segment/pdf", response=ProcessPdfSegmentsOnlyResponse)
+def segment_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     segments, segments_with_pos = get_segments_with_boxes(pdf)
     return {
         "segment_count": len(segments),

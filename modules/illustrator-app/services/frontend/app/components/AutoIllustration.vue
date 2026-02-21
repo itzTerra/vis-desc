@@ -96,12 +96,12 @@
         <div class="segment selected" :style="{ width: normalized.selected + '%' }" />
         <div
           class="segment enhanced"
-          :class="{ active: isActive && enhancedCount>0 }"
+          :class="{ active: isActive && progress?.enhanceRequestedCount }"
           :style="{ width: normalized.enhanced + '%' }"
         />
         <div
           class="segment generated"
-          :class="{ active: isActive && generatedCount>0 }"
+          :class="{ active: isActive && progress?.generateRequestedCount }"
           :style="{ width: normalized.generated + '%' }"
         />
       </div>
@@ -111,11 +111,9 @@
 
 <script setup lang="ts">
 import { MIN_GAP_PAGES_TOTAL } from "~/composables/useAutoIllustration";
-interface Progress { selectedCount: number; enhancedCount: number; generatedCount: number; maxPossible: number; isActive?: boolean }
 
 const props = defineProps<{
   progress?: Progress | null;
-  isActive?: boolean;
   runPass?: () => void;
   clearAutoSelections?: () => void;
 }>();
@@ -127,7 +125,7 @@ const minScore = defineModel<number | null>("minScore", { required: true });
 const enableEnhance = defineModel<boolean>("enableEnhance", { required: true });
 const enableGenerate = defineModel<boolean>("enableGenerate", { required: true });
 
-const isActive = computed(() => !!props.isActive);
+const isActive = computed(() => props.progress?.enhanceRequestedCount || props.progress?.generateRequestedCount);
 
 const selectedCount = computed(() => props.progress?.selectedCount ?? 0);
 const enhancedCount = computed(() => props.progress?.enhancedCount ?? 0);
@@ -137,8 +135,8 @@ const maxPossible = computed(() => Math.max(1, props.progress?.maxPossible ?? 1)
 // Normalize percentages so the three bars never overflow the container
 const normalized = computed(() => {
   const raw = {
-    selected: (selectedCount.value / maxPossible.value) * 100,
-    enhanced: (enhancedCount.value / maxPossible.value) * 100,
+    selected: ((selectedCount.value - Math.max(0, enhancedCount.value, generatedCount.value)) / maxPossible.value) * 100,
+    enhanced: ((enhancedCount.value - Math.max(0, generatedCount.value)) / maxPossible.value) * 100,
     generated: (generatedCount.value / maxPossible.value) * 100,
   };
   const total = raw.selected + raw.enhanced + raw.generated;
@@ -150,7 +148,7 @@ const normalized = computed(() => {
 });
 
 const tooltipText = computed(() => {
-  return `Selected: ${selectedCount.value} | Enhanced: ${enhancedCount.value} | Generated: ${generatedCount.value} | Active: ${isActive.value ? "Yes" : "No"}`;
+  return `Selected: ${selectedCount.value} | Enhanced: ${enhancedCount.value} | Generated: ${generatedCount.value} | Active: ${isActive.value ? "✓" : "✕"}`;
 });
 
 // Present `minScore` as an integer percent (0..100) in the UI while storing 0..1

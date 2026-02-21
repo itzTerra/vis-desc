@@ -364,5 +364,15 @@ onUnmounted(() => {
 defineExpose({
   queueDownload,
   getGroupDownloadStatus,
+  openNonModal: () => {
+    if (cacheManagerDialog.value && !cacheManagerDialog.value.open) {
+      cacheManagerDialog.value.setAttribute("open", "");
+    }
+  },
+  closeNonModal: () => {
+    if (cacheManagerDialog.value && cacheManagerDialog.value.open) {
+      cacheManagerDialog.value.removeAttribute("open");
+    }
+  },
 });
 </script>

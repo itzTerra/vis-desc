@@ -33,15 +33,14 @@
           :run-pass="autoIllustration.runPass"
           :clear-auto-selections="autoIllustration.clearAutoSelections"
           :progress="autoIllustration.progress.value"
-          :is-active="(autoIllustration.isActive?.value) ?? (((autoIllustration.progress?.value?.enhancedCount ?? 0) > 0) || ((autoIllustration.progress?.value?.generatedCount ?? 0) > 0))"
           data-help-target="auto-illustration"
         />
         <button
-          v-if="pdfUrl"
+          v-if="pdfUrl || showHelp"
           class="btn btn-primary btn-outline"
           title="Export as HTML"
           data-help-target="export"
-          :disabled="!pdfFile || !pdfViewer"
+          :disabled="(!pdfFile || !pdfViewer) && !showHelp"
           @click="handleExportConfirm"
         >
           <Icon name="lucide:download" size="18" />
@@ -89,6 +88,7 @@
       <CacheManager
         ref="cacheManagerRef"
         v-model:is-expanded="cacheManagerExpanded"
+        data-help-target="cache"
       />
       <button class="btn btn-circle btn-sm btn-warning" title="Debug" @click="$debugPanel.toggle()">
         <Icon name="uil:bug" size="20px" />
@@ -119,7 +119,6 @@
 
 <script setup lang="ts">
 import type { Highlight, Segment } from "~/types/common";
-import HelpOverlay, { type Step } from "~/components/HelpOverlay.vue";
 import type { CacheManager } from "#components";
 import { SCORERS, MODEL_GROUPS, type Scorer } from "~/utils/models";
 import type { ModelGroup } from "~/types/cache";
@@ -143,122 +142,19 @@ const highlights = reactive<Highlight[]>([]);
 const selectedHighlights = reactive<Set<number>>(new Set());
 const highlightNav = ref<InstanceType<typeof import("~/components/HighlightNav.vue").default> | null>(null);
 
-const showHelp = ref(false);
-const seenHelpOnce = useLocalStorage("seenHelpOnce", false);
-const highlightsHelpBackup: Highlight[] = [];
 const groupInConfirmation = ref<ModelGroup | null>(null);
 const cacheManagerRef = ref<InstanceType<typeof CacheManager> | null>(null);
 const cacheManagerExpanded = ref(false);
 const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
 const { confirmExport } = useExport();
 
-function toggleHelp(toValue?: boolean) {
-  showHelp.value = toValue !== undefined ? toValue : !showHelp.value;
-  if (showHelp.value) {
-    highlightsHelpBackup.splice(0, highlightsHelpBackup.length, ...highlights);
-    highlights.splice(0, highlights.length,
-      { id: 1, text: "This is a scored segment.", score: 0.98, score_received_at: Date.now(), polygons: [ [ [0.1, 0.20], [0.3, 0.20], [0.3, 0.25], [0.1, 0.25] ] ] },
-      { id: 2, text: "This is an unscored segment.", score: undefined, score_received_at: Date.now(), polygons: [ [ [0.1, 0.30], [0.35, 0.30], [0.35, 0.35], [0.1, 0.35] ] ] }
-    );
-    if (!seenHelpOnce.value) {
-      seenHelpOnce.value = true;
-    }
-  } else {
-    highlights.splice(0, highlights.length, ...highlightsHelpBackup);
-  }
-}
-
-const helpPdfUrl = `${runtimeConfig.app.baseURL}sample.pdf`;
-// const helpImageUrl = `${runtimeConfig.app.baseURL}sample.jpg`;
-const helpSteps: Step[] = [
-  // > Open model menu
-  {
-    selector: "[data-help-target=\"model\"]",
-    title: "Model Selection",
-    message: "Select the AI model to use for scoring text segments.",
-    position: "bottom",
-    onEnter: () => {
-      const modelSelectEl = document.querySelector("[data-help-target=\"model\"] [role=\"button\"]") as HTMLElement;
-      modelSelectEl.focus();
-    },
-    onLeave: () => {
-      (document.activeElement as HTMLElement)?.blur();
-    }
-  },
-  {
-    selector: "[data-help-target=\"file\"]",
-    title: "File Upload",
-    message: "Upload your PDF document here by clicking or dragging.",
-    position: "bottom"
-  },
-  // > Simulate processing
-  {
-    selector: "[data-help-target=\"progress\"]",
-    title: "Scoring Progress",
-    message: "Monitor the progress of text segment scoring here.",
-    position: "bottom",
-    onEnter: () => {
-      isLoading.value = Date.now();
-    },
-    onLeave: () => {
-      isLoading.value = null;
-    }
-  },
-  // > Open the nav panel
-  {
-    selector: "[data-help-target=\"nav\"]",
-    title: "Segment Navigation",
-    message: "Navigate through scored segments using this panel. Filter selected segments only or set a limit to a minimum and/or a maximum score. Sort segments by score or index. Click on a segment to jump to its location in the document.",
-    position: "bottom",
-    onEnter: () => {
-      const navEl = document.querySelector("[data-help-target=\"nav\"] summary") as HTMLElement;
-      navEl.click();
-    },
-    onLeave: () => {
-      const navEl = document.querySelector("[data-help-target=\"nav\"] summary") as HTMLElement;
-      (navEl.parentElement as HTMLDetailsElement).open = false;
-    }
-  },
-  // > Show a single static pdf page with static highlights
-  {
-    selector: "[data-help-target=\"viewer\"]",
-    title: "Document Viewer",
-    message: "View your PDF with scored segments. Select promising segments to filter them later using left-click. Generate an image from a segment by hovering over it and clicking the 'Generate image' button in the opened tooltip.",
-    position: "right",
-    onEnter: () => {
-      // Hover first highlight to show tooltip
-      const firstHighlightEl = document.querySelector(".pdf-highlight") as HTMLElement;
-      firstHighlightEl?.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
-    }
-  },
-  // TODO update
-  // > Show a static image
-  // {
-  //   selector: "[data-help-target=\"images\"]",
-  //   title: "Image Viewer",
-  //   message: "View images generated from segments. Move generated images by holding left-click and dragging. Delete images by clicking on the x icon.",
-  //   position: "left",
-  //   onEnter: () => {
-  //     highlights[1].imageLoading = true;
-  //     setTimeout(() => {
-  //       highlights[1].imageUrl = helpImageUrl;
-  //       highlights[1].imageLoading = false;
-  //     }, 1000);
-  //   },
-  // },
-  {
-    selector: "[data-help-target=\"export\"]",
-    title: "Export as HTML",
-    message: "Export your PDF and generated images as a single standalone HTML file. The exported file includes your PDF with all pages lazy-loaded for performance, and a gallery of generated images that can be viewed in a modal. The HTML export works offline without external dependencies.",
-    position: "bottom"
-  },
-  {
-    selector: "[data-help-target=\"theme\"]",
-    title: "Theme Switch",
-    message: "Switch between light and dark mode.",
-    position: "bottom"
-  }
-];
+const { showHelp, seenHelpOnce, helpSteps, toggleHelp, helpPdfUrl } = useHelpSteps({
+  isLoading,
+  currentStage,
+  highlights,
+  pdfViewer,
+  cacheManagerRef,
+});
 
 const handleFileUpload = async (event: any) => {
   const file = event.target?.files?.[0];
@@ -293,7 +189,7 @@ const handleFileUpload = async (event: any) => {
   formData.append("model", selectedModel.value);
 
   try {
-    const data = await call(scorer.socketBased ? "/api/process/pdf" : "/api/process/seg/pdf", {
+    const data = await call(scorer.socketBased ? "/api/process/pdf" : "/api/segment/pdf", {
       method: "POST",
       body: formData as any
     });
@@ -605,6 +501,6 @@ onMounted(() => {
   align-items: center;
   justify-content: end;
   gap: 0.5rem;
-  z-index: 90;
+  z-index: 130;
 }
 </style>

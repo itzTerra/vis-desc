@@ -3,6 +3,10 @@ import type { HFPipelineConfig } from "~/types/cache";
 
 import { BookNLP, type BookNLPResult, type ExecutionProvider, type SpaCyContext } from "booknlp-ts";
 import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
+import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
+import { casefold } from "~/utils/utils";
+import { downloadAndLoadWordNet } from "~/utils/wordnet";
+import { estimateSyllables } from "~/utils/syllables";
 
 import charNgrams from "~/assets/data/features/char_ngrams_features.json";
 import posNgrams from "~/assets/data/features/pos_ngrams_features.json";

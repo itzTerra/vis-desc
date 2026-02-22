@@ -551,34 +551,36 @@ class PdfBookPreprocessor(BookPreprocessor):
         del seg_to_page_to_lines
         seg_to_page_to_polygon = {}
 
+        # Pre-cache page dimensions to avoid repeated doc[i] lookups in the loop
+        page_dims: dict[int, tuple[float, float]] = {
+            i: (doc[i].rect.width or 1.0, doc[i].rect.height or 1.0)
+            for i in range(len(doc))
+        }
+
         for segment_idx, page_to_lines in page_to_lines_by_seg:
             for page_idx, lines in page_to_lines.items():
                 for arr in lines.values():
                     arr.sort(key=lambda w: w[0])
 
+                # Pre-compute y_top for each line to avoid repeated scans during sort
+                y_top_for_line = {ln: min(w[1] for w in lines[ln]) for ln in lines}
+
                 # Derive per-line left/right bounds
                 line_entries: list[
                     tuple[float, float, float, float]
                 ] = []  # (y_top, y_bottom, left_x, right_x)
-                for line_no in sorted(
-                    lines.keys(), key=lambda ln: min(w[1] for w in lines[ln])
-                ):
+                for line_no in sorted(lines.keys(), key=lambda ln: y_top_for_line[ln]):
                     wlist = lines[line_no]
-                    left_x = None
-                    right_x = None
-                    y_top = min(w[1] for w in wlist)
-                    y_bottom = max(w[3] for w in wlist)
-                    # Compute left line boundary (first word intersecting start)
+                    # y_top already computed; compute y_bottom in a single pass
+                    y_top = y_top_for_line[line_no]
+                    y_bottom = float("-inf")
                     for w in wlist:
-                        x0, y0, x1, y1 = w
-                        left_x = x0
-                        break
-                    # Compute right line boundary (last word intersecting end)
-                    for w in reversed(wlist):
-                        x0, y0, x1, y1 = w
-                        right_x = x1
-                        break
-                    if left_x is None or right_x is None or right_x < left_x:
+                        if w[3] > y_bottom:
+                            y_bottom = w[3]
+                    # After sort by x, first element is leftmost, last is rightmost
+                    left_x = wlist[0][0]
+                    right_x = wlist[-1][2]
+                    if right_x < left_x:
                         continue
                     line_entries.append((y_top, y_bottom, left_x, right_x))
 
@@ -617,21 +619,33 @@ class PdfBookPreprocessor(BookPreprocessor):
                 right_boundary[-1] = (right_boundary[-1][0], avg_y_top)
                 outline = left_boundary + right_boundary
 
-                # Normalize
-                page = doc[page_idx]
-                width = page.rect.width or 1.0
-                height = page.rect.height or 1.0
+                # Normalize using pre-cached page dimensions
+                width, height = page_dims[page_idx]
                 polygon = [(x / width, y / height) for (x, y) in outline]
 
+                # Compute centroid and bounds in a single pass over polygon
+                n = len(polygon)
+                sum_x = 0.0
+                sum_y = 0.0
+                min_x = float("inf")
+                max_x = float("-inf")
+                min_y = float("inf")
+                max_y = float("-inf")
+                for px, py in polygon:
+                    sum_x += px
+                    sum_y += py
+                    if px < min_x:
+                        min_x = px
+                    if px > max_x:
+                        max_x = px
+                    if py < min_y:
+                        min_y = py
+                    if py > max_y:
+                        max_y = py
+                cx = sum_x / n
+                cy = sum_y / n
+
                 # Scale polygon outwards by PADDING_PX
-                cx = sum(x for x, _ in polygon) / len(polygon)
-                cy = sum(y for _, y in polygon) / len(
-                    polygon
-                )  # compute pixel half-width/height
-                min_x = min(p[0] for p in polygon)
-                max_x = max(p[0] for p in polygon)
-                min_y = min(p[1] for p in polygon)
-                max_y = max(p[1] for p in polygon)
                 cur_w_px = (max_x - min_x) * width
                 cur_h_px = (max_y - min_y) * height
                 sx = 1.0 + (self.polygon_padding_px * 2) / max(cur_w_px, 1e-6)

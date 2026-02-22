@@ -38,7 +38,7 @@
         />
         <button
           v-if="pdfUrl || showHelp"
-          class="btn btn-primary btn-outline"
+          class="btn btn-primary btn-soft"
           title="Export as HTML"
           data-help-target="export"
           :disabled="(!pdfFile || !pdfViewer) && !showHelp"

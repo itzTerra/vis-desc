@@ -1,4 +1,5 @@
 import { loadAsync } from "jszip";
+import { useRuntimeConfig } from "#app";
 
 export type WordNetData = Record<string, Record<string, any>>;
 

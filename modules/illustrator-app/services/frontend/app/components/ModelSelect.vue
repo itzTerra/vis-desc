@@ -3,7 +3,7 @@
     <div
       tabindex="0"
       role="button"
-      class="btn btn-accent btn-outline w-auto text-nowrap"
+      class="btn btn-accent btn-soft w-auto text-nowrap"
     >
       <Icon name="lucide:component" />
       {{ SCORERS.find(m => m.id === modelValue)?.label ?? "??" }}

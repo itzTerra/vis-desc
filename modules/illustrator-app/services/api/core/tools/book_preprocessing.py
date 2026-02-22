@@ -298,7 +298,6 @@ class PdfExtractionConfig:
 @dataclass
 class ExtractionContext:
     pdf_bytes: bytes
-    full_text: str
     cleaned_text: str
     normalized_full_text: str
     removed_ranges: list[tuple[int, int]]
@@ -315,10 +314,9 @@ class PdfBookPreprocessor(BookPreprocessor):
 
     def _get_from_doc(
         self, doc, page_limit: int | None = None
-    ) -> tuple[str, str, str, list[tuple[int, int]]]:
+    ) -> tuple[str, str, list[tuple[int, int]]]:
         if page_limit is None:
             page_limit = len(doc)
-        full_text = io.StringIO()
         cleaned_text_io = io.StringIO()
         pending_page = ""
         last_line_of_last_page = ""
@@ -332,7 +330,6 @@ class PdfBookPreprocessor(BookPreprocessor):
                 cleaned_page_text, lines, removed_lines = self.clean_text(
                     page_text, last_line_of_last_page, return_split_with_removed=True
                 )
-                full_text.write(page_text)
                 del page_text
 
                 # Fill nft_parts and removed_ranges
@@ -372,7 +369,7 @@ class PdfBookPreprocessor(BookPreprocessor):
         cleaned_text_io.write(pending_page)
         cleaned_text = cleaned_text_io.getvalue()
         normalized_full_text = "".join(nft_parts)
-        return str(full_text), cleaned_text, normalized_full_text, removed_ranges
+        return cleaned_text, normalized_full_text, removed_ranges
 
     def extract_from_memory(
         self, pdf_file, config: PdfExtractionConfig | None = None
@@ -383,8 +380,8 @@ class PdfBookPreprocessor(BookPreprocessor):
         try:
             pdf_bytes = pdf_file.read()
             with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
-                full_text, cleaned_text, normalized_full_text, removed_ranges = (
-                    self._get_from_doc(doc, config.max_pages)
+                cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
+                    doc, config.max_pages
                 )
         except Exception:
             self.logger.exception("Failed to open PDF")
@@ -392,7 +389,6 @@ class PdfBookPreprocessor(BookPreprocessor):
 
         return ExtractionContext(
             pdf_bytes=pdf_bytes,
-            full_text=full_text,
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
@@ -746,17 +742,19 @@ class TxtBookPreprocessor(BookPreprocessor):
             text, return_split_with_removed=True
         )
 
-        normalized_full_text = ""
+        nft_parts: list[str] = []
+        nft_len = 0
         removed_ranges: list[tuple[int, int]] = []
         for j, line in enumerate(lines):
             normalized_line = self._normalize(line)
-            normalized_full_text += normalized_line
+            nft_parts.append(normalized_line)
+            nft_len += len(normalized_line)
             if j in removed_lines:
-                start = len(normalized_full_text) - len(normalized_line)
-                end = len(normalized_full_text)
+                start = nft_len - len(normalized_line)
+                end = nft_len
                 removed_ranges.append((start, end))
 
-        return text, cleaned_text, normalized_full_text, removed_ranges
+        return text, cleaned_text, "".join(nft_parts), removed_ranges
 
     def create_pdf_and_align(
         self,
@@ -769,7 +767,6 @@ class TxtBookPreprocessor(BookPreprocessor):
         pdf_bytes = self._text_to_pdf(full_text)
         ctx = ExtractionContext(
             pdf_bytes=pdf_bytes,
-            full_text=full_text,
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,

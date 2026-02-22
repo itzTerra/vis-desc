@@ -9,6 +9,21 @@ from dataclasses import dataclass
 import regex
 
 
+def _count_words_gt(s: str, n: int) -> bool:
+    """Return True if s has more than n whitespace-separated words."""
+    count = 0
+    in_word = False
+    for ch in s:
+        if ch in " \t\n\r\f\v":
+            in_word = False
+        elif not in_word:
+            in_word = True
+            count += 1
+            if count > n:
+                return True
+    return False
+
+
 class BookPreprocessor:
     def __init__(self):
         self.before_clean_translation_table = str.maketrans(
@@ -175,17 +190,18 @@ class BookPreprocessor:
         self, lines: list[str], saved_prev_line=""
     ) -> tuple[list[str], set[int]]:
         """Process a batch of lines and filter them"""
+        lines = [ln.strip() for ln in lines]  # pre-strip once
         processed: list[str] = []
         removed_lines: set[int] = set()
         total_lines = len(lines)
-
+        prev_line = saved_prev_line
         for i, line in enumerate(lines):
-            prev_line = lines[i - 1] if i > 0 else saved_prev_line
             result = self.process_line(line, prev_line, i, total_lines)
             if not result or result.isspace():
                 removed_lines.add(i)
             if result is not None:
                 processed.append(result)
+            prev_line = line
 
         return processed, removed_lines
 
@@ -202,48 +218,45 @@ class BookPreprocessor:
         if any(
             pattern.search(line)
             for pattern in (
-                self.patterns["chapter_headers"],
-                self.patterns["roman_numerals"],
-                self.patterns["copyright"],
-                self.patterns["isbn"],
-                self.patterns["footnote_refs"],
-                self.patterns["table_of_contents"],
-                self.patterns["website_urls"],
-                self.patterns["brackets_content"],
                 self.patterns["numeric_only"],
+                self.patterns["roman_numerals"],
+                self.patterns["footnote_refs"],
+                self.patterns["copyright"],
+                self.patterns["brackets_content"],
+                self.patterns["isbn"],
+                self.patterns["table_of_contents"],
+                self.patterns["chapter_headers"],
+                self.patterns["website_urls"],
             )
         ):
             return "\n"
 
         line_lower = line.lower()
-        words_lower = line_lower.split()
-        word_count = len(words_lower)
+        word_count = line_lower.count(" ") + 1
+        is_upper = line.isupper()
 
         # All-caps short lines
-        if line.isupper() and word_count < self.short_line_threshold:
+        if is_upper and word_count < self.short_line_threshold:
             return "\n"
 
         # Other short lines without typical sentence characters
         is_end_of_paragraph = (
-            prev_line
+            line[-1] in self.end_of_sentence_chars
+            and prev_line
             and (
-                len(prev_line.split()) > 5
-                or (prev_line and prev_line[-1] in self.end_of_sentence_chars)
+                _count_words_gt(prev_line, 5)
+                or prev_line[-1] in self.end_of_sentence_chars
             )
-            and line[-1] in self.end_of_sentence_chars
         )
         if (
             not is_end_of_paragraph
             and not any(kw in line_lower for kw in self.text_keywords)
             and (
-                metadata_keywords := len(
-                    [kw for kw in self.metadata_keywords if kw in line_lower]
+                metadata_keywords := sum(
+                    1 for kw in self.metadata_keywords if kw in line_lower
                 )
             )
-            and (
-                word_count < self.short_line_threshold + metadata_keywords
-                or line.isupper()
-            )
+            and (word_count < self.short_line_threshold + metadata_keywords or is_upper)
         ):
             return "\n"
 

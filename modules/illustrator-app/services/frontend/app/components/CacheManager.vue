@@ -269,9 +269,7 @@ async function processQueue(): Promise<void> {
       emit("update:groupsState");
     } catch (error) {
       console.error("Failed to download group:", error);
-      useNotifier().error(
-        `Failed to download ${group.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      useNotifier().error(error instanceof Error ? error.message : "Unknown error occured during download");
     }
 
     downloadQueue.value.shift();

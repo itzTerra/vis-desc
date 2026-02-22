@@ -58,7 +58,7 @@ jobs:
   build-frontend:
     needs: pre-commit
     name: Build Frontend
-    environment: Production
+    environment: nlp
     runs-on: ubuntu-latest
     defaults:
       run:

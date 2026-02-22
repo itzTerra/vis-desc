@@ -1,3 +1,9 @@
+export type AppReadyState = Reactive<{
+  apiReady: boolean;
+  apiError: string | null;
+  scorerWorkerReady: boolean;
+}>;
+
 export type Segment = { text: string, score: number };
 
 export type ActionState = "idle" | "queued" | "processing";

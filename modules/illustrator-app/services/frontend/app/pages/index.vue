@@ -9,6 +9,7 @@
           accept="application/pdf,.txt,text/plain"
           class="file-input file-input-primary min-w-12"
           data-help-target="file"
+          :disabled="!isAppReady"
           @change="handleFileUpload"
         >
         <ModelSelect v-model="selectedModel" data-help-target="model" @request-model-download="(scorerId) => checkScorer(SCORERS.find(s => s.id === scorerId)!)" />
@@ -67,7 +68,7 @@
       :auto-enabled="autoIllustration.enabled.value"
       @pdf:rendered="onPdfRendered"
     />
-    <Hero v-else @file-selected="handleFileUpload" />
+    <Hero v-else :disabled="!isAppReady" @file-selected="handleFileUpload" />
     <div class="bottom-bar">
       <div v-if="!seenHelpOnce" class="tooltip tooltip-open tooltip-info tooltip-left">
         <div class="tooltip-content pointer-events-auto p-0">
@@ -125,8 +126,10 @@ import type { ModelGroup } from "~/types/cache";
 
 type ImageLayer = InstanceType<typeof import("~/components/ImageLayer.vue").default>;
 
-const { $api: call, $config, $debugPanel, callHook, hook } = useNuxtApp();
+const { $api: call, $config, $debugPanel, $appReadyState, callHook, hook } = useNuxtApp();
 const runtimeConfig = useRuntimeConfig();
+
+const isAppReady = computed(() => $appReadyState?.apiReady && $appReadyState?.scorerWorkerReady && !$appReadyState?.apiError);
 
 const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
@@ -458,8 +461,6 @@ function confirmModelDownload() {
 }
 
 onMounted(() => {
-  initApp();
-
   hook("custom:downloadNeeded", (groupId: string) => {
     const group = MODEL_GROUPS.find(g => g.id === groupId);
     if (group) {

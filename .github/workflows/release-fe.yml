@@ -77,7 +77,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./.output/public
+          path: modules/illustrator-app/services/frontend/.output/public
 
       - name: Create Git tag (if new)
         run: |

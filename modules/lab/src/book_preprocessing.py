@@ -319,9 +319,11 @@ class PdfBookPreprocessor(BookPreprocessor):
         if page_limit is None:
             page_limit = len(doc)
         full_text = io.StringIO()
-        pages: list[str] = []
+        cleaned_text_io = io.StringIO()
+        pending_page = ""
         last_line_of_last_page = ""
-        normalized_full_text = ""
+        nft_parts: list[str] = []
+        nft_len = 0
         removed_ranges: list[tuple[int, int]] = []
         for i in range(page_limit):
             try:
@@ -331,19 +333,21 @@ class PdfBookPreprocessor(BookPreprocessor):
                     page_text, last_line_of_last_page, return_split_with_removed=True
                 )
                 full_text.write(page_text)
+                del page_text
 
-                # Fill normalized_full_text and removed_ranges
+                # Fill nft_parts and removed_ranges
                 for j, line in enumerate(lines):
                     normalized_line = self._normalize(line)
-                    normalized_full_text += normalized_line
+                    nft_parts.append(normalized_line)
+                    nft_len += len(normalized_line)
                     if j in removed_lines:
-                        start = len(normalized_full_text) - len(normalized_line)
-                        end = len(normalized_full_text)
+                        start = nft_len - len(normalized_line)
+                        end = nft_len
                         removed_ranges.append((start, end))
 
                 # Join pages that cut a sentence in half
                 if (
-                    last_line_of_last_page
+                    pending_page
                     and self.patterns["line_breaked_sentence_a_end"].search(
                         last_line_of_last_page
                     )
@@ -352,17 +356,22 @@ class PdfBookPreprocessor(BookPreprocessor):
                         cleaned_page_text
                     )
                 ):
-                    last_page = f"{pages[-1].rstrip()} {cleaned_page_text.lstrip()}"
-                    pages[-1] = last_page
+                    pending_page = (
+                        f"{pending_page.rstrip()} {cleaned_page_text.lstrip()}"
+                    )
                 else:
-                    pages.append(cleaned_page_text)
-                    last_page = cleaned_page_text
+                    cleaned_text_io.write(pending_page)
+                    pending_page = cleaned_page_text
 
-                last_line_of_last_page = last_page.splitlines()[-1] if last_page else ""
+                last_line_of_last_page = (
+                    pending_page.splitlines()[-1] if pending_page else ""
+                )
             except Exception as e:
                 self.logger.warning("Skipping page %d due to error: %s", i, e)
 
-        cleaned_text = "".join(pages)
+        cleaned_text_io.write(pending_page)
+        cleaned_text = cleaned_text_io.getvalue()
+        normalized_full_text = "".join(nft_parts)
         return str(full_text), cleaned_text, normalized_full_text, removed_ranges
 
     def extract_from_memory(

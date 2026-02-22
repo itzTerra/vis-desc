@@ -69,7 +69,7 @@
       @pdf:rendered="onPdfRendered"
     />
     <Hero v-else :disabled="!isAppReady" @file-selected="handleFileUpload" />
-    <div class="bottom-bar">
+    <div class="bottom-bar flex-col items-end md:flex-row md:items-center">
       <div v-if="!seenHelpOnce" class="tooltip tooltip-open tooltip-info tooltip-left">
         <div class="tooltip-content pointer-events-auto p-0">
           <div class="relative flex items-end px-2 py-2">
@@ -521,10 +521,9 @@ onMounted(() => {
 .bottom-bar {
   position: fixed;
   bottom: 0;
-  width: 100%;
+  right: 0;
   padding: 0.5rem 0.5rem;
   display: flex;
-  align-items: center;
   justify-content: end;
   gap: 0.5rem;
   z-index: 130;

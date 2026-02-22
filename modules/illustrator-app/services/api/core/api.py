@@ -53,8 +53,11 @@ pdf_preprocessor = PdfBookPreprocessor(
 txt_preprocessor = TxtBookPreprocessor()
 text_segmenter = TextSegmenter((settings.SEGMENT_CHARS_MIN, settings.SEGMENT_CHARS_MAX))
 
-# Load spaCy model (disable NER per request) and wrap with our pipeline helper
-spacy_nlp = spacy.load(settings.SPACY_MODEL, disable=["ner"])
+# Load spaCy model. Disable components not needed for our pipeline:
+# - "ner": we use our own NER via BookNLP
+# - "senter": redundant when "parser" is present (parser also sets sentence boundaries)
+# tok2vec cannot be disabled as tagger and parser both depend on it.
+spacy_nlp = spacy.load(settings.SPACY_MODEL, disable=["ner", "senter"])
 spacy_pipeline = SpacyPipeline(spacy_nlp)
 
 

@@ -30,11 +30,16 @@ class BookPreprocessor:
             {
                 "\r": None,
                 "\ufeff": None,
-                "’": "'",
-                "“": '"',
-                "”": '"',
-                "？": "?",
-                "！": "!",
+                "\u2018": "'",
+                "\u201c": '"',
+                "\u201d": '"',
+                "\uff1f": "?",
+                "\uff01": "!",
+                "\u2010": None,  # hyphen
+                "\u2011": None,  # non-breaking hyphen
+                "\u2012": None,  # figure dash
+                "\u2013": None,  # en dash
+                "\u2014": None,  # em dash
             }
         )
 
@@ -44,15 +49,15 @@ class BookPreprocessor:
                 re.IGNORECASE,
             ),
             "chapter_headers": re.compile(
-                r"^\s*(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
+                r"^\s*(?:chapter|ch\.?|part|section|\u00a7|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
                 re.IGNORECASE,
             ),
             "roman_numerals": re.compile(r"^\s*[ivxlcdm]{1,7}\s*$", re.IGNORECASE),
             "copyright": re.compile(
-                r"©|\bcopyright\b|\ball rights reserved\b", re.IGNORECASE
+                r"\u00a9|\bcopyright\b|\ball rights reserved\b", re.IGNORECASE
             ),
             "isbn": re.compile(r"\bisbn[-:\s]*(?:\d[-\s]*){9}[\dx]\b", re.IGNORECASE),
-            "footnote_refs": re.compile(r"^\s*(?:\d+|\*+|\†+|\‡+)\s+"),
+            "footnote_refs": re.compile(r"^\s*(?:\d+|\*+|\u2020+|\u2021+)\s+"),
             "table_of_contents": re.compile(
                 r"(table of contents)|\.{5,}|\s{5,}\d+$", re.IGNORECASE
             ),
@@ -65,11 +70,16 @@ class BookPreprocessor:
             ),
             "numeric_only": re.compile(r"^\s*[\d\s\.\-\/]+\s*$"),
             "line_breaked_sentence": regex.compile(
-                r"(?<=[^.!?。:\"'–—-])(?:\n(?=[–—-]?(?:\p{L}|[\"'])))|(?:\s+(?=[–—-]?(?:\p{Ll}|I[ ']|[\"'])))"
+                r"(?<=[^.!?\u3002:\"'\u2013\u2014-])(?:\n(?=[\u2013\u2014-]?(?:\p{L}|[\"'])))|(?:\s+(?=[\u2013\u2014-]?(?:\p{Ll}|I[ ']|[\"'])))"
             ),
-            "line_breaked_sentence_a_end": regex.compile(r"[^.!?。:\"'–—-]$"),
-            "line_breaked_sentence_b_start": regex.compile(r"[–—-]?(?:\p{L}|[\"'])"),
+            "line_breaked_sentence_a_end": regex.compile(
+                r"[^.!?\u3002:\"'\u2013\u2014-]$"
+            ),
+            "line_breaked_sentence_b_start": regex.compile(
+                r"[\u2013\u2014-]?(?:\p{L}|[\"'])"
+            ),
             "hyphenated_sentence": regex.compile(r"(?<=\p{Ll})-\n(?=\p{Ll})"),
+            "normalize": re.compile(r"[\s\-]+"),
         }
 
         self.metadata_keywords = {
@@ -86,7 +96,7 @@ class BookPreprocessor:
             "references",
             "appendix",
             "about the author",
-            "author’s note",
+            "author's note",
             "biography",
             "glossary",
             "notes",
@@ -104,17 +114,21 @@ class BookPreprocessor:
             ".",
             "!",
             "?",
-            "。",
+            "\u3002",
             ":",
             '"',
             "'",
         }
         self.text_keywords = {"!", "?", '"', ":"}
         self.short_line_threshold = 10
+        self._metadata_re = re.compile(
+            "|".join(re.escape(kw) for kw in self.metadata_keywords)
+        )
+        self._text_kw_re = re.compile(r'[!?":]')
 
     def _normalize(self, s: str) -> str:
-        return re.sub(
-            r"[\s\-‐‑‒–—]+", "", s.translate(self.before_clean_translation_table)
+        return self.patterns["normalize"].sub(
+            "", s.translate(self.before_clean_translation_table)
         )
 
     def clean_text(
@@ -184,7 +198,7 @@ class BookPreprocessor:
     ) -> tuple[str, set[int]]:
         """Sequential processing for smaller texts"""
         processed_lines, removed_lines = self._process_batch(lines, prev_line)
-        return self._after_clean(processed_lines), removed_lines
+        return "\n".join(processed_lines), removed_lines
 
     def _process_batch(
         self, lines: list[str], saved_prev_line=""
@@ -250,10 +264,10 @@ class BookPreprocessor:
         )
         if (
             not is_end_of_paragraph
-            and not any(kw in line_lower for kw in self.text_keywords)
+            and not self._text_kw_re.search(line_lower)
             and (
                 metadata_keywords := sum(
-                    1 for kw in self.metadata_keywords if kw in line_lower
+                    1 for _ in self._metadata_re.finditer(line_lower)
                 )
             )
             and (word_count < self.short_line_threshold + metadata_keywords or is_upper)

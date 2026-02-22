@@ -528,8 +528,7 @@ class FeatureExtractorPipeline {
       report();
     });
 
-    const defaultWn = WORDNETS[0];
-    const wordnetPromise = downloadAndLoadWordNet(defaultWn.id, defaultWn.downloadUrl, CACHE_NAME, (progress) => {
+    const wordnetPromise = downloadAndLoadWordNet(CACHE_NAME, (progress) => {
       wordnetProgress = progress;
       report();
     });

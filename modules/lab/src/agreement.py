@@ -10,6 +10,19 @@ import csv
 
 import label_studio_models as lsm
 
+ANNOTATOR_ID_GROUPS: dict[int, int] = {
+    # Example: 101: 1, 102: 1, 201: 2, 202: 2
+    # All annotator IDs mapped to the same value are treated as the same person.
+    # Fill in as needed, e.g. 101: 1, 102: 1 means 101 and 102 are grouped as 1.
+    # skolniucet5@gmail.com -> martinrubos@seznam.cz
+    6: 4,
+}
+
+
+def get_grouped_annotator_id(annotator_id: int) -> int:
+    """Return the canonical annotator id for grouping, or the id itself if not mapped."""
+    return ANNOTATOR_ID_GROUPS.get(annotator_id, annotator_id)
+
 
 Category = int  # 0..5 inclusive
 MAX_CATEGORY: int = 5
@@ -88,7 +101,7 @@ def _extract_rating_from_annotation(
 def collect_task_ratings(
     tasks: Sequence[lsm.Task], label_name: str = "rating"
 ) -> List[TaskRatings]:
-    """Build per-task rating maps. Only tasks with >=1 rating annotation are included."""
+    """Build per-task rating maps, grouping annotator ids as specified. Only tasks with >=1 rating annotation are included."""
     out: List[TaskRatings] = []
     for t in tasks:
         rating_map: Dict[int, Category] = {}
@@ -99,9 +112,12 @@ def collect_task_ratings(
             r = _extract_rating_from_annotation(ann, label_name)
             if r is None:
                 continue
-            rating_map[ann.completed_by] = r
-            if ann.lead_time is not None:
-                lead_time_map[ann.completed_by] = float(ann.lead_time)
+            grouped_id = get_grouped_annotator_id(ann.completed_by)
+            # If multiple annotators in the group, keep the first rating encountered for the group
+            if grouped_id not in rating_map:
+                rating_map[grouped_id] = r
+                if ann.lead_time is not None:
+                    lead_time_map[grouped_id] = float(ann.lead_time)
         if rating_map:
             out.append(
                 TaskRatings(
@@ -210,7 +226,7 @@ def weighted_cohen_kappa(
 def pairwise_kappas(
     task_ratings: Sequence[TaskRatings], k: int = 6, with_details: bool = False
 ):
-    """Yield (rater_i, rater_j, kappa, n_pairs[, details]) for all annotator pairs."""
+    """Yield (rater_i, rater_j, kappa, n_pairs[, details]) for all annotator pairs (grouped)."""
     annotator_ids = sorted({aid for tr in task_ratings for aid in tr.ratings})
     results = []
     for idx_i in range(len(annotator_ids)):

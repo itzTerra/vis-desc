@@ -442,13 +442,18 @@ class PdfBookPreprocessor(BookPreprocessor):
         removed_ranges: list[tuple[int, int]],
     ) -> dict[int, list[tuple[float, float]]]:
         """Convert a segment of text into page polygons."""
-        segments = [self._normalize(s) for s in segments]
-        concat_segments = "".join(segments)
+        raw_segments = segments
+        norm_cache: dict[int, str] = {}
         segment_idx = 0
         per_segment_idx = 0
-        concat_segments_idx = 0
         original_text_idx = 0
-        seg_to_page_to_lines = {}
+        seg_to_page_to_lines: dict = {}
+
+        # Cached dict refs to avoid repeated setdefault chains
+        cur_seg_idx = -1
+        cur_seg_dict: dict = {}
+        cur_page_idx = -1
+        cur_page_dict: dict = {}
 
         for page_idx, page in enumerate(doc):
             try:
@@ -475,80 +480,102 @@ class PdfBookPreprocessor(BookPreprocessor):
                 if word_in_removed_range:
                     continue
 
-                if concat_segments.startswith(norm_wtext, concat_segments_idx):
-                    per_segment_idx += len(norm_wtext)
-                    concat_segments_idx += len(norm_wtext)
+                # Lazy-normalize current segment on first access
+                if segment_idx not in norm_cache:
+                    norm_cache[segment_idx] = self._normalize(raw_segments[segment_idx])
+                cur_seg = norm_cache[segment_idx]
 
-                    if per_segment_idx > len(segments[segment_idx]):
+                if (
+                    cur_seg[per_segment_idx : per_segment_idx + len(norm_wtext)]
+                    == norm_wtext
+                ):
+                    per_segment_idx += len(norm_wtext)
+
+                    # Update cached dict refs only when segment/page changes
+                    if segment_idx != cur_seg_idx:
+                        cur_seg_dict = seg_to_page_to_lines.setdefault(segment_idx, {})
+                        cur_seg_idx = segment_idx
+                        cur_page_idx = -1
+                    if page_idx != cur_page_idx:
+                        cur_page_dict = cur_seg_dict.setdefault(page_idx, {})
+                        cur_page_idx = page_idx
+
+                    if per_segment_idx > len(cur_seg):
                         # add part of word rect to current segment, other part to next segment
-                        split_at = len(norm_wtext) - (
-                            per_segment_idx - len(segments[segment_idx])
-                        )
+                        split_at = len(norm_wtext) - (per_segment_idx - len(cur_seg))
                         avg_letter_width = (x1 - x0) / len(wtext)
 
-                        seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
-                            page_idx, {}
-                        ).setdefault(f"{block}.{line_no}", []).append(
-                            {
-                                "text": wtext,
-                                "rect": (x0, y0, x0 + split_at * avg_letter_width, y1),
-                            }
+                        cur_page_dict.setdefault((block, line_no), []).append(
+                            (x0, y0, x0 + split_at * avg_letter_width, y1)
                         )
-                        per_segment_idx -= len(segments[segment_idx])
+                        per_segment_idx -= len(cur_seg)
+                        # Free previous segment's normalized form
+                        del norm_cache[segment_idx]
                         segment_idx += 1
-                        if segment_idx >= len(segments):
+                        if segment_idx >= len(raw_segments):
                             break
-                        seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
-                            page_idx, {}
-                        ).setdefault(f"{block}.{line_no}", []).append(
-                            {
-                                "text": wtext,
-                                "rect": (x0 + split_at * avg_letter_width, y0, x1, y1),
-                            }
+                        # Normalize next segment
+                        if segment_idx not in norm_cache:
+                            norm_cache[segment_idx] = self._normalize(
+                                raw_segments[segment_idx]
+                            )
+                        cur_seg = norm_cache[segment_idx]
+                        # Update cached refs for new segment
+                        cur_seg_idx = segment_idx
+                        cur_seg_dict = seg_to_page_to_lines.setdefault(segment_idx, {})
+                        cur_page_idx = -1
+                        if page_idx != cur_page_idx:
+                            cur_page_dict = cur_seg_dict.setdefault(page_idx, {})
+                            cur_page_idx = page_idx
+                        cur_page_dict.setdefault((block, line_no), []).append(
+                            (x0 + split_at * avg_letter_width, y0, x1, y1)
                         )
                         continue
 
-                    seg_to_page_to_lines.setdefault(segment_idx, {}).setdefault(
-                        page_idx, {}
-                    ).setdefault(f"{block}.{line_no}", []).append(
-                        {
-                            "text": wtext,
-                            "rect": (x0, y0, x1, y1),
-                        }
+                    cur_page_dict.setdefault((block, line_no), []).append(
+                        (x0, y0, x1, y1)
                     )
-                    if per_segment_idx == len(segments[segment_idx]):
+                    if per_segment_idx == len(cur_seg):
+                        # Free previous segment's normalized form
+                        del norm_cache[segment_idx]
                         segment_idx += 1
                         per_segment_idx = 0
-                        if segment_idx >= len(segments):
+                        cur_seg_idx = -1  # invalidate segment cache
+                        cur_page_idx = -1
+                        if segment_idx >= len(raw_segments):
                             break
+            del words  # free page word list
 
+        # Convert to list before deleting the outer dict to free it early
+        page_to_lines_by_seg = list(seg_to_page_to_lines.items())
+        del seg_to_page_to_lines
         seg_to_page_to_polygon = {}
 
-        for segment_idx, page_to_lines in seg_to_page_to_lines.items():
+        for segment_idx, page_to_lines in page_to_lines_by_seg:
             for page_idx, lines in page_to_lines.items():
                 for arr in lines.values():
-                    arr.sort(key=lambda w: w["rect"][0])
+                    arr.sort(key=lambda w: w[0])
 
                 # Derive per-line left/right bounds
                 line_entries: list[
                     tuple[float, float, float, float]
                 ] = []  # (y_top, y_bottom, left_x, right_x)
                 for line_no in sorted(
-                    lines.keys(), key=lambda ln: min(w["rect"][1] for w in lines[ln])
+                    lines.keys(), key=lambda ln: min(w[1] for w in lines[ln])
                 ):
                     wlist = lines[line_no]
                     left_x = None
                     right_x = None
-                    y_top = min(w["rect"][1] for w in wlist)
-                    y_bottom = max(w["rect"][3] for w in wlist)
+                    y_top = min(w[1] for w in wlist)
+                    y_bottom = max(w[3] for w in wlist)
                     # Compute left line boundary (first word intersecting start)
                     for w in wlist:
-                        x0, y0, x1, y1 = w["rect"]
+                        x0, y0, x1, y1 = w
                         left_x = x0
                         break
                     # Compute right line boundary (last word intersecting end)
                     for w in reversed(wlist):
-                        x0, y0, x1, y1 = w["rect"]
+                        x0, y0, x1, y1 = w
                         right_x = x1
                         break
                     if left_x is None or right_x is None or right_x < left_x:

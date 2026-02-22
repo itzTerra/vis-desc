@@ -1,4 +1,6 @@
 ENV=production
+# Tell glibc malloc to return freed pages to OS more aggressively (saves 20-80 MB RSS between requests)
+MALLOC_TRIM_THRESHOLD_=131072
 DJANGO_DEBUG=off
 DJANGO_SETTINGS_MODULE=api.settings.production
 DJANGO_ALLOWED_HOSTS=localhost:8000,api,localhost,0.0.0.0,127.0.0.1

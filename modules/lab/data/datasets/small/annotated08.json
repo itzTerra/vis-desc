@@ -1,0 +1,118 @@
+[
+{
+  "text": "I am going, at the possible sacrifice of my life and honour, to prove to you that you were wrong in what you said.\" \"In what I said?\" \"You said I was not serious about being an anarchist.\"",
+  "genre": "Mystery",
+  "length": 188,
+  "book_id": 1695,
+  "book_slug": "the-man-who-was-thursday-a-nightmare",
+  "segment_id": "1695_92",
+  "id": 793,
+  "rating": "0",
+  "type": "Dialogue",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1805,
+  "created_at": "2026-02-22T19:47:02.203282Z",
+  "updated_at": "2026-02-22T19:47:02.203753Z",
+  "lead_time": 12.374
+},
+{
+  "text": "I am going, at the possible sacrifice of my life and honour, to prove to you that you were wrong in what you said.\" \"In what I said?\" \"You said I was not serious about being an anarchist.\"",
+  "genre": "Mystery",
+  "length": 188,
+  "book_id": 1695,
+  "book_slug": "the-man-who-was-thursday-a-nightmare",
+  "segment_id": "1695_92",
+  "id": 793,
+  "rating": "4",
+  "annotator": 6,
+  "annotation_id": 1472,
+  "created_at": "2026-02-21T09:01:00.838067Z",
+  "updated_at": "2026-02-21T09:01:00.838081Z",
+  "lead_time": 34.279
+},
+{
+  "text": "He would have to put on his dress clothes, and she didn't like his dressing in the sitting-room. It didn't suit her ideas that he should do so. How if she did light the fire here, in their bedroom? It would be nice for her to have bit of fire to cheer her up after he had gone. Mrs. Bunting knew only too well that she would have very little sleep the coming night. She looked over, with shuddering distaste, at her nice, soft bed.",
+  "genre": "Mystery",
+  "length": 431,
+  "book_id": 2014,
+  "book_slug": "the-lodger",
+  "segment_id": "2014_1349",
+  "id": 794,
+  "label": [
+    {
+      "end": 430,
+      "text": "She looked over, with shuddering distaste, at her nice, soft bed",
+      "start": 366,
+      "labels": [
+        "VDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Indoor",
+  "illsuitable": "Yes",
+  "annotator": 1,
+  "annotation_id": 1806,
+  "created_at": "2026-02-22T19:47:53.332021Z",
+  "updated_at": "2026-02-22T19:47:53.332035Z",
+  "lead_time": 45.153
+},
+{
+  "text": "He would have to put on his dress clothes, and she didn't like his dressing in the sitting-room. It didn't suit her ideas that he should do so. How if she did light the fire here, in their bedroom? It would be nice for her to have bit of fire to cheer her up after he had gone. Mrs. Bunting knew only too well that she would have very little sleep the coming night. She looked over, with shuddering distaste, at her nice, soft bed.",
+  "genre": "Mystery",
+  "length": 431,
+  "book_id": 2014,
+  "book_slug": "the-lodger",
+  "segment_id": "2014_1349",
+  "id": 794,
+  "rating": "4",
+  "annotator": 6,
+  "annotation_id": 1473,
+  "created_at": "2026-02-21T09:01:41.608721Z",
+  "updated_at": "2026-02-21T09:01:41.608734Z",
+  "lead_time": 26.93
+},
+{
+  "text": "He gazed ahead with straining eyes. Presently there was not a break in the walls. A drowsy hum of falling water came to Hare, strange reminder of the oasis, the dull roar of the Colorado, and of Mescal.",
+  "genre": "Western",
+  "length": 202,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_1199",
+  "id": 795,
+  "label": [
+    {
+      "end": 80,
+      "text": "He gazed ahead with straining eyes. Presently there was not a break in the walls",
+      "start": 0,
+      "labels": [
+        "IVDL"
+      ]
+    }
+  ],
+  "rating": "3",
+  "type": "Other",
+  "illsuitable": "No",
+  "annotator": 1,
+  "annotation_id": 1807,
+  "created_at": "2026-02-22T19:48:28.801829Z",
+  "updated_at": "2026-02-22T19:48:28.801842Z",
+  "lead_time": 32.699
+},
+{
+  "text": "He gazed ahead with straining eyes. Presently there was not a break in the walls. A drowsy hum of falling water came to Hare, strange reminder of the oasis, the dull roar of the Colorado, and of Mescal.",
+  "genre": "Western",
+  "length": 202,
+  "book_id": 1262,
+  "book_slug": "the-heritage-of-the-desert-a-novel",
+  "segment_id": "1262_1199",
+  "id": 795,
+  "rating": "4",
+  "annotator": 6,
+  "annotation_id": 1474,
+  "created_at": "2026-02-21T09:02:14.231677Z",
+  "updated_at": "2026-02-21T09:02:14.231691Z",
+  "lead_time": 16.826
+}
+]

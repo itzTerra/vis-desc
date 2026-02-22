@@ -36,7 +36,7 @@ export async function downloadAndLoadWordNet(customCacheName?: string, onProgres
   if (customCacheName) cacheName = customCacheName;
 
   const id = "oewn";
-  const url = `${useNuxtApp().$config.app.baseURL}english-wordnet-2025-json.zip`;
+  const url = `${useRuntimeConfig().app.baseURL}english-wordnet-2025-json.zip`;
 
   // If already in memory return
   if (inMemoryWordnets.has(id)) return inMemoryWordnets.get(id)!;

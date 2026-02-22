@@ -24,7 +24,7 @@
             </div>
           </div>
           <button class="btn btn-ghost btn-xs">
-            <Icon name="lucide:chevron-up" class="w-5 h-5" />
+            <Icon name="lucide:chevron-up" size="8px" />
           </button>
         </div>
         <progress :value="currentDownload?.progress || 0" max="100" class="progress progress-primary w-full rounded-none block h-2" />

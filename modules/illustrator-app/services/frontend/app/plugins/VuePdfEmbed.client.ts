@@ -1,5 +1,8 @@
 import VuePdfEmbed from "vue-pdf-embed";
 
-export default defineNuxtPlugin((nuxtApp) => {
-  nuxtApp.vueApp.component("VuePdfEmbed", VuePdfEmbed);
+export default defineNuxtPlugin({
+  parallel: true,
+  async setup(nuxtApp) {
+    nuxtApp.vueApp.component("VuePdfEmbed", VuePdfEmbed);
+  }
 });

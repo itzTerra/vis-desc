@@ -11,7 +11,12 @@
         </p>
         <div class="max-w-xl">
           <label
-            class="flex justify-center w-full h-24 px-4 transition border-2 border-dashed rounded-md appearance-none cursor-pointer text-primary/80 border-primary/80 bg-primary/5 hover:text-primary hover:border-primary focus:outline-none hover:bg-primary/15"
+            :class="[
+              'flex justify-center w-full h-24 px-4 border-2 border-dashed rounded-md appearance-none',
+              disabled
+                ? 'cursor-not-allowed text-primary/40 border-primary/40 bg-primary/5'
+                : 'cursor-pointer transition text-primary/80 border-primary/80 bg-primary/5 hover:text-primary hover:border-primary focus:outline-none hover:bg-primary/15'
+            ]"
           >
             <span class="flex items-center space-x-2 ">
               <Icon name="lucide:upload" />
@@ -19,7 +24,7 @@
                 Drop a PDF or TXT file here or click in this area
               </span>
             </span>
-            <input type="file" accept="application/pdf,.txt,text/plain" name="file_upload" class="hidden" @change="$emit('fileSelected', $event)">
+            <input type="file" accept="application/pdf,.txt,text/plain" name="file_upload" class="hidden" :disabled="disabled" @change="$emit('fileSelected', $event)">
           </label>
         </div>
       </div>
@@ -28,6 +33,9 @@
 </template>
 
 <script setup lang="ts">
+defineProps<{
+  disabled?: boolean;
+}>();
 defineEmits<{
   fileSelected: [event: any];
 }>();

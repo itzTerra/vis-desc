@@ -208,6 +208,7 @@ class WorkerPool {
 
 class FeatureExtractorPipeline {
   bookNLP: BookNLP;
+  feBaseUrl: string;
   spacyCtxUrl: string;
   // Cache maps a batch-hash -> Promise resolving to an array of SpaCyContext
   spacyCtxCache: Record<string, Promise<SpaCyContext[]>> = {};
@@ -235,8 +236,9 @@ class FeatureExtractorPipeline {
 
   _ready: boolean = false;
 
-  constructor(spacyCtxUrl: string) {
+  constructor(feBaseUrl: string, spacyCtxUrl: string) {
     this.bookNLP = new BookNLP();
+    this.feBaseUrl = feBaseUrl;
     this.spacyCtxUrl = spacyCtxUrl;
 
     this.ENG_POS_TAGS = [
@@ -518,7 +520,7 @@ class FeatureExtractorPipeline {
     return `(${parts.map((p) => `'${p}'`).join(", ")})`;
   }
 
-  async init({progressCallback, provider}: {progressCallback?: ProgressCallback, provider?: ExecutionProvider} = {}): Promise<void> {
+  async init({ progressCallback, provider }: { progressCallback?: ProgressCallback, provider?: ExecutionProvider } = {}): Promise<void> {
     this.spacyWorkerPool = new WorkerPool(4);
 
     let booknlpProgress = 0;
@@ -540,7 +542,7 @@ class FeatureExtractorPipeline {
       report();
     });
 
-    const wordnetPromise = downloadAndLoadWordNet(CACHE_NAME, (progress) => {
+    const wordnetPromise = downloadAndLoadWordNet(this.feBaseUrl, CACHE_NAME, (progress) => {
       wordnetProgress = progress;
       report();
     });
@@ -1452,9 +1454,11 @@ class FeatureExtractorPipeline {
 export class FeatureService {
   featureExtractor: FeatureExtractorPipeline;
   embedMiniLM: FeatureExtractionPipeline | null = null;
+  feBaseUrl: string;
 
-  constructor(spacyCtxUrl: string) {
-    this.featureExtractor = new FeatureExtractorPipeline(spacyCtxUrl);
+  constructor(feBaseUrl: string, spacyCtxUrl: string) {
+    this.feBaseUrl = feBaseUrl;
+    this.featureExtractor = new FeatureExtractorPipeline(feBaseUrl, spacyCtxUrl);
   }
 
   async init(embeddingPipelineConfig: HFPipelineConfig, {progressCallback, provider, }: {progressCallback?: ProgressCallback, provider?: ExecutionProvider} = {}): Promise<void> {

@@ -25,6 +25,7 @@ export type CatboostLoadPayload = {
   featureServiceEmbeddingConfig: HFPipelineConfig;
   // For both BookNLP and Catboost
   provider: ExecutionProvider;
+  feBaseUrl: string;
   spacyCtxUrl: string;
   // For SpaCy context preload
   texts: string[];

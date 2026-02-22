@@ -57,7 +57,7 @@ async function loadMiniLMCatBoost(config: CatboostLoadPayload): Promise<void> {
     if (!scorerState) {
       scorerState = { type: "minilm_catboost" };
 
-      const featureService = new FeatureService(config.spacyCtxUrl!);
+      const featureService = new FeatureService(config.feBaseUrl, config.spacyCtxUrl!);
       await featureService.init(config.featureServiceEmbeddingConfig, { provider: config.provider });
       scorerState.featureService = featureService;
 

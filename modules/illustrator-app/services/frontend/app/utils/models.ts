@@ -32,7 +32,7 @@ class FeatureServiceDownloadable extends BaseDownloadable {
   };
 
   async download(onProgress: (progress: number) => void): Promise<void> {
-    const featureService = new FeatureService(""); // spacyCtxUrl is not needed for downloading to cache
+    const featureService = new FeatureService(useRuntimeConfig().app.baseURL, ""); // spacyCtxUrl is not needed for downloading to cache
     await featureService.init(this.embeddingPipelineConfig, { progressCallback: (progress) => {
       onProgress(progress * 100);
     } });
@@ -172,6 +172,7 @@ class MiniLMCatBoostScorer extends Scorer {
   private isLoaded = false;
   private scoring = false;
   private batchSize = 16;
+  private feBaseUrl?: string;
   private spacyCtxUrl?: string;
 
   constructor() {
@@ -201,9 +202,9 @@ class MiniLMCatBoostScorer extends Scorer {
       const scorerWorker = getScorerWorker();
 
       if (!this.isLoaded) {
-        if (!this.spacyCtxUrl) {
-          this.spacyCtxUrl = new URL("/api/spacy-ctx", useRuntimeConfig().public.apiBaseUrl).toString();
-        }
+        const config = useRuntimeConfig();
+        this.feBaseUrl = config.app.baseURL;
+        this.spacyCtxUrl = new URL("/api/spacy-ctx", config.public.apiBaseUrl).toString();
         onProgress({
           stage: "Initializing...",
           startedAt: Date.now(),
@@ -226,6 +227,7 @@ class MiniLMCatBoostScorer extends Scorer {
             type: "load",
             payload: {
               scorerId: "minilm_catboost",
+              feBaseUrl: this.feBaseUrl!,
               spacyCtxUrl: this.spacyCtxUrl!,
               provider,
               featureServiceEmbeddingConfig: DOWNLOADABLES.featureService.embeddingPipelineConfig,

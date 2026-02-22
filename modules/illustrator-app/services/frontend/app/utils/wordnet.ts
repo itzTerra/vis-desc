@@ -32,8 +32,11 @@ async function loadFromCache(idOrUrl: string): Promise<WordNetData | null> {
   }
 }
 
-export async function downloadAndLoadWordNet(id: string, url: string, customCacheName?: string, onProgress?: (p: number) => void): Promise<WordNetData> {
+export async function downloadAndLoadWordNet(customCacheName?: string, onProgress?: (p: number) => void): Promise<WordNetData> {
   if (customCacheName) cacheName = customCacheName;
+
+  const id = "oewn";
+  const url = `${useNuxtApp().$config.app.baseURL}english-wordnet-2025-json.zip`;
 
   // If already in memory return
   if (inMemoryWordnets.has(id)) return inMemoryWordnets.get(id)!;
@@ -194,15 +197,3 @@ export async function clearWordNetCache(idOrUrl: string) {
     console.warn("Failed to clear WordNet cache", err);
   }
 }
-
-export type WordNetInfo = {
-  id: string;
-  downloadUrl: string;
-};
-
-export const WORDNETS: WordNetInfo[] = [
-  {
-    id: "oewn",
-    downloadUrl: "/english-wordnet-2025-json.zip",
-  },
-];

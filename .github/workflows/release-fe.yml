@@ -18,9 +18,8 @@ permissions:
   id-token: write
 
 jobs:
-  release:
+  deps:
     runs-on: ubuntu-24.04
-    environment: Production
     defaults:
       run:
         working-directory: modules/illustrator-app/services/frontend
@@ -29,6 +28,51 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: modules/illustrator-app/services/frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('modules/illustrator-app/services/frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: |
+            modules/illustrator-app/services/frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+  release-fi:
+    runs-on: ubuntu-24.04
+    environment: nlp
+    needs: deps
+    defaults:
+      run:
+        working-directory: modules/illustrator-app/services/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v4
+        with:
+          path: modules/illustrator-app/services/frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('modules/illustrator-app/services/frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
@@ -59,9 +103,6 @@ jobs:
           echo tag=$TAG >> $GITHUB_OUTPUT
           echo commit=${GITHUB_SHA} >> $GITHUB_OUTPUT
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Build for release
         env:
           VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
@@ -75,11 +116,6 @@ jobs:
       - name: Package artifact
         run: |
           tar -czf dist-${{ steps.vars.outputs.version }}.tar.gz -C ./.output/public .
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: modules/illustrator-app/services/frontend/.output/public
 
       - name: Create Git tag (if new)
         run: |
@@ -106,13 +142,71 @@ jobs:
           echo "Commit: $COMMIT_HASH" >> $GITHUB_STEP_SUMMARY
           echo "Prerelease: ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
 
-  deploy-pages:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  release-pages:
     runs-on: ubuntu-24.04
-    needs: release
+    environment: github-pages
+    needs: deps
+    defaults:
+      run:
+        working-directory: modules/illustrator-app/services/frontend
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore node_modules from cache
+        uses: actions/cache@v4
+        with:
+          path: modules/illustrator-app/services/frontend/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('modules/illustrator-app/services/frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: |
+            modules/illustrator-app/services/frontend/pnpm-lock.yaml
+
+      - name: Derive version & commit hash
+        id: vars
+        run: |
+          VERSION=$(node -p "require('../../package.json').version")
+          if [ -z "${{ inputs.tag }}" ]; then
+            TAG="v$VERSION"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "COMMIT_HASH=${GITHUB_SHA}" >> $GITHUB_ENV
+          echo version=$VERSION >> $GITHUB_OUTPUT
+          echo tag=$TAG >> $GITHUB_OUTPUT
+          echo commit=${GITHUB_SHA} >> $GITHUB_OUTPUT
+
+      - name: Build for release
+        env:
+          VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
+          VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          NUXT_PUBLIC_OPEN_FETCH_API_BASE_URL: ${{ vars.NUXT_PUBLIC_OPEN_FETCH_API_BASE_URL }}
+          NUXT_APP_BASE_URL: ${{ vars.NUXT_APP_BASE_URL }}
+          VITE_API_WS_BASE_URL: ${{ vars.VITE_API_WS_BASE_URL }}
+        run: pnpm run generate
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: modules/illustrator-app/services/frontend/.output/public
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

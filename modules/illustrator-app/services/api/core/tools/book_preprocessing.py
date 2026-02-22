@@ -297,7 +297,6 @@ class PdfExtractionConfig:
 
 @dataclass
 class ExtractionContext:
-    pdf_bytes: bytes
     cleaned_text: str
     normalized_full_text: str
     removed_ranges: list[tuple[int, int]]
@@ -373,29 +372,32 @@ class PdfBookPreprocessor(BookPreprocessor):
 
     def extract_from_memory(
         self, pdf_file, config: PdfExtractionConfig | None = None
-    ) -> ExtractionContext:
+    ) -> tuple["ExtractionContext", "pymupdf.Document"]:
         if config is None:
             config = PdfExtractionConfig()
-
         try:
             pdf_bytes = pdf_file.read()
-            with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
-                cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
-                    doc, config.max_pages
-                )
+            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+            del pdf_bytes  # free immediately after doc is open
         except Exception:
             self.logger.exception("Failed to open PDF")
             raise
-
-        return ExtractionContext(
-            pdf_bytes=pdf_bytes,
+        try:
+            cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
+                doc, config.max_pages
+            )
+        except Exception:
+            doc.close()
+            raise
+        ctx = ExtractionContext(
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
         )
+        return ctx, doc
 
     def align_segments_with_pages(
-        self, segments: list[str], ctx: ExtractionContext
+        self, segments: list[str], ctx: ExtractionContext, doc: pymupdf.Document
     ) -> list[dict]:
         """Map cleaned segments to original page polygons.
         Returns a list of dicts:
@@ -405,26 +407,15 @@ class PdfBookPreprocessor(BookPreprocessor):
             'polygons': { page_index: [(x1, y1), (x2, y2), ...]  }  # normalized coordinates
         }
         """
-        doc = None
-        try:
-            doc = pymupdf.open(stream=ctx.pdf_bytes, filetype="pdf")
-        except Exception:
-            self.logger.exception("Failed to reopen PDF for polygons")
-            return [
-                {
-                    "id": i,
-                    "text": seg,
-                    "polygons": {},
-                }
-                for i, seg in enumerate(segments)
-            ]
-
         try:
             seg_to_page_to_polygon = self._segments_to_page_polygons(
                 doc, segments, ctx.normalized_full_text, ctx.removed_ranges
             )
-        finally:
-            doc.close()
+        except Exception:
+            self.logger.exception("Failed to compute polygons")
+            return [
+                {"id": i, "text": seg, "polygons": {}} for i, seg in enumerate(segments)
+            ]
         return [
             {
                 "id": i,
@@ -810,12 +801,17 @@ class TxtBookPreprocessor(BookPreprocessor):
         full_text, cleaned_text, normalized_full_text, removed_ranges = txt_ctx
         pdf_bytes = self._text_to_pdf(full_text)
         ctx = ExtractionContext(
-            pdf_bytes=pdf_bytes,
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
         )
-        segments_with_pos = pdf_preprocessor.align_segments_with_pages(segments, ctx)
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        try:
+            segments_with_pos = pdf_preprocessor.align_segments_with_pages(
+                segments, ctx, doc
+            )
+        finally:
+            doc.close()
         return segments_with_pos, pdf_bytes
 
     def _text_to_pdf(self, text: str) -> bytes:

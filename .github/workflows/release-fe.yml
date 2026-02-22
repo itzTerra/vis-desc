@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag name (leave blank to auto-generate v<package.json version>)'
+        description: "Tag name (leave blank to auto-generate v<package.json version>)"
         required: false
       prerelease:
-        description: 'Mark as prerelease'
+        description: "Mark as prerelease"
         required: false
         type: boolean
         default: false
@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: Production
     defaults:
       run:
@@ -28,16 +28,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
         with:
-            version: 9
+          version: 10
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: |
             modules/illustrator-app/services/frontend/pnpm-lock.yaml
 
@@ -74,6 +74,11 @@ jobs:
         run: |
           tar -czf dist-${{ steps.vars.outputs.version }}.tar.gz -C ./.output/public .
 
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./.output/public
+
       - name: Create Git tag (if new)
         run: |
           if git rev-parse $TAG >/dev/null 2>&1; then
@@ -98,3 +103,14 @@ jobs:
           echo "Tag: $TAG" >> $GITHUB_STEP_SUMMARY
           echo "Commit: $COMMIT_HASH" >> $GITHUB_STEP_SUMMARY
           echo "Prerelease: ${{ inputs.prerelease }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-pages:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: release
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

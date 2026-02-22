@@ -67,6 +67,7 @@ def get_segments_with_boxes(pdf: UploadedFile) -> tuple[list[str], list[dict]]:
         )
     finally:
         doc.close()
+    del ctx
     return segments, segments_with_pos
 
 
@@ -100,10 +101,12 @@ def process_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
         value=json.dumps({"segments": segments, "model": model.model}),
         ex=settings.WS_KEY_EXPIRY_SEC,
     )
+    segment_count = len(segments)
+    del segments
     return {
         "ws_key": ws_key,
         "expires_in": settings.WS_KEY_EXPIRY_SEC,
-        "segment_count": len(segments),
+        "segment_count": segment_count,
         "segments": segments_with_pos,
     }
 
@@ -144,10 +147,12 @@ def process_txt(request, txt: File[UploadedFile], model: Form[ProcessPdfBody]):
         value=json.dumps({"segments": segments, "model": model.model}),
         ex=settings.WS_KEY_EXPIRY_SEC,
     )
+    segment_count = len(segments)
+    del segments
     return {
         "ws_key": ws_key,
         "expires_in": settings.WS_KEY_EXPIRY_SEC,
-        "segment_count": len(segments),
+        "segment_count": segment_count,
         "segments": segments_with_pos,
         "pdf_base64": base64.b64encode(pdf_bytes).decode(),
     }

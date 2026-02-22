@@ -30,16 +30,11 @@ class BookPreprocessor:
             {
                 "\r": None,
                 "\ufeff": None,
-                "\u2018": "'",
-                "\u201c": '"',
-                "\u201d": '"',
-                "\uff1f": "?",
-                "\uff01": "!",
-                "\u2010": None,  # hyphen
-                "\u2011": None,  # non-breaking hyphen
-                "\u2012": None,  # figure dash
-                "\u2013": None,  # en dash
-                "\u2014": None,  # em dash
+                "’": "'",
+                "“": '"',
+                "”": '"',
+                "？": "?",
+                "！": "!",
             }
         )
 
@@ -49,15 +44,15 @@ class BookPreprocessor:
                 re.IGNORECASE,
             ),
             "chapter_headers": re.compile(
-                r"^\s*(?:chapter|ch\.?|part|section|\u00a7|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
+                r"^\s*(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
                 re.IGNORECASE,
             ),
             "roman_numerals": re.compile(r"^\s*[ivxlcdm]{1,7}\s*$", re.IGNORECASE),
             "copyright": re.compile(
-                r"\u00a9|\bcopyright\b|\ball rights reserved\b", re.IGNORECASE
+                r"©|\bcopyright\b|\ball rights reserved\b", re.IGNORECASE
             ),
             "isbn": re.compile(r"\bisbn[-:\s]*(?:\d[-\s]*){9}[\dx]\b", re.IGNORECASE),
-            "footnote_refs": re.compile(r"^\s*(?:\d+|\*+|\u2020+|\u2021+)\s+"),
+            "footnote_refs": re.compile(r"^\s*(?:\d+|\*+|\†+|\‡+)\s+"),
             "table_of_contents": re.compile(
                 r"(table of contents)|\.{5,}|\s{5,}\d+$", re.IGNORECASE
             ),
@@ -70,16 +65,12 @@ class BookPreprocessor:
             ),
             "numeric_only": re.compile(r"^\s*[\d\s\.\-\/]+\s*$"),
             "line_breaked_sentence": regex.compile(
-                r"(?<=[^.!?\u3002:\"'\u2013\u2014-])(?:\n(?=[\u2013\u2014-]?(?:\p{L}|[\"'])))|(?:\s+(?=[\u2013\u2014-]?(?:\p{Ll}|I[ ']|[\"'])))"
+                r"(?<=[^.!?。:\"'–—-])(?:\n(?=[–—-]?(?:\p{L}|[\"'])))|(?:\s+(?=[–—-]?(?:\p{Ll}|I[ ']|[\"'])))"
             ),
-            "line_breaked_sentence_a_end": regex.compile(
-                r"[^.!?\u3002:\"'\u2013\u2014-]$"
-            ),
-            "line_breaked_sentence_b_start": regex.compile(
-                r"[\u2013\u2014-]?(?:\p{L}|[\"'])"
-            ),
+            "line_breaked_sentence_a_end": regex.compile(r"[^.!?。:\"'–—-]$"),
+            "line_breaked_sentence_b_start": regex.compile(r"[–—-]?(?:\p{L}|[\"'])"),
             "hyphenated_sentence": regex.compile(r"(?<=\p{Ll})-\n(?=\p{Ll})"),
-            "normalize": re.compile(r"[\s\-]+"),
+            "normalize": re.compile(r"[\s\-‐‑‒–—]+"),
         }
 
         self.metadata_keywords = {
@@ -114,7 +105,7 @@ class BookPreprocessor:
             ".",
             "!",
             "?",
-            "\u3002",
+            "。",
             ":",
             '"',
             "'",
@@ -208,7 +199,7 @@ class BookPreprocessor:
         processed: list[str] = []
         removed_lines: set[int] = set()
         total_lines = len(lines)
-        prev_line = saved_prev_line
+        prev_line = saved_prev_line.strip()
         for i, line in enumerate(lines):
             result = self.process_line(line, prev_line, i, total_lines)
             if not result or result.isspace():
@@ -223,11 +214,9 @@ class BookPreprocessor:
         self, line: str, prev_line: str, line_num: int, total_lines: int
     ) -> str | None:
         """Process a line: return line if it should be kept, else None"""
-        line = line.strip()
         # Keep empty lines for further segmenting
         if not line:
             return line
-        prev_line = prev_line.strip()
 
         if any(
             pattern.search(line)
@@ -564,12 +553,12 @@ class PdfBookPreprocessor(BookPreprocessor):
                     wlist = lines[line_no]
                     # y_top already computed; compute y_bottom in a single pass
                     y_top = y_top_for_line[line_no]
-                    y_bottom = float("-inf")
-                    for w in wlist:
-                        if w[3] > y_bottom:
-                            y_bottom = w[3]
+                    y_bottom = max(w[3] for w in wlist)
+
                     # After sort by x, first element is leftmost, last is rightmost
+                    # Compute left line boundary (first word intersecting start)
                     left_x = wlist[0][0]
+                    # Compute right line boundary (last word intersecting end)
                     right_x = wlist[-1][2]
                     if right_x < left_x:
                         continue
@@ -733,7 +722,7 @@ class PdfBookPreprocessor(BookPreprocessor):
             if not changed:
                 break
 
-        # Deduplicate sequential points with identical x and close y (in-place, no intermediate list)
+        # Deduplicate sequential points with identical x and close y
         write = 0
         for pt in boundary:
             if (

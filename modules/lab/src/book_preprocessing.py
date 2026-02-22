@@ -742,15 +742,18 @@ class PdfBookPreprocessor(BookPreprocessor):
             if not changed:
                 break
 
-        # Deduplicate sequential points with identical x and close y
-        deduped: list[tuple[float, float]] = []
+        # Deduplicate sequential points with identical x and close y (in-place, no intermediate list)
+        write = 0
         for pt in boundary:
-            if deduped and pt[0] == deduped[-1][0] and abs(pt[1] - deduped[-1][1]) < 2:
+            if (
+                write > 0
+                and pt[0] == boundary[write - 1][0]
+                and abs(pt[1] - boundary[write - 1][1]) < 2
+            ):
                 continue
-            deduped.append(pt)
-
-        # Update boundary in place
-        boundary[:] = deduped
+            boundary[write] = pt
+            write += 1
+        del boundary[write:]
 
         # Straighten horizontal joins by averaging y between sequential points
         for i in range(1, len(boundary)):

@@ -3,7 +3,7 @@
     <div>
       <!-- No download in progress -->
       <div v-if="!hasActiveDownload">
-        <button class="btn btn-sm btn-accent btn-outline" title="Manage Downloads" @click="isExpanded = true">
+        <button class="btn btn-sm btn-accent btn-soft" title="Manage Downloads" @click="isExpanded = true">
           <Icon name="lucide:download" class="w-4 h-4 mr-1" />
           Manage Downloads
         </button>
@@ -114,7 +114,7 @@
                   </button>
                   <button
                     v-if="getGroupDownloadStatus(group) === 'cached'"
-                    class="btn btn-error btn-sm btn-outline"
+                    class="btn btn-error btn-sm btn-soft"
                     @click="removeGroupFromCache(group)"
                   >
                     <Icon name="lucide:trash-2" class="w-4 h-4" />
@@ -133,7 +133,7 @@
             <p>Models are downloaded once and cached in your browser for offline use. No data is sent to external servers during inference on downloaded models.</p>
           </small>
           <button
-            class="btn btn-error btn-sm btn-outline"
+            class="btn btn-error btn-sm btn-soft"
             :disabled="hasActiveDownload || !hasCachedGroups"
             @click="clearAllCache"
           >

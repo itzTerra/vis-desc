@@ -16,6 +16,13 @@ input[type=number] {
   --btn-p: 0.65rem;
 }
 
+.btn-soft {
+  --btn-border: var(--btn-color);
+  &[disabled] {
+    --btn-border: #0000;
+  }
+}
+
 .hero {
   min-height: calc(100vh - 114px);
 }

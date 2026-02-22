@@ -92,7 +92,7 @@ export class CacheController {
         downloadProgress[downloadable.id] = 100;
       }
     } catch (error) {
-      throw new Error(`Failed to download group ${group.id}: ${error instanceof Error ? error.message : "Unknown error"}`);
+      throw new Error(`Failed to download ${group.id}: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }
 

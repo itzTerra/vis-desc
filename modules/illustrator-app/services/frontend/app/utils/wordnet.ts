@@ -5,16 +5,6 @@ export type WordNetData = Record<string, Record<string, any>>;
 let cacheName = "wordnet-cache";
 const inMemoryWordnets = new Map<string, WordNetData>();
 
-export async function isCached(idOrUrl: string): Promise<boolean> {
-  try {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    return keys.some((r) => r.url.includes(idOrUrl));
-  } catch {
-    return false;
-  }
-}
-
 async function loadFromCache(idOrUrl: string): Promise<WordNetData | null> {
   try {
     const cache = await caches.open(cacheName);
@@ -137,7 +127,7 @@ export async function downloadAndLoadWordNet(customCacheName?: string, onProgres
   return parsed as WordNetData;
 }
 
-export function synsets(word: string, pos?: string, id: string = "oewn"): any[] {
+export function synsets(word: string, pos: string, id: string = "oewn"): any[] {
   const data = inMemoryWordnets.get(id);
   if (!data) {
     throw new Error(`WordNet with id "${id}" not loaded in memory. Call downloadAndLoadWordNet first.`);
@@ -160,40 +150,27 @@ export function synsets(word: string, pos?: string, id: string = "oewn"): any[] 
   return posEntry.sense;
 }
 
-export function getPolysemyCount(word: string, id: string = "oewn", pos?: string): number {
-  const senses = synsets(word, pos, id);
-  return senses.length;
-}
+// export function clearWordNetFromMemory(id: string) {
+//   inMemoryWordnets.delete(id);
+// }
 
-export const UD_TO_WN_POS: Record<string, string> = {
-  NOUN: "n",
-  VERB: "v",
-  ADJ: "a",
-  ADV: "r",
-};
+// export async function clearWordNetCache(idOrUrl: string) {
+//   try {
+//     const cache = await caches.open(cacheName);
+//     const keys = await cache.keys();
+//     const matches = keys.filter((r) => r.url.includes(idOrUrl));
+//     await Promise.all(matches.map((k) => cache.delete(k)));
+//   } catch (err) {
+//     console.warn("Failed to clear WordNet cache", err);
+//   }
+// }
 
-export function createWordNetContext(id: string = "oewn") {
-  return {
-    synsets: (word: string, options?: { pos?: string }) => {
-      if (options && options.pos) {
-        return synsets(word, options.pos, id);
-      }
-      return synsets(word, undefined, id);
-    },
-  };
-}
-
-export function clearWordNetFromMemory(id: string) {
-  inMemoryWordnets.delete(id);
-}
-
-export async function clearWordNetCache(idOrUrl: string) {
-  try {
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
-    const matches = keys.filter((r) => r.url.includes(idOrUrl));
-    await Promise.all(matches.map((k) => cache.delete(k)));
-  } catch (err) {
-    console.warn("Failed to clear WordNet cache", err);
-  }
-}
+// export async function isCached(idOrUrl: string): Promise<boolean> {
+//   try {
+//     const cache = await caches.open(cacheName);
+//     const keys = await cache.keys();
+//     return keys.some((r) => r.url.includes(idOrUrl));
+//   } catch {
+//     return false;
+//   }
+// }

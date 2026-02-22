@@ -72,9 +72,9 @@
     <div class="bottom-bar">
       <div v-if="!seenHelpOnce" class="tooltip tooltip-open tooltip-info tooltip-left">
         <div class="tooltip-content pointer-events-auto p-0">
-          <div class="relative flex items-end px-2 pb-2 h-10">
+          <div class="relative flex items-end px-2 py-2">
             Start a 1-minute guided tour now!
-            <button class="absolute right-1 top-0 cursor-pointer text-xs" @click="seenHelpOnce = true">
+            <button class="ms-2 cursor-pointer text-xs" @click="seenHelpOnce = true">
               ✕
             </button>
           </div>

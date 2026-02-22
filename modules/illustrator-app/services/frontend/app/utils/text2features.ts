@@ -4,8 +4,8 @@ import type { HFPipelineConfig } from "~/types/cache";
 import { BookNLP, type BookNLPResult, type ExecutionProvider, type SpaCyContext } from "booknlp-ts";
 import { pipeline, type FeatureExtractionPipeline } from "@huggingface/transformers";
 import { MultiWordExpressionTrie } from "~/utils/multiword-trie";
-import { casefold } from "~/utils/utils";
-import { downloadAndLoadWordNet } from "~/utils/wordnet";
+import { casefold, CACHE_NAME } from "~/utils/utils";
+import { downloadAndLoadWordNet, synsets } from "~/utils/wordnet";
 import { estimateSyllables } from "~/utils/syllables";
 
 import charNgrams from "~/assets/data/features/char_ngrams_features.json";
@@ -220,6 +220,7 @@ class FeatureExtractorPipeline {
   FEATURE_COUNT = 3671;
   EXTRACTOR_FEATURE_COUNTS: Record<string, number>;
   CONTENT_UD_POS_TAGS: Set<string>;
+  UD_TO_WN_POS: Record<string, string>;
   PUNCTUATION_SYMBOL_MAP: Record<string, number>;
   _depTreeNgramMap: Map<string, number>;
   _nodeFeaturesEnd = 0;
@@ -404,6 +405,13 @@ class FeatureExtractorPipeline {
     }
 
     this.CONTENT_UD_POS_TAGS = new Set(["NOUN", "PROPN", "VERB", "ADJ", "ADV"]);
+
+    this.UD_TO_WN_POS = {
+      NOUN: "n",
+      VERB: "v",
+      ADJ: "a",
+      ADV: "r",
+    };
 
     this.PUNCTUATION_SYMBOL_MAP = {
       ".": 0,
@@ -1137,18 +1145,28 @@ class FeatureExtractorPipeline {
     return [past / total, present / total, future / total, none / total];
   }
 
-  extractPolysemy(words: TokenData[]): number[] {
-    const DIM = 15;
-    const counts = new Array(DIM).fill(0);
-    if (!words || words.length === 0) return counts;
+  /**
+   * Computes polysemy bin counts for a list of tokens, matching the Python implementation.
+   * Each token must have lemma and pos properties, and UD POS tags are mapped to WordNet POS.
+   * Returns a 15-bin array normalized by counted words.
+   */
+  extractPolysemy(tokens: TokenData[]): number[] {
+    const BINS = 15;
+    const polysemyCounts = Array(BINS).fill(0);
+    if (!tokens || tokens.length === 0) return polysemyCounts;
 
-    for (const w of words) {
-      const n = getPolysemyCount(w.text);
-      const idx = Math.min(Math.max(0, Math.floor(n)), DIM - 1);
-      counts[idx] += 1;
+    let countedWords = 0;
+    for (const token of tokens) {
+      const wnPos = this.UD_TO_WN_POS[token.pos];
+      if (!wnPos) continue;
+      const senses = synsets(token.lemma, wnPos);
+      if (!senses || senses.length === 0) continue;
+      const binIdx = Math.min(senses.length, BINS) - 1;
+      polysemyCounts[binIdx] += 1;
+      countedWords += 1;
     }
-
-    return counts.map((c) => c / words.length);
+    if (countedWords === 0) return polysemyCounts;
+    return polysemyCounts.map(v => v / countedWords);
   }
 
   extractWordConcreteness(ctx: ExtCtx): number[] {

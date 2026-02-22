@@ -1,5 +1,4 @@
 import { loadAsync } from "jszip";
-import { useRuntimeConfig } from "#app";
 
 export type WordNetData = Record<string, Record<string, any>>;
 
@@ -23,11 +22,11 @@ async function loadFromCache(idOrUrl: string): Promise<WordNetData | null> {
   }
 }
 
-export async function downloadAndLoadWordNet(customCacheName?: string, onProgress?: (p: number) => void): Promise<WordNetData> {
+export async function downloadAndLoadWordNet(baseUrl: string, customCacheName?: string, onProgress?: (p: number) => void): Promise<WordNetData> {
   if (customCacheName) cacheName = customCacheName;
 
   const id = "oewn";
-  const url = `${useRuntimeConfig().app.baseURL}english-wordnet-2025-json.zip`;
+  const url = `${baseUrl}english-wordnet-2025-json.zip`;
 
   // If already in memory return
   if (inMemoryWordnets.has(id)) return inMemoryWordnets.get(id)!;

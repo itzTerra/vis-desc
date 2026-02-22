@@ -53,9 +53,11 @@ export class CacheController {
 
   async exists(downloadableId: string): Promise<boolean> {
     await this.init();
-    const keys = this.getKeys(downloadableId);
-    const cacheKeys = await this.cache!.keys();
-    return keys.every((key) => cacheKeys.some((request) => request.url.includes(key)));
+    if (!this.cache) {
+      return false;
+    }
+    const cacheKeys = await this.cache.keys();
+    return this.getKeys(downloadableId).every((key) => cacheKeys.some((request) => request.url.includes(key)));
   }
 
   async downloadGroup(
@@ -98,9 +100,9 @@ export class CacheController {
 
   async remove(downloadableId: string): Promise<void> {
     await this.init();
-    const keys = this.getKeys(downloadableId);
-    const cacheKeys = await this.cache!.keys();
-    for (const key of keys) {
+    if (!this.cache) return;
+    const cacheKeys = await this.cache.keys();
+    for (const key of this.getKeys(downloadableId)) {
       let found = false;
       for (const request of cacheKeys) {
         if (request.url.includes(key)) {

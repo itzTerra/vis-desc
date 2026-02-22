@@ -1,4 +1,5 @@
 from __future__ import annotations
+import bisect
 import html
 import io
 import re
@@ -596,26 +597,17 @@ class PdfBookPreprocessor(BookPreprocessor):
         """Efficiently check if a word range overlaps with any removed range."""
         if not removed_ranges:
             return False
-
-        left, right = 0, len(removed_ranges)
-        while left < right:
-            mid = (left + right) // 2
-            range_start, range_end = removed_ranges[mid]
-
-            if range_end <= word_start:
-                # This range ends before our word starts, look right
-                left = mid + 1
-            else:
-                # This range might overlap, look left
-                right = mid
-
-        for i in range(left, len(removed_ranges)):
-            range_start, range_end = removed_ranges[i]
-            if range_start >= word_end:
-                break
-            if range_start < word_end and range_end > word_start:
+        left = bisect.bisect_left(removed_ranges, (word_start,))
+        # Check range at left (start >= word_start): overlaps if its start < word_end
+        if left < len(removed_ranges):
+            rs, re_ = removed_ranges[left]
+            if rs < word_end and re_ > word_start:
                 return True
-
+        # Check range just before left (start < word_start): overlaps if its end > word_start
+        if left > 0:
+            rs, re_ = removed_ranges[left - 1]
+            if re_ > word_start:
+                return True
         return False
 
     def _smooth_boundary(

@@ -348,9 +348,9 @@ class NLIRobertaScorer extends Scorer {
             payload: {
               scorerId: "nli_roberta",
               pipelineConfig: {
-                model: "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX",
-                type: "zero-shot-classification",
-                dtype: "q8",
+                model: DOWNLOADABLES.nliRoberta.pipelineConfig.model,
+                type: DOWNLOADABLES.nliRoberta.pipelineConfig.type,
+                dtype: DOWNLOADABLES.nliRoberta.pipelineConfig.dtype,
                 device: provider,
               }
             },

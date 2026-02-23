@@ -24,10 +24,10 @@ Output only the extracted visual description, nothing else.
 Examples:
 
 Input: "The old lighthouse stood on the rocky cliff, its white paint peeling in long strips, while the grey stone tower below remained proud and sturdy. Waves crashed violently against the jagged rocks at its base."
-Output: "Old white lighthouse with peeling paint on a rocky cliff, grey stone tower, white paint peeling in strips, jagged rocks below, waves crashing against rocks"
+Output: "Old white lighthouse with peeling paint on a rocky cliff, grey stone tower, white paint peeling in strips, jagged rocks below, waves crashing against rocks."
 
 Input: "She said, 'Do you see it now?' as the narrow alley opened into a quiet courtyard. Tall, weathered brick walls rose on either side, their surfaces broken by rusted fire escapes and a few cracked windows. A thin ribbon of late afternoon light cut across the cobblestones, and a lone bicycle leaned against a dented metal gate painted a faded green."
-Output: "Quiet courtyard with tall weathered brick walls, rusted fire escapes, cracked windows, cobblestone ground, thin ribbon of late afternoon light, lone bicycle leaning against a dented faded green metal gate"
+Output: "Quiet courtyard with tall weathered brick walls, rusted fire escapes, cracked windows, cobblestone ground, thin ribbon of late afternoon light, lone bicycle leaning against a dented, faded green metal gate."
 """
 
 
@@ -54,7 +54,7 @@ def enhance_text_with_llm(text: str) -> str:
             "EINFRA_API_KEY and EINFRA_BASE_URL must be configured in environment variables"
         )
 
-    url = f"{base_url.rstrip('/')}/v1/chat/completions"
+    url = f"{base_url.rstrip('/')}/chat/completions"
 
     headers = {
         "Authorization": f"Bearer {api_key}",

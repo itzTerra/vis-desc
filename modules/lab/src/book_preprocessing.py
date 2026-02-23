@@ -465,10 +465,30 @@ class PdfBookPreprocessor(BookPreprocessor):
                     norm_cache[segment_idx] = self._normalize(raw_segments[segment_idx])
                 cur_seg = norm_cache[segment_idx]
 
-                if (
-                    cur_seg[per_segment_idx : per_segment_idx + len(norm_wtext)]
-                    == norm_wtext
-                ):
+                remaining = len(cur_seg) - per_segment_idx
+                if remaining >= len(norm_wtext):
+                    word_matches = (
+                        cur_seg[per_segment_idx : per_segment_idx + len(norm_wtext)]
+                        == norm_wtext
+                    )
+                elif cur_seg[per_segment_idx:] == norm_wtext[:remaining]:
+                    # Word may span segment boundary — check prefix matches tail of
+                    # cur_seg and suffix matches start of next segment
+                    next_idx = segment_idx + 1
+                    if next_idx < len(raw_segments):
+                        if next_idx not in norm_cache:
+                            norm_cache[next_idx] = self._normalize(
+                                raw_segments[next_idx]
+                            )
+                        word_matches = norm_cache[next_idx].startswith(
+                            norm_wtext[remaining:]
+                        )
+                    else:
+                        word_matches = False
+                else:
+                    word_matches = False
+
+                if word_matches:
                     per_segment_idx += len(norm_wtext)
 
                     # Update cached dict refs only when segment/page changes

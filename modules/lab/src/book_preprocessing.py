@@ -812,7 +812,7 @@ class TxtBookPreprocessor(BookPreprocessor):
         clip = pymupdf.Rect(56, 56, 540, 720)
         buf = io.BytesIO()
         writer = pymupdf.DocumentWriter(buf)
-        # Split text into paragraphs by double newlines, escape HTML, and wrap each in <p>
+        # Split text into paragraphs by newlines, escape HTML, and wrap each in <p>
         paragraphs = [f"<p>{html.escape(line)}</p>" for line in text.split("\n")]
         story = pymupdf.Story(
             "".join(paragraphs),

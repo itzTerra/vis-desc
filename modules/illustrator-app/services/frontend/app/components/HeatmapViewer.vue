@@ -85,8 +85,10 @@ import {
 } from "~/utils/heatmapUtils";
 import { clamp } from "~/utils/utils";
 
+
 const HEATMAP_WIDTH = 56;
 const IMAGE_INDICATOR_STRIP_WIDTH = 16; // Justified on the right of heatmap container
+const MAX_HEATMAP_HEIGHT = 2000; // px, cap to avoid browser crash
 
 const props = defineProps<{
   highlights: Highlight[];
@@ -138,8 +140,20 @@ const totalPages = computed(() => {
 // Use the actual drawing width (excluding the image indicator strip)
 const drawingWidth = HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH;
 
-const heatmapHeight = computed(() => {
+
+// The 'virtual' height is what the heatmap would be if uncapped
+const virtualHeatmapHeight = computed(() => {
   return Math.ceil(totalPages.value * props.pageAspectRatio * drawingWidth);
+});
+
+// The actual canvas height is capped
+const heatmapHeight = computed(() => {
+  return Math.min(virtualHeatmapHeight.value, MAX_HEATMAP_HEIGHT);
+});
+
+// Scale factor from virtual to actual heatmap height
+const heatmapYScale = computed(() => {
+  return virtualHeatmapHeight.value > 0 ? heatmapHeight.value / virtualHeatmapHeight.value : 1;
 });
 
 // Maps viewport size to heatmap canvas space for drag-to-scroll UI
@@ -225,13 +239,14 @@ const segmentDots = computed<SegmentDot[]>(() => {
     const normalizedY = clamp(sumY / pagePoints.length, 0, 1);
 
     // Accounts for page stacking (cumulative Y offset) and aspect ratio
+    // Compute pixel position in virtual heatmap
     const pixel = normalizedToHeatmapPixel(
       normalizedX,
       normalizedY,
       pageNum,
       props.pageAspectRatio,
       drawingWidth,
-      heatmapHeight.value,
+      virtualHeatmapHeight.value,
       totalPages.value
     );
 
@@ -239,6 +254,8 @@ const segmentDots = computed<SegmentDot[]>(() => {
       continue;
     }
 
+    // Scale Y to fit capped heatmap
+    const scaledY = pixel.y * heatmapYScale.value;
     const hasImage = editorStateById.get(highlight.id)?.hasImage ?? false;
     const centerX = HEATMAP_WIDTH - IMAGE_INDICATOR_STRIP_WIDTH / 2;
     dots.push({
@@ -247,7 +264,7 @@ const segmentDots = computed<SegmentDot[]>(() => {
       normalizedX,
       normalizedY,
       x: centerX,
-      y: pixel.y,
+      y: scaledY,
       hasImage,
     });
   }
@@ -255,12 +272,14 @@ const segmentDots = computed<SegmentDot[]>(() => {
   return dots;
 });
 
+
 function renderHeatmap() {
   if (!canvasElement.value) {
     return;
   }
 
   const segments = createSegmentArray(props.highlights);
+  // Render to virtual (uncapped) canvas first
   const renderedCanvas = renderHeatmapCanvas(
     segments,
     drawingWidth,
@@ -276,8 +295,19 @@ function renderHeatmap() {
   }
 
   ctx.clearRect(0, 0, canvasElement.value.width, canvasElement.value.height);
-  ctx.drawImage(renderedCanvas, 0, 0);
+
+  // If scaling is needed, draw scaled
+  if (heatmapYScale.value !== 1) {
+    ctx.drawImage(
+      renderedCanvas,
+      0, 0, renderedCanvas.width, renderedCanvas.height, // source
+      0, 0, renderedCanvas.width, heatmapHeight.value // dest
+    );
+  } else {
+    ctx.drawImage(renderedCanvas, 0, 0);
+  }
 }
+
 
 function handleHeatmapClick(event: PointerEvent) {
   const canvas = canvasElement.value;
@@ -296,12 +326,15 @@ function handleHeatmapClick(event: PointerEvent) {
   const clickX = (event.clientX - rect.left) * scaleX;
   const clickY = (event.clientY - rect.top) * scaleY;
 
-  // Reverse transformation: heatmap pixels → normalized PDF coordinates
+  // Map clickY from capped canvas to virtual heatmap
+  const virtualClickY = clickY / heatmapYScale.value;
+
+  // Reverse transformation: heatmap pixels → normalized PDF coordinates (using virtual height)
   const normalized = heatmapPixelToNormalized(
     clickX,
-    clickY,
+    virtualClickY,
     drawingWidth,
-    heatmapHeight.value,
+    virtualHeatmapHeight.value,
   );
 
   window.scrollTo({

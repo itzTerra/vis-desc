@@ -4,6 +4,7 @@ import html
 import io
 import re
 import logging
+import unicodedata
 import pymupdf
 from dataclasses import dataclass
 import regex
@@ -26,6 +27,7 @@ def _count_words_gt(s: str, n: int) -> bool:
 
 class BookPreprocessor:
     def __init__(self):
+        # These are not fixed with Unicode normalization
         self.before_clean_translation_table = str.maketrans(
             {
                 "\r": None,
@@ -33,8 +35,6 @@ class BookPreprocessor:
                 "’": "'",
                 "“": '"',
                 "”": '"',
-                "？": "?",
-                "！": "!",
             }
         )
 
@@ -118,8 +118,9 @@ class BookPreprocessor:
         self._text_kw_re = re.compile(r'[!?":]')
 
     def _normalize(self, s: str) -> str:
+        nkfc_form = unicodedata.normalize("NFKC", s)
         return self.patterns["normalize"].sub(
-            "", s.translate(self.before_clean_translation_table)
+            "", nkfc_form.translate(self.before_clean_translation_table)
         )
 
     def clean_text(
@@ -364,13 +365,11 @@ class PdfBookPreprocessor(BookPreprocessor):
     ) -> tuple["ExtractionContext", "pymupdf.Document"]:
         if config is None:
             config = PdfExtractionConfig()
-        try:
-            pdf_bytes = pdf_file.read()
-            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-            del pdf_bytes  # free immediately after doc is open
-        except Exception:
-            self.logger.exception("Failed to open PDF")
-            raise
+
+        pdf_bytes = pdf_file.read()
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        del pdf_bytes  # free immediately after doc is open
+
         try:
             cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
                 doc, config.max_pages

@@ -28,6 +28,20 @@ export type HeatmapSegment = {
 
 export type PagePolygons = number[][] | number[][][];
 
+export type DegenerateRect = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  opacity: number;
+  color: string;
+};
+
+export type HeatmapRenderResult = {
+  canvas: HTMLCanvasElement;
+  degenerateRects: DegenerateRect[];
+};
+
 /**
  * Returns the first non-empty polygon point list for a page entry.
  *
@@ -163,17 +177,20 @@ export function scoreToOpacity(score: number): number {
  * @param canvasWidth - Heatmap canvas width in pixels.
  * @param pageAspectRatio - Page height divided by width.
  * @param totalPageCount - Total number of pages in the document.
- * @returns A rendered canvas that can be drawn onto the visible heatmap.
+ * @param heatmapYScale - Scale factor from virtual canvas height to display height.
+ * @returns Rendered virtual canvas and degenerate rects to draw directly on the display canvas.
  */
 export function renderHeatmapCanvas(
   segments: HeatmapSegment[],
   canvasWidth: number,
   pageAspectRatio: number,
-  totalPageCount: number
-): HTMLCanvasElement {
+  totalPageCount: number,
+  heatmapYScale: number
+): HeatmapRenderResult {
   const heatmapHeight = Math.ceil(totalPageCount * pageAspectRatio * canvasWidth);
+  const degenerateRects: DegenerateRect[] = [];
   if (typeof document === "undefined") {
-    return { width: canvasWidth, height: heatmapHeight } as HTMLCanvasElement;
+    return { canvas: { width: canvasWidth, height: heatmapHeight } as HTMLCanvasElement, degenerateRects };
   }
 
   const canvas = document.createElement("canvas");
@@ -182,10 +199,13 @@ export function renderHeatmapCanvas(
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
-    return canvas;
+    return { canvas, degenerateRects };
   }
 
   const segmentColor = getComputedStyle(document.documentElement).getPropertyValue("--color-secondary");
+
+  const MIN_RECT_HEIGHT = 0.5;
+  const degenerateRectsByY = new Map<number, DegenerateRect>();
 
   try {
     for (const segment of segments) {
@@ -210,13 +230,33 @@ export function renderHeatmapCanvas(
       }
 
       if (pixelPoints.length >= 3) {
-        ctx.beginPath();
-        ctx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
-        for (let i = 1; i < pixelPoints.length; i++) {
-          ctx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+        const xs = pixelPoints.map((p) => p.x);
+        const ys = pixelPoints.map((p) => p.y);
+        const minX = Math.min(...xs);
+        const minY = Math.min(...ys);
+        const rawW = Math.max(...xs) - minX;
+        const rawH = Math.max(...ys) - minY;
+        const scaledH = rawH * heatmapYScale;
+
+        if (rawW < MIN_RECT_HEIGHT || scaledH < MIN_RECT_HEIGHT) {
+          // Draw in display space after drawImage to avoid bilinear wash-out on extreme scales
+          const rx = Math.round(minX);
+          const ry = Math.round(minY * heatmapYScale);
+          const rw = Math.max(MIN_RECT_HEIGHT, Math.ceil(rawW));
+          const rh = Math.max(MIN_RECT_HEIGHT, Math.ceil(rawH * heatmapYScale));
+          const existing = degenerateRectsByY.get(ry);
+          if (!existing || opacity > existing.opacity) {
+            degenerateRectsByY.set(ry, { x: rx, y: ry, w: rw, h: rh, opacity, color: segmentColor });
+          }
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
+          for (let i = 1; i < pixelPoints.length; i++) {
+            ctx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+          }
+          ctx.closePath();
+          ctx.fill();
         }
-        ctx.closePath();
-        ctx.fill();
       }
     }
   } catch (error) {
@@ -225,7 +265,8 @@ export function renderHeatmapCanvas(
     ctx.globalAlpha = 1;
   }
 
-  return canvas;
+  degenerateRects.push(...degenerateRectsByY.values());
+  return { canvas, degenerateRects };
 }
 
 /**

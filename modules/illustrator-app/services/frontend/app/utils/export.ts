@@ -237,6 +237,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     let pageQueue = [];
     let activeRenders = 0;
     let renderTimeout = null;
+    let currentDpr = window.devicePixelRatio || 1;
 
     async function initPdf() {
       try {
@@ -395,6 +396,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
             // Render text layer
             const textLayerDiv = pageContent.querySelector('.textLayer');
             if (textLayerDiv) {
+              textLayerDiv.innerHTML = '';
               const textContent = await page.getTextContent();
               const textLayer = new TextLayer({
                 textContentSource: textContent,
@@ -411,18 +413,20 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
         const imagesContainer = document.querySelector(\`[data-page="\${pageNum}"].page-images\`);
 
         if (imagesContainer && highlightsOnPage.length > 0 && pageWrapper) {
-          const pageContent = pageWrapper.querySelector('.page-content');
-          const canvas = pageContent?.querySelector('canvas');
-          const canvasHeight = canvas?.height || 0;
+          // pageHeightPx is the CSS pixel height of the rendered page — use canvas
+          // dimensions directly to avoid relying on DOM layout which may not have
+          // reflowed yet (especially at non-default DPR on page load).
+          const pageHeightPx = canvas.height / devicePixelRatio;
 
           // Ensure container is tall enough for positioned buttons
-          if (canvasHeight > 0) {
-            imagesContainer.style.minHeight = (canvasHeight / devicePixelRatio) + 'px';
+          if (pageHeightPx > 0) {
+            imagesContainer.style.minHeight = pageHeightPx + 'px';
           }
 
-          highlightsOnPage.forEach((highlight) => {
-            if (imagesContainer.querySelector(\`[data-highlight="\${highlight.id}"]\`)) return;
+          // Clear existing buttons so re-renders (e.g. after DPR change) reposition them correctly
+          imagesContainer.innerHTML = '';
 
+          highlightsOnPage.forEach((highlight) => {
             const button = document.createElement('button');
             button.className = 'image-button';
             button.setAttribute('data-highlight', highlight.id);
@@ -435,9 +439,9 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
             button.appendChild(img);
 
             // Position button vertically based on highlight's polygon coordinates
-            if (highlight.polygons[\`\${pageNum - 1}\`] && canvasHeight > 0) {
+            if (highlight.polygons[\`\${pageNum - 1}\`] && pageHeightPx > 0) {
               const polygons = highlight.polygons[\`\${pageNum - 1}\`];
-              // Get the minimum Y coordinate from all polygon points
+              // Get the minimum Y coordinate from all polygon points (normalized 0–1)
               let minY = Infinity;
               polygons.forEach(polygon => {
                 for (let i = 1; i < polygon.length; i += 2) {
@@ -446,7 +450,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
               });
 
               if (minY !== Infinity && minY >= 0) {
-                const topOffset = minY / devicePixelRatio * imagesContainer.clientHeight;
+                const topOffset = minY * pageHeightPx;
                 button.style.top = Math.max(0, topOffset - 36) + 'px';
               }
             }
@@ -500,6 +504,33 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
     initPdf();
     initImageButtons();
+
+    window.addEventListener('resize', () => {
+      const newDpr = window.devicePixelRatio || 1;
+      if (newDpr === currentDpr) return;
+      currentDpr = newDpr;
+
+      // Reset rendered state so pages re-render at the new DPR
+      pageRendering = {};
+
+      // Re-queue visible and nearby pages
+      const pdfViewer = document.getElementById('pdf-viewer');
+      if (pdfViewer) {
+        const wrappers = pdfViewer.querySelectorAll('.page-wrapper');
+        for (const wrapper of wrappers) {
+          const pageNum = parseInt(wrapper.getAttribute('data-page') || '0', 10);
+          if (!pageNum) continue;
+          const rect = wrapper.getBoundingClientRect();
+          const vh = window.innerHeight;
+          if (rect.bottom >= -vh && rect.top <= vh * 2) {
+            if (!pageQueue.includes(pageNum)) pageQueue.push(pageNum);
+          }
+        }
+      }
+
+      clearTimeout(renderTimeout);
+      renderTimeout = setTimeout(renderVisiblePages, 100);
+    });
   </script>
 </body>
 </html>`;

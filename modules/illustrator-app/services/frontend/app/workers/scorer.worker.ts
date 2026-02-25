@@ -127,6 +127,9 @@ let pauseRequested = false;
 let pausePromise: Promise<void> | null = null;
 let pauseResolve: (() => void) | null = null;
 
+// Cancellation: incremented each time a new evaluate message arrives
+let evaluationGeneration = 0;
+
 function waitIfPaused(): Promise<void> {
   if (!pauseRequested) return Promise.resolve();
   if (!pausePromise) {
@@ -137,7 +140,7 @@ function waitIfPaused(): Promise<void> {
   return pausePromise;
 }
 
-async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<void> {
+async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload, generation: number): Promise<void> {
   const scorerState = scorers.get("minilm_catboost");
   if (!scorerState || !scorerState.featureService || !scorerState.catboostOrt) {
     postRecv({ type: "error", payload: { message: "MiniLM-CatBoost scorer not loaded" } });
@@ -150,6 +153,7 @@ async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<vo
   try {
     for (let i = 0; i < texts.length; i += batchSize) {
       await waitIfPaused();
+      if (generation !== evaluationGeneration) return;
       const batchTexts = texts.slice(i, i + batchSize);
 
       const featureArrays = (await scorerState.featureService.getFeatures(batchTexts)).map(
@@ -171,6 +175,7 @@ async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<vo
       feeds[inputName] = new ort.Tensor("float32", concat, [batchCount, featureDim]);
 
       const outputs = await scorerState.catboostOrt.run(feeds as any);
+      if (generation !== evaluationGeneration) return;
       const outTensor = outputs[outputName] as ort.Tensor;
       const scoresArray = outTensor.data as Float32Array;
 
@@ -182,13 +187,15 @@ async function evaluateMiniLMCatBoost(data: CatboostEvaluatePayload): Promise<vo
       postRecv({ type: "progress", payload: { batchIndex: Math.floor(i / batchSize) + 1, totalBatches, results } });
     }
 
+    if (generation !== evaluationGeneration) return;
     postRecv({ type: "complete", payload: { success: true } });
   } catch (error) {
+    if (generation !== evaluationGeneration) return;
     postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
-async function evaluateNLIRoberta(data: NLIEvaluatePayload): Promise<void> {
+async function evaluateNLIRoberta(data: NLIEvaluatePayload, generation: number): Promise<void> {
   const scorerState = scorers.get("nli_roberta");
   if (!scorerState || !scorerState.nliPipeline) {
     postRecv({ type: "error", payload: { message: "NLI-RoBERTa scorer not loaded" } });
@@ -201,12 +208,14 @@ async function evaluateNLIRoberta(data: NLIEvaluatePayload): Promise<void> {
   try {
     for (let i = 0; i < texts.length; i += batchSize) {
       await waitIfPaused();
+      if (generation !== evaluationGeneration) return;
       const batchTexts = texts.slice(i, i + batchSize);
 
       const results = await scorerState.nliPipeline(batchTexts, candidateLabels, {
         hypothesis_template: hypothesisTemplate,
       });
 
+      if (generation !== evaluationGeneration) return;
       const segmentProbs = results.map((result: any) => {
         const scores = candidateLabels.map((label) => {
           const index = result.labels.indexOf(label);
@@ -225,19 +234,21 @@ async function evaluateNLIRoberta(data: NLIEvaluatePayload): Promise<void> {
       postRecv({ type: "progress", payload: { batchIndex: i / batchSize + 1, totalBatches, results: batchResults } });
     }
 
+    if (generation !== evaluationGeneration) return;
     postRecv({ type: "complete", payload: { success: true } });
   } catch (error) {
+    if (generation !== evaluationGeneration) return;
     postRecv({ type: "error", payload: { message: (error as Error).message, stack: (error as Error).stack } });
   }
 }
 
-async function evaluateSegments(data: EvaluateMessage["payload"]): Promise<void> {
+async function evaluateSegments(data: EvaluateMessage["payload"], generation: number): Promise<void> {
   const scorerId = data.scorerId;
 
   if (scorerId === "minilm_catboost") {
-    await evaluateMiniLMCatBoost(data as CatboostEvaluatePayload);
+    await evaluateMiniLMCatBoost(data as CatboostEvaluatePayload, generation);
   } else if (scorerId === "nli_roberta") {
-    await evaluateNLIRoberta(data as NLIEvaluatePayload);
+    await evaluateNLIRoberta(data as NLIEvaluatePayload, generation);
   } else {
     postRecv({ type: "error", payload: { message: `Unknown scorer type: ${scorerId}` } });
   }
@@ -253,7 +264,7 @@ self.onmessage = async (event: MessageEvent<SendMessage>) => {
     await loadModel((event.data as LoadMessage).payload);
     break;
   case "evaluate":
-    await evaluateSegments((event.data as EvaluateMessage).payload);
+    await evaluateSegments((event.data as EvaluateMessage).payload, ++evaluationGeneration);
     break;
   case "pause":
     pauseRequested = true;

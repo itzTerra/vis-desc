@@ -280,11 +280,12 @@ function renderHeatmap() {
 
   const segments = createSegmentArray(props.highlights);
   // Render to virtual (uncapped) canvas first
-  const renderedCanvas = renderHeatmapCanvas(
+  const { canvas: renderedCanvas, degenerateRects } = renderHeatmapCanvas(
     segments,
     drawingWidth,
     props.pageAspectRatio,
-    totalPages.value
+    totalPages.value,
+    heatmapYScale.value
   );
 
   cachedHeatmapCanvas.value = renderedCanvas;
@@ -305,6 +306,20 @@ function renderHeatmap() {
     );
   } else {
     ctx.drawImage(renderedCanvas, 0, 0);
+  }
+
+  // Draw degenerate rects directly in display space — bypasses drawImage bilinear wash-out
+  if (degenerateRects.length > 0) {
+    console.debug("[HeatmapViewer] Rendering degenerate rects:", degenerateRects.length);
+    try {
+      for (const rect of degenerateRects) {
+        ctx.globalAlpha = rect.opacity;
+        ctx.fillStyle = rect.color;
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      }
+    } finally {
+      ctx.globalAlpha = 1;
+    }
   }
 }
 

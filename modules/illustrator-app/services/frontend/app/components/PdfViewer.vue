@@ -71,6 +71,7 @@
       :page-aspect-ratio="pageAspectRatio"
       :page-refs="pageRefs"
       :editor-states="editorStates"
+      :page-height="pdfPageHeight"
     />
     <div class="fixed bottom-0 left-0 flex justify-center z-120">
       <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">

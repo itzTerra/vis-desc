@@ -96,6 +96,7 @@ const props = defineProps<{
   pageAspectRatio: number;
   pageRefs: Element[];
   editorStates: EditorImageState[];
+  pageHeight: number;
 }>();
 
 const isExpanded = ref(true);
@@ -170,11 +171,7 @@ const viewportRectHeight = computed(() => {
 
 
 const scrollableHeight = computed(() => {
-  const lastPage = props.pageRefs[props.pageRefs.length - 1];
-  const contentHeight = lastPage
-    ? lastPage.getBoundingClientRect().bottom + window.scrollY - pageTop.value
-    : totalHeight.value;
-  return Math.max(0, contentHeight - viewportHeight.value);
+  return Math.max(0, totalHeight.value - viewportHeight.value);
 });
 
 // Map document scroll position to heatmap viewport rectangle Y coordinate
@@ -511,6 +508,13 @@ watch(
   () => props.pageRefs.length,
   () => {
     measureLayout();
+  }
+);
+
+watch(
+  () => props.pageHeight,
+  () => {
+    nextTick(measureLayout);
   }
 );
 

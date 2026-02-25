@@ -6,7 +6,7 @@ import re
 import logging
 import unicodedata
 import pymupdf
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import regex
 
 
@@ -39,14 +39,19 @@ class BookPreprocessor:
         )
 
         self.patterns = {
+            # "page_numbers": re.compile(
+            #     r"[\n\r][^\S\r\n]*(?:page\s+)?(?:\d+|\[?\d+\]?)[^\S\r\n]*(?=[\n\r]|$)",
+            #     re.IGNORECASE,
+            # ),
             "page_numbers": re.compile(
-                r"[\n\r][^\S\r\n]*(?:page\s+)?(?:\d+|\[?\d+\]?)[^\S\r\n]*(?=[\n\r]|$)",
-                re.IGNORECASE,
+                r"^[\s\[]*(?:page)?\.?\s*(?:[ivxlcdm]{1,7}|\d+)\.?[\]\s]*$",
+                re.IGNORECASE | re.MULTILINE,
             ),
             "chapter_headers": re.compile(
-                r"^\s*(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivx]+|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)(?:\.|:|\s|$)",
-                re.IGNORECASE,
+                r"^\s*prologue|epilogue|(?:(?:chapter|ch\.?|part|section|§|act|volume)\s+(?:[ivxlcdm]{1,7}|\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty))[\.:\s]*$",
+                re.IGNORECASE | re.MULTILINE,
             ),
+            "short_full_caps": regex.compile(r"^[\p{Lu}\s]{1,30}$", re.MULTILINE),
             "roman_numerals": re.compile(r"^\s*[ivxlcdm]{1,7}\s*$", re.IGNORECASE),
             "copyright": re.compile(
                 r"©|\bcopyright\b|\ball rights reserved\b", re.IGNORECASE
@@ -65,12 +70,13 @@ class BookPreprocessor:
             ),
             "numeric_only": re.compile(r"^\s*[\d\s\.\-\/]+\s*$"),
             "line_breaked_sentence": regex.compile(
-                r"(?<=[^.!?。:\"'–—-])(?:\n(?=[–—-]?(?:\p{L}|[\"'])))|(?:\s+(?=[–—-]?(?:\p{Ll}|I[ ']|[\"'])))"
+                r"(?:(?<=[\w,;'–—-][\")\]>]?)|(?<= \"[^\n\"]+[?!.]))\s*\n\s*(?=[\w,;(\[<\"'–—-])"
             ),
-            "line_breaked_sentence_a_end": regex.compile(r"[^.!?。:\"'–—-]$"),
-            "line_breaked_sentence_b_start": regex.compile(r"[–—-]?(?:\p{L}|[\"'])"),
-            "hyphenated_sentence": regex.compile(r"(?<=\p{Ll})-\n(?=\p{Ll})"),
+            "line_breaked_sentence_a_end": regex.compile(r"[\w,;'–—-][\")\]>]?\s*$"),
+            "line_breaked_sentence_b_start": regex.compile(r"\s*[\w,;(\"'–—-]"),
+            # "hyphenated_sentence": regex.compile(r"(?<=\p{Ll})-\n(?=\p{Ll})"),
             "normalize": re.compile(r"[\s\-‐‑‒–—]+"),
+            "long_symbol_block": re.compile(r"(?:\s*[^\w]\s*){6,}"),
         }
 
         self.metadata_keywords = {
@@ -135,7 +141,7 @@ class BookPreprocessor:
                 return text, [text], []
             return text
 
-        lines = text.split("\n")
+        lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
 
         cleaned, removed_lines = self._sequential_clean(lines, prev_line)
         if return_split_with_removed:
@@ -154,8 +160,6 @@ class BookPreprocessor:
         text = self.patterns["page_numbers"].sub("", text)
 
         # Unhyphenate
-        text = self.patterns["hyphenated_sentence"].sub("", text)
-
         # Remove functional newlines for page width control - they break the text splitter semantics
         # -> replace newline in the middles of sentences with a white space, e.g. 'Soon\nanother clock began, on a hard, decisive note.'
         text = self.patterns["line_breaked_sentence"].sub(" ", text)
@@ -196,7 +200,6 @@ class BookPreprocessor:
         self, lines: list[str], saved_prev_line=""
     ) -> tuple[list[str], set[int]]:
         """Process a batch of lines and filter them"""
-        lines = [ln.strip() for ln in lines]  # pre-strip once
         processed: list[str] = []
         removed_lines: set[int] = set()
         total_lines = len(lines)
@@ -223,6 +226,8 @@ class BookPreprocessor:
             pattern.search(line)
             for pattern in (
                 self.patterns["numeric_only"],
+                self.patterns["long_symbol_block"],
+                self.patterns["short_full_caps"],
                 self.patterns["roman_numerals"],
                 self.patterns["footnote_refs"],
                 self.patterns["copyright"],
@@ -238,10 +243,6 @@ class BookPreprocessor:
         line_lower = line.lower()
         word_count = line_lower.count(" ") + 1
         is_upper = line.isupper()
-
-        # All-caps short lines
-        if is_upper and word_count < self.short_line_threshold:
-            return "\n"
 
         # Other short lines without typical sentence characters
         is_end_of_paragraph = (
@@ -286,10 +287,21 @@ class PdfExtractionConfig:
 
 
 @dataclass
+class _PageContext:
+    width: float
+    height: float
+    spans: list[tuple[int, int, float, float, float, float, str]]
+    # Each entry: (block_idx, line_idx, x0, y0, x1, y1, text)
+
+
+@dataclass
 class ExtractionContext:
     cleaned_text: str
     normalized_full_text: str
     removed_ranges: list[tuple[int, int]]
+    page_contexts: dict[int, _PageContext] = field(
+        default_factory=dict
+    )  # page_idx -> compact span context
 
 
 class PdfBookPreprocessor(BookPreprocessor):
@@ -301,9 +313,36 @@ class PdfBookPreprocessor(BookPreprocessor):
         self.polygon_padding_px = polygon_padding_px
         self.logger = logging.getLogger("django")
 
+    @staticmethod
+    def _extract_page_context(page) -> tuple[str, _PageContext]:
+        """Extract plain text and compact span context from a page using word-level extraction."""
+        text_parts: list[str] = []
+        spans: list[tuple[int, int, float, float, float, float, str]] = []
+        prev_block, prev_line = None, None
+        for x0, y0, x1, y1, word, block_no, line_no, word_no in page.get_text(
+            "words", sort=True
+        ):
+            if prev_block is not None and (block_no, line_no) != (
+                prev_block,
+                prev_line,
+            ):
+                text_parts.append("\n")
+            elif prev_block is not None:
+                text_parts.append(" ")
+            text_parts.append(word)
+            spans.append((block_no, line_no, x0, y0, x1, y1, word))
+            prev_block, prev_line = block_no, line_no
+        if prev_block is not None:
+            text_parts.append("\n")
+        return "".join(text_parts), _PageContext(
+            width=page.rect.width or 1.0,
+            height=page.rect.height or 1.0,
+            spans=spans,
+        )
+
     def _get_from_doc(
         self, doc, page_limit: int | None = None
-    ) -> tuple[str, str, list[tuple[int, int]]]:
+    ) -> tuple[str, str, list[tuple[int, int]], dict[int, _PageContext]]:
         if page_limit is None:
             page_limit = len(doc)
         cleaned_text_io = io.StringIO()
@@ -312,10 +351,12 @@ class PdfBookPreprocessor(BookPreprocessor):
         nft_parts: list[str] = []
         nft_len = 0
         removed_ranges: list[tuple[int, int]] = []
+        page_contexts: dict[int, _PageContext] = {}
         for i in range(page_limit):
             try:
                 page = doc[i]
-                page_text = page.get_textpage().extractText(sort=True)  # type: ignore
+                page_text, page_ctx = self._extract_page_context(page)
+                page_contexts[i] = page_ctx
                 cleaned_page_text, lines, removed_lines = self.clean_text(
                     page_text, last_line_of_last_page, return_split_with_removed=True
                 )
@@ -358,7 +399,7 @@ class PdfBookPreprocessor(BookPreprocessor):
         cleaned_text_io.write(pending_page)
         cleaned_text = cleaned_text_io.getvalue()
         normalized_full_text = "".join(nft_parts)
-        return cleaned_text, normalized_full_text, removed_ranges
+        return cleaned_text, normalized_full_text, removed_ranges, page_contexts
 
     def extract_from_memory(
         self, pdf_file, config: PdfExtractionConfig | None = None
@@ -371,8 +412,8 @@ class PdfBookPreprocessor(BookPreprocessor):
         del pdf_bytes  # free immediately after doc is open
 
         try:
-            cleaned_text, normalized_full_text, removed_ranges = self._get_from_doc(
-                doc, config.max_pages
+            cleaned_text, normalized_full_text, removed_ranges, page_contexts = (
+                self._get_from_doc(doc, config.max_pages)
             )
         except Exception:
             doc.close()
@@ -381,6 +422,7 @@ class PdfBookPreprocessor(BookPreprocessor):
             cleaned_text=cleaned_text,
             normalized_full_text=normalized_full_text,
             removed_ranges=removed_ranges,
+            page_contexts=page_contexts,
         )
         return ctx, doc
 
@@ -395,9 +437,17 @@ class PdfBookPreprocessor(BookPreprocessor):
             'polygons': { page_index: [(x1, y1), (x2, y2), ...]  }  # normalized coordinates
         }
         """
+        page_contexts = ctx.page_contexts
+        if not page_contexts:
+            # ctx.page_contexts not populated (e.g. TXT flow): read from doc now
+            for i in range(len(doc)):
+                try:
+                    _, page_contexts[i] = self._extract_page_context(doc[i])
+                except Exception:
+                    pass
         try:
             seg_to_page_to_polygon = self._segments_to_page_polygons(
-                doc, segments, ctx.normalized_full_text, ctx.removed_ranges
+                page_contexts, segments, ctx.normalized_full_text, ctx.removed_ranges
             )
         except Exception:
             self.logger.exception("Failed to compute polygons")
@@ -415,12 +465,12 @@ class PdfBookPreprocessor(BookPreprocessor):
 
     def _segments_to_page_polygons(
         self,
-        doc,
+        page_contexts: dict[int, _PageContext],
         segments: list[str],
         normalized_full_text: str,
         removed_ranges: list[tuple[int, int]],
     ) -> dict[int, list[tuple[float, float]]]:
-        """Convert a segment of text into page polygons."""
+        """Convert segments of text into page polygons using span bounding boxes."""
         raw_segments = segments
         norm_cache: dict[int, str] = {}
         segment_idx = 0
@@ -434,25 +484,24 @@ class PdfBookPreprocessor(BookPreprocessor):
         cur_page_idx = -1
         cur_page_dict: dict = {}
 
-        for page_idx, page in enumerate(doc):
-            try:
-                words = page.get_textpage().extractWORDS()
-            except Exception:
-                continue
-            for x0, y0, x1, y1, wtext, block, line_no, _wno in words:
-                norm_wtext = self._normalize(wtext)
-                if not norm_wtext:
+        all_segs_done = False
+        for page_idx, page_ctx in sorted(page_contexts.items()):
+            if all_segs_done:
+                break
+            for block_idx, line_idx, x0, y0, x1, y1, stext in page_ctx.spans:
+                norm_stext = self._normalize(stext)
+                if not norm_stext:
                     continue
 
-                if not normalized_full_text.startswith(norm_wtext, original_text_idx):
-                    self.logger.warning(
-                        f"Word '{wtext}' does not match word at original_text_idx {original_text_idx}"
-                    )
+                if not normalized_full_text.startswith(norm_stext, original_text_idx):
+                    # self.logger.warning(
+                    #     f"Span '{stext}' does not match at original_text_idx {original_text_idx}"
+                    # )
                     continue
 
-                original_text_idx += len(norm_wtext)
+                original_text_idx += len(norm_stext)
                 word_in_removed_range = self._word_overlaps_removed_ranges(
-                    original_text_idx - len(norm_wtext),
+                    original_text_idx - len(norm_stext),
                     original_text_idx,
                     removed_ranges,
                 )
@@ -465,13 +514,13 @@ class PdfBookPreprocessor(BookPreprocessor):
                 cur_seg = norm_cache[segment_idx]
 
                 remaining = len(cur_seg) - per_segment_idx
-                if remaining >= len(norm_wtext):
-                    word_matches = (
-                        cur_seg[per_segment_idx : per_segment_idx + len(norm_wtext)]
-                        == norm_wtext
+                if remaining >= len(norm_stext):
+                    span_matches = (
+                        cur_seg[per_segment_idx : per_segment_idx + len(norm_stext)]
+                        == norm_stext
                     )
-                elif cur_seg[per_segment_idx:] == norm_wtext[:remaining]:
-                    # Word may span segment boundary — check prefix matches tail of
+                elif cur_seg[per_segment_idx:] == norm_stext[:remaining]:
+                    # Span may straddle a segment boundary — check prefix matches tail of
                     # cur_seg and suffix matches start of next segment
                     next_idx = segment_idx + 1
                     if next_idx < len(raw_segments):
@@ -479,16 +528,16 @@ class PdfBookPreprocessor(BookPreprocessor):
                             norm_cache[next_idx] = self._normalize(
                                 raw_segments[next_idx]
                             )
-                        word_matches = norm_cache[next_idx].startswith(
-                            norm_wtext[remaining:]
+                        span_matches = norm_cache[next_idx].startswith(
+                            norm_stext[remaining:]
                         )
                     else:
-                        word_matches = False
+                        span_matches = False
                 else:
-                    word_matches = False
+                    span_matches = False
 
-                if word_matches:
-                    per_segment_idx += len(norm_wtext)
+                if span_matches:
+                    per_segment_idx += len(norm_stext)
 
                     # Update cached dict refs only when segment/page changes
                     if segment_idx != cur_seg_idx:
@@ -500,18 +549,19 @@ class PdfBookPreprocessor(BookPreprocessor):
                         cur_page_idx = page_idx
 
                     if per_segment_idx > len(cur_seg):
-                        # add part of word rect to current segment, other part to next segment
-                        split_at = len(norm_wtext) - (per_segment_idx - len(cur_seg))
-                        avg_letter_width = (x1 - x0) / len(wtext)
+                        # Span straddles segment boundary: split bbox proportionally
+                        split_at = len(norm_stext) - (per_segment_idx - len(cur_seg))
+                        avg_norm_char_width = (x1 - x0) / max(len(norm_stext), 1)
 
-                        cur_page_dict.setdefault((block, line_no), []).append(
-                            (x0, y0, x0 + split_at * avg_letter_width, y1)
+                        cur_page_dict.setdefault((block_idx, line_idx), []).append(
+                            (x0, y0, x0 + split_at * avg_norm_char_width, y1)
                         )
                         per_segment_idx -= len(cur_seg)
                         # Free previous segment's normalized form
                         del norm_cache[segment_idx]
                         segment_idx += 1
                         if segment_idx >= len(raw_segments):
+                            all_segs_done = True
                             break
                         # Normalize next segment
                         if segment_idx not in norm_cache:
@@ -526,12 +576,12 @@ class PdfBookPreprocessor(BookPreprocessor):
                         if page_idx != cur_page_idx:
                             cur_page_dict = cur_seg_dict.setdefault(page_idx, {})
                             cur_page_idx = page_idx
-                        cur_page_dict.setdefault((block, line_no), []).append(
-                            (x0 + split_at * avg_letter_width, y0, x1, y1)
+                        cur_page_dict.setdefault((block_idx, line_idx), []).append(
+                            (x0 + split_at * avg_norm_char_width, y0, x1, y1)
                         )
                         continue
 
-                    cur_page_dict.setdefault((block, line_no), []).append(
+                    cur_page_dict.setdefault((block_idx, line_idx), []).append(
                         (x0, y0, x1, y1)
                     )
                     if per_segment_idx == len(cur_seg):
@@ -542,18 +592,18 @@ class PdfBookPreprocessor(BookPreprocessor):
                         cur_seg_idx = -1  # invalidate segment cache
                         cur_page_idx = -1
                         if segment_idx >= len(raw_segments):
+                            all_segs_done = True
                             break
-            del words  # free page word list
 
         # Convert to list before deleting the outer dict to free it early
         page_to_lines_by_seg = list(seg_to_page_to_lines.items())
         del seg_to_page_to_lines
         seg_to_page_to_polygon = {}
 
-        # Pre-cache page dimensions to avoid repeated doc[i] lookups in the loop
+        # Pre-cache page dimensions from stored page contexts
         page_dims: dict[int, tuple[float, float]] = {
-            i: (doc[i].rect.width or 1.0, doc[i].rect.height or 1.0)
-            for i in range(len(doc))
+            page_idx: (page_ctx.width, page_ctx.height)
+            for page_idx, page_ctx in page_contexts.items()
         }
 
         for segment_idx, page_to_lines in page_to_lines_by_seg:

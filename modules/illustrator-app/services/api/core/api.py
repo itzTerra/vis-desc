@@ -51,7 +51,7 @@ pdf_preprocessor = PdfBookPreprocessor(
     polygon_padding_px=settings.POLYGON_PADDING_PX,
 )
 txt_preprocessor = TxtBookPreprocessor()
-text_segmenter = TextSegmenter((settings.SEGMENT_CHARS_MIN, settings.SEGMENT_CHARS_MAX))
+text_segmenter = TextSegmenter()
 
 spacy_nlp = spacy.load(settings.SPACY_MODEL, disable=["ner"])
 spacy_pipeline = SpacyPipeline(spacy_nlp)

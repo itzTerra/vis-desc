@@ -1,4 +1,3 @@
-import sys
 import json
 from pathlib import Path
 from collections import defaultdict
@@ -9,7 +8,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.cm as cm
 
-sys.path.append(str(Path(__file__).resolve().parents[3]))
 from evaluation.core import (
     LABEL_FONT_SIZE,
     get_confusion_matrix,

@@ -8,7 +8,7 @@ import argparse
 import math
 import csv
 
-import label_studio_models as lsm
+import dataset_small.label_studio_models as lsm
 
 ANNOTATOR_ID_GROUPS: dict[int, int] = {
     # Example: 101: 1, 102: 1, 201: 2, 202: 2

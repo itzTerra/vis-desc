@@ -7,15 +7,15 @@ import filecmp
 # List of file pairs to check for identity
 PAIRS = [
     (
-        "modules/lab/src/book_preprocessing.py",
+        "modules/lab/src/dataset_small/book_preprocessing.py",
         "modules/illustrator-app/services/api/core/tools/book_preprocessing.py",
     ),
     (
-        "modules/lab/src/book_segmenting.py",
+        "modules/lab/src/dataset_small/book_segmenting.py",
         "modules/illustrator-app/services/api/core/tools/book_segmenting.py",
     ),
     (
-        "modules/lab/src/text2features.py",
+        "modules/lab/src/models/encoder/text2features.py",
         "modules/illustrator-app/services/api/core/tools/text2features.py",
     ),
     (

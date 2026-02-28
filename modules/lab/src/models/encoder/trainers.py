@@ -955,7 +955,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         test_dataset = CustomDataset(test_df, self.tokenizer)
         test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
-        sess = rt.InferenceSession(str(model_path / "model.onnx"))
+        sess = rt.InferenceSession(str(model_path.stem / "model.onnx"))
 
         y_true_test, y_pred_test = [], []
         for batch in tqdm(test_loader, desc="Evaluating test set"):

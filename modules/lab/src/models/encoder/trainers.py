@@ -956,6 +956,9 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
         test_df = test_df.reset_index(drop=True)
 
+        if self.tokenizer is None or self.train_df is None:
+            self._load_data()
+
         # Note: Features are not scaled here because the ONNX model includes the scaler.
 
         test_dataset = CustomDataset(test_df, self.tokenizer)

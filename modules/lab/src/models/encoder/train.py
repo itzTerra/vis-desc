@@ -278,13 +278,8 @@ if __name__ == "__main__":
             "seed": seed,
             "use_direct_test": use_direct_test,
         }
-        # Only pass model_path to trainers that support it (not ModernBertTrainer)
-        pass_model_path = (
-            model_path is not None
-            and not enable_train
-            and model_name != "finetuned-mbert"
-        )
-        if pass_model_path:
+        # Always pass model_path to all trainers if provided and not None
+        if model_path is not None and not enable_train:
             trainer_kwargs["model_path"] = model_path
 
         if model_name == "finetuned-mbert":

@@ -101,11 +101,12 @@ class BaseTrainer(ModelNamer):
         print(f"{'=' * 60}\n")
 
         # Always use self.model_path if set, otherwise generate one
-        model_path = get_model_filename(
-            self.model_name, self.seed, self.timestamp, self._get_model_extension()
-        )
         if hasattr(self, "model_path") and self.model_path is not None:
-            model_path = self.model_path
+            model_path = Path(self.model_path)
+        else:
+            model_path = get_model_filename(
+                self.model_name, self.seed, self.timestamp, self._get_model_extension()
+            )
         train_metrics = None
         cv_metrics = None
         test_metrics = None

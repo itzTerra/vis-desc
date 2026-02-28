@@ -960,9 +960,23 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         test_dataset = CustomDataset(test_df, self.tokenizer)
         test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
-        # Remove file extension if present and treat model_path as a directory
-        export_dir = model_path.with_suffix("")
-        sess = rt.InferenceSession(str(export_dir / "model.onnx"))
+        # Accept both a directory or a file path for model_path
+        from pathlib import Path as _Path
+
+        model_path = _Path(model_path)
+        if model_path.is_dir():
+            export_dir = model_path
+        else:
+            # If it's a file, treat its stem as the export directory
+            export_dir = model_path.parent / model_path.stem
+
+        onnx_file = export_dir / "model.onnx"
+        if not onnx_file.exists():
+            raise FileNotFoundError(
+                f"ONNX model file not found: {onnx_file}\nChecked model_path: {model_path}\nIf you provided a file, try passing the directory containing model.onnx instead."
+            )
+
+        sess = rt.InferenceSession(str(onnx_file))
 
         y_true_test, y_pred_test = [], []
         for batch in tqdm(test_loader, desc="Evaluating test set"):

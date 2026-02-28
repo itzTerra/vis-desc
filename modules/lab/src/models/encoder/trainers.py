@@ -799,6 +799,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         save_model: bool = True,
         seed: Optional[int] = None,
         use_direct_test: bool = False,
+        model_path: Optional[str] = None,
     ):
         super().__init__(
             params,
@@ -813,6 +814,7 @@ class ModernBertTrainer(BaseTrainer, FinetunedBertNamer):
         )
         self.tokenizer = None
         self.train_df = None
+        self.model_path = model_path
 
     def _load_data(self):
         """Load and prepare training data."""

@@ -14,3 +14,7 @@
 nlp_sync
 catboost_info
 *.psd
+
+hf_cache/
+public_html/
+vllm_cache/

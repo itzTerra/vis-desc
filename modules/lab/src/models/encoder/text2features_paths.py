@@ -1,4 +1,4 @@
-from text2features import FeatureExtractorPipelineResources
+from models.encoder.text2features import FeatureExtractorPipelineResources
 from utils import DATA_DIR, IMAG_DATA_DIR
 
 

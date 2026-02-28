@@ -42,7 +42,7 @@ from models.encoder.common import (
     RandomBaselineNamer,
     FinetunedBertNamer,
 )
-from text2features import FeatureExtractorPipeline
+from models.encoder.text2features import FeatureExtractorPipeline
 
 
 class BaseTrainer(ModelNamer):

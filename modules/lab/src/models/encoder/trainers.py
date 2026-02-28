@@ -100,7 +100,7 @@ class BaseTrainer(ModelNamer):
         print(f"Processing {self.model_name}")
         print(f"{'=' * 60}\n")
 
-        model_path = get_model_filename(
+        model_path = getattr(self, "model_path", None) or get_model_filename(
             self.model_name, self.seed, self.timestamp, self._get_model_extension()
         )
         train_metrics = None

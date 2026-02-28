@@ -11,7 +11,7 @@ from sklearn.preprocessing import MinMaxScaler
 from transformers import get_linear_schedule_with_warmup
 from tqdm.auto import tqdm
 from peft import get_peft_model, LoraConfig
-from text2features import FeatureExtractorPipeline
+from models.encoder.text2features import FeatureExtractorPipeline
 from models.encoder.common import (
     PersistentMetrics,
     device,

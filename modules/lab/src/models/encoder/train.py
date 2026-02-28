@@ -186,6 +186,12 @@ if __name__ == "__main__":
         help="Models to train. If 'all' or empty, trains all models.",
     )
     parser.add_argument(
+        "--model-path",
+        type=str,
+        default=None,
+        help="Path to a pre-trained model to use for testing (required if using --test without --train)",
+    )
+    parser.add_argument(
         "-e",
         "--embeddings",
         type=str,
@@ -256,24 +262,32 @@ if __name__ == "__main__":
     enable_test = args.test
     use_direct_test = args.direct_test
     seed = args.seed
+    model_path = args.model_path
 
     set_seed(seed)
 
     save_model = not args.no_save_model
 
     for model_name in models_to_train:
+        trainer_kwargs = {
+            "include_large": include_large,
+            "enable_train": enable_train,
+            "enable_cv": enable_cv,
+            "enable_test": enable_test,
+            "save_model": save_model,
+            "seed": seed,
+            "use_direct_test": use_direct_test,
+        }
+        # Pass model_path if provided and not training
+        if model_path is not None and not enable_train:
+            trainer_kwargs["model_path"] = model_path
+
         if model_name == "finetuned-mbert":
             key = "lg" if include_large else "no_lg"
             params = MODEL_PARAMS["finetuned-mbert"][key]
             trainer = ModernBertTrainer(
                 params=params,
-                include_large=include_large,
-                enable_train=enable_train,
-                enable_cv=enable_cv,
-                enable_test=enable_test,
-                save_model=save_model,
-                seed=seed,
-                use_direct_test=use_direct_test,
+                **trainer_kwargs,
             )
             trainer.run_full_training()
         elif model_name == "random":
@@ -282,13 +296,7 @@ if __name__ == "__main__":
             trainer_class = TRAINER_CLASSES[model_name]
             trainer = trainer_class(
                 params=params,
-                include_large=include_large,
-                enable_train=enable_train,
-                enable_cv=enable_cv,
-                enable_test=enable_test,
-                save_model=save_model,
-                seed=seed,
-                use_direct_test=use_direct_test,
+                **trainer_kwargs,
             )
             trainer.run_full_training()
         else:
@@ -304,13 +312,7 @@ if __name__ == "__main__":
                 trainer = trainer_class(
                     params=params,
                     embeddings=embeddings,
-                    include_large=include_large,
-                    enable_train=enable_train,
-                    enable_cv=enable_cv,
-                    enable_test=enable_test,
-                    save_model=save_model,
-                    seed=seed,
-                    use_direct_test=use_direct_test,
+                    **trainer_kwargs,
                 )
                 trainer.run_full_training()
 

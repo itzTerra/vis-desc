@@ -14,7 +14,7 @@ from sklearn.linear_model import Ridge
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.base import BaseEstimator, RegressorMixin
-from catboost import CatBoostRegressor
+from catboost import CatBoostRegressor, CatBoostClassifier
 from tqdm.auto import tqdm
 import onnxruntime as rt
 from models.encoder.modernbert_finetune_nn import BATCH_SIZE
@@ -39,6 +39,7 @@ from models.encoder.common import (
     SVMNamer,
     RandomForestNamer,
     CatBoostNamer,
+    CatBoostClassifierNamer,
     RandomBaselineNamer,
     FinetunedBertNamer,
     UniformRandomBaselineNamer,
@@ -411,12 +412,12 @@ class BaseSklearnTrainer(BaseTrainer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
         # Load embeddings
-        if self.include_minilm:
+        if self.include_minilm and "cls" not in test_df.columns:
             minilm_test_embeddings = pd.read_parquet(
                 DATA_DIR / "datasets" / "small" / "test_minilm.parquet"
             )
             test_df["cls"] = list(minilm_test_embeddings["cls"].values)
-        elif self.include_mbert:
+        elif self.include_mbert and "cls" not in test_df.columns:
             mbert_test_embeddings = pd.read_parquet(
                 DATA_DIR / "datasets" / "small" / "test_mbert.parquet"
             )
@@ -587,6 +588,26 @@ class CatBoostTrainer(BaseSklearnTrainer, CatBoostNamer):
             print(f"Max difference: {np.max(diff)}")
         else:
             print(f"ONNX export verified successfully (max diff: {np.max(diff):.2e})")
+
+
+class CatBoostClassifierTrainer(BaseSklearnTrainer, CatBoostClassifierNamer):
+    """Trainer for CatBoost classification."""
+
+    def _create_model(self):
+        cb_params = {
+            k: v
+            for k, v in self.params.items()
+            if k not in ["small_dataset_weight_multiplier"]
+        }
+        return CatBoostClassifier(
+            **cb_params, random_seed=self.seed, verbose=100, thread_count=-1
+        )
+
+    def _get_fit_params(self) -> Dict[str, Any]:
+        return {"sample_weight": self.weights}
+
+    def _get_fit_params_for_weights(self, weights: np.ndarray) -> Dict[str, Any]:
+        return {"sample_weight": weights}
 
 
 class WeightedRandomSampler(BaseEstimator, RegressorMixin):

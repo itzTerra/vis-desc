@@ -71,6 +71,11 @@ class CatBoostNamer(ModelNamer):
         return "catboost"
 
 
+class CatBoostClassifierNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "catboost"
+
+
 class RandomBaselineNamer(ModelNamer):
     def _get_base_model_name(self) -> str:
         return "random"

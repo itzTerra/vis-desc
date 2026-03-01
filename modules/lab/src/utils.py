@@ -91,6 +91,7 @@ def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         - confusion_matrix: Confusion matrix for rounded scores
         - predictions: Model predictions
     """
+    y_pred = np.asarray(y_pred, dtype=float).ravel()
     if np.any(np.isnan(y_pred)):
         return {
             "mse": float("nan"),

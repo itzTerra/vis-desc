@@ -369,14 +369,14 @@ class BaseSklearnTrainer(BaseTrainer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
         # Load embeddings
-        if self.include_minilm:
+        if self.include_minilm and "cls" not in test_df.columns:
             minilm_embeddings = pd.read_parquet(
                 DATA_DIR / "datasets" / "small" / "minilm_embeddings.parquet"
             )
             test_df = test_df.merge(
                 minilm_embeddings[["cls"]], left_index=True, right_index=True
             )
-        elif self.include_mbert:
+        elif self.include_mbert and "cls" not in test_df.columns:
             modernbert_embeddings = pd.read_parquet(
                 DATA_DIR / "datasets" / "small" / "modernbert_cls_embeddings.parquet"
             )

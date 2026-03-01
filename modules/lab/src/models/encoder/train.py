@@ -141,6 +141,7 @@ MODEL_PARAMS = {
             "stage1_epochs": 6,
             "stage1_frozen_bert_epochs": 1,
             "stage2_epochs": 21,
+            # uncomment for lg-only
             # "stage2_epochs": 0,
             "stage2_frozen_bert_epochs": 5,
             "lr_bert": 1e-5,

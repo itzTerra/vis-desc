@@ -7,7 +7,7 @@
 			"command": "bash",
 			"args": [
 				"-c",
-				"if [ -n \"${input:oldAnnotationFiles}\" ]; then python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details --old ${input:oldAnnotationFiles}; else python3 modules/lab/src/agreement.py ${input:newAnnotationFile} --details; fi"
+				"if [ -n \"${input:oldAnnotationFiles}\" ]; then python3 modules/lab/src/dataset_small/agreement.py ${input:newAnnotationFile} --details --old ${input:oldAnnotationFiles}; else python3 modules/lab/src/dataset_small/agreement.py ${input:newAnnotationFile} --details; fi"
 			],
 			"group": "build",
 			"presentation": {
@@ -23,7 +23,7 @@
 			"type": "shell",
 			"command": "python3",
 			"args": [
-				"modules/lab/src/agreement.py",
+				"modules/lab/src/dataset_small/agreement.py",
 				"${input:annotationFile}",
 				"--csv",
 				"${input:outputCsvFile}",

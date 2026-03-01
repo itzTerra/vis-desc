@@ -41,6 +41,7 @@ from models.encoder.common import (
     CatBoostNamer,
     RandomBaselineNamer,
     FinetunedBertNamer,
+    UniformRandomBaselineNamer,
 )
 from models.encoder.text2features import FeatureExtractorPipeline
 
@@ -621,6 +622,22 @@ class WeightedRandomSampler(BaseEstimator, RegressorMixin):
         return self.y_train_[sampled_indices]
 
 
+class UniformRandomSampler(BaseEstimator, RegressorMixin):
+    """Sklearn-compatible estimator that predicts by sampling uniformly over unique label values."""
+
+    def __init__(self, random_state=None):
+        self.random_state = random_state
+
+    def fit(self, X, y):
+        self.classes_ = np.unique(y)
+        self.rng_ = np.random.RandomState(self.random_state)
+        return self
+
+    def predict(self, X):
+        n_samples = len(X)
+        return self.rng_.choice(self.classes_, size=n_samples)
+
+
 class WeightedRandomBaselineTrainer(BaseTrainer, RandomBaselineNamer):
     """Trainer for weighted random baseline that samples from training distribution.
 
@@ -783,6 +800,147 @@ class WeightedRandomBaselineTrainer(BaseTrainer, RandomBaselineNamer):
         test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
 
         # Generate predictions
+        X_test_dummy = np.zeros((len(test_df), 1))
+        y_pred_test = self.model.predict(X_test_dummy)
+
+        y_true_test = test_df["label"].values
+        return calculate_metrics(y_true_test, y_pred_test)
+
+
+class UniformRandomBaselineTrainer(BaseTrainer, UniformRandomBaselineNamer):
+    """Trainer for uniform random baseline that samples uniformly from unique label values.
+
+    This model doesn't use embeddings - it samples each unique label with equal probability,
+    ignoring label frequency in the training set.
+    """
+
+    def __init__(
+        self,
+        params: Dict[str, Any],
+        include_large: bool = False,
+        enable_train: bool = True,
+        enable_cv: bool = False,
+        enable_test: bool = False,
+        save_model: bool = True,
+        seed: Optional[int] = None,
+        use_direct_test: bool = False,
+    ):
+        super().__init__(
+            params,
+            embeddings=None,
+            include_large=include_large,
+            enable_train=enable_train,
+            enable_cv=enable_cv,
+            enable_test=enable_test,
+            save_model=save_model,
+            seed=seed,
+            use_direct_test=use_direct_test,
+        )
+        self.y_train = None
+        self.train_df = None
+        self._load_data()
+
+    def _get_model_extension(self) -> str:
+        return ".json"
+
+    def _load_data(self):
+        context = CachedOptimizationContext(
+            include_minilm_embeddings=False,
+            include_modernbert_embeddings=False,
+            include_large=self.include_large,
+        )
+        train_df = context.sm_train.copy()
+
+        if self.include_large and context.lg_train is not None:
+            train_df = pd.concat([context.lg_train, train_df], ignore_index=True)
+
+        self.train_df = train_df
+        self.y_train = train_df["label"].values
+
+    def train(self, metrics=None) -> None:
+        self.model = UniformRandomSampler(random_state=self.seed)
+        X_dummy = np.zeros((len(self.y_train), 1))
+        self.model.fit(X_dummy, self.y_train)
+
+    def evaluate_train(self) -> Dict[str, Any]:
+        X_dummy = np.zeros((len(self.y_train), 1))
+        y_pred_train = self.model.predict(X_dummy)
+        return calculate_metrics(self.y_train, y_pred_train)
+
+    def cross_validate(self, n_splits: int = 5, metrics=None) -> Dict[str, Any]:
+        context = CachedOptimizationContext(
+            include_minilm_embeddings=False,
+            include_modernbert_embeddings=False,
+            include_large=False,
+        )
+        sm_train = context.sm_train
+
+        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
+        if metrics is None:
+            metrics = PersistentMetrics.dummy()
+        metrics["folds"] = []
+        metrics["params"] = self.params
+
+        for fold, (train_index, val_index) in enumerate(
+            kf.split(sm_train, sm_train["label"])
+        ):
+            train_fold_df = sm_train.loc[train_index].copy()
+            val_fold_df = sm_train.loc[val_index].copy()
+
+            y_train_fold = train_fold_df["label"].values
+            y_val_fold = val_fold_df["label"].values
+
+            fold_model = UniformRandomSampler(random_state=self.seed)
+            X_train_dummy = np.zeros((len(y_train_fold), 1))
+            fold_model.fit(X_train_dummy, y_train_fold)
+
+            X_val_dummy = np.zeros((len(y_val_fold), 1))
+            y_pred = fold_model.predict(X_val_dummy)
+            m = calculate_metrics(y_val_fold, y_pred)
+            fold_metrics = {k: v for k, v in m.items() if k != "predictions"}
+            metrics["folds"].append(fold_metrics)
+            metrics.update()
+
+            print(
+                f"Fold {fold + 1}/{n_splits}: MSE={m['mse']:.4f}, Acc={m['accuracy']:.4f}, Corr={m['corr']:.4f}"
+            )
+
+        return average_metrics(metrics["folds"])
+
+    def evaluate_test(self, model_path: Path) -> Dict[str, Any]:
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+
+        if not model_path.exists():
+            raise FileNotFoundError(f"Distribution file not found: {model_path}")
+
+        with open(model_path, "r") as f:
+            dist_data = json.load(f)
+
+        model = UniformRandomSampler(random_state=self.seed)
+        model.classes_ = np.array(dist_data["classes"])
+        model.rng_ = np.random.RandomState(self.seed)
+
+        X_test_dummy = np.zeros((len(test_df), 1))
+        y_pred_test = model.predict(X_test_dummy)
+
+        y_true_test = test_df["label"].values
+        return calculate_metrics(y_true_test, y_pred_test)
+
+    def export(self, model_path: Path) -> None:
+        dist_data = {
+            "classes": self.model.classes_.tolist(),
+            "random_state": self.seed,
+            "model_type": "UniformRandomSampler",
+        }
+
+        with open(model_path, "w") as f:
+            json.dump(dist_data, f, indent=2)
+
+        print(f"Distribution saved to {model_path}")
+
+    def evaluate_test_direct(self) -> Dict[str, Any]:
+        test_df = pd.read_parquet(DATA_DIR / "datasets" / "small" / "test.parquet")
+
         X_test_dummy = np.zeros((len(test_df), 1))
         y_pred_test = self.model.predict(X_test_dummy)
 

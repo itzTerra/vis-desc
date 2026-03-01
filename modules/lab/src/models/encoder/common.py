@@ -76,6 +76,11 @@ class RandomBaselineNamer(ModelNamer):
         return "random"
 
 
+class UniformRandomBaselineNamer(ModelNamer):
+    def _get_base_model_name(self) -> str:
+        return "random"
+
+
 class FinetunedBertNamer(ModelNamer):
     def _get_base_model_name(self) -> str:
         return "finetuned-mbert"
@@ -149,14 +154,14 @@ class CachedOptimizationContext:
             sm_train["weight"] = compute_sample_weight(
                 class_weight="balanced", y=sm_train["label"]
             )
-            if include_minilm_embeddings:
+            if include_minilm_embeddings and "cls" not in sm_train.columns:
                 minilm_embeddings = pd.read_parquet(
                     DATA_DIR / "datasets" / "small" / "minilm_embeddings.parquet"
                 )
                 sm_train = sm_train.merge(
                     minilm_embeddings[["cls"]], left_index=True, right_index=True
                 )
-            if include_modernbert_embeddings:
+            if include_modernbert_embeddings and "cls" not in sm_train.columns:
                 modernbert_embeddings = pd.read_parquet(
                     DATA_DIR
                     / "datasets"
@@ -181,7 +186,7 @@ class CachedOptimizationContext:
                 lg_train["weight"] = compute_sample_weight(
                     class_weight="balanced", y=lg_train["label"]
                 )
-                if include_minilm_embeddings:
+                if include_minilm_embeddings and "cls" not in lg_train.columns:
                     minilm_embeddings_large = pd.read_parquet(
                         DATA_DIR / "datasets" / "large" / "minilm_embeddings.parquet"
                     )
@@ -190,7 +195,7 @@ class CachedOptimizationContext:
                         left_index=True,
                         right_index=True,
                     )
-                if include_modernbert_embeddings:
+                if include_modernbert_embeddings and "cls" not in lg_train.columns:
                     modernbert_embeddings_large = pd.read_parquet(
                         DATA_DIR
                         / "datasets"

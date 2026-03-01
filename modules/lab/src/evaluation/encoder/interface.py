@@ -93,3 +93,36 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
         ],
     }
     return model_groups, True
+
+
+def format_encoder_metrics_latex(
+    aggregated_models: list,
+    class_mode: str = "full",
+) -> str:
+    """Build and print the encoder metrics LaTeX table.
+
+    Combines get_encoder_model_groups, vis_all_models_tables, and
+    format_metrics_for_latex into a single call.
+
+    Args:
+        aggregated_models: List of AggregatedModelData objects.
+        class_mode: "full" for 6-class or "relaxed" for merged 0/1, 2/3, 4/5.
+
+    Returns:
+        LaTeX table string.
+    """
+    from evaluation.core import vis_all_models_tables, format_metrics_for_latex
+
+    metrics = ["RMSE", "Acc"] if class_mode == "full" else ["Acc"]
+    model_groups, show_large_variants = get_encoder_model_groups()
+    df_metrics = vis_all_models_tables(
+        aggregated_models,
+        metrics,
+        ["Train", "Test"],
+        model_groups,
+        show_large_variants,
+        class_mode=class_mode,
+    )
+    latex_table = format_metrics_for_latex(df_metrics)
+    print(latex_table)
+    return latex_table

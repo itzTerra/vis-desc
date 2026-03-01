@@ -6,17 +6,20 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import matplotlib.cm as cm
 
-from evaluation.core import (
+from evaluation.plot_style import (
     LABEL_FONT_SIZE,
+    TITLE_FONT_SIZE,
+    SUPTITLE_FONT_SIZE,
+    LEGEND_FONT_SIZE,
+    ANNOT_FONT_SIZE,
+    CMAP_PRIMARY,
+)
+from evaluation.core import (
     get_confusion_matrix,
     print_per_label_metrics,
 )
-from utils import DATA_DIR
-from models.encoder.common import (
-    average_metrics,
-)
+from utils import DATA_DIR, average_metrics
 import re
 
 METRICS_DIR = DATA_DIR / "metrics" / "encoder"
@@ -626,7 +629,7 @@ def plot_confusion_matrix(
         cm,
         annot=True,
         fmt="d",
-        cmap="Blues",
+        cmap=CMAP_PRIMARY,
         ax=ax1,
         linewidths=0.5,
         linecolor="gray",
@@ -635,7 +638,7 @@ def plot_confusion_matrix(
     if show_title:
         ax1.set_title(
             f"{metrics_dict['model']} - Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Raw Counts)",
-            fontsize=14,
+            fontsize=TITLE_FONT_SIZE,
             fontweight="bold",
         )
     ax1.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
@@ -654,7 +657,7 @@ def plot_confusion_matrix(
             cm_normalized,
             annot=True,
             fmt=".2f",
-            cmap="RdYlGn",
+            cmap=CMAP_PRIMARY,
             ax=ax2,
             linewidths=0.5,
             linecolor="gray",
@@ -665,7 +668,7 @@ def plot_confusion_matrix(
         if show_title:
             ax2.set_title(
                 f"{metrics_dict['model']} - Normalized Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Proportion of True Label)",
-                fontsize=14,
+                fontsize=TITLE_FONT_SIZE,
                 fontweight="bold",
             )
         ax2.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
@@ -744,7 +747,7 @@ def plot_train_val_runs(
         _, ax = plt.subplots(figsize=(12, 7))
 
     n_colors = max(1, min(len(runs), 10))
-    colors = cm.tab10(np.linspace(0, 1, n_colors))
+    colors = sns.color_palette("tab10", n_colors)
 
     max_x = 0
 
@@ -763,20 +766,21 @@ def plot_train_val_runs(
 
             max_x = max(max_x, max(x) if x else 0)
 
-            style = "-o" if kind == "train" else "-s"
+            marker = "o" if kind == "train" else "s"
             alpha = 0.85 if kind == "train" else 0.7
             plot_color = color if kind == "train" else "orange"
 
             # For training data with many points, reduce marker clutter
             if kind == "train" and len(x) > 100:
-                style = "-"  # No markers for dense training curves
+                marker = None  # No markers for dense training curves
 
-            ax.plot(
-                x,
-                y,
-                style,
+            sns.lineplot(
+                x=x,
+                y=y,
+                ax=ax,
                 color=plot_color,
                 linewidth=2,
+                marker=marker,
                 markersize=4,
                 label=f"{kind.title()} - {label}",
                 alpha=alpha,
@@ -789,14 +793,23 @@ def plot_train_val_runs(
                 ax.axvline(
                     best_x, color=plot_color, linestyle="--", alpha=0.2, linewidth=1
                 )
-                ax.plot(best_x, best_y, "*", color=plot_color, markersize=10, zorder=5)
+                sns.scatterplot(
+                    x=[best_x],
+                    y=[best_y],
+                    ax=ax,
+                    color=plot_color,
+                    marker="*",
+                    s=100,
+                    zorder=5,
+                    legend=False,
+                )
 
         _plot_series(run.get("train"), "train")
         _plot_series(run.get("val"), "val")
 
     ax.set_xlabel(x_label, fontsize=LABEL_FONT_SIZE)
     ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE)
-    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.set_title(title, fontsize=TITLE_FONT_SIZE, fontweight="bold")
     ax.grid(True, alpha=0.3)
 
     if x_label == "Epoch":
@@ -806,7 +819,7 @@ def plot_train_val_runs(
 
     handles, labels = ax.get_legend_handles_labels()
     if handles:
-        ax.legend(fontsize=9, loc="best")
+        ax.legend(fontsize=LEGEND_FONT_SIZE, loc="best")
     plt.tight_layout()
     return ax
 
@@ -872,7 +885,9 @@ def plot_cv_folds_grid(
             )
         else:
             ax.set_title(
-                f"Fold {fold_idx + 1} (no data)", fontsize=12, fontweight="bold"
+                f"Fold {fold_idx + 1} (no data)",
+                fontsize=TITLE_FONT_SIZE,
+                fontweight="bold",
             )
             ax.axis("off")
 
@@ -881,7 +896,7 @@ def plot_cv_folds_grid(
 
     fig.suptitle(
         title,
-        fontsize=16,
+        fontsize=SUPTITLE_FONT_SIZE,
         fontweight="bold",
         y=1.02,
     )
@@ -1062,6 +1077,391 @@ def print_confusion_matrix_stats(
             print(f"  Label {i}: {correct_count}/{true_count} ({per_label_acc:.2%})")
         else:
             print(f"  Label {i}: No samples")
+
+
+def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
+    """
+    Plot horizontal bar charts showing the accuracy, RMSE, and Macro F1 impact
+    of removing each feature group from the model.
+
+    Args:
+        df: DataFrame with columns including "Removed Feature Group", "Accuracy Δ",
+            "RMSE Δ", and optionally "Macro F1 Δ".
+    """
+    plot_df = df.copy()
+    plot_df["Feature"] = plot_df["Removed Feature Group"]
+
+    def _interp_color(a, b, t):
+        return tuple(float(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+    def _importance_colors(
+        deltas,
+        important_mask,
+        base_gray=(0.92, 0.92, 0.92),
+        green=(0.0, 0.5, 0.0),
+        dark_gray=(0.35, 0.35, 0.35),
+    ):
+        abs_imp = np.abs(deltas.astype(float))
+        max_imp = abs_imp.max()
+        if max_imp <= 0:
+            max_imp = 1.0
+        colors = []
+        for val, imp_flag, mag in zip(deltas, important_mask, abs_imp):
+            t = mag / max_imp
+            if imp_flag:
+                colors.append(_interp_color(base_gray, green, t))
+            else:
+                colors.append(_interp_color(base_gray, dark_gray, t))
+        return colors
+
+    acc_sorted = plot_df.sort_values("Accuracy Δ", ascending=False)
+    acc_deltas = acc_sorted["Accuracy Δ"]
+    acc_mask = acc_deltas < 0
+    colors_acc = _importance_colors(acc_deltas, acc_mask)
+    fig, ax = plt.subplots(figsize=(9, max(6, 0.4 * len(acc_sorted))))
+    sns.barplot(
+        data=acc_sorted,
+        y="Feature",
+        x="Accuracy Δ",
+        palette=colors_acc,
+        alpha=0.95,
+        edgecolor="black",
+        errorbar=None,
+        orient="h",
+        ax=ax,
+    )
+    ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
+    ax.set_xlabel("Accuracy Δ from Baseline", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
+    ax.set_title(
+        "Accuracy Impact: green = important (negative Δ)", fontsize=TITLE_FONT_SIZE
+    )
+    ax.grid(axis="x", alpha=0.3)
+    plt.tight_layout()
+    fig.savefig(
+        DATA_DIR / "figures" / "feature_importance_accuracy_delta.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
+    print(
+        "Saved accuracy delta plot -> data/figures/feature_importance_accuracy_delta.png"
+    )
+
+    rmse_sorted = plot_df.sort_values("RMSE Δ", ascending=True)
+    rmse_deltas = rmse_sorted["RMSE Δ"]
+    rmse_mask = rmse_deltas > 0
+    colors_rmse = _importance_colors(rmse_deltas, rmse_mask)
+    fig, ax = plt.subplots(figsize=(9, max(6, 0.4 * len(rmse_sorted))))
+    sns.barplot(
+        data=rmse_sorted,
+        y="Feature",
+        x="RMSE Δ",
+        palette=colors_rmse,
+        alpha=0.95,
+        edgecolor="black",
+        errorbar=None,
+        orient="h",
+        ax=ax,
+    )
+    ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
+    ax.set_xlabel("RMSE Δ from Baseline", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
+    ax.set_title(
+        "RMSE Impact: green = important (positive Δ)", fontsize=TITLE_FONT_SIZE
+    )
+    ax.grid(axis="x", alpha=0.3)
+    plt.tight_layout()
+    fig.savefig(
+        DATA_DIR / "figures" / "feature_importance_rmse_delta.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
+    print("Saved RMSE delta plot -> data/figures/feature_importance_rmse_delta.png")
+
+    if "Macro F1 Δ" not in plot_df.columns:
+        print("Warning: 'Macro F1 Δ' column not found, skipping Macro F1 plot.")
+        return
+    macro_sorted = plot_df.sort_values("Macro F1 Δ")
+    macro_deltas = macro_sorted["Macro F1 Δ"]
+    macro_mask = macro_deltas < 0
+    colors_macro = _importance_colors(macro_deltas, macro_mask)
+    fig, ax = plt.subplots(figsize=(9, max(6, 0.4 * len(macro_sorted))))
+    sns.barplot(
+        data=macro_sorted,
+        y="Feature",
+        x="Macro F1 Δ",
+        palette=colors_macro,
+        alpha=0.95,
+        edgecolor="black",
+        errorbar=None,
+        orient="h",
+        ax=ax,
+    )
+    ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
+    ax.set_xlabel("Macro F1 Δ from Baseline", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
+    ax.set_title(
+        "Macro F1 Impact: green = important (negative Δ)", fontsize=TITLE_FONT_SIZE
+    )
+    ax.grid(axis="x", alpha=0.3)
+    plt.tight_layout()
+    fig.savefig(
+        DATA_DIR / "figures" / "feature_importance_macro_f1_delta.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
+    print(
+        "Saved Macro F1 delta plot -> data/figures/feature_importance_macro_f1_delta.png"
+    )
+
+
+def plot_score_distribution(
+    df: "pd.DataFrame", title: str = "Score Distribution"
+) -> None:
+    """Plot a bar chart of the score/label distribution in the dataset."""
+    ax = sns.countplot(x="label", data=df)
+    ax.bar_label(ax.containers[0])
+    plt.xlabel("Score", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
+    plt.title(title, fontsize=TITLE_FONT_SIZE)
+    plt.show()
+
+
+def plot_length_distributions(
+    doc_char_lengths: list,
+    doc_token_counts: list,
+    doc_sentence_counts: list,
+    avg_char_length: float,
+    std_char_length: float,
+    avg_token_count: float,
+    std_token_count: float,
+    avg_sentence_count: float,
+    std_sentence_count: float,
+) -> None:
+    """
+    Plot histograms of document character, token, and sentence count distributions
+    with mean and ±2σ reference lines, plus a text summary of statistics.
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+    sns.histplot(doc_char_lengths, bins=30, ax=axes[0, 0], edgecolor="black")
+    axes[0, 0].axvline(
+        avg_char_length, color="r", linestyle="--", label=f"Mean: {avg_char_length:.1f}"
+    )
+    axes[0, 0].axvline(
+        avg_char_length + 2 * std_char_length,
+        color="orange",
+        linestyle="--",
+        label=f"+2σ: {avg_char_length + 2 * std_char_length:.1f}",
+    )
+    axes[0, 0].axvline(
+        avg_char_length - 2 * std_char_length,
+        color="orange",
+        linestyle="--",
+        label=f"-2σ: {avg_char_length - 2 * std_char_length:.1f}",
+    )
+    axes[0, 0].set_xlabel("Character Length", fontsize=LABEL_FONT_SIZE)
+    axes[0, 0].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
+    axes[0, 0].set_title(
+        "Distribution of Document Character Lengths", fontsize=TITLE_FONT_SIZE
+    )
+    axes[0, 0].legend(fontsize=LEGEND_FONT_SIZE)
+
+    sns.histplot(doc_token_counts, bins=30, ax=axes[0, 1], edgecolor="black")
+    axes[0, 1].axvline(
+        avg_token_count, color="r", linestyle="--", label=f"Mean: {avg_token_count:.1f}"
+    )
+    axes[0, 1].axvline(
+        avg_token_count + 2 * std_token_count,
+        color="orange",
+        linestyle="--",
+        label=f"+2σ: {avg_token_count + 2 * std_token_count:.1f}",
+    )
+    axes[0, 1].axvline(
+        avg_token_count - 2 * std_token_count,
+        color="orange",
+        linestyle="--",
+        label=f"-2σ: {avg_token_count - 2 * std_token_count:.1f}",
+    )
+    axes[0, 1].set_xlabel("Token Count", fontsize=LABEL_FONT_SIZE)
+    axes[0, 1].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
+    axes[0, 1].set_title(
+        "Distribution of Document Token Counts", fontsize=TITLE_FONT_SIZE
+    )
+    axes[0, 1].legend(fontsize=LEGEND_FONT_SIZE)
+
+    sns.histplot(
+        doc_sentence_counts,
+        bins=range(0, max(doc_sentence_counts) + 2),
+        ax=axes[1, 0],
+        edgecolor="black",
+        discrete=True,
+    )
+    axes[1, 0].axvline(
+        avg_sentence_count,
+        color="r",
+        linestyle="--",
+        label=f"Mean: {avg_sentence_count:.2f}",
+    )
+    axes[1, 0].axvline(
+        avg_sentence_count + 2 * std_sentence_count,
+        color="orange",
+        linestyle="--",
+        label=f"+2σ: {avg_sentence_count + 2 * std_sentence_count:.2f}",
+    )
+    axes[1, 0].set_xlabel("Sentence Count", fontsize=LABEL_FONT_SIZE)
+    axes[1, 0].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
+    axes[1, 0].set_title(
+        "Distribution of Document Sentence Counts", fontsize=TITLE_FONT_SIZE
+    )
+    axes[1, 0].legend(fontsize=LEGEND_FONT_SIZE)
+
+    axes[1, 1].axis("off")
+    summary_text = f"""
+Summary Statistics:
+
+Character Length:
+  Min: {min(doc_char_lengths)}
+  Max: {max(doc_char_lengths)}
+  Median: {np.median(doc_char_lengths):.1f}
+  Coefficient of Variation: {(std_char_length / avg_char_length) * 100:.1f}%
+
+Token Count:
+  Min: {min(doc_token_counts)}
+  Max: {max(doc_token_counts)}
+  Median: {np.median(doc_token_counts):.1f}
+  Coefficient of Variation: {(std_token_count / avg_token_count) * 100:.1f}%
+
+Sentence Count:
+  Min: {min(doc_sentence_counts)}
+  Max: {max(doc_sentence_counts)}
+  Median: {np.median(doc_sentence_counts):.1f}
+  Coefficient of Variation: {(std_sentence_count / avg_sentence_count) * 100:.1f}%
+"""
+    axes[1, 1].text(
+        0.1,
+        0.5,
+        summary_text,
+        fontsize=ANNOT_FONT_SIZE,
+        verticalalignment="center",
+        family="monospace",
+    )
+
+    plt.tight_layout()
+    plt.show()
+
+    print("\nCoefficient of Variation (CV = std/mean):")
+    print(f"Character length CV: {(std_char_length / avg_char_length) * 100:.1f}%")
+    print(f"Token count CV: {(std_token_count / avg_token_count) * 100:.1f}%")
+    print(f"Sentence count CV: {(std_sentence_count / avg_sentence_count) * 100:.1f}%")
+    print("\nNote: CV > 100% indicates very high variability (std > mean)")
+
+
+def export_feature_importance_latex(
+    df: "pd.DataFrame",
+    output_path: "Path | None" = None,
+) -> str:
+    """Build a gradient-coloured LaTeX table for feature importance and save it.
+
+    Gradient columns:
+    - "RMSE Δ": RdYlGn colourmap (positive = worse, red; centred at 0)
+    - "Accuracy Δ": RdYlGn_r colourmap (positive = better, red; centred at 0)
+
+    Args:
+        df: DataFrame produced by the feature-importance analysis cell.
+            Must contain at least "Removed Feature Group", "RMSE Δ", "Accuracy Δ".
+        output_path: Destination .tex file path. Defaults to
+            DATA_DIR / "figures" / "feature_importance_table.tex".
+
+    Returns:
+        The generated LaTeX string (also written to *output_path*).
+    """
+    from pathlib import Path as _Path
+    import matplotlib.pyplot as _plt
+
+    if output_path is None:
+        output_path = DATA_DIR / "figures" / "feature_importance_table.tex"
+
+    cmap_rdylgn = _plt.get_cmap("RdYlGn")
+    cmap_rdylgn_r = _plt.get_cmap("RdYlGn_r")
+
+    def _color_for_value(value, col_name, vmin, vmax):
+        if pd.isna(value) or vmin == vmax:
+            return None
+        norm_value = (value - vmin) / (vmax - vmin)
+        if col_name == "RMSE Δ":
+            rgba = cmap_rdylgn(norm_value)
+        elif col_name == "Accuracy Δ":
+            rgba = cmap_rdylgn_r(norm_value)
+        else:
+            return None
+        return rgba[:3]
+
+    latex_lines = []
+    latex_lines.append(r"\begin{table}[hbtp]")
+    latex_lines.append(r"\centering")
+    latex_lines.append(r"\small")
+    latex_lines.append(r"\begin{tabular}{l" + "r" * (len(df.columns) - 1) + "}")
+    latex_lines.append(r"\toprule")
+
+    header = (
+        " & ".join(
+            [r"\textbf{" + col.replace("Δ", r"$\Delta$") + "}" for col in df.columns]
+        )
+        + r" \\"
+    )
+    latex_lines.append(header)
+    latex_lines.append(r"\midrule")
+
+    gradient_info = {}
+    for col in ["RMSE Δ", "Accuracy Δ"]:
+        if col in df.columns:
+            abs_max = max(abs(df[col].min()), abs(df[col].max()))
+            gradient_info[col] = {"vmin": -abs_max, "vmax": abs_max}
+
+    for _, row in df.iterrows():
+        cells = []
+        for col, val in row.items():
+            if col == "Removed Feature Group":
+                cell_str = str(val).replace("–", r"--")
+                if "Baseline" in str(val):
+                    cell_str = r"\textbf{" + cell_str + "}"
+            elif isinstance(val, (int, float)) and not pd.isna(val):
+                cell_str = f"{val:.4f}"
+                if col in gradient_info:
+                    rgb = _color_for_value(
+                        val, col, gradient_info[col]["vmin"], gradient_info[col]["vmax"]
+                    )
+                    if rgb:
+                        r, g, b = rgb
+                        cell_str = (
+                            r"\cellcolor[rgb]{"
+                            + f"{r:.3f},{g:.3f},{b:.3f}"
+                            + "}"
+                            + cell_str
+                        )
+            else:
+                cell_str = str(val)
+            cells.append(cell_str)
+        latex_lines.append(" & ".join(cells) + r" \\")
+
+    latex_lines.append(r"\bottomrule")
+    latex_lines.append(r"\end{tabular}")
+    latex_lines.append(r"\caption{Feature Importances}")
+    latex_lines.append(r"\label{tab:feature-importances}")
+    latex_lines.append(r"\end{table}")
+
+    tex = "\n".join(latex_lines)
+    _Path(output_path).write_text(tex)
+    print(tex)
+    print(f"\nSaved LaTeX table -> {output_path}")
+    print("\nNote: Add these packages to your LaTeX preamble:")
+    print(r"  \usepackage{booktabs}")
+    print(r"  \usepackage[table]{xcolor}")
+    return tex
 
 
 def main():

@@ -10,6 +10,8 @@ import csv
 
 import dataset_small.label_studio_models as lsm
 
+AGREED_RATING_ANNOTATOR_ID: int = 0
+
 ANNOTATOR_ID_GROUPS: dict[int, int] = {
     # Example: 101: 1, 102: 1, 201: 2, 202: 2
     # All annotator IDs mapped to the same value are treated as the same person.
@@ -293,6 +295,88 @@ def load_any(paths: Iterable[str | Path]) -> List[lsm.Task]:
     return collected
 
 
+def load_task_ratings_from_csv(path: Path) -> List[TaskRatings]:
+    """Load TaskRatings from a TSV ratings CSV file.
+
+    Columns named ``annotator_N`` map to annotator IDs 1, 2, …N.
+    The ``agreed_rating`` column maps to ``AGREED_RATING_ANNOTATOR_ID`` (0).
+    Lead times are not stored in the CSV format, so they are left empty.
+    """
+    result: List[TaskRatings] = []
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.reader(f, delimiter="\t")
+        header = next(reader, None)
+        if header is None:
+            return result
+        annotator_cols: List[tuple[int, int]] = []  # (col_idx, annotator_id)
+        agreed_col: int | None = None
+        for i, col in enumerate(header):
+            if col.startswith("annotator_"):
+                try:
+                    ann_id = int(col[len("annotator_") :])
+                    annotator_cols.append((i, ann_id))
+                except ValueError:
+                    pass
+            elif col == "agreed_rating":
+                agreed_col = i
+        for row in reader:
+            if not row:
+                continue
+            try:
+                task_id = int(row[0])
+            except (ValueError, IndexError):
+                continue
+            ratings: Dict[int, Category] = {}
+            for col_idx, ann_id in annotator_cols:
+                if col_idx < len(row) and row[col_idx].strip() != "":
+                    try:
+                        ratings[ann_id] = int(row[col_idx])
+                    except ValueError:
+                        pass
+            if (
+                agreed_col is not None
+                and agreed_col < len(row)
+                and row[agreed_col].strip() != ""
+            ):
+                try:
+                    ratings[AGREED_RATING_ANNOTATOR_ID] = int(row[agreed_col])
+                except ValueError:
+                    pass
+            if ratings:
+                result.append(
+                    TaskRatings(task_id=task_id, ratings=ratings, lead_times={})
+                )
+    return result
+
+
+def replace_annotator_with_agreed(
+    task_ratings: List[TaskRatings], annotator_id: int
+) -> List[TaskRatings]:
+    """Replace *annotator_id*'s ratings with the ``agreed_rating`` values.
+
+    For each task the agreed_rating entry (``AGREED_RATING_ANNOTATOR_ID``) is
+    consumed and written into *annotator_id*'s slot.  Tasks where the
+    agreed_rating is absent have *annotator_id* removed entirely.  The
+    synthetic agreed-rating annotator (ID 0) is always removed from the result.
+    """
+    result: List[TaskRatings] = []
+    for tr in task_ratings:
+        new_ratings = dict(tr.ratings)
+        agreed = new_ratings.pop(AGREED_RATING_ANNOTATOR_ID, None)
+        if annotator_id in new_ratings:
+            if agreed is not None:
+                new_ratings[annotator_id] = agreed
+            else:
+                del new_ratings[annotator_id]
+        if new_ratings:
+            result.append(
+                TaskRatings(
+                    task_id=tr.task_id, ratings=new_ratings, lead_times=tr.lead_times
+                )
+            )
+    return result
+
+
 def get_tasks_with_multiple_annotators(task_ratings: List[TaskRatings]) -> set[int]:
     """Return set of task IDs that have ratings from 2 or more annotators."""
     return {tr.task_id for tr in task_ratings if len(tr.ratings) >= 2}
@@ -303,7 +387,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         description="Quadratic weighted Cohen's kappa for 'rating' label"
     )
     parser.add_argument(
-        "paths", nargs="+", help="One or more JSON export files or directories"
+        "paths", nargs="*", help="One or more JSON export files or directories"
+    )
+    parser.add_argument(
+        "--input-csv",
+        dest="input_csv",
+        help="Read ratings from a TSV ratings CSV file instead of JSON files",
+    )
+    parser.add_argument(
+        "--replace-annotator",
+        dest="replace_annotator",
+        type=int,
+        metavar="N",
+        help=(
+            "Replace annotator N's ratings (1-based column number) with the "
+            "agreed_rating column values. Only meaningful with --input-csv."
+        ),
     )
     parser.add_argument(
         "--old",
@@ -347,7 +446,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    tasks = load_any(args.paths)
+    if args.input_csv:
+        tr = load_task_ratings_from_csv(Path(args.input_csv))
+        if args.replace_annotator is not None:
+            tr = replace_annotator_with_agreed(tr, args.replace_annotator)
+        tasks: List[lsm.Task] = []
+    else:
+        if not args.paths:
+            parser.error("Provide JSON paths or --input-csv")
+        tasks = load_any(args.paths)
 
     # If --old provided, collect task ids with 2+ annotators from those and exclude them.
     excluded_ids: set[int] = set()
@@ -359,16 +466,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         except Exception as e:  # pragma: no cover
             print(f"Warning: failed to load --old paths: {e}")
     if excluded_ids:
-        orig_count = len(tasks)
-        tasks = [t for t in tasks if t.id not in excluded_ids]
-        removed = orig_count - len(tasks)
+        if args.input_csv:
+            orig_count = len(tr)
+            tr = [rec for rec in tr if rec.task_id not in excluded_ids]
+            removed = orig_count - len(tr)
+        else:
+            orig_count = len(tasks)
+            tasks = [t for t in tasks if t.id not in excluded_ids]
+            removed = orig_count - len(tasks)
         sample_ids = sorted(list(excluded_ids))[:10]
         more = "" if len(excluded_ids) <= 10 else f" (+{len(excluded_ids) - 10} more)"
         print(
             f"Excluded {removed} tasks with 2+ annotators in old data (task_ids sample: {sample_ids}{more})"
         )
 
-    tr = collect_task_ratings(tasks, label_name=args.label)
+    if not args.input_csv:
+        tr = collect_task_ratings(tasks, label_name=args.label)
     if not tr:
         print("No ratings found for label", args.label)
         return 1
@@ -535,6 +648,41 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(
                 f"  Avg lead time seconds: A={_fmt(avg_a)} | B={_fmt(avg_b)} | combined={_fmt(avg_c)}"
             )
+
+    print()
+    print("=== Summary ===")
+
+    annotator_lead_times: dict[int, list[float]] = {}
+    for rec in tr:
+        for aid, lt in rec.lead_times.items():
+            annotator_lead_times.setdefault(aid, []).append(lt)
+
+    all_filtered: list[float] = []
+    for aid in sorted(annotator_lead_times):
+        filtered = _filter_outliers_iqr(annotator_lead_times[aid])
+        mean_lt = sum(filtered) / len(filtered) if filtered else float("nan")
+        all_filtered.extend(filtered)
+        mean_str = f"{mean_lt:.2f}s" if not math.isnan(mean_lt) else "-"
+        print(f"  Annotator {aid} mean lead time: {mean_str}")
+
+    overall_mean = (
+        sum(all_filtered) / len(all_filtered) if all_filtered else float("nan")
+    )
+    overall_str = f"{overall_mean:.2f}s" if not math.isnan(overall_mean) else "-"
+    print(f"  Mean lead time (all): {overall_str}")
+
+    total_annotations = sum(len(rec.ratings) for rec in tr)
+    print(f"  Total annotations: {total_annotations}")
+
+    kappa_pairs = [(item[2], item[3]) for item in results if not math.isnan(item[2])]
+    total_weight = sum(n for _, n in kappa_pairs)
+    mean_kappa = (
+        sum(k * n for k, n in kappa_pairs) / total_weight
+        if total_weight
+        else float("nan")
+    )
+    mean_kappa_str = f"{mean_kappa:.4f}" if not math.isnan(mean_kappa) else "-"
+    print(f"  Mean pairwise kappa (weighted by n): {mean_kappa_str}")
 
     return 0
 

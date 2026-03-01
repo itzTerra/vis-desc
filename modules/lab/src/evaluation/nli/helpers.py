@@ -10,6 +10,12 @@ from dataclasses import dataclass
 import json
 
 from evaluation.core import format_number, latex_escape
+from evaluation.plot_style import (
+    LABEL_FONT_SIZE,
+    TITLE_FONT_SIZE,
+    LEGEND_FONT_SIZE,
+    CMAP_PRIMARY,
+)
 
 MODEL_NAME_MAP = {
     "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
@@ -247,7 +253,7 @@ def plot_correlation_matrix(
         corr_matrix,
         annot=True,
         fmt=".3f",
-        cmap="coolwarm",
+        cmap=CMAP_PRIMARY,
         center=0,
         vmin=-1,
         vmax=1,
@@ -257,9 +263,9 @@ def plot_correlation_matrix(
         yticklabels=names,
     )
     if title:
-        plt.title(title)
-    plt.xlabel("Model")
-    plt.ylabel("Model")
+        plt.title(title, fontsize=TITLE_FONT_SIZE)
+    plt.xlabel("Model", fontsize=LABEL_FONT_SIZE)
+    plt.ylabel("Model", fontsize=LABEL_FONT_SIZE)
     plt.tight_layout()
     plt.show()
     print("Correlation coefficients:")
@@ -338,14 +344,31 @@ def plot_calibration_comparison(
     title_suffix: str = "",
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-    axes[0].set_title(f"Train: scores and calibrated mappings{title_suffix}")
-    axes[0].plot(
-        y_train_sorted, label="True label (train)", color="black", linewidth=1.5
+    axes[0].set_title(
+        f"Train: scores and calibrated mappings{title_suffix}", fontsize=TITLE_FONT_SIZE
     )
-    axes[0].plot(a_train_pred_sorted, label="Calibration A (train)")
-    axes[0].plot(b_train_pred_sorted, label="Calibration B (train)")
-    axes[0].set_ylabel("Score (0-5 scale)")
-    axes[0].legend(loc="best")
+    sns.lineplot(
+        x=range(len(y_train_sorted)),
+        y=y_train_sorted,
+        ax=axes[0],
+        label="True label (train)",
+        color="black",
+        linewidth=1.5,
+    )
+    sns.lineplot(
+        x=range(len(a_train_pred_sorted)),
+        y=a_train_pred_sorted,
+        ax=axes[0],
+        label="Calibration A (train)",
+    )
+    sns.lineplot(
+        x=range(len(b_train_pred_sorted)),
+        y=b_train_pred_sorted,
+        ax=axes[0],
+        label="Calibration B (train)",
+    )
+    axes[0].set_ylabel("Score (0-5 scale)", fontsize=LABEL_FONT_SIZE)
+    axes[0].legend(loc="best", fontsize=LEGEND_FONT_SIZE)
     axes[0].grid(True, alpha=0.3)
     if (
         y_test_sorted is not None
@@ -353,25 +376,139 @@ def plot_calibration_comparison(
         or b_test_pred_sorted is not None
     ):
         axes[1].set_title(
-            f"Test: ground truth and calibrated predictions{title_suffix}"
+            f"Test: ground truth and calibrated predictions{title_suffix}",
+            fontsize=TITLE_FONT_SIZE,
         )
         if y_test_sorted is not None:
-            axes[1].plot(
-                y_test_sorted, label="True label (test)", color="black", linewidth=1.5
+            sns.lineplot(
+                x=range(len(y_test_sorted)),
+                y=y_test_sorted,
+                ax=axes[1],
+                label="True label (test)",
+                color="black",
+                linewidth=1.5,
             )
         if a_test_pred_sorted is not None:
-            axes[1].plot(a_test_pred_sorted, label="Calibration A (test)")
+            sns.lineplot(
+                x=range(len(a_test_pred_sorted)),
+                y=a_test_pred_sorted,
+                ax=axes[1],
+                label="Calibration A (test)",
+            )
         if b_test_pred_sorted is not None:
-            axes[1].plot(b_test_pred_sorted, label="Calibration B (test)")
-        axes[1].set_ylabel("Score (0-5 scale)")
-        axes[1].legend(loc="best")
+            sns.lineplot(
+                x=range(len(b_test_pred_sorted)),
+                y=b_test_pred_sorted,
+                ax=axes[1],
+                label="Calibration B (test)",
+            )
+        axes[1].set_ylabel("Score (0-5 scale)", fontsize=LABEL_FONT_SIZE)
+        axes[1].legend(loc="best", fontsize=LEGEND_FONT_SIZE)
         axes[1].grid(True, alpha=0.3)
     else:
         axes[1].axis("off")
         print("No test metrics/labels available; showing train-only calibration plot.")
-    axes[-1].set_xlabel("Sample index (sorted by true label)")
+    axes[-1].set_xlabel("Sample index (sorted by true label)", fontsize=LABEL_FONT_SIZE)
     plt.tight_layout()
     plt.show()
+
+
+def _align_and_sort(
+    scores: np.ndarray,
+    labels: np.ndarray,
+    a_pred: np.ndarray,
+    b_pred: np.ndarray,
+    sort_by_b: bool = False,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    min_len = min(len(scores), len(labels), len(a_pred), len(b_pred))
+    scores_aligned = scores[:min_len]
+    labels_aligned = labels[:min_len]
+    a_pred_aligned = a_pred[:min_len]
+    b_pred_aligned = b_pred[:min_len]
+    secondary = b_pred_aligned if sort_by_b else a_pred_aligned
+    order = np.lexsort((secondary, labels_aligned))
+    return (
+        scores_aligned[order],
+        labels_aligned[order],
+        a_pred_aligned[order],
+        b_pred_aligned[order],
+    )
+
+
+def plot_calibration_comparison_for_score_data(sd: ModelScoreData) -> None:
+    """
+    Fit Isotonic and Q2Q calibrators on the given score data and plot two calibration
+    comparison charts: one sorted by true label then isotonic, one sorted by true
+    label then Q2Q.
+    """
+    iso_cal = IsotonicCalibration().fit(sd.train_scores, sd.y_train)
+    q2q_cal = Q2QCalibration().fit(sd.train_scores, sd.y_train)
+
+    iso_train_pred = iso_cal.predict(sd.train_scores)
+    q2q_train_pred = q2q_cal.predict(sd.train_scores)
+    iso_test_pred = (
+        iso_cal.predict(sd.test_scores) if sd.test_scores is not None else None
+    )
+    q2q_test_pred = (
+        q2q_cal.predict(sd.test_scores) if sd.test_scores is not None else None
+    )
+
+    train_scores_sorted, y_train_sorted, iso_train_sorted, q2q_train_sorted = (
+        _align_and_sort(
+            sd.train_scores, sd.y_train, iso_train_pred, q2q_train_pred, sort_by_b=False
+        )
+    )
+
+    if (
+        sd.y_test is not None
+        and iso_test_pred is not None
+        and q2q_test_pred is not None
+    ):
+        _, y_test_sorted, iso_test_sorted, q2q_test_sorted = _align_and_sort(
+            sd.test_scores, sd.y_test, iso_test_pred, q2q_test_pred, sort_by_b=False
+        )
+    else:
+        y_test_sorted = iso_test_sorted = q2q_test_sorted = None
+
+    plot_calibration_comparison(
+        train_scores_sorted,
+        y_train_sorted,
+        iso_train_sorted,
+        q2q_train_sorted,
+        y_test_sorted,
+        iso_test_sorted,
+        q2q_test_sorted,
+        title_suffix=" (sorted by true label, then isotonic)",
+    )
+
+    if (
+        sd.y_test is not None
+        and iso_test_pred is not None
+        and q2q_test_pred is not None
+    ):
+        (
+            train_scores_sorted_q2q,
+            y_train_sorted_q2q,
+            iso_train_sorted_q2q,
+            q2q_train_sorted_q2q,
+        ) = _align_and_sort(
+            sd.train_scores, sd.y_train, iso_train_pred, q2q_train_pred, sort_by_b=True
+        )
+        _, y_test_sorted_q2q, iso_test_sorted_q2q, q2q_test_sorted_q2q = (
+            _align_and_sort(
+                sd.test_scores, sd.y_test, iso_test_pred, q2q_test_pred, sort_by_b=True
+            )
+        )
+        plot_calibration_comparison(
+            train_scores_sorted_q2q,
+            y_train_sorted_q2q,
+            iso_train_sorted_q2q,
+            q2q_train_sorted_q2q,
+            y_test_sorted_q2q,
+            iso_test_sorted_q2q,
+            q2q_test_sorted_q2q,
+            title_suffix=" (sorted by true label, then q2q)",
+        )
 
 
 def run_cv_comparison(
@@ -427,15 +564,15 @@ def run_cv_comparison(
 def plot_learning_curves(
     curves: dict[str, np.ndarray], title: str | None = None
 ) -> None:
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
     for name, series in curves.items():
-        plt.plot(series, label=name)
-    plt.xlabel("Iteration")
-    plt.ylabel("Error / Loss")
+        sns.lineplot(x=range(len(series)), y=series, ax=ax, label=name)
+    ax.set_xlabel("Iteration", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel("Error / Loss", fontsize=LABEL_FONT_SIZE)
     if title:
-        plt.title(title)
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+        ax.set_title(title, fontsize=TITLE_FONT_SIZE)
+    ax.legend(fontsize=LEGEND_FONT_SIZE)
+    ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.show()
 
@@ -679,7 +816,7 @@ def df_to_latex(
         if series.empty or series.isna().all():
             continue
         max_idx[col] = int(series.idxmax())
-    headers = [latex_escape(str(h)) for h in df.columns]
+    headers = ["\\textbf{" + latex_escape(str(h)) + "}" for h in df.columns]
     colspec = "l" + ("r" * (len(headers) - 1))
     lines: List[str] = []
     lines.append("\\begin{tabular}{" + colspec + "}")
@@ -733,14 +870,16 @@ def df_to_latex_multirow_header(
 
     # First header row with multicolumn spans
     id_col_display = df.columns[0] if len(df.columns) > 0 else "#"
-    header_row1 = [f"\\multirow{{2}}{{*}}{{{latex_escape(id_col_display)}}}"]
+    header_row1 = [
+        f"\\multirow{{2}}{{*}}{{\\textbf{{{latex_escape(id_col_display)}}}}}"
+    ]
     if corr_cols:
         header_row1.append(
-            f"\\multicolumn{{{len(corr_cols)}}}{{c}}{{Pearson correlation coefficient}}"
+            f"\\multicolumn{{{len(corr_cols)}}}{{c}}{{\\textbf{{Pearson correlation coefficient}}}}"
         )
     if thr_cols:
         header_row1.append(
-            f"\\multicolumn{{{len(thr_cols)}}}{{c}}{{Throughput (predictions/sec)}}"
+            f"\\multicolumn{{{len(thr_cols)}}}{{c}}{{\\textbf{{Throughput (predictions/sec)}}}}"
         )
     lines.append(" & ".join(header_row1) + " \\\\")
 
@@ -748,10 +887,10 @@ def df_to_latex_multirow_header(
     header_row2 = [""]
     for col in corr_cols:
         model_name = col.replace(" Corr", "")
-        header_row2.append(latex_escape(model_name))
+        header_row2.append("\\textbf{" + latex_escape(model_name) + "}")
     for col in thr_cols:
         model_name = col.replace(" Throughput", "")
-        header_row2.append(latex_escape(model_name))
+        header_row2.append("\\textbf{" + latex_escape(model_name) + "}")
     lines.append(" & ".join(header_row2) + " \\\\")
     lines.append("\\hline")
 

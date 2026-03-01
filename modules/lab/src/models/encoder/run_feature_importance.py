@@ -1,7 +1,6 @@
 import numpy as np
 from models.encoder.text2features import FeatureExtractorPipeline
 from models.encoder.train import MODEL_PARAMS, TRAINER_CLASSES
-from models.encoder.common import average_metrics
 
 model = "catboost"
 embeddings = "minilm"
@@ -33,14 +32,7 @@ def run_config(base_label, feature_mask=None, minilm_mask=None):
         trainer.model_name += f"_{base_label}"
         metrics = trainer.run_full_training()
         per_seed.append(metrics)
-    averaged = average_metrics(per_seed)
-    return averaged, per_seed
-
-
-def print_metrics(label, avg_metrics, per_seed_metrics):
-    print(f"Config: {label}")
-    print("Averaged Metrics:")
-    print(avg_metrics)
+    return per_seed
 
 
 # 1. minilm + features (all)
@@ -59,10 +51,9 @@ def print_metrics(label, avg_metrics, per_seed_metrics):
 
 # 2. features only (no minilm)
 label = f"features-{embeddings}"
-avg_metrics, per_seed_metrics = run_config(
+per_seed_metrics = run_config(
     label, feature_mask=None, minilm_mask=np.zeros(MINILM_DIM, dtype=bool)
 )
-print_metrics(label, avg_metrics, per_seed_metrics)
 
 # 3. minilm+features minus each extractor group (as defined in EXTRACTOR_FEATURE_COUNTS)
 feature_ranges: dict[str, tuple[int, int]] = {}
@@ -79,7 +70,4 @@ for name, (start, end) in feature_ranges.items():
     label = f"features-{name}"
     mask = np.ones(feature_count, dtype=bool)
     mask[start:end] = False
-    avg_metrics, per_seed_metrics = run_config(
-        label, feature_mask=mask, minilm_mask=None
-    )
-    print_metrics(label, avg_metrics, per_seed_metrics)
+    per_seed_metrics = run_config(label, feature_mask=mask, minilm_mask=None)

@@ -5,10 +5,11 @@ import re
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
 from adjustText import adjust_text
-from evaluation.core import LABEL_FONT_SIZE
+from evaluation.plot_style import LABEL_FONT_SIZE
 from utils import calculate_metrics
 
 from utils import DATA_DIR
@@ -510,7 +511,7 @@ def plot_model_metrics_scatter(
         return
 
     unique_prompts = df_filtered["prompt"].unique()
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_prompts)))
+    colors = sns.color_palette("tab10", len(unique_prompts))
     prompt_color_map = {prompt: colors[i] for i, prompt in enumerate(unique_prompts)}
 
     fig, ax = plt.subplots(figsize=figsize)
@@ -537,14 +538,16 @@ def plot_model_metrics_scatter(
             y_values.append(row[metric_column])
             bubble_sizes.append(model_size_to_bubble_size(model_size))
 
-        ax.scatter(
-            x_positions,
-            y_values,
+        sns.scatterplot(
+            x=x_positions,
+            y=y_values,
             s=bubble_sizes,
             alpha=0.7,
             color=prompt_color_map[prompt],
             edgecolors="black",
             linewidth=1.5,
+            ax=ax,
+            legend=False,
         )
 
     texts = []
@@ -582,8 +585,8 @@ def plot_model_metrics_scatter(
 
     ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
-    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE, fontweight="bold")
-    ax.set_ylabel(ylabel, fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel(ylabel, fontsize=LABEL_FONT_SIZE)
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
     ax.set_ylim(
@@ -652,7 +655,7 @@ def plot_model_metrics_combined_scatter(
         return
 
     unique_prompts = df_nonnull["prompt"].unique()
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_prompts)))
+    colors = sns.color_palette("tab10", len(unique_prompts))
     prompt_color_map = {prompt: colors[i] for i, prompt in enumerate(unique_prompts)}
 
     # Metric-specific marker styles and x-offsets to reduce overlap
@@ -699,15 +702,17 @@ def plot_model_metrics_combined_scatter(
                 )
                 all_y_values.append(row[metric_name])
 
-            ax.scatter(
-                x_positions,
-                y_values,
+            sns.scatterplot(
+                x=x_positions,
+                y=y_values,
                 s=sizes,
                 alpha=0.7,
                 color=prompt_color_map[prompt],
                 edgecolors="black",
                 linewidth=1.2,
                 marker=style["marker"],
+                ax=ax,
+                legend=False,
             )
 
             if show_labels:
@@ -740,8 +745,8 @@ def plot_model_metrics_combined_scatter(
     ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
     ax.set_xlim([0, 2])
-    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE, fontweight="bold")
-    ax.set_ylabel("Metric Value", fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel("Metric Value", fontsize=LABEL_FONT_SIZE)
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
 
@@ -902,7 +907,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
         r"\textbf{" + col + "}"
         if col.isupper()
         or col == "#"
-        or col == "Task Description"
+        or col == "Task Descr."
         or col == "Examples"
         or col == "CoT"
         else col
@@ -1274,22 +1279,24 @@ def plot_metrics_vs_prompt_token_count(
         else:
             y_values = df_grouped[metric]
 
-        line = ax.plot(
-            df_grouped["prompt_token_count"],
-            y_values,
+        sns.lineplot(
+            x=df_grouped["prompt_token_count"],
+            y=y_values,
+            ax=ax,
             marker=styles[metric]["marker"],
             linewidth=1.5,
             linestyle="--",
             label=styles[metric]["label"],
             markersize=8,
-        )[0]
+        )
+        line = ax.lines[-1]
         color = line.get_color()
         line.set_alpha(0.6)
         line.set_markerfacecolor(mcolors.to_rgba(color, alpha=1.0))
         line.set_markeredgecolor(mcolors.to_rgba(color, alpha=1.0))
 
-    ax.set_xlabel("Prompt Token Count", fontsize=LABEL_FONT_SIZE, fontweight="bold")
-    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE, fontweight="bold")
+    ax.set_xlabel("Prompt Token Count", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE)
     if show_legend:
         ax.legend(loc="best")
     ax.grid(True, alpha=0.3, linestyle="--")

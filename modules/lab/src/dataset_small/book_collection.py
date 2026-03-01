@@ -1,8 +1,11 @@
 import json
 import webbrowser
 import urllib.parse
+import collections
 from slugify import slugify
 import re
+
+from evaluation.plot_style import CMAP_PRIMARY, apply_plot_style
 
 
 class BookCollector:
@@ -254,3 +257,114 @@ class BookCollector:
             )
 
             interface.launch(share=False, debug=True)
+
+
+def plot_genre_distribution() -> None:
+    """Plot a pie chart showing the distribution of genres in the book collection."""
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Patch
+    import seaborn as sns
+    from utils import BOOK_META_DIR, DATA_DIR
+
+    apply_plot_style()
+
+    genre_counts: collections.Counter = collections.Counter()
+    for meta_file in BOOK_META_DIR.glob("*.json"):
+        try:
+            with open(meta_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            g = data.get("genre") or "Unknown"
+            if isinstance(g, str):
+                g = g.strip() or "Unknown"
+            else:
+                g = "Unknown"
+            if g.lower() == "science fiction":
+                g = "Sci-Fi"
+            genre_counts[g] += 1
+        except Exception:
+            pass
+
+    if not genre_counts:
+        print("No genre data found for Matplotlib chart.")
+        return
+
+    genres, counts = zip(*genre_counts.most_common())
+    total = sum(counts)
+
+    fig, ax = plt.subplots(figsize=(22, 13), dpi=120)
+
+    def autopct_fmt(pct):
+        return ("%0.1f%%" % pct) if pct >= 2 else ""
+
+    colors = sns.color_palette(CMAP_PRIMARY, len(genres))
+    wedges, _, autotexts = ax.pie(
+        counts,
+        colors=colors,
+        labels=None,
+        autopct=autopct_fmt,
+        startangle=90,
+        counterclock=False,
+        pctdistance=0.8,
+        textprops={"color": "#000", "fontsize": 38, "fontweight": "bold"},
+        wedgeprops={"linewidth": 2.5, "edgecolor": "white"},
+    )
+
+    for t in autotexts:
+        t.set_fontsize(38)
+        t.set_fontweight("bold")
+
+    legend_patches = [
+        Patch(facecolor=c, edgecolor="white", label=f"{g}: {cnt}")
+        for c, g, cnt in zip(colors, genres, counts)
+    ]
+
+    leg = ax.legend(
+        handles=legend_patches,
+        loc="center left",
+        bbox_to_anchor=(0.9, 0.5),
+        frameon=True,
+        title_fontsize=44,
+        borderpad=0.1,
+        labelspacing=0.6,
+        handlelength=2.0,
+        handleheight=1.5,
+        title="Genre: Book Count",
+        fontsize=42,
+        markerscale=1.1,
+    )
+    frame = leg.get_frame()
+    frame.set_alpha(0.18)
+    frame.set_edgecolor("#bcbcbc")
+    frame.set_linewidth(1.2)
+    frame.set_facecolor("#ffffff")
+
+    ax.set_aspect("equal")
+    ax.set_position([0, 0, 1, 1])
+    plt.axis("off")
+    pie_path = DATA_DIR / "figures" / "genre_distribution.png"
+    fig.savefig(
+        pie_path,
+        bbox_inches="tight",
+        pad_inches=0,
+        transparent=True,
+    )
+    print("Saved pie to", pie_path)
+
+    try:
+        from PIL import Image
+
+        with Image.open(pie_path) as im:
+            im = im.convert("RGBA")
+            bbox = im.getbbox()
+            if bbox:
+                cropped = im.crop(bbox)
+                cropped.save(pie_path)
+                print("Cropped margins from saved image.")
+            else:
+                print("No non-transparent content found to crop.")
+    except Exception as e:
+        print(f"Image cropping failed: {e}")
+
+    plt.show()
+    print("Total books counted:", total)
+    print("Done.")

@@ -141,6 +141,7 @@ def extract_model_metrics(
         - correlation: Pearson correlation with true labels (averaged across seeds)
         - rmse: Root mean squared error (averaged across seeds)
         - accuracy: Classification accuracy (averaged across seeds)
+        - weighted_f1: Weighted F1 score (averaged across seeds)
         - output_errors: Count of output parsing errors (summed across seeds)
         - num_samples: Total number of samples evaluated
         - latency_mean: Mean latency in ms (averaged across seeds)
@@ -170,6 +171,7 @@ def extract_model_metrics(
         # Calculate RMSE and accuracy from valid predictions
         rmse = None
         accuracy = None
+        weighted_f1 = None
         valid_pairs = [
             (pred, true)
             for pred, true in zip(predictions, true_labels)
@@ -181,6 +183,7 @@ def extract_model_metrics(
             computed_metrics = compute_metrics_from_llm_data(preds_arr, labels_arr)
             rmse = np.sqrt(computed_metrics["mse"])
             accuracy = computed_metrics["accuracy"]
+            weighted_f1 = computed_metrics["weighted_f1"]
 
         throughput = performance.get("throughput", 0)
         latency_mean = performance.get("latency_mean", 0)
@@ -193,6 +196,7 @@ def extract_model_metrics(
             "correlation": correlation,
             "rmse": rmse,
             "accuracy": accuracy,
+            "weighted_f1": weighted_f1,
             "output_errors": output_errors,
             "num_samples": len(true_labels),
             "latency_mean": latency_mean,
@@ -220,6 +224,7 @@ def extract_model_metrics(
                     "correlation": metric["correlation"],
                     "rmse": metric["rmse"],
                     "accuracy": metric["accuracy"],
+                    "weighted_f1": metric["weighted_f1"],
                     "output_errors": metric["output_errors"],
                     "num_samples": metric["num_samples"],
                     "latency_mean": metric["latency_mean"],
@@ -242,6 +247,11 @@ def extract_model_metrics(
                 accuracies = [
                     m["accuracy"] for m in valid_metrics if m["accuracy"] is not None
                 ]
+                weighted_f1s = [
+                    m["weighted_f1"]
+                    for m in valid_metrics
+                    if m["weighted_f1"] is not None
+                ]
                 error_rates = [m["error_rate"] for m in seed_metrics_list]
                 throughputs = [m["throughput"] for m in seed_metrics_list]
                 latency_means = [m["latency_mean"] for m in seed_metrics_list]
@@ -250,6 +260,7 @@ def extract_model_metrics(
                 avg_correlation = np.mean(correlations) if correlations else None
                 avg_rmse = np.mean(rmses) if rmses else None
                 avg_accuracy = np.mean(accuracies) if accuracies else None
+                avg_weighted_f1 = np.mean(weighted_f1s) if weighted_f1s else None
 
                 results.append(
                     {
@@ -263,6 +274,7 @@ def extract_model_metrics(
                         "correlation": avg_correlation,
                         "rmse": avg_rmse,
                         "accuracy": avg_accuracy,
+                        "weighted_f1": avg_weighted_f1,
                         "output_errors": sum(
                             m["output_errors"] for m in seed_metrics_list
                         ),
@@ -608,19 +620,19 @@ def plot_model_metrics_combined_scatter(
     shorten_model_names: bool = False,
     show_labels: bool = False,
 ) -> None:
-    """Plot correlation, RMSE, and accuracy in a single scatter plot.
+    """Plot correlation, RMSE, and weighted F1 in a single scatter plot.
 
     Creates a combined bubble chart where:
     - X-axis: Prompt complexity (Low/Medium/High) with small metric-specific offsets
-    - Y-axis: Metric value (raw values for correlation, RMSE, accuracy)
+    - Y-axis: Metric value (raw values for correlation, RMSE, weighted F1)
     - Bubble size: Model size inferred from name
     - Color: Prompt identifier
-    - Shape: Metric type (circle=corr, triangle=rmse, square=acc) with legend
+    - Shape: Metric type (circle=corr, triangle=rmse, square=weighted_f1) with legend
 
     Args:
         df: DataFrame with columns: model_name, prompt, prompt_token_count,
-            correlation, rmse, accuracy
-        min_threshold: Minimum value to include for correlation/accuracy
+            correlation, rmse, weighted_f1
+        min_threshold: Minimum value to include for correlation/weighted_f1
         y_padding: Padding around min/max for y-axis limits
         figsize: Figure size
         shorten_model_names: Whether to truncate long model names in labels
@@ -632,7 +644,7 @@ def plot_model_metrics_combined_scatter(
         "prompt_token_count",
         "correlation",
         "rmse",
-        "accuracy",
+        "weighted_f1",
     }
     missing = required_cols - set(df.columns)
     if missing:
@@ -647,7 +659,10 @@ def plot_model_metrics_combined_scatter(
             & (df_nonnull["correlation"] > min_threshold)
         )
         | (pd.notna(df_nonnull["rmse"]))
-        | (pd.notna(df_nonnull["accuracy"]) & (df_nonnull["accuracy"] > min_threshold))
+        | (
+            pd.notna(df_nonnull["weighted_f1"])
+            & (df_nonnull["weighted_f1"] > min_threshold)
+        )
     ]
 
     if df_nonnull.empty:
@@ -662,7 +677,7 @@ def plot_model_metrics_combined_scatter(
     metric_styles = {
         "rmse": {"marker": "^", "label": "RMSE ↓", "offset": 0},
         "correlation": {"marker": "o", "label": "Correlation ↑", "offset": 0},
-        "accuracy": {"marker": "s", "label": "Accuracy ↑", "offset": 0},
+        "weighted_f1": {"marker": "s", "label": "Weighted F1 ↑", "offset": 0},
     }
 
     fig, ax = plt.subplots(figsize=figsize)
@@ -678,7 +693,7 @@ def plot_model_metrics_combined_scatter(
 
         for metric_name, style in metric_styles.items():
             series_df = prompt_df[pd.notna(prompt_df[metric_name])]
-            if metric_name in {"correlation", "accuracy"}:
+            if metric_name in {"correlation", "weighted_f1"}:
                 series_df = series_df[series_df[metric_name] > min_threshold]
             if series_df.empty:
                 continue
@@ -799,13 +814,13 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
 
     Iterates through COMBINATION_PLANS in canonical order to define row order.
     For each configuration, generates a Prompt instance, uses its ID to look up
-    the best correlation, RMSE, and accuracy in df_metrics, and builds the table row.
+    the best correlation, RMSE, and weighted F1 in df_metrics, and builds the table row.
 
     Args:
-        df_metrics: DataFrame with metric data including 'prompt_id', 'correlation', 'rmse', and 'accuracy' columns
+        df_metrics: DataFrame with metric data including 'prompt_id', 'correlation', 'rmse', and 'weighted_f1' columns
 
     Returns:
-        DataFrame with columns: #, Task Description, Examples, CoT, Best corr., Best RMSE, Best Acc.
+        DataFrame with columns: #, Task Description, Examples, CoT, Best corr., Best RMSE, Best F1
         Best values in each metric column are formatted in bold for LaTeX output.
     """
     from models.llm.prompts import (
@@ -824,7 +839,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     # Track all metric values to find best
     all_corr_values = []
     all_rmse_values = []
-    all_acc_values = []
+    all_f1_values = []
 
     for plan in COMBINATION_PLANS:
         for task_descr_key in plan["task_descriptions"]:
@@ -845,7 +860,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
 
                 best_corr = ""
                 best_rmse = ""
-                best_acc = ""
+                best_f1 = ""
 
                 if not config_metrics.empty:
                     corr_val = config_metrics["correlation"].max()
@@ -858,10 +873,10 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                         best_rmse = f"{rmse_val:.3f}"
                         all_rmse_values.append((row_idx, rmse_val))
 
-                    acc_val = config_metrics["accuracy"].max()
-                    if pd.notna(acc_val):
-                        best_acc = f"{acc_val:.3f}"
-                        all_acc_values.append((row_idx, acc_val))
+                    f1_val = config_metrics["weighted_f1"].max()
+                    if pd.notna(f1_val):
+                        best_f1 = f"{f1_val:.3f}"
+                        all_f1_values.append((row_idx, f1_val))
 
                 examples_val = "yes" if plan["include_examples"] else ""
                 cot_val = cot_option if cot_option != "none" else ""
@@ -874,7 +889,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                         "CoT": cot_val,
                         "CORR": best_corr,
                         "RMSE": best_rmse,
-                        "ACC": best_acc,
+                        "F1": best_f1,
                     }
                 )
                 row_idx += 1
@@ -888,9 +903,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
     best_rmse_row = (
         min(all_rmse_values, key=lambda x: x[1])[0] if all_rmse_values else None
     )
-    best_acc_row = (
-        max(all_acc_values, key=lambda x: x[1])[0] if all_acc_values else None
-    )
+    best_f1_row = max(all_f1_values, key=lambda x: x[1])[0] if all_f1_values else None
 
     # Apply bold formatting to best values
     for idx, row in df.iterrows():
@@ -899,20 +912,25 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
             df.at[idx, "CORR"] = r"\textbf{" + row["CORR"] + "}"
         if row_num == best_rmse_row and row["RMSE"]:
             df.at[idx, "RMSE"] = r"\textbf{" + row["RMSE"] + "}"
-        if row_num == best_acc_row and row["ACC"]:
-            df.at[idx, "ACC"] = r"\textbf{" + row["ACC"] + "}"
+        if row_num == best_f1_row and row["F1"]:
+            df.at[idx, "F1"] = r"\textbf{" + row["F1"] + "}"
 
-    # Apply bold to column headers (for LaTeX output)
-    df.columns = [
-        r"\textbf{" + col + "}"
-        if col.isupper()
-        or col == "#"
-        or col == "Task Descr."
-        or col == "Examples"
-        or col == "CoT"
-        else col
-        for col in df.columns
-    ]
+    # Apply bold to column headers and add direction arrows for metric columns
+    _ARROW_UP = r" $\uparrow$"
+    _ARROW_DOWN = r" $\downarrow$"
+
+    def _col_header(col: str) -> str:
+        should_bold = col.isupper() or col in ("#", "Task Descr.", "Examples", "CoT")
+        if not should_bold:
+            return col
+        bold = r"\textbf{" + col + "}"
+        if col == "RMSE":
+            return bold + _ARROW_DOWN
+        if col in ("CORR", "F1"):
+            return bold + _ARROW_UP
+        return bold
+
+    df.columns = [_col_header(col) for col in df.columns]
 
     return df
 
@@ -1133,6 +1151,18 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
     """
     df_latex = df_comparison_table.copy()
 
+    # Pre-compute best-value row index per metric column (before string formatting).
+    # Higher is better: CORR, ACC, Δ CORR, Δ ACC; lower is better: RMSE, Δ RMSE.
+    _lower_is_better = {"RMSE", "Δ RMSE"}
+    best_idx: dict[str, int] = {}
+    for col in df_latex.columns:
+        if col in ("CORR", "RMSE", "ACC", "Δ CORR", "Δ RMSE", "Δ ACC"):
+            series = pd.to_numeric(df_latex[col], errors="coerce")
+            if series.notna().any():
+                best_idx[col] = int(
+                    series.idxmin() if col in _lower_is_better else series.idxmax()
+                )
+
     for idx, row in df_latex.iterrows():
         # Format regular metric columns to 3 decimal places
         if "CORR" in df_latex.columns:
@@ -1187,7 +1217,21 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
                         f"\\textcolor{{red}}{{{delta_acc:+.3f}}}"
                     )
 
-    header_bold_table = df_latex.rename(columns=lambda col: f"\\textbf{{{col}}}")
+    # Bold the best-value cell in each metric column.
+    for col, bidx in best_idx.items():
+        val = df_latex.at[bidx, col]
+        if val != "" and pd.notna(val):
+            df_latex.at[bidx, col] = r"\textbf{" + str(val) + "}"
+
+    def _header(col: str) -> str:
+        bold = f"\\textbf{{{col}}}"
+        if "RMSE" in col:
+            return bold + r" $\downarrow$"
+        if any(k in col for k in ("CORR", "ACC")):
+            return bold + r" $\uparrow$"
+        return bold
+
+    header_bold_table = df_latex.rename(columns=_header)
     latex_table = header_bold_table.to_latex(index=False, escape=False, bold_rows=False)
 
     return latex_table

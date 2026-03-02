@@ -670,6 +670,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     overall_str = f"{overall_mean:.2f}s" if not math.isnan(overall_mean) else "-"
     print(f"  Mean lead time (all): {overall_str}")
+    total_time = sum(all_filtered)
+    print(
+        f"  Total time (all annotations): {total_time:.2f}s ({total_time / 60:.1f}min)"
+    )
 
     total_annotations = sum(len(rec.ratings) for rec in tr)
     print(f"  Total annotations: {total_annotations}")

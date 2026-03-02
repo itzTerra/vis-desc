@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from evaluation.plot_style import (
+    CMAP_SEQUENTIAL_PRIMARY,
     LABEL_FONT_SIZE,
     TITLE_FONT_SIZE,
     SUPTITLE_FONT_SIZE,
     LEGEND_FONT_SIZE,
     ANNOT_FONT_SIZE,
-    CMAP_PRIMARY,
 )
 from evaluation.core import (
     get_confusion_matrix,
@@ -629,7 +629,7 @@ def plot_confusion_matrix(
         cm,
         annot=True,
         fmt="d",
-        cmap=CMAP_PRIMARY,
+        cmap=CMAP_SEQUENTIAL_PRIMARY,
         ax=ax1,
         linewidths=0.5,
         linecolor="gray",
@@ -657,7 +657,7 @@ def plot_confusion_matrix(
             cm_normalized,
             annot=True,
             fmt=".2f",
-            cmap=CMAP_PRIMARY,
+            cmap=CMAP_SEQUENTIAL_PRIMARY,
             ax=ax2,
             linewidths=0.5,
             linecolor="gray",
@@ -1114,7 +1114,7 @@ def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
                 colors.append(_interp_color(base_gray, dark_gray, t))
         return colors
 
-    acc_sorted = plot_df.sort_values("Accuracy Δ", ascending=False)
+    acc_sorted = plot_df.sort_values("Accuracy Δ", ascending=True)
     acc_deltas = acc_sorted["Accuracy Δ"]
     acc_mask = acc_deltas < 0
     colors_acc = _importance_colors(acc_deltas, acc_mask)
@@ -1148,7 +1148,7 @@ def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
         "Saved accuracy delta plot -> data/figures/feature_importance_accuracy_delta.png"
     )
 
-    rmse_sorted = plot_df.sort_values("RMSE Δ", ascending=True)
+    rmse_sorted = plot_df.sort_values("RMSE Δ", ascending=False)
     rmse_deltas = rmse_sorted["RMSE Δ"]
     rmse_mask = rmse_deltas > 0
     colors_rmse = _importance_colors(rmse_deltas, rmse_mask)
@@ -1407,12 +1407,17 @@ def export_feature_importance_latex(
     latex_lines.append(r"\begin{tabular}{l" + "r" * (len(df.columns) - 1) + "}")
     latex_lines.append(r"\toprule")
 
-    header = (
-        " & ".join(
-            [r"\textbf{" + col.replace("Δ", r"$\Delta$") + "}" for col in df.columns]
-        )
-        + r" \\"
-    )
+    def _col_header(col: str) -> str:
+        col_tex = col.replace("Δ", r"$\Delta$")
+        bold = r"\textbf{" + col_tex + "}"
+        cu = col.upper()
+        if "RMSE" in cu and "\Delta" not in col_tex:
+            return bold + r" $\downarrow$"
+        if "\Delta" not in col_tex and ("ACCURACY" in cu or "F1" in cu):
+            return bold + r" $\uparrow$"
+        return bold
+
+    header = " & ".join([_col_header(col) for col in df.columns]) + r" \\"
     latex_lines.append(header)
     latex_lines.append(r"\midrule")
 
@@ -1422,7 +1427,20 @@ def export_feature_importance_latex(
             abs_max = max(abs(df[col].min()), abs(df[col].max()))
             gradient_info[col] = {"vmin": -abs_max, "vmax": abs_max}
 
-    for _, row in df.iterrows():
+    # Pre-compute best row index per numeric metric column for bold highlighting.
+    _best_row: dict[str, int] = {}
+    for col in df.columns:
+        if col == "Removed Feature Group":
+            continue
+        cu = col.upper()
+        if "RMSE" in cu or "ACCURACY" in cu or "F1" in cu:
+            series = pd.to_numeric(df[col], errors="coerce")
+            if series.notna().any():
+                _best_row[col] = int(
+                    series.idxmin() if "RMSE" in cu else series.idxmax()
+                )
+
+    for row_label, row in df.iterrows():
         cells = []
         for col, val in row.items():
             if col == "Removed Feature Group":
@@ -1443,6 +1461,12 @@ def export_feature_importance_latex(
                             + "}"
                             + cell_str
                         )
+                if col in _best_row and row_label == _best_row[col]:
+                    if cell_str.startswith(r"\cellcolor"):
+                        end = cell_str.index("}") + 1
+                        cell_str = cell_str[:end] + r"\textbf{" + cell_str[end:] + "}"
+                    else:
+                        cell_str = r"\textbf{" + cell_str + "}"
             else:
                 cell_str = str(val)
             cells.append(cell_str)

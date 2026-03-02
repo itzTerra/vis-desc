@@ -46,9 +46,10 @@ class ModelNamer(ABC):
     def get_model_name(self) -> str:
         if not hasattr(self, "include_large"):
             raise ValueError("ModelNamer subclass must have 'include_large' attribute.")
-        embeddings = getattr(self, "embeddings", "")
+        # embeddings = getattr(self, "embeddings", "")
         base_name = self._get_base_model_name()
-        return f"{base_name}{f'_{embeddings}' if embeddings else ''}{'_lg' if self.include_large else ''}"
+        return f"{base_name}{'_lg' if self.include_large else ''}"
+        # return f"{base_name}{f'_{embeddings}' if embeddings else ''}{'_lg' if self.include_large else ''}"
 
 
 class RidgeNamer(ModelNamer):

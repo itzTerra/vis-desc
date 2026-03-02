@@ -25,8 +25,10 @@ def get_deep_colormap_colors(n: int = 10) -> list[str]:
 PALETTE = get_deep_colormap_colors()  # default color palette for plots
 
 # Colormaps
-CMAP_PRIMARY = "deep"  # raw-count confusion matrix
-CMAP_SECONDARY = "Pastel1"  # raw-count confusion matrix (relaxed mode)
+CMAP_QUALITATIVE_PRIMARY = "deep"
+CMAP_QUALITATIVE_SECONDARY = "Pastel1"
+CMAP_SEQUENTIAL_PRIMARY = "viridis"
+CMAP_SEQUENTIAL_SECONDARY = "cividis"
 
 GRID_ALPHA = 0.3
 GRID_LINESTYLE = "--"

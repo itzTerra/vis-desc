@@ -5,7 +5,7 @@ import collections
 from slugify import slugify
 import re
 
-from evaluation.plot_style import CMAP_PRIMARY, apply_plot_style
+from evaluation.plot_style import CMAP_QUALITATIVE_PRIMARY, apply_plot_style
 
 
 class BookCollector:
@@ -296,7 +296,7 @@ def plot_genre_distribution() -> None:
     def autopct_fmt(pct):
         return ("%0.1f%%" % pct) if pct >= 2 else ""
 
-    colors = sns.color_palette(CMAP_PRIMARY, len(genres))
+    colors = sns.color_palette(CMAP_QUALITATIVE_PRIMARY, len(genres))
     wedges, _, autotexts = ax.pie(
         counts,
         colors=colors,

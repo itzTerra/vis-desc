@@ -64,6 +64,9 @@ def compute_metrics_from_llm_data(
     recall = [float(r) for r in recall_arr]
     f1 = [float(f) for f in f1_arr]
     support = [int(np.sum(true_labels == label_val)) for label_val in range(6)]
+    weighted_f1 = float(
+        f1_score(true_labels, pred_labels, average="weighted", zero_division=0)
+    )
 
     cm = confusion_matrix(true_labels, pred_labels, labels=list(range(6)))
 
@@ -73,6 +76,7 @@ def compute_metrics_from_llm_data(
         "precision": precision,
         "recall": recall,
         "f1": f1,
+        "weighted_f1": weighted_f1,
         "support": support,
         "confusion_matrix": cm,
     }

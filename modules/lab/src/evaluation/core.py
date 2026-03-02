@@ -10,15 +10,28 @@ import seaborn as sns
 from pathlib import Path
 
 from evaluation.plot_style import (  # noqa: F401 – re-exported for callers
+    CMAP_QUALITATIVE_PRIMARY,
+    CMAP_QUALITATIVE_SECONDARY,
+    CMAP_SEQUENTIAL_PRIMARY,
+    CMAP_SEQUENTIAL_SECONDARY,
+    GRID_ALPHA,
+    GRID_LINESTYLE,
     LABEL_FONT_SIZE,
     TITLE_FONT_SIZE,
     TICK_FONT_SIZE,
     LEGEND_FONT_SIZE,
     ANNOT_FONT_SIZE,
-    PALETTE,
-    CMAP_PRIMARY,
-    CMAP_SECONDARY,
 )
+
+
+MODEL_DISPLAY_NAMES: dict[str, str] = {
+    "random": "Random",
+    "ridge_minilm": "Ridge",
+    "rf_minilm": "Random Forest",
+    "svm_minilm": "SVM",
+    "catboost_minilm": "CatBoost",
+    "finetuned-mbert": "Finetuned ModernBERT",
+}
 
 
 @dataclass
@@ -183,14 +196,17 @@ def plot_confusion_matrix(
         fig, ax1 = plt.subplots(1, 1, figsize=(3, 3))
         ax2 = None
 
-    raw_cmap = CMAP_PRIMARY if class_mode != "relaxed" else CMAP_SECONDARY
-    norm_cmap = CMAP_PRIMARY if class_mode != "relaxed" else CMAP_SECONDARY
+    cmap = (
+        CMAP_SEQUENTIAL_PRIMARY
+        if class_mode != "relaxed"
+        else CMAP_SEQUENTIAL_SECONDARY
+    )
 
     sns.heatmap(
         cm,
         annot=True,
         fmt=".0f",
-        cmap=raw_cmap,
+        cmap=cmap,
         ax=ax1,
         linewidths=0.5,
         linecolor="gray",
@@ -221,7 +237,7 @@ def plot_confusion_matrix(
             cm_normalized,
             annot=True,
             fmt=".2f",
-            cmap=norm_cmap,
+            cmap=cmap,
             ax=ax2,
             linewidths=0.5,
             linecolor="gray",
@@ -288,8 +304,14 @@ def print_per_label_metrics(
     print(f"Accuracy: {data.accuracy:.4f}")
     print(f"MSE: {data.mse:.4f}")
     print(f"RMSE: {np.sqrt(data.mse):.4f}")
-    if data.f1:
-        print(f"Macro-F1: {np.mean(data.f1):.4f}")
+    if data.f1 and data.support:
+        total_support = sum(data.support)
+        weighted_f1 = (
+            sum(f * s for f, s in zip(data.f1, data.support)) / total_support
+            if total_support > 0
+            else 0.0
+        )
+        print(f"Weighted F1: {weighted_f1:.4f}")
 
 
 def vis_specific_model_tables(
@@ -400,19 +422,23 @@ def vis_all_models_plots(
         if getattr(m, dataset, None) is not None:
             if "_lg" in m.model:
                 md = getattr(m, dataset)
+                original_mse = md.mse
                 md = (
                     collapse_dataset_metrics_relaxed(md)
                     if class_mode == "relaxed"
                     else md
                 )
+                md.mse = original_mse
                 lg_models_data.append({"model": m.model, "metrics": md})
             else:
                 md = getattr(m, dataset)
+                original_mse = md.mse
                 md = (
                     collapse_dataset_metrics_relaxed(md)
                     if class_mode == "relaxed"
                     else md
                 )
+                md.mse = original_mse
                 models_data.append({"model": m.model, "metrics": md})
 
     if not models_data:
@@ -448,53 +474,119 @@ def vis_all_models_plots(
         md_map = {emb: md for emb, md in base_to_models[base]}
         base_to_models[base] = [(emb, md_map[emb]) for emb in ordered_embeds]
 
+    palette = (
+        CMAP_QUALITATIVE_PRIMARY
+        if class_mode == "relaxed"
+        else CMAP_QUALITATIVE_PRIMARY
+    )
+    _palette_colors = sns.color_palette(palette, len(ordered_bases)).as_hex()
+    base_colors = {base: _palette_colors[i] for i, base in enumerate(ordered_bases)}
+
+    def darken(hex_color, factor=0.75):
+        hex_color = hex_color.lstrip("#")
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        r = int(r * factor)
+        g = int(g * factor)
+        b = int(b * factor)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    total_cluster_width = 0.85
+    n_bases = len(ordered_bases)
+    base_slot_width = total_cluster_width / n_bases if n_bases else 0.0
+    base_slot_margin_factor = 0.15
+
+    max_variants = 0
+    for base in ordered_bases:
+        max_variants = max(max_variants, len(base_to_models[base]))
+    if max_variants == 0:
+        max_variants = 1
+
     for metric_name in ["Precision", "Recall", "F1"]:
-        rows = []
-        for base in ordered_bases:
-            for emb, md in base_to_models[base]:
-                values = md["metrics"].__dict__.get(metric_name.lower(), [])
-                for label_idx, val in enumerate(values):
-                    if class_mode == "relaxed":
-                        label_tick = ("0/1", "2/3", "4/5")[label_idx]
-                    else:
-                        label_tick = f"Label {label_idx}"
-                    rows.append(
-                        {"Model": md["model"], "Label": label_tick, metric_name: val}
-                    )
+        fig, ax = plt.subplots(figsize=(12, 6))
+        for base_idx, base in enumerate(ordered_bases):
+            variants = base_to_models[base]
+            n_variants = len(variants)
+            inner_width = base_slot_width * (1 - base_slot_margin_factor)
+            bar_width = inner_width / max_variants
+
+            base_center_offset = -total_cluster_width / 2 + base_slot_width * (
+                base_idx + 0.5
+            )
+            for v_idx, (emb, md) in enumerate(variants):
+                metric_key = metric_name.lower()
+                values = md["metrics"].__dict__.get(metric_key, [])
+                n_labels = len(values)
+                base_positions = np.arange(n_labels) + base_center_offset
+
+                variant_offset_start = (v_idx - (n_variants - 1) / 2) * bar_width
+
+                x_positions = base_positions + variant_offset_start
+                c = base_colors[base]
+                if emb == "mbert":
+                    c = darken(c)
+                ax.bar(
+                    x_positions,
+                    values[:n_labels],
+                    width=bar_width,
+                    label=MODEL_DISPLAY_NAMES.get(md["model"], md["model"]),
+                    alpha=0.9,
+                    color=c,
+                    edgecolor="white",
+                    linewidth=0.5,
+                )
 
                 lg_md = lg_lookup.get(md["model"])
                 if lg_md is not None:
-                    lg_values = lg_md["metrics"].__dict__.get(metric_name.lower(), [])
-                    for label_idx, val in enumerate(lg_values[: len(values)]):
-                        if class_mode == "relaxed":
-                            label_tick = ("0/1", "2/3", "4/5")[label_idx]
-                        else:
-                            label_tick = f"Label {label_idx}"
-                        rows.append(
-                            {
-                                "Model": lg_md["model"],
-                                "Label": label_tick,
-                                metric_name: val,
-                            }
+                    lg_values = lg_md["metrics"].__dict__.get(metric_key, [])
+                    for label_idx in range(min(n_labels, len(lg_values))):
+                        x_pos = x_positions[label_idx]
+                        lg_val = lg_values[label_idx]
+
+                        line_y = lg_val
+                        line_left = x_pos - bar_width / 2
+                        line_right = x_pos + bar_width / 2
+
+                        ax.plot(
+                            [line_left, line_right],
+                            [line_y, line_y],
+                            color="black",
+                            linewidth=2,
+                            zorder=10,
                         )
 
-        if not rows:
-            continue
-        df_metric = pd.DataFrame(rows)
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(
-            data=df_metric, x="Label", y=metric_name, hue="Model", ax=ax, alpha=0.9
-        )
         ax.set_xlabel("Label", fontsize=LABEL_FONT_SIZE)
         ax.set_ylabel(metric_name, fontsize=LABEL_FONT_SIZE)
-        ax.set_title(
-            f"{metric_name} Across Models ({dataset.replace('_', ' ').title()} Dataset)",
-            fontsize=TITLE_FONT_SIZE,
-            fontweight="bold",
-        )
+        # ax.set_title(
+        #     f"{metric_name} Across Models ({dataset.replace('_', ' ').title()} Dataset)",
+        #     fontsize=TITLE_FONT_SIZE,
+        #     fontweight="bold",
+        # )
+        if models_data:
+            sample_vals = models_data[0]["metrics"].__dict__.get(
+                metric_name.lower(), []
+            )
+            n_labels = len(sample_vals)
+        else:
+            n_labels = 6
+        if class_mode == "relaxed":
+            xticks = ["0/1", "2/3", "4/5"][:n_labels]
+        else:
+            xticks = [f"Label {i}" for i in range(n_labels)]
+        ax.set_xticks(np.arange(n_labels))
+        ax.set_xticklabels(xticks)
         ax.set_ylim(0, 1.0)
-        ax.grid(axis="y", alpha=0.3)
-        ax.legend(fontsize=LEGEND_FONT_SIZE, ncol=2)
+        ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
+        handles, labels = ax.get_legend_handles_labels()
+        seen = set()
+        new_handles, new_labels = [], []
+        for h, label in zip(handles, labels):
+            if label not in seen:
+                seen.add(label)
+                new_handles.append(h)
+                new_labels.append(label)
+        ax.legend(new_handles, new_labels, fontsize=LEGEND_FONT_SIZE, ncol=2)
         plt.tight_layout()
         plt.show()
 
@@ -503,20 +595,70 @@ def vis_all_models_plots(
         for emb, md in base_to_models[base]:
             flat_models.append((base, emb, md))
 
-    def _model_label(base: str, emb: str | None, suffix: str = "") -> str:
+    def build_cluster_positions():
+        positions = []
+        total_width = 1.0
+        n_bases = len(ordered_bases)
+        slot_width = total_width / n_bases if n_bases else 1.0
+        margin_factor = 0.15
+
+        max_variants = max(len(base_to_models.get(base, [])) for base in ordered_bases)
+        if max_variants == 0:
+            max_variants = 1
+
+        for base_idx, base in enumerate(ordered_bases):
+            variants = base_to_models[base]
+            n_variants = len(variants)
+            inner_width = slot_width * (1 - margin_factor)
+            bar_width = inner_width / max_variants
+
+            base_center_offset = -total_width / 2 + slot_width * (base_idx + 0.5)
+            for v_idx, (emb, md) in enumerate(variants):
+                variant_offset_start = (v_idx - (n_variants - 1) / 2) * bar_width
+
+                pos = base_center_offset + variant_offset_start
+                positions.append((base, emb, md, pos, bar_width))
+        return positions
+
+    n_bases = len(ordered_bases)
+    clustered_positions = build_cluster_positions()
+    variant_positions = [pos for _, _, _, pos, _ in clustered_positions]
+    variant_labels = []
+    for base, emb, md, pos, bw in clustered_positions:
         if emb is None:
-            return f"{base}{suffix}"
-        return f"{base}\n({emb}{suffix})"
+            variant_labels.append(f"{base}")
+        else:
+            variant_labels.append(f"{base}")
+            # variant_labels.append(f"{base}\n({emb})")
 
     def plot_single_metric(metric_key, title, ylim=None, transform=None, y_label=None):
-        rows = []
-        for base, emb, md in flat_models:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        for base, emb, md, pos, bw in clustered_positions:
             val = md["metrics"].__dict__.get(metric_key)
             if val is None:
                 continue
             if transform:
                 val = transform(val)
-            rows.append({"Model": _model_label(base, emb), "Value": val})
+            c = base_colors[base]
+            if emb == "mbert":
+                c = darken(c)
+            bar = ax.bar(
+                [pos],
+                [val],
+                width=bw,
+                color=c,
+                alpha=0.9,
+                edgecolor="white",
+                linewidth=0.5,
+            )[0]
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                f"{val:.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=ANNOT_FONT_SIZE,
+            )
 
             lg_md = lg_lookup.get(md["model"])
             if lg_md is not None:
@@ -524,38 +666,25 @@ def vis_all_models_plots(
                 if lg_val is not None:
                     if transform:
                         lg_val = transform(lg_val)
-                    rows.append(
-                        {"Model": _model_label(base, emb, "+lg"), "Value": lg_val}
+                    line_left = pos - bw / 2
+                    line_right = pos + bw / 2
+                    ax.plot(
+                        [line_left, line_right],
+                        [lg_val, lg_val],
+                        color="black",
+                        linewidth=2,
+                        zorder=10,
                     )
 
-        if not rows:
-            return
-        df_single = pd.DataFrame(rows)
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(
-            data=df_single, x="Model", y="Value", ax=ax, alpha=0.9, errorbar=None
-        )
-
-        for p in ax.patches:
-            height = p.get_height()
-            if height > 0:
-                ax.text(
-                    p.get_x() + p.get_width() / 2,
-                    height,
-                    f"{height:.4f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=ANNOT_FONT_SIZE,
-                )
-
-        ax.set_title(title, fontsize=TITLE_FONT_SIZE, fontweight="bold")
+        # ax.set_title(title, fontsize=TITLE_FONT_SIZE, fontweight="bold")
         ax.set_ylabel(
             y_label if y_label else metric_key.title(), fontsize=LABEL_FONT_SIZE
         )
-        ax.grid(axis="y", alpha=0.3)
+        ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
         if ylim:
             ax.set_ylim(*ylim)
-        ax.tick_params(axis="x", labelsize=TICK_FONT_SIZE)
+        ax.set_xticks(variant_positions)
+        ax.set_xticklabels(variant_labels, fontsize=TICK_FONT_SIZE)
         plt.tight_layout()
         plt.show()
 
@@ -571,53 +700,73 @@ def vis_all_models_plots(
         ylim=(0, 1.0),
     )
 
-    rows = []
-    for base, emb, md in flat_models:
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for base, emb, md, pos, bw in clustered_positions:
         f1_list = md["metrics"].f1
-        if not f1_list:
+        support_list = md["metrics"].support
+        if not f1_list or not support_list:
             continue
-        macro_f1 = float(np.mean(f1_list))
-        rows.append({"Model": _model_label(base, emb), "Macro-F1": macro_f1})
+        total_support = sum(support_list)
+        weighted_f1 = (
+            sum(f * s for f, s in zip(f1_list, support_list)) / total_support
+            if total_support > 0
+            else 0.0
+        )
+        c = base_colors[base]
+        if emb == "mbert":
+            c = darken(c)
+        bar = ax.bar(
+            [pos],
+            [weighted_f1],
+            width=bw,
+            color=c,
+            alpha=0.9,
+            edgecolor="white",
+            linewidth=0.5,
+        )[0]
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f"{weighted_f1:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=ANNOT_FONT_SIZE,
+        )
 
         lg_md = lg_lookup.get(md["model"])
         if lg_md is not None:
             lg_f1_list = lg_md["metrics"].f1
-            if lg_f1_list:
-                lg_macro_f1 = float(np.mean(lg_f1_list))
-                rows.append(
-                    {"Model": _model_label(base, emb, "+lg"), "Macro-F1": lg_macro_f1}
+            lg_support_list = lg_md["metrics"].support
+            if lg_f1_list and lg_support_list:
+                lg_total_support = sum(lg_support_list)
+                lg_weighted_f1 = (
+                    sum(f * s for f, s in zip(lg_f1_list, lg_support_list))
+                    / lg_total_support
+                    if lg_total_support > 0
+                    else 0.0
+                )
+                line_left = pos - bw / 2
+                line_right = pos + bw / 2
+                ax.plot(
+                    [line_left, line_right],
+                    [lg_weighted_f1, lg_weighted_f1],
+                    color="black",
+                    linewidth=2,
+                    zorder=10,
                 )
 
-    if rows:
-        df_macro = pd.DataFrame(rows)
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.barplot(
-            data=df_macro, x="Model", y="Macro-F1", ax=ax, alpha=0.9, errorbar=None
-        )
-
-        for p in ax.patches:
-            height = p.get_height()
-            if height > 0:
-                ax.text(
-                    p.get_x() + p.get_width() / 2,
-                    height,
-                    f"{height:.4f}",
-                    ha="center",
-                    va="bottom",
-                    fontsize=ANNOT_FONT_SIZE,
-                )
-
-        ax.set_title(
-            f"Macro-F1 Across Models ({dataset.replace('_', ' ').title()} Dataset)",
-            fontsize=TITLE_FONT_SIZE,
-            fontweight="bold",
-        )
-        ax.set_ylabel("Macro-F1", fontsize=LABEL_FONT_SIZE)
-        ax.set_ylim(0, 1.0)
-        ax.grid(axis="y", alpha=0.3)
-        ax.tick_params(axis="x", labelsize=TICK_FONT_SIZE)
-        plt.tight_layout()
-        plt.show()
+    # ax.set_title(
+    #     f"Weighted F1 Across Models ({dataset.replace('_', ' ').title()} Dataset)",
+    #     fontsize=TITLE_FONT_SIZE,
+    #     fontweight="bold",
+    # )
+    ax.set_ylabel("Weighted F1", fontsize=LABEL_FONT_SIZE)
+    ax.set_ylim(0, 1.0)
+    ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
+    ax.set_xticks(variant_positions)
+    ax.set_xticklabels(variant_labels, fontsize=TICK_FONT_SIZE)
+    plt.tight_layout()
+    plt.show()
 
 
 def vis_all_models_tables(
@@ -632,7 +781,7 @@ def vis_all_models_tables(
 
     Args:
         aggregated_models: List of AggregatedModelData objects
-        metrics: List of metric names to display (default: ["RMSE", "Acc", "Macro-F1"])
+        metrics: List of metric names to display (default: ["RMSE", "Acc", "F1"])
         splits: List of dataset splits to display (default: ["Train", "CV", "Test"])
         model_groups: Dictionary mapping group names to lists of model names.
                      If None, creates a simple list of all models without grouping.
@@ -642,7 +791,7 @@ def vis_all_models_tables(
         DataFrame with comparison table
     """
     if metrics is None:
-        metrics = ["RMSE", "Acc", "Macro-F1"]
+        metrics = ["RMSE", "Acc", "F1"]
     if splits is None:
         splits = ["Train", "CV", "Test"]
 
@@ -669,9 +818,14 @@ def vis_all_models_tables(
                 return np.nan
             return np.sqrt(d.mse) if d.mse is not None else np.nan
 
-        def _macro_f1(d: Optional[DatasetMetrics]):
-            if d and d.f1:
-                return float(np.mean(d.f1))
+        def _weighted_f1(d: Optional[DatasetMetrics]):
+            if d and d.f1 and d.support:
+                total = sum(d.support)
+                return (
+                    float(sum(f * s for f, s in zip(d.f1, d.support)) / total)
+                    if total > 0
+                    else np.nan
+                )
             return np.nan
 
         train_d = _get_ds("train")
@@ -681,15 +835,15 @@ def vis_all_models_tables(
         all_metrics.append(
             {
                 "Model": m.model,
-                "Train RMSE": _rmse(train_d),
-                "CV RMSE": _rmse(val_d),
-                "Test RMSE": _rmse(test_d),
+                "Train RMSE": _rmse(getattr(m, "train", None)),
+                "CV RMSE": _rmse(getattr(m, "val", None)),
+                "Test RMSE": _rmse(getattr(m, "test", None)),
                 "Train Acc": _safe_val(train_d, "accuracy"),
                 "CV Acc": _safe_val(val_d, "accuracy"),
                 "Test Acc": _safe_val(test_d, "accuracy"),
-                "Train Macro-F1": _macro_f1(train_d),
-                "CV Macro-F1": _macro_f1(val_d),
-                "Test Macro-F1": _macro_f1(test_d),
+                "Train F1": _weighted_f1(train_d),
+                "CV F1": _weighted_f1(val_d),
+                "Test F1": _weighted_f1(test_d),
             }
         )
 
@@ -703,7 +857,7 @@ def vis_all_models_tables(
     for prefix, models in model_groups.items():
         # Special handling for finetuned-mbert with three variants
         if (
-            prefix == "FinetunedMBERT"
+            prefix == "Finet. MBERT"
             and len(models) == 3
             and all(
                 m
@@ -727,8 +881,13 @@ def vis_all_models_tables(
                     val = m_dict.get(col, np.nan)
                     row.append(val if not pd.isna(val) else "")
                 rows.append(row)
-        elif len(models) == 1:
-            model = models[0]
+        elif len(models) == 1 or len(models) == 2 and any("_lg" in m for m in models):
+            model, model_lg = (
+                next(model for model in models if "_lg" not in model),
+                next(model for model in models if "_lg" in model)
+                if any("_lg" in m for m in models)
+                else None,
+            )
             row = [prefix]
             m_dict = model_to_metrics.get(model, {})
             for col in columns:
@@ -736,10 +895,9 @@ def vis_all_models_tables(
                 row.append(val if not pd.isna(val) else "")
             rows.append(row)
 
-            if show_large_variants:
-                model = f"{models[0]}_lg"
+            if show_large_variants and model_lg:
                 row = ["(+Large)"]
-                m_dict = model_to_metrics.get(model, {})
+                m_dict = model_to_metrics.get(model_lg, {})
                 for col in columns:
                     val = m_dict.get(col, np.nan)
                     row.append(val if not pd.isna(val) else "")
@@ -765,7 +923,22 @@ def vis_all_models_tables(
     df = pd.DataFrame(rows, columns=["Model"] + columns)
 
     def bold_rows(s):
-        return ["font-weight: bold" if s["Model"] in prefixes else "" for _ in s]
+        styles = [""] * len(s)
+        if s["Model"] in prefixes:
+            styles[0] = "font-weight: bold"
+        return styles
+
+    def bold_best(s):
+        numeric = pd.to_numeric(s, errors="coerce")
+        if numeric.notna().sum() == 0:
+            return [""] * len(s)
+        best_val = numeric.min() if "RMSE" in s.name else numeric.max()
+        return [
+            "font-weight: bold"
+            if (not pd.isna(v) and np.isclose(float(v), float(best_val), atol=1e-6))
+            else ""
+            for v in numeric
+        ]
 
     def format_value(x):
         if pd.isna(x):
@@ -778,9 +951,8 @@ def vis_all_models_tables(
     format_dict = {col: format_value for col in columns}
 
     display(
-        df.style.apply(bold_rows, axis=1)
-        .format(format_dict)
-        .set_caption("Model Metrics Comparison")
+        df.style.apply(bold_rows, axis=1).apply(bold_best, axis=0).format(format_dict)
+        # .set_caption("Model Metrics Comparison")
     )
 
     return df
@@ -799,10 +971,10 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
     models_to_bold = [
         "Random",
         "Ridge",
-        "RandomForest",
+        "Random Forest",
         "SVM",
         "CatBoost",
-        "FinetunedMBERT",
+        "Finet. MBERT",
     ]
 
     df_latex = df_metrics.copy()
@@ -831,7 +1003,13 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
                 except (ValueError, TypeError):
                     df_latex.loc[idx, col] = str(val)
 
-    df_latex.columns = [f"\\textbf{{{col}}}" for col in df_latex.columns]
+    def col_header(col: str) -> str:
+        if col == "Model":
+            return f"\\textbf{{{col}}}"
+        arrow = "$\\downarrow$" if "RMSE" in col else "$\\uparrow$"
+        return f"\\textbf{{{col}}} {arrow}"
+
+    df_latex.columns = [col_header(col) for col in df_latex.columns]
 
     model_col = df_latex.columns[0]
 

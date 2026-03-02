@@ -77,16 +77,29 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
     """
     model_groups = {
         "Random": ["random"],
-        "Ridge": ["ridge_minilm", "ridge_mbert", "ridge_minilm_lg", "ridge_mbert_lg"],
-        "RandomForest": ["rf_minilm", "rf_mbert", "rf_minilm_lg", "rf_mbert_lg"],
-        "SVM": ["svm_minilm", "svm_mbert"],
+        "Ridge": [
+            "ridge_minilm",
+            #   "ridge_mbert",
+            "ridge_minilm_lg",
+            #   "ridge_mbert_lg"
+        ],
+        "Random Forest": [
+            "rf_minilm",
+            # "rf_mbert",
+            "rf_minilm_lg",
+            # "rf_mbert_lg"
+        ],
+        "SVM": [
+            "svm_minilm",
+            # "svm_mbert"
+        ],
         "CatBoost": [
             "catboost_minilm",
-            "catboost_mbert",
+            # "catboost_mbert",
             "catboost_minilm_lg",
-            "catboost_mbert_lg",
+            # "catboost_mbert_lg",
         ],
-        "FinetunedMBERT": [
+        "Finet. MBERT": [
             "finetuned-mbert_lg-only",
             "finetuned-mbert",
             "finetuned-mbert_lg",
@@ -113,7 +126,7 @@ def format_encoder_metrics_latex(
     """
     from evaluation.core import vis_all_models_tables, format_metrics_for_latex
 
-    metrics = ["RMSE", "Acc"] if class_mode == "full" else ["Acc"]
+    metrics = ["RMSE", "F1"] if class_mode == "full" else ["RMSE", "F1"]
     model_groups, show_large_variants = get_encoder_model_groups()
     df_metrics = vis_all_models_tables(
         aggregated_models,

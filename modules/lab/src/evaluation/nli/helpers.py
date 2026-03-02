@@ -11,10 +11,10 @@ import json
 
 from evaluation.core import format_number, latex_escape
 from evaluation.plot_style import (
+    CMAP_SEQUENTIAL_PRIMARY,
     LABEL_FONT_SIZE,
     TITLE_FONT_SIZE,
     LEGEND_FONT_SIZE,
-    CMAP_PRIMARY,
 )
 
 MODEL_NAME_MAP = {
@@ -253,7 +253,7 @@ def plot_correlation_matrix(
         corr_matrix,
         annot=True,
         fmt=".3f",
-        cmap=CMAP_PRIMARY,
+        cmap=CMAP_SEQUENTIAL_PRIMARY,
         center=0,
         vmin=-1,
         vmax=1,
@@ -528,6 +528,8 @@ def run_cv_comparison(
     a_accs: List[float] = []
     b_rmses: List[float] = []
     b_accs: List[float] = []
+    no_cal_rmses: List[float] = []
+    no_cal_accs: List[float] = []
     min_len = min(len(train_scores), len(y_train))
     train_scores_cv = np.asarray(train_scores[:min_len], dtype=float)
     y_train_cv = np.asarray(y_train[:min_len], dtype=float)
@@ -549,13 +551,17 @@ def run_cv_comparison(
         a_accs.append(a_acc)
         b_rmses.append(b_rmse)
         b_accs.append(b_acc)
+        no_cal_rmses.append(np.sqrt(mean_squared_error(y_val_fold, X_val_fold)))
+        no_cal_accs.append(
+            accuracy_score(to_int_0_5(y_val_fold), to_int_0_5(X_val_fold))
+        )
     results_df = pd.DataFrame(
         {
-            "Method": ["Isotonic", "Q2Q"],
-            "Mean RMSE": [np.mean(a_rmses), np.mean(b_rmses)],
-            "Std RMSE": [np.std(a_rmses), np.std(b_rmses)],
-            "Mean Accuracy": [np.mean(a_accs), np.mean(b_accs)],
-            "Std Accuracy": [np.std(a_accs), np.std(b_accs)],
+            "Method": ["No Calibration", "Isotonic", "Q2Q"],
+            "Mean RMSE": [np.mean(no_cal_rmses), np.mean(a_rmses), np.mean(b_rmses)],
+            "Std RMSE": [np.std(no_cal_rmses), np.std(a_rmses), np.std(b_rmses)],
+            "Mean Accuracy": [np.mean(no_cal_accs), np.mean(a_accs), np.mean(b_accs)],
+            "Std Accuracy": [np.std(no_cal_accs), np.std(a_accs), np.std(b_accs)],
         }
     )
     return results_df
@@ -593,6 +599,7 @@ def _compute_combined_correlation(
         return None
     try:
         corr = np.corrcoef(scores, labels)[0, 1]
+        # corr = scipy.stats.spearmanr(scores, labels).correlation
         return float(corr) if not np.isnan(corr) else None
     except Exception:
         return None
@@ -815,8 +822,21 @@ def df_to_latex(
         series = pd.to_numeric(non_avg[col], errors="coerce")
         if series.empty or series.isna().all():
             continue
-        max_idx[col] = int(series.idxmax())
-    headers = ["\\textbf{" + latex_escape(str(h)) + "}" for h in df.columns]
+        max_idx[col] = int(
+            series.idxmin() if "RMSE" in col.upper() else series.idxmax()
+        )
+
+    def _header_label(h: str) -> str:
+        h_esc = latex_escape(str(h))
+        bold = "\\textbf{" + h_esc + "}"
+        hu = h_esc.upper()
+        if "RMSE" in hu:
+            return bold + " $\\downarrow$"
+        if any(k in hu for k in ("CORR", "CORRELATION", "F1", "ACC", "ACCURACY")):
+            return bold + " $\\uparrow$"
+        return bold
+
+    headers = [_header_label(h) for h in df.columns]
     colspec = "l" + ("r" * (len(headers) - 1))
     lines: List[str] = []
     lines.append("\\begin{tabular}{" + colspec + "}")
@@ -875,11 +895,11 @@ def df_to_latex_multirow_header(
     ]
     if corr_cols:
         header_row1.append(
-            f"\\multicolumn{{{len(corr_cols)}}}{{c}}{{\\textbf{{Pearson correlation coefficient}}}}"
+            f"\\multicolumn{{{len(corr_cols)}}}{{c}}{{\\textbf{{Pearson correlation coefficient}} $\\uparrow$}}"
         )
     if thr_cols:
         header_row1.append(
-            f"\\multicolumn{{{len(thr_cols)}}}{{c}}{{\\textbf{{Throughput (predictions/sec)}}}}"
+            f"\\multicolumn{{{len(thr_cols)}}}{{c}}{{\\textbf{{Throughput (predictions/sec)}} $\\uparrow$}}"
         )
     lines.append(" & ".join(header_row1) + " \\\\")
 
@@ -1020,7 +1040,9 @@ def _prepare_table_a(
     )[["#", "Hypothesis Template", "Candidate Labels", "Best Corr"]]
     column_decimals = {"Best Corr": 3}
     df_a = _round_numeric(df_a, column_decimals=column_decimals)
-    latex_a = df_to_latex(df_a, bold_columns=[], column_decimals=column_decimals)
+    latex_a = df_to_latex(
+        df_a, bold_columns=["Best Corr"], column_decimals=column_decimals
+    )
     return df_a, latex_a
 
 

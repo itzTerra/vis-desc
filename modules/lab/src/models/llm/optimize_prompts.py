@@ -36,7 +36,7 @@ STRUCTURED_OUTPUTS_ENABLED = True
 STRUCTURED_SCHEMA_SUFFIX = "base"
 INITIAL_PROMPT_EXAMPLES_KEY = "base"
 INITIAL_PROMPT_OUTPUT_FORMAT_KEY = "base"
-INITIAL_PROMPT_TASK_DESCRIPTION_KEY = "full"
+INITIAL_PROMPT_TASK_DESCRIPTION_KEY = "small"
 
 
 @dataclass
@@ -441,13 +441,13 @@ def main():
         default=None,
         help="Number of samples to use from train set (default: all)",
     )
-    parser.add_argument(
-        "--metric",
-        type=str,
-        choices=["accuracy", "mse", "accuracy_rmse"],
-        default="accuracy_rmse",
-        help="Metric to optimize (accuracy, mse, or accuracy_rmse) (default: accuracy_rmse)",
-    )
+    # parser.add_argument(
+    #     "--metric",
+    #     type=str,
+    #     choices=["accuracy", "mse", "accuracy_rmse"],
+    #     default="accuracy_rmse",
+    #     help="Metric to optimize (accuracy, mse, or accuracy_rmse) (default: accuracy_rmse)",
+    # )
     parser.add_argument(
         "--model",
         type=str,
@@ -552,60 +552,53 @@ def main():
         Paraphrase("#input"),
         Rewrite(
             "#system",
-            "Rewrite this system prompt to better steer the model toward accurate visual descriptiveness ratings while staying concise:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="system">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Better steer the model toward accurate visual descriptiveness ratings while staying concise.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#guideline",
-            "Rewrite this guideline to be clearer and more concise for rating visual descriptiveness:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise for rating visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#examples",
-            "Rewrite these examples to be clearer and more concise while illustrating rating visual descriptiveness:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise while illustrating rating visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#output_format",
-            "Rewrite this prompt output format to be clearer and more concise:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="output_format">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#guideline",
-            "Rewrite this guideline to explicitly describe the rating scale boundaries (1-5) and clarify what makes text low vs high visual descriptiveness:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Explicitly describe the rating scale boundaries (1-5) and clarify what makes text low vs high visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#examples",
-            "Expand these examples to show more diverse cases covering the full rating scale spectrum:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Expand to show more diverse cases covering the full rating scale spectrum.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#system",
-            "Rewrite this system prompt to emphasize careful analysis of concrete details, sensory language, and imagery:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="system">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Emphasize careful analysis of concrete details, sensory language, and imagery.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#guideline",
-            "Rewrite this guideline to focus on specific linguistic markers that indicate visual descriptiveness (adjectives, concrete nouns, sensory verbs):\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Focus on specific linguistic markers that indicate visual descriptiveness (adjectives, concrete nouns, sensory verbs).\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#examples",
-            "Rewrite these examples to highlight the specific features that justify each rating decision:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Highlight the specific features that justify each rating decision.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#output_format",
-            "Rewrite this output format to encourage confidence scoring:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="output_format">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Encourage confidence scoring.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#guideline",
-            "Rewrite this guideline to address edge cases like abstract vs concrete language, figurative language, and technical descriptions:\n\n{{{{text}}}}",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Address edge cases like abstract vs concrete language, figurative language, and technical descriptions.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         sample_for_init_candidates=False,
     )
 
-    if args.metric == "accuracy":
-        metric_fn = accuracy_metric
-        maximize = True
-    elif args.metric == "accuracy_rmse":
-        metric_fn = accuracy_rmse_metric
-        maximize = True
-    else:
-        metric_fn = mean_squared_error_metric
-        maximize = False
+    metric_fn = mean_squared_error_metric
+    maximize = False
 
     class DebugBeamSearch(BeamSearch):
         """Beam search with debug logging."""

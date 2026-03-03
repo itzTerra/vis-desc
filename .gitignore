@@ -18,3 +18,4 @@ catboost_info
 hf_cache/
 public_html/
 vllm_cache/
+figures/

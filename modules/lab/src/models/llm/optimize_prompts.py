@@ -269,10 +269,10 @@ def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     n_correct = 0
     for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
         parsed_rating, _ = parse_output(str(y_p))
-        if DEBUG_MODE and DEBUG_LOG_PATH:
-            logger.debug(
-                f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t}"
-            )
+        # if DEBUG_MODE and DEBUG_LOG_PATH:
+        #     logger.debug(
+        #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t}"
+        #     )
         try:
             if parsed_rating is not None and int(parsed_rating) == int(y_t):
                 n_correct += 1
@@ -305,10 +305,10 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             if parsed_rating is not None:
                 error = int(parsed_rating) - int(y_t)
                 errors.append(error * error)
-                if DEBUG_MODE and DEBUG_LOG_PATH:
-                    logger.debug(
-                        f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t} | Error: {error}"
-                    )
+                # if DEBUG_MODE and DEBUG_LOG_PATH:
+                #     logger.debug(
+                #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t} | Error: {error}"
+                #     )
             else:
                 logger.debug(
                     f"Failed to parse rating from prediction {i}: {y_p!r} (true: {y_t})"
@@ -548,8 +548,8 @@ def main():
         Paraphrase("#system"),
         Paraphrase("#guideline"),
         Paraphrase("#examples"),
-        Paraphrase("#output_format"),
-        Paraphrase("#input"),
+        # Paraphrase("#output_format"),
+        # Paraphrase("#input"),
         Rewrite(
             "#system",
             'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="system">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Better steer the model toward accurate visual descriptiveness ratings while staying concise.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
@@ -589,6 +589,10 @@ def main():
         Rewrite(
             "#output_format",
             'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="output_format">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Encourage confidence scoring.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+        ),
+        Rewrite(
+            "#input",
+            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="input">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Instruct the assistant that the text to rate follows.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
         ),
         Rewrite(
             "#guideline",

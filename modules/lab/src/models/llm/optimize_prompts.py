@@ -430,6 +430,21 @@ class InitialPromptCandidates:
         )
 
 
+def _rewrite(part_id: str, objective: str) -> Rewrite:
+    """Build a Rewrite mutator for the given prompt part with the given objective."""
+    part_type = part_id.lstrip("#")
+    prompt = (
+        "You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n"
+        '<prompt_part type="' + part_type + '">\n'
+        "{{{{text}}}}\n"
+        "</prompt_part>\n\n"
+        "Rewrite objective: " + objective + "\n\n"
+        "Return ONLY the rewritten prompt part, without any explanation, preamble, or commentary. "
+        "Do not include XML tags in your response."
+    )
+    return Rewrite(part_id, prompt)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Optimize prompts using SAMMO with Mistral-Small3.2",
@@ -550,53 +565,78 @@ def main():
         Paraphrase("#examples"),
         # Paraphrase("#output_format"),
         # Paraphrase("#input"),
-        Rewrite(
+        # --- #system ---
+        _rewrite(
             "#system",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="system">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Better steer the model toward accurate visual descriptiveness ratings while staying concise.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Trim to the essential role statement for visual descriptiveness rating, removing any redundant phrasing.",
         ),
-        Rewrite(
-            "#guideline",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise for rating visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
-        ),
-        Rewrite(
-            "#examples",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise while illustrating rating visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
-        ),
-        Rewrite(
-            "#output_format",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="output_format">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Be clearer and more concise.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
-        ),
-        Rewrite(
-            "#guideline",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Explicitly describe the rating scale boundaries (1-5) and clarify what makes text low vs high visual descriptiveness.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
-        ),
-        Rewrite(
-            "#examples",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Expand to show more diverse cases covering the full rating scale spectrum.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
-        ),
-        Rewrite(
+        _rewrite(
             "#system",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="system">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Emphasize careful analysis of concrete details, sensory language, and imagery.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Reframe the model's role entirely—treat it as a visual perception analyst who measures how vividly text activates the mind's eye.",
         ),
-        Rewrite(
+        _rewrite(
+            "#system",
+            "Expand with explicit guidance on what dimensions to analyze: concrete details, sensory language, spatial descriptions, and imagery density.",
+        ),
+        # --- #guideline ---
+        _rewrite(
             "#guideline",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Focus on specific linguistic markers that indicate visual descriptiveness (adjectives, concrete nouns, sensory verbs).\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Condense the rating criteria to the essential decision points only, cutting all redundancy.",
         ),
-        Rewrite(
+        _rewrite(
+            "#guideline",
+            "Reframe the rating task as a painter's assessment: how much raw visual material does this text give an artist to work from?",
+        ),
+        _rewrite(
+            "#guideline",
+            "Explicitly define each rating level (1–5) with boundary conditions and contrasting examples for low vs. high visual descriptiveness.",
+        ),
+        _rewrite(
+            "#guideline",
+            "Focus on specific linguistic markers of visual descriptiveness: descriptive adjectives, concrete nouns, sensory verbs, and spatial prepositions.",
+        ),
+        _rewrite(
+            "#guideline",
+            "Address edge cases—abstract language, figurative language, technical jargon, and minimalist prose—and how to rate each consistently.",
+        ),
+        # --- #examples ---
+        _rewrite(
             "#examples",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="examples">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Highlight the specific features that justify each rating decision.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Trim to the fewest examples needed to anchor the rating scale, keeping only the most representative cases.",
         ),
-        Rewrite(
+        _rewrite(
+            "#examples",
+            "Replace with contrastive pairs: the same scene described with minimal vs. rich visual language, side by side, highlighting what shifts the rating.",
+        ),
+        _rewrite(
+            "#examples",
+            "Expand to cover the full 1–5 spectrum with at least one example per level, annotating the specific features that justify each rating.",
+        ),
+        # --- #output_format ---
+        _rewrite(
             "#output_format",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="output_format">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Encourage confidence scoring.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Reduce to the minimal format specification: just the required field(s) and their types.",
         ),
-        Rewrite(
+        _rewrite(
+            "#output_format",
+            "Restructure to require a brief chain-of-thought observation about the text's visual language before committing to a final rating.",
+        ),
+        _rewrite(
+            "#output_format",
+            "Add a confidence field and a required one-sentence justification alongside the numeric rating.",
+        ),
+        # --- #input ---
+        _rewrite(
             "#input",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="input">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Instruct the assistant that the text to rate follows.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+            "Shorten to a single directive line that clearly signals the text to rate follows.",
         ),
-        Rewrite(
-            "#guideline",
-            'You are a prompt optimization expert. Your task is to rewrite a prompt part.\n\n<prompt_part type="guideline">\n{{{{text}}}}\n</prompt_part>\n\nRewrite objective: Address edge cases like abstract vs concrete language, figurative language, and technical descriptions.\n\nReturn ONLY the rewritten prompt part, without any explanation, preamble, or commentary. Do not include XML tags in your response.',
+        _rewrite(
+            "#input",
+            "Reframe the prompt transition as an invitation to examine the passage through a visual lens, priming the model for perceptual analysis.",
+        ),
+        _rewrite(
+            "#input",
+            "Add explicit pre-rating instructions: read once for overall impression, then scan for specific visual markers before assigning the rating.",
         ),
         sample_for_init_candidates=False,
     )

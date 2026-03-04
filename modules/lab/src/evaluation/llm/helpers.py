@@ -9,7 +9,6 @@ import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
 from adjustText import adjust_text
-from evaluation.plot_style import LABEL_FONT_SIZE
 from utils import calculate_metrics
 
 from utils import DATA_DIR
@@ -488,130 +487,6 @@ def three_state_jitter(index: int, magnitude: float) -> float:
     return magnitude
 
 
-def plot_model_metrics_scatter(
-    df: pd.DataFrame,
-    metric_column: str,
-    ylabel: str,
-    min_threshold: float = 0.1,
-    y_padding: float = 0.05,
-    figsize: tuple[float, float] = (6, 8),
-    shorten_model_names: bool = False,
-) -> None:
-    """Create a scatter plot of model metrics vs prompt complexity.
-
-    Creates a bubble chart where:
-    - X-axis: Prompt complexity (Low/Medium/High)
-    - Y-axis: Specified metric (e.g., correlation or accuracy)
-    - Bubble size: Model size (from model name)
-    - Color: Different prompts
-
-    Args:
-        df: DataFrame with columns: model_name, prompt, prompt_token_count, and metric_column
-        metric_column: Name of the metric column to plot (e.g., 'correlation', 'accuracy')
-        ylabel: Label for the y-axis
-        min_threshold: Minimum metric value to include in plot
-        y_padding: Padding for y-axis limits as fraction of range
-        figsize: Figure size as (width, height)
-        shorten_model_names: Whether to shorten model names for display
-    """
-    df_filtered = df[df[metric_column] > min_threshold]
-
-    if df_filtered.empty:
-        print(
-            f"Skip {metric_column} scatter plot: no data above threshold {min_threshold}."
-        )
-        return
-
-    unique_prompts = df_filtered["prompt"].unique()
-    colors = sns.color_palette("tab10", len(unique_prompts))
-    prompt_color_map = {prompt: colors[i] for i, prompt in enumerate(unique_prompts)}
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    offset_map = {}
-    X_POSITIONS = [0, 1, 2]  # Low, Medium, High complexity
-
-    for prompt in unique_prompts:
-        prompt_data = df_filtered[df_filtered["prompt"] == prompt].sort_values(
-            metric_column
-        )
-
-        x_positions = []
-        y_values = []
-        bubble_sizes = []
-
-        for idx, (row_idx, row) in enumerate(prompt_data.iterrows()):
-            x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"], X_POSITIONS)
-            model_size = extract_model_size(row["model_name"])
-
-            offset = three_state_jitter(idx, 0.12)
-            offset_map[row_idx] = offset
-            x_positions.append(x_pos + offset)
-            y_values.append(row[metric_column])
-            bubble_sizes.append(model_size_to_bubble_size(model_size))
-
-        sns.scatterplot(
-            x=x_positions,
-            y=y_values,
-            s=bubble_sizes,
-            alpha=0.7,
-            color=prompt_color_map[prompt],
-            edgecolors="black",
-            linewidth=1.5,
-            ax=ax,
-            legend=False,
-        )
-
-    texts = []
-    for row_idx, row in df_filtered.iterrows():
-        x_pos, _ = map_prompt_to_complexity(row["prompt_token_count"], X_POSITIONS)
-        model_name = row["model_name"]
-
-        if shorten_model_names:
-            model_name = model_name.split("/")[-1][:20]
-
-        offset = offset_map[row_idx]
-
-        text = ax.text(
-            x_pos + offset,
-            row[metric_column],
-            model_name,
-            fontsize=9,
-            fontweight="bold",
-            alpha=0.85,
-            bbox=dict(
-                boxstyle="round,pad=0.3", facecolor="white", alpha=0.7, edgecolor="gray"
-            ),
-        )
-        texts.append(text)
-
-    adjust_text(
-        texts,
-        arrowprops=dict(arrowstyle="->", color="gray", lw=0.5, alpha=0.5),
-        expand_points=(2.5, 2.5),
-        expand_text=(2.0, 2.0),
-        force_points=(1.0, 1.0),
-        force_text=(1.0, 1.0),
-        ax=ax,
-    )
-
-    ax.set_xticks(X_POSITIONS)
-    ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
-    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel(ylabel, fontsize=LABEL_FONT_SIZE)
-    ax.grid(True, alpha=0.3, linestyle="--")
-    ax.set_axisbelow(True)
-    ax.set_ylim(
-        [
-            df_filtered[metric_column].min() - y_padding,
-            df_filtered[metric_column].max() + y_padding,
-        ]
-    )
-
-    plt.tight_layout()
-    plt.show()
-
-
 def plot_model_metrics_combined_scatter(
     df: pd.DataFrame,
     min_threshold: float = 0.1,
@@ -760,8 +635,8 @@ def plot_model_metrics_combined_scatter(
     ax.set_xticks(X_POSITIONS)
     ax.set_xticklabels(["Low (120)", "Medium (634)", "High (1851)"])
     ax.set_xlim([0, 2])
-    ax.set_xlabel("Prompt Complexity", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel("Metric Value", fontsize=LABEL_FONT_SIZE)
+    ax.set_xlabel("Prompt Complexity")
+    ax.set_ylabel("Metric Value")
     ax.grid(True, alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
 
@@ -806,6 +681,10 @@ def plot_model_metrics_combined_scatter(
     )
     ax.add_artist(leg1)
     plt.tight_layout()
+    fig.savefig(
+        DATA_DIR / "figures" / "llm-metrics-to-complexity.pdf",
+        bbox_inches="tight",
+    )
     plt.show()
 
 
@@ -945,8 +824,8 @@ def compute_optimization_comparison_table(
     """Compute optimization comparison table showing pre vs post optimization metrics.
 
     Creates a table with the selected model and average of other models, showing:
-    - Current metrics (CORR, RMSE, ACC)
-    - Delta metrics (Δ CORR, Δ RMSE, Δ ACC) as signed differences from pre-optimization
+    - Current metrics (CORR, RMSE, F1)
+    - Delta metrics (Δ CORR, Δ RMSE, Δ F1) as signed differences from pre-optimization
 
     Args:
         df_current: DataFrame with current metrics
@@ -956,7 +835,7 @@ def compute_optimization_comparison_table(
         selected_model_name: Name of the selected model
 
     Returns:
-        DataFrame with columns: Model, CORR, Δ CORR, RMSE, Δ RMSE, ACC, Δ ACC
+        DataFrame with columns: Model, CORR, Δ CORR, RMSE, Δ RMSE, F1, Δ F1
     """
     config_name = config_names[selected_config_idx]
 
@@ -987,37 +866,83 @@ def compute_optimization_comparison_table(
 
     comparison_data = []
 
-    if not selected_model_current.empty and not selected_model_pre.empty:
+    if not selected_model_current.empty:
         sel_curr = selected_model_current.iloc[0]
+        if not selected_model_pre.empty:
+            sel_pre = selected_model_pre.iloc[0]
+            row = {
+                "Model": "Optimized",
+                "CORR": sel_curr["correlation"],
+                "Δ CORR": sel_curr["correlation"] - sel_pre["correlation"],
+                "RMSE": sel_curr["rmse"],
+                "Δ RMSE": sel_curr["rmse"] - sel_pre["rmse"],
+                "F1": sel_curr["weighted_f1"],
+                "Δ F1": sel_curr["weighted_f1"] - sel_pre["weighted_f1"],
+            }
+        else:
+            row = {
+                "Model": "Optimized",
+                "CORR": sel_curr["correlation"],
+                "Δ CORR": None,
+                "RMSE": sel_curr["rmse"],
+                "Δ RMSE": None,
+                "F1": sel_curr["weighted_f1"],
+                "Δ F1": None,
+            }
+        comparison_data.append(row)
+    elif not selected_model_pre.empty:
         sel_pre = selected_model_pre.iloc[0]
-
         row = {
             "Model": "Optimized",
-            "CORR": sel_curr["correlation"],
-            "Δ CORR": sel_curr["correlation"] - sel_pre["correlation"],
-            "RMSE": sel_curr["rmse"],
-            "Δ RMSE": sel_curr["rmse"] - sel_pre["rmse"],
-            "ACC": sel_curr["accuracy"],
-            "Δ ACC": sel_curr["accuracy"] - sel_pre["accuracy"],
+            "CORR": sel_pre["correlation"],
+            "Δ CORR": None,
+            "RMSE": sel_pre["rmse"],
+            "Δ RMSE": None,
+            "F1": sel_pre["weighted_f1"],
+            "Δ F1": None,
         }
         comparison_data.append(row)
 
-    if not other_models_current.empty and not other_models_pre.empty:
+    if not other_models_current.empty:
         avg_corr_curr = other_models_current["correlation"].mean()
-        avg_corr_pre = other_models_pre["correlation"].mean()
         avg_rmse_curr = other_models_current["rmse"].mean()
+        avg_f1_curr = other_models_current["weighted_f1"].mean()
+        if not other_models_pre.empty:
+            avg_corr_pre = other_models_pre["correlation"].mean()
+            avg_rmse_pre = other_models_pre["rmse"].mean()
+            avg_f1_pre = other_models_pre["weighted_f1"].mean()
+            row = {
+                "Model": "Avg-of-Others",
+                "CORR": avg_corr_curr,
+                "Δ CORR": avg_corr_curr - avg_corr_pre,
+                "RMSE": avg_rmse_curr,
+                "Δ RMSE": avg_rmse_curr - avg_rmse_pre,
+                "F1": avg_f1_curr,
+                "Δ F1": avg_f1_curr - avg_f1_pre,
+            }
+        else:
+            row = {
+                "Model": "Avg-of-Others",
+                "CORR": avg_corr_curr,
+                "Δ CORR": None,
+                "RMSE": avg_rmse_curr,
+                "Δ RMSE": None,
+                "F1": avg_f1_curr,
+                "Δ F1": None,
+            }
+        comparison_data.append(row)
+    elif not other_models_pre.empty:
+        avg_corr_pre = other_models_pre["correlation"].mean()
         avg_rmse_pre = other_models_pre["rmse"].mean()
-        avg_acc_curr = other_models_current["accuracy"].mean()
-        avg_acc_pre = other_models_pre["accuracy"].mean()
-
+        avg_f1_pre = other_models_pre["weighted_f1"].mean()
         row = {
             "Model": "Avg-of-Others",
-            "CORR": avg_corr_curr,
-            "Δ CORR": avg_corr_curr - avg_corr_pre,
-            "RMSE": avg_rmse_curr,
-            "Δ RMSE": avg_rmse_curr - avg_rmse_pre,
-            "ACC": avg_acc_curr,
-            "Δ ACC": avg_acc_curr - avg_acc_pre,
+            "CORR": avg_corr_pre,
+            "Δ CORR": None,
+            "RMSE": avg_rmse_pre,
+            "Δ RMSE": None,
+            "F1": avg_f1_pre,
+            "Δ F1": None,
         }
         comparison_data.append(row)
 
@@ -1056,17 +981,32 @@ def compute_scale_comparison_table(
     )
 
     normal_rmse = np.sqrt(normal_model.test.mse) if normal_model.test else None
-    normal_acc = normal_model.test.accuracy if normal_model.test else None
+    normal_f1 = None
+    if normal_model.test and normal_model.test.f1 and normal_model.test.support:
+        total = sum(normal_model.test.support)
+        normal_f1 = (
+            sum(f * s for f, s in zip(normal_model.test.f1, normal_model.test.support))
+            / total
+            if total > 0
+            else 0.0
+        )
 
     relaxed_rmse = None
-    relaxed_acc = None
+    relaxed_f1 = None
 
     if test_predictions is not None and test_labels is not None:
         test_preds_relaxed = np.array(test_predictions) // 2
         test_labels_relaxed = np.array(test_labels) // 2
         relaxed_metrics = calculate_metrics(test_preds_relaxed, test_labels_relaxed)
         relaxed_rmse = np.sqrt(relaxed_metrics["mse"])
-        relaxed_acc = relaxed_metrics["accuracy"]
+        relaxed_support = relaxed_metrics["support"]
+        relaxed_total = sum(relaxed_support)
+        relaxed_f1 = (
+            sum(f * s for f, s in zip(relaxed_metrics["f1"], relaxed_support))
+            / relaxed_total
+            if relaxed_total > 0
+            else 0.0
+        )
 
     comparison_data = {
         "Scale": ["Normal", "Relaxed"],
@@ -1074,9 +1014,9 @@ def compute_scale_comparison_table(
             f"{normal_rmse:.4f}" if normal_rmse is not None else "N/A",
             f"{relaxed_rmse:.4f}" if relaxed_rmse is not None else "N/A",
         ],
-        "Accuracy": [
-            f"{normal_acc:.4f}" if normal_acc is not None else "N/A",
-            f"{relaxed_acc:.4f}" if relaxed_acc is not None else "N/A",
+        "F1": [
+            f"{normal_f1:.4f}" if normal_f1 is not None else "N/A",
+            f"{relaxed_f1:.4f}" if relaxed_f1 is not None else "N/A",
         ],
     }
 
@@ -1084,9 +1024,9 @@ def compute_scale_comparison_table(
 
     metrics_dict = {
         "normal_rmse": normal_rmse,
-        "normal_acc": normal_acc,
+        "normal_f1": normal_f1,
         "relaxed_rmse": relaxed_rmse,
-        "relaxed_acc": relaxed_acc,
+        "relaxed_f1": relaxed_f1,
     }
 
     return df_comparison, metrics_dict
@@ -1141,7 +1081,7 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
     Colors delta columns based on whether the metric improved:
     - Δ CORR: green if positive (improvement), red if negative (worse)
     - Δ RMSE: green if negative (improvement), red if positive (worse)
-    - Δ ACC: green if positive (improvement), red if negative (worse)
+    - Δ F1: green if positive (improvement), red if negative (worse)
 
     Args:
         df_comparison_table: DataFrame with comparison metrics and deltas
@@ -1152,11 +1092,11 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
     df_latex = df_comparison_table.copy()
 
     # Pre-compute best-value row index per metric column (before string formatting).
-    # Higher is better: CORR, ACC, Δ CORR, Δ ACC; lower is better: RMSE, Δ RMSE.
+    # Higher is better: CORR, F1, Δ CORR, Δ F1; lower is better: RMSE, Δ RMSE.
     _lower_is_better = {"RMSE", "Δ RMSE"}
     best_idx: dict[str, int] = {}
     for col in df_latex.columns:
-        if col in ("CORR", "RMSE", "ACC", "Δ CORR", "Δ RMSE", "Δ ACC"):
+        if col in ("CORR", "RMSE", "F1", "Δ CORR", "Δ RMSE", "Δ F1"):
             series = pd.to_numeric(df_latex[col], errors="coerce")
             if series.notna().any():
                 best_idx[col] = int(
@@ -1175,10 +1115,10 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
             if pd.notna(rmse):
                 df_latex.at[idx, "RMSE"] = f"{rmse:.3f}"
 
-        if "ACC" in df_latex.columns:
-            acc = row["ACC"]
-            if pd.notna(acc):
-                df_latex.at[idx, "ACC"] = f"{acc:.3f}"
+        if "F1" in df_latex.columns:
+            f1 = row["F1"]
+            if pd.notna(f1):
+                df_latex.at[idx, "F1"] = f"{f1:.3f}"
 
         # Format and color delta columns
         if "Δ CORR" in df_latex.columns:
@@ -1205,17 +1145,15 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
                         f"\\textcolor{{red}}{{{delta_rmse:+.3f}}}"
                     )
 
-        if "Δ ACC" in df_latex.columns:
-            delta_acc = row["Δ ACC"]
-            if pd.notna(delta_acc) and delta_acc != 0:
-                if delta_acc > 0:
-                    df_latex.at[idx, "Δ ACC"] = (
-                        f"\\textcolor{{green!70!black}}{{{delta_acc:+.3f}}}"
+        if "Δ F1" in df_latex.columns:
+            delta_f1 = row["Δ F1"]
+            if pd.notna(delta_f1) and delta_f1 != 0:
+                if delta_f1 > 0:
+                    df_latex.at[idx, "Δ F1"] = (
+                        f"\\textcolor{{green!70!black}}{{{delta_f1:+.3f}}}"
                     )
                 else:
-                    df_latex.at[idx, "Δ ACC"] = (
-                        f"\\textcolor{{red}}{{{delta_acc:+.3f}}}"
-                    )
+                    df_latex.at[idx, "Δ F1"] = f"\\textcolor{{red}}{{{delta_f1:+.3f}}}"
 
     # Bold the best-value cell in each metric column.
     for col, bidx in best_idx.items():
@@ -1227,7 +1165,7 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
         bold = f"\\textbf{{{col}}}"
         if "RMSE" in col:
             return bold + r" $\downarrow$"
-        if any(k in col for k in ("CORR", "ACC")):
+        if any(k in col for k in ("CORR", "F1")):
             return bold + r" $\uparrow$"
         return bold
 
@@ -1339,8 +1277,8 @@ def plot_metrics_vs_prompt_token_count(
         line.set_markerfacecolor(mcolors.to_rgba(color, alpha=1.0))
         line.set_markeredgecolor(mcolors.to_rgba(color, alpha=1.0))
 
-    ax.set_xlabel("Prompt Token Count", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE)
+    ax.set_xlabel("Prompt Token Count")
+    ax.set_ylabel(y_label)
     if show_legend:
         ax.legend(loc="best")
     ax.grid(True, alpha=0.3, linestyle="--")

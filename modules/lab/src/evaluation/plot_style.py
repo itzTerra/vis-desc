@@ -2,11 +2,11 @@ import matplotlib as mpl
 import seaborn as sns
 
 SUPTITLE_FONT_SIZE = 16  # figure-level suptitle (e.g. CV grid)
-TITLE_FONT_SIZE = 14  # per-axes title
-LABEL_FONT_SIZE = 11  # x/y axis labels
-TICK_FONT_SIZE = 10  # tick labels and x-tick text labels
-LEGEND_FONT_SIZE = 9  # legend text
-ANNOT_FONT_SIZE = 9  # in-plot numeric annotations / bar value labels
+TITLE_FONT_SIZE = 16  # per-axes title
+LABEL_FONT_SIZE = 14  # x/y axis labels
+TICK_FONT_SIZE = 12  # tick labels and x-tick text labels
+LEGEND_FONT_SIZE = 12  # legend text
+ANNOT_FONT_SIZE = 12  # in-plot numeric annotations / bar value labels
 
 
 def get_deep_colormap_colors(n: int = 10) -> list[str]:

@@ -131,6 +131,13 @@ def collect_task_ratings(
     return out
 
 
+def percent_agreement(rater_a: List[Category], rater_b: List[Category]) -> float:
+    """Return the raw observed proportion of exact matches between two raters."""
+    if not rater_a:
+        return float("nan")
+    return sum(a == b for a, b in zip(rater_a, rater_b)) / len(rater_a)
+
+
 def quadratic_weights(k: int) -> List[List[float]]:
     """Pre-compute quadratic weights matrix w_ij for categories 0..k-1."""
     denom = (k - 1) ** 2 if k > 1 else 1
@@ -253,6 +260,7 @@ def pairwise_kappas(
             if not a_vals:
                 continue
 
+            pct_agr = percent_agreement(a_vals, b_vals)
             if with_details:
                 kappa, details = weighted_cohen_kappa(
                     a_vals, b_vals, k=k, return_details=True
@@ -275,10 +283,10 @@ def pairwise_kappas(
                 details["avg_lead_time_a"] = avg_a
                 details["avg_lead_time_b"] = avg_b
                 details["avg_lead_time_combined"] = avg_combined
-                results.append((a_id, b_id, kappa, len(a_vals), details))
+                results.append((a_id, b_id, kappa, len(a_vals), pct_agr, details))
             else:
                 kappa = weighted_cohen_kappa(a_vals, b_vals, k=k)
-                results.append((a_id, b_id, kappa, len(a_vals)))
+                results.append((a_id, b_id, kappa, len(a_vals), pct_agr))
     return results
 
 
@@ -602,10 +610,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     for item in results:
         if args.details:
-            a_id, b_id, kappa, n_pairs, details = item
+            a_id, b_id, kappa, n_pairs, pct_agr, details = item
         else:
-            a_id, b_id, kappa, n_pairs = item  # type: ignore
-        print(f"Annotators {a_id} vs {b_id}: kappa={kappa:.4f} (n={n_pairs})")
+            a_id, b_id, kappa, n_pairs, pct_agr = item  # type: ignore
+        print(
+            f"Annotators {a_id} vs {b_id}: kappa={kappa:.4f}  pct_agr={pct_agr:.1%}  (n={n_pairs})"
+        )
         if args.details:
             conf = details["confusion"]
             row_marg = details["row_marg"]
@@ -687,6 +697,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     mean_kappa_str = f"{mean_kappa:.4f}" if not math.isnan(mean_kappa) else "-"
     print(f"  Mean pairwise kappa (weighted by n): {mean_kappa_str}")
+
+    pct_agr_pairs = [(item[4], item[3]) for item in results if not math.isnan(item[4])]
+    total_weight_pa = sum(n for _, n in pct_agr_pairs)
+    mean_pct_agr = (
+        sum(p * n for p, n in pct_agr_pairs) / total_weight_pa
+        if total_weight_pa
+        else float("nan")
+    )
+    mean_pct_agr_str = f"{mean_pct_agr:.1%}" if not math.isnan(mean_pct_agr) else "-"
+    print(f"  Mean pairwise % agreement (weighted by n): {mean_pct_agr_str}")
 
     return 0
 

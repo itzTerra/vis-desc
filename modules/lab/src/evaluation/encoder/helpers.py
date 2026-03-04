@@ -8,12 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from evaluation.plot_style import (
-    CMAP_SEQUENTIAL_PRIMARY,
-    LABEL_FONT_SIZE,
-    TITLE_FONT_SIZE,
-    SUPTITLE_FONT_SIZE,
-    LEGEND_FONT_SIZE,
-    ANNOT_FONT_SIZE,
+    CMAP_QUALITATIVE_PRIMARY,
+    GRID_ALPHA,
+    GRID_LINESTYLE,
+    apply_plot_style,
 )
 from evaluation.core import (
     get_confusion_matrix,
@@ -602,105 +600,6 @@ def print_best_val_epochs(files: list[Path]) -> None:
             print(f"Averaged: epoch={epoch_str} loss={avg['best_loss']:.6f}")
 
 
-def plot_confusion_matrix(
-    metrics_dict, dataset="test", show_proportional=True, show_title=True
-):
-    """
-    Plot confusion matrix showing hits (diagonal) and misses (off-diagonal).
-
-    Args:
-        metrics_dict: Dictionary containing model metrics
-        dataset: Which dataset to use ('train', 'val', or 'test')
-        show_proportional: Whether to show the normalized confusion matrix
-        show_title: Whether to show the title of the plot
-    """
-    cm = get_confusion_matrix(metrics_dict, dataset)
-    if cm is None:
-        print(f"Warning: {dataset} not available for this model")
-        return
-
-    if show_proportional:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-    else:
-        fig, ax1 = plt.subplots(1, 1, figsize=(8, 6))
-        ax2 = None
-
-    sns.heatmap(
-        cm,
-        annot=True,
-        fmt="d",
-        cmap=CMAP_SEQUENTIAL_PRIMARY,
-        ax=ax1,
-        linewidths=0.5,
-        linecolor="gray",
-        cbar_kws={"label": "Count"},
-    )
-    if show_title:
-        ax1.set_title(
-            f"{metrics_dict['model']} - Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Raw Counts)",
-            fontsize=TITLE_FONT_SIZE,
-            fontweight="bold",
-        )
-    ax1.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
-    ax1.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
-    ax1.set_xticklabels([f"Label {i}" for i in range(6)])
-    ax1.set_yticklabels([f"Label {i}" for i in range(6)])
-
-    if show_proportional and ax2 is not None:
-        # Plot 2: Normalized confusion matrix (by true label)
-        cm_normalized = cm.astype("float")
-        row_sums = cm.sum(axis=1, keepdims=True)
-        row_sums[row_sums == 0] = 1
-        cm_normalized = cm_normalized / row_sums
-
-        sns.heatmap(
-            cm_normalized,
-            annot=True,
-            fmt=".2f",
-            cmap=CMAP_SEQUENTIAL_PRIMARY,
-            ax=ax2,
-            linewidths=0.5,
-            linecolor="gray",
-            cbar_kws={"label": "Proportion"},
-            vmin=0,
-            vmax=1,
-        )
-        if show_title:
-            ax2.set_title(
-                f"{metrics_dict['model']} - Normalized Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Proportion of True Label)",
-                fontsize=TITLE_FONT_SIZE,
-                fontweight="bold",
-            )
-        ax2.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
-        ax2.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
-        ax2.set_xticklabels([f"Label {i}" for i in range(6)])
-        ax2.set_yticklabels([f"Label {i}" for i in range(6)])
-
-    plt.tight_layout()
-    plt.show()
-
-    total = cm.sum()
-    correct = np.trace(cm)
-    accuracy = correct / total if total > 0 else 0
-
-    print("\nConfusion Matrix Statistics:")
-    print(f"  Total predictions: {total}")
-    print(f"  Correct predictions (diagonal): {correct}")
-    print(f"  Incorrect predictions (off-diagonal): {total - correct}")
-    print(f"  Accuracy: {accuracy:.4f}")
-    print("\nPer-label statistics:")
-    for i in range(6):
-        true_count = cm[i, :].sum()
-        correct_count = cm[i, i]
-        if true_count > 0:
-            per_label_acc = correct_count / true_count
-            print(
-                f"  Label {i}: {correct_count}/{true_count} correct ({per_label_acc:.2%})"
-            )
-        else:
-            print(f"  Label {i}: No samples")
-
-
 def _compute_epoch_x_values(
     y_data: List[float], epoch_batch_counts: Optional[List[int]]
 ) -> Tuple[List[float], str]:
@@ -743,16 +642,15 @@ def plot_train_val_runs(
         print("No runs provided for plotting")
         return ax if ax is not None else None
 
+    fig = None
     if ax is None:
-        _, ax = plt.subplots(figsize=(12, 7))
+        fig, ax = plt.subplots(figsize=(12, 7))
 
-    n_colors = max(1, min(len(runs), 10))
-    colors = sns.color_palette("tab10", n_colors)
+    colors = sns.color_palette(CMAP_QUALITATIVE_PRIMARY, 6)
 
     max_x = 0
 
     for idx, run in enumerate(runs):
-        color = colors[idx % len(colors)]
         label = run.get("label", f"Run {idx + 1}")
 
         def _plot_series(series: Optional[Dict[str, Any]], kind: str) -> None:
@@ -766,9 +664,10 @@ def plot_train_val_runs(
 
             max_x = max(max_x, max(x) if x else 0)
 
+            color = colors[idx + (0 if kind == "train" else 3)]
             marker = "o" if kind == "train" else "s"
+            linestyle = "-" if kind == "train" else "--"
             alpha = 0.85 if kind == "train" else 0.7
-            plot_color = color if kind == "train" else "orange"
 
             # For training data with many points, reduce marker clutter
             if kind == "train" and len(x) > 100:
@@ -778,11 +677,12 @@ def plot_train_val_runs(
                 x=x,
                 y=y,
                 ax=ax,
-                color=plot_color,
+                color=color,
                 linewidth=2,
+                linestyle=linestyle,
                 marker=marker,
                 markersize=4,
-                label=f"{kind.title()} - {label}",
+                label=f"{kind.title()} - {'Small+Large' if label.endswith('_lg') else 'Small'}",
                 alpha=alpha,
             )
 
@@ -790,14 +690,12 @@ def plot_train_val_runs(
                 best_idx = int(np.argmin(y))
                 best_x = x[best_idx] if best_idx < len(x) else best_idx + 1
                 best_y = y[best_idx]
-                ax.axvline(
-                    best_x, color=plot_color, linestyle="--", alpha=0.2, linewidth=1
-                )
+                ax.axvline(best_x, color=color, linestyle="--", alpha=0.2, linewidth=1)
                 sns.scatterplot(
                     x=[best_x],
                     y=[best_y],
                     ax=ax,
-                    color=plot_color,
+                    color=color,
                     marker="*",
                     s=100,
                     zorder=5,
@@ -807,10 +705,10 @@ def plot_train_val_runs(
         _plot_series(run.get("train"), "train")
         _plot_series(run.get("val"), "val")
 
-    ax.set_xlabel(x_label, fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel(y_label, fontsize=LABEL_FONT_SIZE)
-    ax.set_title(title, fontsize=TITLE_FONT_SIZE, fontweight="bold")
-    ax.grid(True, alpha=0.3)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title, fontweight="bold")
+    ax.grid(True, alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
 
     if x_label == "Epoch":
         from matplotlib.ticker import MaxNLocator
@@ -819,17 +717,26 @@ def plot_train_val_runs(
 
     handles, labels = ax.get_legend_handles_labels()
     if handles:
-        ax.legend(fontsize=LEGEND_FONT_SIZE, loc="best")
+        ax.legend(loc="best")
     plt.tight_layout()
+    if fig is not None:
+        fig.savefig(
+            DATA_DIR / "figures" / "finetuned-mbert_training-curves.pdf",
+            bbox_inches="tight",
+        )
     return ax
 
 
 def plot_cv_folds_grid(
     cv_data_list: List[Dict[str, Any]],
     title: str = "Cross-validation runs",
+    folds: Optional[List[int]] = None,
 ) -> None:
     """
     Visualize training/validation curves for each fold across one or more CV runs.
+
+    Args:
+        folds: 1-based fold indices to plot. If None, all folds are plotted.
     """
     if not cv_data_list:
         print("No CV metric files provided")
@@ -840,23 +747,36 @@ def plot_cv_folds_grid(
         print("No folds found in provided CV data")
         return
 
-    n_cols = min(3, max_folds)
-    n_rows = (max_folds + n_cols - 1) // n_cols
+    # Determine which fold indices (0-based) to plot
+    all_fold_indices = list(range(max_folds))
+    if folds is not None:
+        fold_indices = [i for i in all_fold_indices if (i + 1) in folds]
+        if not fold_indices:
+            print(
+                f"None of the requested folds {folds} found (available: 1–{max_folds})"
+            )
+            return
+    else:
+        fold_indices = all_fold_indices
+
+    n_plots = len(fold_indices)
+    n_cols = min(3, n_plots)
+    n_rows = (n_plots + n_cols - 1) // n_cols
 
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows))
-    axes = np.array(axes).flatten() if max_folds > 1 else np.array([axes])
+    axes = np.array(axes).flatten() if n_plots > 1 else np.array([axes])
 
-    for fold_idx in range(max_folds):
-        ax = axes[fold_idx]
+    for plot_pos, fold_idx in enumerate(fold_indices):
+        ax = axes[plot_pos]
         runs: List[Dict[str, Any]] = []
         x_label = "Step"
 
         for cv_idx, cv_data in enumerate(cv_data_list):
-            folds = cv_data.get("folds", [])
-            if fold_idx >= len(folds):
+            cv_folds = cv_data.get("folds", [])
+            if fold_idx >= len(cv_folds):
                 continue
 
-            fold = folds[fold_idx]
+            fold = cv_folds[fold_idx]
             run_label = cv_data.get("model", f"CV {cv_idx + 1}")
             train_losses = fold.get("train_losses") or []
             val_losses = fold.get("val_losses") or []
@@ -884,23 +804,23 @@ def plot_cv_folds_grid(
                 ax=ax,
             )
         else:
-            ax.set_title(
-                f"Fold {fold_idx + 1} (no data)",
-                fontsize=TITLE_FONT_SIZE,
-                fontweight="bold",
-            )
+            ax.set_title(f"Fold {fold_idx + 1} (no data)", fontweight="bold")
             ax.axis("off")
 
-    for idx in range(max_folds, len(axes)):
+    for idx in range(n_plots, len(axes)):
         axes[idx].axis("off")
 
-    fig.suptitle(
-        title,
-        fontsize=SUPTITLE_FONT_SIZE,
-        fontweight="bold",
-        y=1.02,
-    )
+    # fig.suptitle(
+    #     title,
+    #     fontsize=SUPTITLE_FONT_SIZE,
+    #     fontweight="bold",
+    #     y=1.02,
+    # )
     plt.tight_layout()
+    fig.savefig(
+        DATA_DIR / "figures" / "finetuned-mbert_cv-curves.pdf",
+        bbox_inches="tight",
+    )
     plt.show()
 
 
@@ -917,17 +837,25 @@ def load_train_data(file_path: Path) -> dict[str, Any] | None:
         return None
 
 
-def visualize_metric_files(files: List[Path]) -> None:
+def visualize_metric_files(
+    files: List[Path],
+    folds: Optional[List[int]] = None,
+) -> None:
     """
     Visualize 1..n metric files (train or val).
 
     - Train files: plot train + val curves on one figure.
     - Val files: plot per-fold train + val curves on one figure.
     - Mixed selection: produce both figures.
+
+    Args:
+        folds: 1-based fold indices to plot for CV files. If None, all folds are plotted.
     """
     if not files:
         print("No files selected")
         return
+
+    apply_plot_style()
 
     train_runs: List[Dict[str, Any]] = []
     cv_runs: List[Dict[str, Any]] = []
@@ -974,7 +902,7 @@ def visualize_metric_files(files: List[Path]) -> None:
 
     if cv_runs:
         print(f"Plotting {len(cv_runs)} validation file(s) across folds...")
-        plot_cv_folds_grid(cv_runs, title="")
+        plot_cv_folds_grid(cv_runs, title="", folds=folds)
 
     if not train_runs and not cv_runs:
         print("Nothing to visualize after loading files")
@@ -1114,39 +1042,39 @@ def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
                 colors.append(_interp_color(base_gray, dark_gray, t))
         return colors
 
-    acc_sorted = plot_df.sort_values("Accuracy Δ", ascending=True)
-    acc_deltas = acc_sorted["Accuracy Δ"]
-    acc_mask = acc_deltas < 0
-    colors_acc = _importance_colors(acc_deltas, acc_mask)
-    fig, ax = plt.subplots(figsize=(9, max(6, 0.4 * len(acc_sorted))))
-    sns.barplot(
-        data=acc_sorted,
-        y="Feature",
-        x="Accuracy Δ",
-        palette=colors_acc,
-        alpha=0.95,
-        edgecolor="black",
-        errorbar=None,
-        orient="h",
-        ax=ax,
-    )
-    ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
-    ax.set_xlabel("Accuracy Δ from Baseline", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
-    ax.set_title(
-        "Accuracy Impact: green = important (negative Δ)", fontsize=TITLE_FONT_SIZE
-    )
-    ax.grid(axis="x", alpha=0.3)
-    plt.tight_layout()
-    fig.savefig(
-        DATA_DIR / "figures" / "feature_importance_accuracy_delta.png",
-        dpi=300,
-        bbox_inches="tight",
-    )
-    plt.show()
-    print(
-        "Saved accuracy delta plot -> data/figures/feature_importance_accuracy_delta.png"
-    )
+    # acc_sorted = plot_df.sort_values("Accuracy Δ", ascending=True)
+    # acc_deltas = acc_sorted["Accuracy Δ"]
+    # acc_mask = acc_deltas < 0
+    # colors_acc = _importance_colors(acc_deltas, acc_mask)
+    # fig, ax = plt.subplots(figsize=(9, max(6, 0.4 * len(acc_sorted))))
+    # sns.barplot(
+    #     data=acc_sorted,
+    #     y="Feature",
+    #     x="Accuracy Δ",
+    #     palette=colors_acc,
+    #     alpha=0.95,
+    #     edgecolor="black",
+    #     errorbar=None,
+    #     orient="h",
+    #     ax=ax,
+    # )
+    # ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
+    # ax.set_xlabel("Accuracy Δ from Baseline", fontsize=LABEL_FONT_SIZE)
+    # ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
+    # ax.set_title(
+    #     "Accuracy Impact: green = important (negative Δ)", fontsize=TITLE_FONT_SIZE
+    # )
+    # ax.grid(axis="x", alpha=0.3)
+    # plt.tight_layout()
+    # fig.savefig(
+    #     DATA_DIR / "figures" / "feature_importance_accuracy_delta.png",
+    #     dpi=300,
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
+    # print(
+    #     "Saved accuracy delta plot -> data/figures/feature_importance_accuracy_delta.png"
+    # )
 
     rmse_sorted = plot_df.sort_values("RMSE Δ", ascending=False)
     rmse_deltas = rmse_sorted["RMSE Δ"]
@@ -1165,20 +1093,18 @@ def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
         ax=ax,
     )
     ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
-    ax.set_xlabel("RMSE Δ from Baseline", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
-    ax.set_title(
-        "RMSE Impact: green = important (positive Δ)", fontsize=TITLE_FONT_SIZE
-    )
+    ax.set_xlabel("RMSE Δ from Baseline")
+    ax.set_ylabel("Removed Feature Group")
+    ax.set_title("RMSE Impact: green = important (positive Δ)")
     ax.grid(axis="x", alpha=0.3)
     plt.tight_layout()
     fig.savefig(
-        DATA_DIR / "figures" / "feature_importance_rmse_delta.png",
+        DATA_DIR / "figures" / "feature_importance_rmse_delta.pdf",
         dpi=300,
         bbox_inches="tight",
     )
     plt.show()
-    print("Saved RMSE delta plot -> data/figures/feature_importance_rmse_delta.png")
+    print("Saved RMSE delta plot -> data/figures/feature_importance_rmse_delta.pdf")
 
     if "Macro F1 Δ" not in plot_df.columns:
         print("Warning: 'Macro F1 Δ' column not found, skipping Macro F1 plot.")
@@ -1200,164 +1126,20 @@ def plot_feature_importance_bars(df: "pd.DataFrame") -> None:
         ax=ax,
     )
     ax.axvline(x=0, color="black", linestyle="--", linewidth=0.8)
-    ax.set_xlabel("Macro F1 Δ from Baseline", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel("Removed Feature Group", fontsize=LABEL_FONT_SIZE)
-    ax.set_title(
-        "Macro F1 Impact: green = important (negative Δ)", fontsize=TITLE_FONT_SIZE
-    )
+    ax.set_xlabel("Macro F1 Δ from Baseline")
+    ax.set_ylabel("Removed Feature Group")
+    ax.set_title("Macro F1 Impact: green = important (negative Δ)")
     ax.grid(axis="x", alpha=0.3)
     plt.tight_layout()
     fig.savefig(
-        DATA_DIR / "figures" / "feature_importance_macro_f1_delta.png",
+        DATA_DIR / "figures" / "feature_importance_macro_f1_delta.pdf",
         dpi=300,
         bbox_inches="tight",
     )
     plt.show()
     print(
-        "Saved Macro F1 delta plot -> data/figures/feature_importance_macro_f1_delta.png"
+        "Saved Macro F1 delta plot -> data/figures/feature_importance_macro_f1_delta.pdf"
     )
-
-
-def plot_score_distribution(
-    df: "pd.DataFrame", title: str = "Score Distribution"
-) -> None:
-    """Plot a bar chart of the score/label distribution in the dataset."""
-    ax = sns.countplot(x="label", data=df)
-    ax.bar_label(ax.containers[0])
-    plt.xlabel("Score", fontsize=LABEL_FONT_SIZE)
-    plt.ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
-    plt.title(title, fontsize=TITLE_FONT_SIZE)
-    plt.show()
-
-
-def plot_length_distributions(
-    doc_char_lengths: list,
-    doc_token_counts: list,
-    doc_sentence_counts: list,
-    avg_char_length: float,
-    std_char_length: float,
-    avg_token_count: float,
-    std_token_count: float,
-    avg_sentence_count: float,
-    std_sentence_count: float,
-) -> None:
-    """
-    Plot histograms of document character, token, and sentence count distributions
-    with mean and ±2σ reference lines, plus a text summary of statistics.
-    """
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-
-    sns.histplot(doc_char_lengths, bins=30, ax=axes[0, 0], edgecolor="black")
-    axes[0, 0].axvline(
-        avg_char_length, color="r", linestyle="--", label=f"Mean: {avg_char_length:.1f}"
-    )
-    axes[0, 0].axvline(
-        avg_char_length + 2 * std_char_length,
-        color="orange",
-        linestyle="--",
-        label=f"+2σ: {avg_char_length + 2 * std_char_length:.1f}",
-    )
-    axes[0, 0].axvline(
-        avg_char_length - 2 * std_char_length,
-        color="orange",
-        linestyle="--",
-        label=f"-2σ: {avg_char_length - 2 * std_char_length:.1f}",
-    )
-    axes[0, 0].set_xlabel("Character Length", fontsize=LABEL_FONT_SIZE)
-    axes[0, 0].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
-    axes[0, 0].set_title(
-        "Distribution of Document Character Lengths", fontsize=TITLE_FONT_SIZE
-    )
-    axes[0, 0].legend(fontsize=LEGEND_FONT_SIZE)
-
-    sns.histplot(doc_token_counts, bins=30, ax=axes[0, 1], edgecolor="black")
-    axes[0, 1].axvline(
-        avg_token_count, color="r", linestyle="--", label=f"Mean: {avg_token_count:.1f}"
-    )
-    axes[0, 1].axvline(
-        avg_token_count + 2 * std_token_count,
-        color="orange",
-        linestyle="--",
-        label=f"+2σ: {avg_token_count + 2 * std_token_count:.1f}",
-    )
-    axes[0, 1].axvline(
-        avg_token_count - 2 * std_token_count,
-        color="orange",
-        linestyle="--",
-        label=f"-2σ: {avg_token_count - 2 * std_token_count:.1f}",
-    )
-    axes[0, 1].set_xlabel("Token Count", fontsize=LABEL_FONT_SIZE)
-    axes[0, 1].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
-    axes[0, 1].set_title(
-        "Distribution of Document Token Counts", fontsize=TITLE_FONT_SIZE
-    )
-    axes[0, 1].legend(fontsize=LEGEND_FONT_SIZE)
-
-    sns.histplot(
-        doc_sentence_counts,
-        bins=range(0, max(doc_sentence_counts) + 2),
-        ax=axes[1, 0],
-        edgecolor="black",
-        discrete=True,
-    )
-    axes[1, 0].axvline(
-        avg_sentence_count,
-        color="r",
-        linestyle="--",
-        label=f"Mean: {avg_sentence_count:.2f}",
-    )
-    axes[1, 0].axvline(
-        avg_sentence_count + 2 * std_sentence_count,
-        color="orange",
-        linestyle="--",
-        label=f"+2σ: {avg_sentence_count + 2 * std_sentence_count:.2f}",
-    )
-    axes[1, 0].set_xlabel("Sentence Count", fontsize=LABEL_FONT_SIZE)
-    axes[1, 0].set_ylabel("Frequency", fontsize=LABEL_FONT_SIZE)
-    axes[1, 0].set_title(
-        "Distribution of Document Sentence Counts", fontsize=TITLE_FONT_SIZE
-    )
-    axes[1, 0].legend(fontsize=LEGEND_FONT_SIZE)
-
-    axes[1, 1].axis("off")
-    summary_text = f"""
-Summary Statistics:
-
-Character Length:
-  Min: {min(doc_char_lengths)}
-  Max: {max(doc_char_lengths)}
-  Median: {np.median(doc_char_lengths):.1f}
-  Coefficient of Variation: {(std_char_length / avg_char_length) * 100:.1f}%
-
-Token Count:
-  Min: {min(doc_token_counts)}
-  Max: {max(doc_token_counts)}
-  Median: {np.median(doc_token_counts):.1f}
-  Coefficient of Variation: {(std_token_count / avg_token_count) * 100:.1f}%
-
-Sentence Count:
-  Min: {min(doc_sentence_counts)}
-  Max: {max(doc_sentence_counts)}
-  Median: {np.median(doc_sentence_counts):.1f}
-  Coefficient of Variation: {(std_sentence_count / avg_sentence_count) * 100:.1f}%
-"""
-    axes[1, 1].text(
-        0.1,
-        0.5,
-        summary_text,
-        fontsize=ANNOT_FONT_SIZE,
-        verticalalignment="center",
-        family="monospace",
-    )
-
-    plt.tight_layout()
-    plt.show()
-
-    print("\nCoefficient of Variation (CV = std/mean):")
-    print(f"Character length CV: {(std_char_length / avg_char_length) * 100:.1f}%")
-    print(f"Token count CV: {(std_token_count / avg_token_count) * 100:.1f}%")
-    print(f"Sentence count CV: {(std_sentence_count / avg_sentence_count) * 100:.1f}%")
-    print("\nNote: CV > 100% indicates very high variability (std > mean)")
 
 
 def export_feature_importance_latex(

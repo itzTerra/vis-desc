@@ -169,6 +169,7 @@ def evaluate_model_on_prompt(
     debug_parse: bool = False,
     use_structured_outputs: bool = True,
     structured_schema: dict | None = None,
+    temperature: float | None = None,
 ) -> None:
     """
     Evaluate a model on a prompt in batches and update metrics after each batch.
@@ -223,6 +224,7 @@ def evaluate_model_on_prompt(
             use_structured_outputs=use_structured_outputs,
             structured_schema=structured_schema,
             seed=seed,
+            temperature=temperature,
         )
         end = time.perf_counter()
 
@@ -393,6 +395,12 @@ Examples:
         help="Random seeds for model sampling (default: 40 41 42)",
     )
     parser.add_argument(
+        "--temperature",
+        type=float,
+        default=None,
+        help="Override model temperature for sampling (default: use model's default)",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug logging to file and show raw model output on parse failures",
@@ -536,6 +544,10 @@ Examples:
     logger.info(
         "  Structured outputs: %s", "OFF" if args.no_structured_outputs else "ON"
     )
+    logger.info(
+        "  Temperature: %s",
+        args.temperature if args.temperature is not None else "model default",
+    )
 
     total_evals = (
         len(datasets_to_eval)
@@ -595,6 +607,7 @@ Examples:
                                 args.debug,
                                 use_structured_outputs=(not args.no_structured_outputs),
                                 structured_schema=schema_for_prompt(prompt),
+                                temperature=args.temperature,
                             )
                             logger.info("      ✓ Metrics updated and persisted")
                             successful_evals += 1

@@ -15,7 +15,7 @@ from sammo.data import DataTable
 from sammo.dataformatters import DataFormatter
 from sammo.extractors import Extractor, StripWhitespace
 from sammo.instructions import InputData, MetaPrompt, Paragraph
-from sammo.mutators import BagOfMutators, Paraphrase, Rewrite
+from sammo.mutators import BagOfMutators, Rewrite
 from sammo.search import BeamSearch
 
 from models.llm.agents import VLLMAgent, MODEL_BY_NAME
@@ -569,9 +569,9 @@ def main():
 
     mutation_operators = BagOfMutators(
         InitialPromptCandidates(d_train, system_prompt),
-        Paraphrase("#system"),
-        Paraphrase("#guideline"),
-        Paraphrase("#examples"),
+        # Paraphrase("#system"),
+        # Paraphrase("#guideline"),
+        # Paraphrase("#examples"),
         # Paraphrase("#output_format"),
         # Paraphrase("#input"),
         # --- #system ---

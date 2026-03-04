@@ -230,6 +230,7 @@ def evaluate_model_on_prompt(
         all_latencies.extend([batch_latency_ms] * len(batch))
 
         for response in responses:
+            logger.debug("Raw model response: %r", response)
             parsed_output, parse_status = parse_output(response)
             all_outputs.append(parsed_output)
             if parse_status == OutputParseStatus.FAILED:

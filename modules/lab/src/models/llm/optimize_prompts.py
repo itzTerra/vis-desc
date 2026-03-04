@@ -32,6 +32,7 @@ DEBUG_MODE = False
 DEBUG_LOG_PATH: Path | None = None
 DEBUG_LOG_HANDLER: logging.FileHandler | None = None
 
+BATCH_SIZE = 16
 STRUCTURED_OUTPUTS_ENABLED = True
 STRUCTURED_SCHEMA_SUFFIX = "base"
 INITIAL_PROMPT_EXAMPLES_KEY = "base"
@@ -46,7 +47,7 @@ class _BatchRequest:
     use_structured_outputs: bool
     structured_schema: dict | None
     seed: int | None
-    randomness: float
+    randomness: float | None
     future: asyncio.Future
     schema_key: str
 
@@ -87,10 +88,11 @@ class VLLMBatchedRunner(Runner):
     def __init__(
         self,
         vllm_agent: VLLMAgent,
-        batch_size: int = 32,
+        batch_size: int = BATCH_SIZE,
         max_batch_delay: float = 0.05,
         use_structured_outputs: bool = STRUCTURED_OUTPUTS_ENABLED,
         structured_schema_suffix: str = STRUCTURED_SCHEMA_SUFFIX,
+        seed: int = 0,
     ):
         super().__init__()
         self.agent = vllm_agent
@@ -98,6 +100,7 @@ class VLLMBatchedRunner(Runner):
         self.max_batch_delay = max_batch_delay
         self.use_structured_outputs = use_structured_outputs
         self.structured_schema = schema_for_suffix_key(structured_schema_suffix)
+        self.seed = seed
         self._queue: list[_BatchRequest] = []
         self._queue_lock = asyncio.Lock()
         self._flush_task: asyncio.Task | None = None
@@ -106,20 +109,20 @@ class VLLMBatchedRunner(Runner):
         self,
         prompt: str,
         max_tokens: int | None = None,
-        randomness: float = 0.0,
-        seed: int = 0,
+        randomness: float | None = None,
+        seed: int | None = None,
         **kwargs,
     ) -> LLMResult:
-        seed = kwargs.get("seed", seed)
+        seed = kwargs.get("seed", seed if seed is not None else self.seed)
         is_mutation_request = any(
             keyword in prompt.lower() for keyword in ["rewrite", "paraphrase"]
         )
-        if not is_mutation_request:
-            logger.debug(
-                "#&#&#&#&#&# GENERATE_TEXT CALLED WITH RANDOMNESS %.2f and SEED %d &#&#&#&#&#",
-                randomness,
-                seed,
-            )
+        # if not is_mutation_request:
+        #     logger.debug(
+        #         "#&#&#&#&#&# GENERATE_TEXT CALLED WITH RANDOMNESS %.2f and SEED %d &#&#&#&#&#",
+        #         randomness,
+        #         seed,
+        #     )
 
         user_prompt = prompt
 
@@ -193,7 +196,7 @@ class VLLMBatchedRunner(Runner):
             seed,
         ), requests in grouped.items():
             prompts = [r.prompt for r in requests]
-            randomness = requests[0].randomness if requests else 0.0
+            randomness = requests[0].randomness if requests else None
             schema = requests[0].structured_schema if requests else None
 
             # if DEBUG_MODE and DEBUG_LOG_PATH:
@@ -545,7 +548,7 @@ def main():
         sys.exit(1)
 
     vllm_agent = VLLMAgent(model_config=model_config)
-    runner = VLLMBatchedRunner(vllm_agent)
+    runner = VLLMBatchedRunner(vllm_agent, seed=args.seed)
 
     texts, ratings = load_train_dataset()
 

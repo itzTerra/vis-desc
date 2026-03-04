@@ -638,6 +638,47 @@ def main():
             "#input",
             "Add explicit pre-rating instructions: read once for overall impression, then scan for specific visual markers before assigning the rating.",
         ),
+        # --- generic cross-section rewrites ---
+        _rewrite(
+            "#system",
+            "Adopt a more authoritative, instructional tone throughout—use imperative voice and eliminate hedging language.",
+        ),
+        _rewrite(
+            "#system",
+            "Switch to a neutral, analytical persona that avoids metaphor and focuses purely on operational criteria.",
+        ),
+        _rewrite(
+            "#guideline",
+            "Restructure as a numbered decision tree: evaluate each criterion in sequence and aggregate to a final score.",
+        ),
+        _rewrite(
+            "#guideline",
+            "Rewrite using 'if … then …' conditional rules for each rating level to make the decision boundary explicit.",
+        ),
+        _rewrite(
+            "#guideline",
+            "Simplify to a single scoring rubric table with columns: rating, defining feature, disqualifying feature.",
+        ),
+        _rewrite(
+            "#examples",
+            "Reorder examples from least to most visually descriptive to make the rating scale progression explicit.",
+        ),
+        _rewrite(
+            "#examples",
+            "Annotate each example with a one-sentence explanation of which specific textual feature drives its rating.",
+        ),
+        _rewrite(
+            "#output_format",
+            "Require the model to list up to three textual evidence quotes before the final rating.",
+        ),
+        _rewrite(
+            "#output_format",
+            "Strip all optional fields and enforce a single integer output with no surrounding text.",
+        ),
+        _rewrite(
+            "#input",
+            "Add a reminder immediately before the text that the model should attend only to visual and sensory language, not to narrative or emotional content.",
+        ),
         sample_for_init_candidates=False,
     )
 

@@ -1,7 +1,10 @@
 import argparse
 import enum
 import gc
+import json
+import logging
 import os
+import re
 import sys
 import time
 from datetime import datetime
@@ -9,8 +12,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import tiktoken
-import json
-import re
 from tqdm import tqdm
 import torch
 import torch.distributed as dist
@@ -32,6 +33,9 @@ from huggingface_hub import login
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+logging.getLogger().setLevel(logging.DEBUG)
 
 BATCH_SIZE = 16
 METRICS_DIR = DATA_DIR / "metrics" / "llm"
@@ -231,12 +235,10 @@ def evaluate_model_on_prompt(
             if parse_status == OutputParseStatus.FAILED:
                 output_errors += 1
                 if debug_parse:
-                    print("\n[DEBUG] Failed to parse model output:", file=sys.stderr)
-                    print(response, file=sys.stderr)
+                    logger.debug("Failed to parse model output: %r", response)
             elif parse_status == OutputParseStatus.FALLBACK_SUCCESS:
                 if debug_parse:
-                    print("\n[DEBUG] Fallback parsed model output:", file=sys.stderr)
-                    print(response, file=sys.stderr)
+                    logger.debug("Fallback parsed model output: %r", response)
 
         model_result["output_errors"] = output_errors
         model_result["performance"] = calculate_performance_metrics(all_latencies)
@@ -367,11 +369,6 @@ Examples:
         help="Which prompt set to use: 'standard' for PROMPTS (14 variants) or 'optimized' for OPTIMIZED_PROMPTS (default: standard)",
     )
     parser.add_argument(
-        "--debug-parse",
-        action="store_true",
-        help="Pause on parse_output failures and show raw model output",
-    )
-    parser.add_argument(
         "--no-structured-outputs",
         action="store_true",
         help="Disable structured outputs (JSON schema-guided generation)",
@@ -393,25 +390,63 @@ Examples:
         default=[40, 41, 42],
         help="Random seeds for model sampling (default: 40 41 42)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging to file and show raw model output on parse failures",
+    )
 
     args = parser.parse_args()
 
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+
+    if args.debug:
+        debug_log_dir = DATA_DIR / "output" / "debug_logs"
+        debug_log_dir.mkdir(parents=True, exist_ok=True)
+        debug_log_path = debug_log_dir / "run_debug.log"
+
+        file_handler = logging.FileHandler(debug_log_path, mode="w")
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG)
+        console_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        )
+
+        root_logger.setLevel(logging.DEBUG)
+        root_logger.addHandler(file_handler)
+        root_logger.addHandler(console_handler)
+        logger.info(
+            "Debug logging enabled. Logs will be written to: %s", debug_log_path
+        )
+    else:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(logging.Formatter("%(message)s"))
+        root_logger.setLevel(logging.INFO)
+        root_logger.addHandler(console_handler)
+
     if args.list_models:
-        print("Available models:")
-        print("\neInfra models:")
+        logger.info("Available models:")
+        logger.info("\neInfra models:")
         for i, model in enumerate(EINFRA_MODELS, 1):
-            print(f"  {i}. {model.name} ({model.id})")
-        print("\nLocal models:")
+            logger.info("  %d. %s (%s)", i, model.name, model.id)
+        logger.info("\nLocal models:")
         for i, model in enumerate(LOCAL_MODELS, 1):
-            print(f"  {i}. {model.name} ({model.id})")
+            logger.info("  %d. %s (%s)", i, model.name, model.id)
         sys.exit(0)
 
     if args.list_prompts:
-        print(f"📋 Prompt Set: {args.prompt_set}")
         prompts = OPTIMIZED_PROMPTS if args.prompt_set == "optimized" else PROMPTS
-        print(f"Available prompts ({len(prompts)} total):")
+        logger.info("Prompt Set: %s", args.prompt_set)
+        logger.info("Available prompts (%d total):", len(prompts))
         for i, prompt in enumerate(prompts):
-            print(f"  {i}. {prompt.get_id()}")
+            logger.info("  %d. %s", i, prompt.get_id())
         sys.exit(0)
 
     if not args.dataset:
@@ -440,9 +475,9 @@ Examples:
             elif model_ref in MODEL_BY_ID:
                 models_to_eval.append(MODEL_BY_ID[model_ref])
             else:
-                print(f"❌ Error: Unknown model '{model_ref}'")
+                logger.error("Unknown model '%s'", model_ref)
                 available = ", ".join([f"{m.name} ({m.id})" for m in AVAILABLE_MODELS])
-                print(f"Available models: {available}")
+                logger.error("Available models: %s", available)
                 sys.exit(1)
 
     if -1 in args.prompts:
@@ -451,8 +486,10 @@ Examples:
         prompts_to_eval = args.prompts
         for idx in prompts_to_eval:
             if idx < 0 or idx >= len(selected_prompts):
-                print(
-                    f"❌ Error: Invalid prompt index {idx} (valid range: 0-{len(selected_prompts) - 1})"
+                logger.error(
+                    "Invalid prompt index %d (valid range: 0-%d)",
+                    idx,
+                    len(selected_prompts) - 1,
                 )
                 sys.exit(1)
 
@@ -466,29 +503,37 @@ Examples:
         data_path = DATA_DIR / "datasets" / "small" / f"{dataset_name}.parquet"
 
         if not data_path.exists():
-            print(f"❌ Error: Dataset file not found at {data_path}")
+            logger.error("Dataset file not found at %s", data_path)
             sys.exit(1)
 
         df = pd.read_parquet(data_path)
         texts = df["text"].tolist()
 
         datasets[dataset_name] = {"texts": texts}
-        print(f"✓ Loaded {len(texts)} samples from {dataset_name} set")
+        logger.info("✓ Loaded %d samples from %s set", len(texts), dataset_name)
 
-    print("\n📊 Evaluation Summary:")
-    print(
-        f"  Datasets to evaluate: {len(datasets_to_eval)} - {', '.join(datasets_to_eval)}"
-    )
     models_str = ", ".join([f"{m.name} ({m.id})" for m in models_to_eval])
-    print(f"  Models to evaluate: {len(models_to_eval)} - {models_str}")
-    print(f"  Prompt set: {args.prompt_set}")
-    print(f"  Prompts to evaluate: {len(prompts_to_eval)} - {prompts_to_eval}")
-    print(f"  Seeds to use: {args.seeds}")
-    print(
-        f"  Total evaluations: {len(datasets_to_eval) * len(models_to_eval) * len(prompts_to_eval) * len(args.seeds)}"
+    logger.info("\n📊 Evaluation Summary:")
+    logger.info(
+        "  Datasets to evaluate: %d - %s",
+        len(datasets_to_eval),
+        ", ".join(datasets_to_eval),
     )
-    print(f"  Results will be saved to: {METRICS_DIR}")
-    print(f"  Structured outputs: {'OFF' if args.no_structured_outputs else 'ON'}")
+    logger.info("  Models to evaluate: %d - %s", len(models_to_eval), models_str)
+    logger.info("  Prompt set: %s", args.prompt_set)
+    logger.info("  Prompts to evaluate: %d - %s", len(prompts_to_eval), prompts_to_eval)
+    logger.info("  Seeds to use: %s", args.seeds)
+    logger.info(
+        "  Total evaluations: %d",
+        len(datasets_to_eval)
+        * len(models_to_eval)
+        * len(prompts_to_eval)
+        * len(args.seeds),
+    )
+    logger.info("  Results will be saved to: %s", METRICS_DIR)
+    logger.info(
+        "  Structured outputs: %s", "OFF" if args.no_structured_outputs else "ON"
+    )
 
     total_evals = (
         len(datasets_to_eval)
@@ -503,14 +548,14 @@ Examples:
     login(token=os.environ.get("HF_TOKEN"))
 
     for model_config in models_to_eval:
-        print(f"\n{'=' * 60}")
-        print(f"🤖 Loading model: {model_config.name} ({model_config.id})")
-        print(f"{'=' * 60}")
+        logger.info("\n%s", "=" * 60)
+        logger.info("🤖 Loading model: %s (%s)", model_config.name, model_config.id)
+        logger.info("%s", "=" * 60)
 
         agent = None
         try:
             agent = create_agent_for_model(model_config)
-            print("✓ Model loaded successfully")
+            logger.info("✓ Model loaded successfully")
 
             for prompt_idx in prompts_to_eval:
                 prompt = selected_prompts[prompt_idx]
@@ -526,10 +571,16 @@ Examples:
                         current_eval += 1
                         dataset_data = datasets[dataset_name]
 
-                        print(
-                            f"\n  [{current_eval}/{total_evals}] Evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} set (seed={seed})..."
+                        logger.info(
+                            "\n  [%d/%d] Evaluating %s on prompt %d with %s set (seed=%d)...",
+                            current_eval,
+                            total_evals,
+                            model_config.name,
+                            prompt_idx,
+                            dataset_name,
+                            seed,
                         )
-                        print(f"      Prompt ID: {prompt.get_id()}")
+                        logger.info("      Prompt ID: %s", prompt.get_id())
 
                         try:
                             evaluate_model_on_prompt(
@@ -539,39 +590,44 @@ Examples:
                                 metrics,
                                 dataset_name,
                                 seed,
-                                args.debug_parse,
+                                args.debug,
                                 use_structured_outputs=(not args.no_structured_outputs),
                                 structured_schema=schema_for_prompt(prompt),
                             )
-                            print("      ✓ Metrics updated and persisted")
+                            logger.info("      ✓ Metrics updated and persisted")
                             successful_evals += 1
 
                         except Exception as e:
-                            print(
-                                f"      ❌ Error evaluating {model_config.name} on prompt {prompt_idx} with {dataset_name} (seed={seed}): {e}"
+                            logger.error(
+                                "Error evaluating %s on prompt %d with %s (seed=%d): %s",
+                                model_config.name,
+                                prompt_idx,
+                                dataset_name,
+                                seed,
+                                e,
                             )
-                            import traceback
-
-                            traceback.print_exc()
+                            logger.debug("Traceback:", exc_info=True)
 
         except Exception as e:
-            print(f"❌ Error loading model {model_config.name}: {e}")
-            import traceback
-
-            traceback.print_exc()
+            logger.error("Error loading model %s: %s", model_config.name, e)
+            logger.debug("Traceback:", exc_info=True)
         finally:
             cleanup_agent(agent)
             cleanup_distributed_group()
 
-    print(f"\n{'=' * 60}")
-    print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")
-    print("✓ Metrics files saved to:")
+    logger.info("\n%s", "=" * 60)
+    logger.info(
+        "✓ Evaluation complete! (%d/%d successful)", successful_evals, total_evals
+    )
+    logger.info("✓ Metrics files saved to:")
     for filepath in metrics_files.values():
-        print(f"  - {filepath}")
-    print(f"{'=' * 60}")
+        logger.info("  - %s", filepath)
+    logger.info("%s", "=" * 60)
+
+    for handler in logging.root.handlers:
+        handler.flush()
+    logging.shutdown()
 
 
 if __name__ == "__main__":
-    import os
-
     main()

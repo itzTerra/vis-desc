@@ -10,12 +10,7 @@ from dataclasses import dataclass
 import json
 
 from evaluation.core import format_number, latex_escape
-from evaluation.plot_style import (
-    CMAP_SEQUENTIAL_PRIMARY,
-    LABEL_FONT_SIZE,
-    TITLE_FONT_SIZE,
-    LEGEND_FONT_SIZE,
-)
+from evaluation.plot_style import CMAP_SEQUENTIAL_PRIMARY
 
 MODEL_NAME_MAP = {
     "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
@@ -263,9 +258,9 @@ def plot_correlation_matrix(
         yticklabels=names,
     )
     if title:
-        plt.title(title, fontsize=TITLE_FONT_SIZE)
-    plt.xlabel("Model", fontsize=LABEL_FONT_SIZE)
-    plt.ylabel("Model", fontsize=LABEL_FONT_SIZE)
+        plt.title(title)
+    plt.xlabel("Model")
+    plt.ylabel("Model")
     plt.tight_layout()
     plt.show()
     print("Correlation coefficients:")
@@ -344,9 +339,7 @@ def plot_calibration_comparison(
     title_suffix: str = "",
 ) -> None:
     fig, axes = plt.subplots(2, 1, figsize=(12, 8))
-    axes[0].set_title(
-        f"Train: scores and calibrated mappings{title_suffix}", fontsize=TITLE_FONT_SIZE
-    )
+    axes[0].set_title(f"Train: scores and calibrated mappings{title_suffix}")
     sns.lineplot(
         x=range(len(y_train_sorted)),
         y=y_train_sorted,
@@ -367,8 +360,8 @@ def plot_calibration_comparison(
         ax=axes[0],
         label="Calibration B (train)",
     )
-    axes[0].set_ylabel("Score (0-5 scale)", fontsize=LABEL_FONT_SIZE)
-    axes[0].legend(loc="best", fontsize=LEGEND_FONT_SIZE)
+    axes[0].set_ylabel("Score (0-5 scale)")
+    axes[0].legend(loc="best")
     axes[0].grid(True, alpha=0.3)
     if (
         y_test_sorted is not None
@@ -376,8 +369,7 @@ def plot_calibration_comparison(
         or b_test_pred_sorted is not None
     ):
         axes[1].set_title(
-            f"Test: ground truth and calibrated predictions{title_suffix}",
-            fontsize=TITLE_FONT_SIZE,
+            f"Test: ground truth and calibrated predictions{title_suffix}"
         )
         if y_test_sorted is not None:
             sns.lineplot(
@@ -402,13 +394,13 @@ def plot_calibration_comparison(
                 ax=axes[1],
                 label="Calibration B (test)",
             )
-        axes[1].set_ylabel("Score (0-5 scale)", fontsize=LABEL_FONT_SIZE)
-        axes[1].legend(loc="best", fontsize=LEGEND_FONT_SIZE)
+        axes[1].set_ylabel("Score (0-5 scale)")
+        axes[1].legend(loc="best")
         axes[1].grid(True, alpha=0.3)
     else:
         axes[1].axis("off")
         print("No test metrics/labels available; showing train-only calibration plot.")
-    axes[-1].set_xlabel("Sample index (sorted by true label)", fontsize=LABEL_FONT_SIZE)
+    axes[-1].set_xlabel("Sample index (sorted by true label)")
     plt.tight_layout()
     plt.show()
 
@@ -441,31 +433,46 @@ def plot_calibration_comparison_for_score_data(sd: ModelScoreData) -> None:
     comparison charts: one sorted by true label then isotonic, one sorted by true
     label then Q2Q.
     """
-    iso_cal = IsotonicCalibration().fit(sd.train_scores, sd.y_train)
-    q2q_cal = Q2QCalibration().fit(sd.train_scores, sd.y_train)
+    train_valid = ~(np.isnan(sd.train_scores) | np.isnan(sd.y_train))
+    train_scores_clean = sd.train_scores[train_valid]
+    y_train_clean = sd.y_train[train_valid]
 
-    iso_train_pred = iso_cal.predict(sd.train_scores)
-    q2q_train_pred = q2q_cal.predict(sd.train_scores)
-    iso_test_pred = (
-        iso_cal.predict(sd.test_scores) if sd.test_scores is not None else None
-    )
-    q2q_test_pred = (
-        q2q_cal.predict(sd.test_scores) if sd.test_scores is not None else None
-    )
+    iso_cal = IsotonicCalibration().fit(train_scores_clean, y_train_clean)
+    q2q_cal = Q2QCalibration().fit(train_scores_clean, y_train_clean)
+
+    iso_train_pred = iso_cal.predict(train_scores_clean)
+    q2q_train_pred = q2q_cal.predict(train_scores_clean)
+
+    if sd.test_scores is not None and sd.y_test is not None:
+        test_valid = ~(np.isnan(sd.test_scores) | np.isnan(sd.y_test))
+        test_scores_clean = sd.test_scores[test_valid]
+        y_test_clean = sd.y_test[test_valid]
+        iso_test_pred = iso_cal.predict(test_scores_clean)
+        q2q_test_pred = q2q_cal.predict(test_scores_clean)
+    else:
+        test_scores_clean = y_test_clean = iso_test_pred = q2q_test_pred = None
 
     train_scores_sorted, y_train_sorted, iso_train_sorted, q2q_train_sorted = (
         _align_and_sort(
-            sd.train_scores, sd.y_train, iso_train_pred, q2q_train_pred, sort_by_b=False
+            train_scores_clean,
+            y_train_clean,
+            iso_train_pred,
+            q2q_train_pred,
+            sort_by_b=False,
         )
     )
 
     if (
-        sd.y_test is not None
+        y_test_clean is not None
         and iso_test_pred is not None
         and q2q_test_pred is not None
     ):
         _, y_test_sorted, iso_test_sorted, q2q_test_sorted = _align_and_sort(
-            sd.test_scores, sd.y_test, iso_test_pred, q2q_test_pred, sort_by_b=False
+            test_scores_clean,
+            y_test_clean,
+            iso_test_pred,
+            q2q_test_pred,
+            sort_by_b=False,
         )
     else:
         y_test_sorted = iso_test_sorted = q2q_test_sorted = None
@@ -482,7 +489,7 @@ def plot_calibration_comparison_for_score_data(sd: ModelScoreData) -> None:
     )
 
     if (
-        sd.y_test is not None
+        y_test_clean is not None
         and iso_test_pred is not None
         and q2q_test_pred is not None
     ):
@@ -492,11 +499,19 @@ def plot_calibration_comparison_for_score_data(sd: ModelScoreData) -> None:
             iso_train_sorted_q2q,
             q2q_train_sorted_q2q,
         ) = _align_and_sort(
-            sd.train_scores, sd.y_train, iso_train_pred, q2q_train_pred, sort_by_b=True
+            train_scores_clean,
+            y_train_clean,
+            iso_train_pred,
+            q2q_train_pred,
+            sort_by_b=True,
         )
         _, y_test_sorted_q2q, iso_test_sorted_q2q, q2q_test_sorted_q2q = (
             _align_and_sort(
-                sd.test_scores, sd.y_test, iso_test_pred, q2q_test_pred, sort_by_b=True
+                test_scores_clean,
+                y_test_clean,
+                iso_test_pred,
+                q2q_test_pred,
+                sort_by_b=True,
             )
         )
         plot_calibration_comparison(
@@ -533,6 +548,9 @@ def run_cv_comparison(
     min_len = min(len(train_scores), len(y_train))
     train_scores_cv = np.asarray(train_scores[:min_len], dtype=float)
     y_train_cv = np.asarray(y_train[:min_len], dtype=float)
+    valid_mask = ~(np.isnan(train_scores_cv) | np.isnan(y_train_cv))
+    train_scores_cv = train_scores_cv[valid_mask]
+    y_train_cv = y_train_cv[valid_mask]
     kfold = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     for train_idx, val_idx in kfold.split(train_scores_cv):
         X_train_fold = train_scores_cv[train_idx]
@@ -565,22 +583,6 @@ def run_cv_comparison(
         }
     )
     return results_df
-
-
-def plot_learning_curves(
-    curves: dict[str, np.ndarray], title: str | None = None
-) -> None:
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for name, series in curves.items():
-        sns.lineplot(x=range(len(series)), y=series, ax=ax, label=name)
-    ax.set_xlabel("Iteration", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylabel("Error / Loss", fontsize=LABEL_FONT_SIZE)
-    if title:
-        ax.set_title(title, fontsize=TITLE_FONT_SIZE)
-    ax.legend(fontsize=LEGEND_FONT_SIZE)
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
 
 
 def _prettify_model_name(model_name: str) -> str:

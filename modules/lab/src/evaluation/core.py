@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 
+from utils import DATA_DIR
 from evaluation.plot_style import (  # noqa: F401 – re-exported for callers
     CMAP_QUALITATIVE_PRIMARY,
     CMAP_QUALITATIVE_SECONDARY,
@@ -215,11 +216,10 @@ def plot_confusion_matrix(
     if show_title:
         ax1.set_title(
             f"{metrics_dict.model} - Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Raw Counts)",
-            fontsize=TITLE_FONT_SIZE,
             fontweight="bold",
         )
-    ax1.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
-    ax1.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
+    ax1.set_xlabel("Predicted Label")
+    ax1.set_ylabel("True Label")
     if class_mode == "relaxed":
         labels = ["0/1", "2/3", "4/5"]
     else:
@@ -248,15 +248,21 @@ def plot_confusion_matrix(
         if show_title:
             ax2.set_title(
                 f"{metrics_dict.model} - Normalized Confusion Matrix ({dataset.replace('_', ' ').title()})\n(Proportion of True Label)",
-                fontsize=TITLE_FONT_SIZE,
                 fontweight="bold",
             )
-        ax2.set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE)
-        ax2.set_ylabel("True Label", fontsize=LABEL_FONT_SIZE)
+        ax2.set_xlabel("Predicted Label")
+        ax2.set_ylabel("True Label")
         ax2.set_xticklabels(labels[: cm.shape[1]])
         ax2.set_yticklabels(labels[: cm.shape[0]])
 
     plt.tight_layout()
+    if dataset == "test":
+        fig.savefig(
+            DATA_DIR
+            / "figures"
+            / f"{metrics_dict.model}_conf_{dataset}_{class_mode}.pdf",
+            bbox_inches="tight",
+        )
     plt.show()
 
     total = cm.sum()
@@ -413,7 +419,10 @@ def vis_specific_model_conf_matrices(
 
 
 def vis_all_models_plots(
-    models: list[AggregatedModelData], dataset: str = "test", class_mode: str = "full"
+    models: list[AggregatedModelData],
+    dataset: str = "test",
+    class_mode: str = "full",
+    file_prefix: str = "models",
 ) -> None:
     """Compare per-label metrics across multiple aggregated model dicts."""
     models_data = []
@@ -556,8 +565,8 @@ def vis_all_models_plots(
                             zorder=10,
                         )
 
-        ax.set_xlabel("Label", fontsize=LABEL_FONT_SIZE)
-        ax.set_ylabel(metric_name, fontsize=LABEL_FONT_SIZE)
+        ax.set_xlabel("Label")
+        ax.set_ylabel(metric_name)
         # ax.set_title(
         #     f"{metric_name} Across Models ({dataset.replace('_', ' ').title()} Dataset)",
         #     fontsize=TITLE_FONT_SIZE,
@@ -586,8 +595,14 @@ def vis_all_models_plots(
                 seen.add(label)
                 new_handles.append(h)
                 new_labels.append(label)
-        ax.legend(new_handles, new_labels, fontsize=LEGEND_FONT_SIZE, ncol=2)
+        ax.legend(new_handles, new_labels, ncol=2)
         plt.tight_layout()
+        fig.savefig(
+            DATA_DIR
+            / "figures"
+            / f"{file_prefix}_{metric_name.lower()}_{dataset}_{class_mode}.pdf",
+            bbox_inches="tight",
+        )
         plt.show()
 
     flat_models = []
@@ -677,96 +692,104 @@ def vis_all_models_plots(
                     )
 
         # ax.set_title(title, fontsize=TITLE_FONT_SIZE, fontweight="bold")
-        ax.set_ylabel(
-            y_label if y_label else metric_key.title(), fontsize=LABEL_FONT_SIZE
-        )
+        ax.set_ylabel(y_label if y_label else metric_key.title())
         ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
         if ylim:
             ax.set_ylim(*ylim)
         ax.set_xticks(variant_positions)
         ax.set_xticklabels(variant_labels, fontsize=TICK_FONT_SIZE)
         plt.tight_layout()
+        fig.savefig(
+            DATA_DIR
+            / "figures"
+            / f"{file_prefix}_{metric_key}_{dataset}_{class_mode}.pdf",
+            bbox_inches="tight",
+        )
         plt.show()
 
-    plot_single_metric(
-        "mse",
-        f"RMSE Across Models ({dataset.replace('_', ' ').title()} Dataset)",
-        transform=lambda x: np.sqrt(x),
-        y_label="RMSE",
-    )
-    plot_single_metric(
-        "accuracy",
-        f"Accuracy Across Models ({dataset.replace('_', ' ').title()} Dataset)",
-        ylim=(0, 1.0),
-    )
+    # plot_single_metric(
+    #     "mse",
+    #     f"RMSE Across Models ({dataset.replace('_', ' ').title()} Dataset)",
+    #     transform=lambda x: np.sqrt(x),
+    #     y_label="RMSE",
+    # )
+    # plot_single_metric(
+    #     "accuracy",
+    #     f"Accuracy Across Models ({dataset.replace('_', ' ').title()} Dataset)",
+    #     ylim=(0, 1.0),
+    # )
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-    for base, emb, md, pos, bw in clustered_positions:
-        f1_list = md["metrics"].f1
-        support_list = md["metrics"].support
-        if not f1_list or not support_list:
-            continue
-        total_support = sum(support_list)
-        weighted_f1 = (
-            sum(f * s for f, s in zip(f1_list, support_list)) / total_support
-            if total_support > 0
-            else 0.0
-        )
-        c = base_colors[base]
-        if emb == "mbert":
-            c = darken(c)
-        bar = ax.bar(
-            [pos],
-            [weighted_f1],
-            width=bw,
-            color=c,
-            alpha=0.9,
-            edgecolor="white",
-            linewidth=0.5,
-        )[0]
-        ax.text(
-            bar.get_x() + bar.get_width() / 2,
-            bar.get_height(),
-            f"{weighted_f1:.4f}",
-            ha="center",
-            va="bottom",
-            fontsize=ANNOT_FONT_SIZE,
-        )
+    # fig, ax = plt.subplots(figsize=(12, 6))
+    # for base, emb, md, pos, bw in clustered_positions:
+    #     f1_list = md["metrics"].f1
+    #     support_list = md["metrics"].support
+    #     if not f1_list or not support_list:
+    #         continue
+    #     total_support = sum(support_list)
+    #     weighted_f1 = (
+    #         sum(f * s for f, s in zip(f1_list, support_list)) / total_support
+    #         if total_support > 0
+    #         else 0.0
+    #     )
+    #     c = base_colors[base]
+    #     if emb == "mbert":
+    #         c = darken(c)
+    #     bar = ax.bar(
+    #         [pos],
+    #         [weighted_f1],
+    #         width=bw,
+    #         color=c,
+    #         alpha=0.9,
+    #         edgecolor="white",
+    #         linewidth=0.5,
+    #     )[0]
+    #     ax.text(
+    #         bar.get_x() + bar.get_width() / 2,
+    #         bar.get_height(),
+    #         f"{weighted_f1:.4f}",
+    #         ha="center",
+    #         va="bottom",
+    #         fontsize=ANNOT_FONT_SIZE,
+    #     )
 
-        lg_md = lg_lookup.get(md["model"])
-        if lg_md is not None:
-            lg_f1_list = lg_md["metrics"].f1
-            lg_support_list = lg_md["metrics"].support
-            if lg_f1_list and lg_support_list:
-                lg_total_support = sum(lg_support_list)
-                lg_weighted_f1 = (
-                    sum(f * s for f, s in zip(lg_f1_list, lg_support_list))
-                    / lg_total_support
-                    if lg_total_support > 0
-                    else 0.0
-                )
-                line_left = pos - bw / 2
-                line_right = pos + bw / 2
-                ax.plot(
-                    [line_left, line_right],
-                    [lg_weighted_f1, lg_weighted_f1],
-                    color="black",
-                    linewidth=2,
-                    zorder=10,
-                )
+    #     lg_md = lg_lookup.get(md["model"])
+    #     if lg_md is not None:
+    #         lg_f1_list = lg_md["metrics"].f1
+    #         lg_support_list = lg_md["metrics"].support
+    #         if lg_f1_list and lg_support_list:
+    #             lg_total_support = sum(lg_support_list)
+    #             lg_weighted_f1 = (
+    #                 sum(f * s for f, s in zip(lg_f1_list, lg_support_list))
+    #                 / lg_total_support
+    #                 if lg_total_support > 0
+    #                 else 0.0
+    #             )
+    #             line_left = pos - bw / 2
+    #             line_right = pos + bw / 2
+    #             ax.plot(
+    #                 [line_left, line_right],
+    #                 [lg_weighted_f1, lg_weighted_f1],
+    #                 color="black",
+    #                 linewidth=2,
+    #                 zorder=10,
+    #             )
 
     # ax.set_title(
     #     f"Weighted F1 Across Models ({dataset.replace('_', ' ').title()} Dataset)",
     #     fontsize=TITLE_FONT_SIZE,
     #     fontweight="bold",
     # )
-    ax.set_ylabel("Weighted F1", fontsize=LABEL_FONT_SIZE)
-    ax.set_ylim(0, 1.0)
-    ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
-    ax.set_xticks(variant_positions)
-    ax.set_xticklabels(variant_labels, fontsize=TICK_FONT_SIZE)
-    plt.tight_layout()
-    plt.show()
+    # ax.set_ylabel("Weighted F1", fontsize=LABEL_FONT_SIZE)
+    # ax.set_ylim(0, 1.0)
+    # ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
+    # ax.set_xticks(variant_positions)
+    # ax.set_xticklabels(variant_labels, fontsize=TICK_FONT_SIZE)
+    # plt.tight_layout()
+    # fig.savefig(
+    #     DATA_DIR / "figures" / f"{file_prefix}_f1_{dataset}_{class_mode}.pdf",
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
 
 
 def vis_all_models_tables(

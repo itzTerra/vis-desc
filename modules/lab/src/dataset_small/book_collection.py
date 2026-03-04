@@ -341,29 +341,39 @@ def plot_genre_distribution() -> None:
     ax.set_aspect("equal")
     ax.set_position([0, 0, 1, 1])
     plt.axis("off")
-    pie_path = DATA_DIR / "figures" / "genre_distribution.png"
+
+    pie_path = DATA_DIR / "figures" / "genre_distribution.pdf"
+    png_temp_path = DATA_DIR / "figures" / "genre_distribution_temp.png"
+
     fig.savefig(
-        pie_path,
+        png_temp_path,
         bbox_inches="tight",
         pad_inches=0,
         transparent=True,
+        dpi=300,
     )
-    print("Saved pie to", pie_path)
+    print("Saved temporary PNG")
 
     try:
         from PIL import Image
 
-        with Image.open(pie_path) as im:
+        with Image.open(png_temp_path) as im:
             im = im.convert("RGBA")
             bbox = im.getbbox()
             if bbox:
                 cropped = im.crop(bbox)
-                cropped.save(pie_path)
-                print("Cropped margins from saved image.")
+                cropped.save(pie_path, "PDF", resolution=300.0)
+                print(f"Cropped and saved as PDF to {pie_path}")
             else:
-                print("No non-transparent content found to crop.")
+                im.save(pie_path, "PDF", resolution=300.0)
+                print("No cropping needed, saved as PDF")
+
+        png_temp_path.unlink()
+        print("Removed temporary PNG file")
     except Exception as e:
-        print(f"Image cropping failed: {e}")
+        print(f"Image processing failed: {e}")
+        fig.savefig(pie_path, bbox_inches="tight", pad_inches=0, transparent=True)
+        print(f"Fallback: saved directly as PDF to {pie_path}")
 
     plt.show()
     print("Total books counted:", total)

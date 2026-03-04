@@ -1,4 +1,5 @@
 import argparse
+import enum
 import gc
 import os
 import sys
@@ -100,30 +101,38 @@ def calculate_performance_metrics(
     }
 
 
-def parse_output(response: str) -> tuple[str | None, bool]:
+class OutputParseStatus(enum.Enum):
+    SUCCESS = "success"
+    FAILED = "failed"
+    FALLBACK_SUCCESS = "fallback"
+
+
+def parse_output(response: str) -> tuple[str | None, OutputParseStatus]:
     """
     Parse the rating from model output.
 
     Returns:
-        Tuple of (parsed_rating, had_error)
+        Tuple of (parsed_rating, parse_status)
         - parsed_rating: The extracted rating as string, or None if error
-        - had_error: True if parsing failed
+        - parse_status: OutputParseStatus indicating success, failure, or fallback success
     """
 
-    def finalize(value: str | None, had_error: bool) -> tuple[str | None, bool]:
+    def finalize(
+        value: str | None, had_error: bool
+    ) -> tuple[str | None, OutputParseStatus]:
         if value is None:
-            return None, True
+            return None, OutputParseStatus.FAILED
         if value not in {"0", "1", "2", "3", "4", "5"}:
-            return None, True
-        return value, had_error
+            return None, OutputParseStatus.FAILED
+        return value, OutputParseStatus.SUCCESS
 
-    def fallback_from_text(text: str) -> tuple[str | None, bool]:
+    def fallback_from_text(text: str) -> tuple[str | None, OutputParseStatus]:
         # Fallback: take the last integer in text
         numbers = re.findall(r"(?<!-)\d+(?!-)", text)
         if numbers:
             val = int(numbers[-1])
-            return finalize(str(val), False)
-        return finalize(None, True)
+            return finalize(str(val), OutputParseStatus.FALLBACK_SUCCESS)
+        return finalize(None, OutputParseStatus.FAILED)
 
     try:
         json_start = response.find("{")
@@ -136,7 +145,7 @@ def parse_output(response: str) -> tuple[str | None, bool]:
 
             if rating is not None:
                 rating = int(rating)
-                return finalize(str(rating), False)
+                return finalize(str(rating), OutputParseStatus.SUCCESS)
             # JSON parsed but no rating field; try fallback extraction
             return fallback_from_text(response)
         # No JSON substring found; try fallback extraction
@@ -217,12 +226,16 @@ def evaluate_model_on_prompt(
         all_latencies.extend([batch_latency_ms] * len(batch))
 
         for response in responses:
-            parsed_output, had_error = parse_output(response)
+            parsed_output, parse_status = parse_output(response)
             all_outputs.append(parsed_output)
-            if had_error:
+            if parse_status == OutputParseStatus.FAILED:
                 output_errors += 1
                 if debug_parse:
                     print("\n[DEBUG] Failed to parse model output:", file=sys.stderr)
+                    print(response, file=sys.stderr)
+            elif parse_status == OutputParseStatus.FALLBACK_SUCCESS:
+                if debug_parse:
+                    print("\n[DEBUG] Fallback parsed model output:", file=sys.stderr)
                     print(response, file=sys.stderr)
 
         model_result["output_errors"] = output_errors

@@ -37,7 +37,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logging.getLogger().setLevel(logging.DEBUG)
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 METRICS_DIR = DATA_DIR / "metrics" / "llm"
 METRICS_DIR.mkdir(parents=True, exist_ok=True)
 

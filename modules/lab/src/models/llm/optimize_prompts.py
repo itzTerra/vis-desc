@@ -114,6 +114,12 @@ class VLLMBatchedRunner(Runner):
         is_mutation_request = any(
             keyword in prompt.lower() for keyword in ["rewrite", "paraphrase"]
         )
+        if not is_mutation_request:
+            logger.debug(
+                "#&#&#&#&#&# GENERATE_TEXT CALLED WITH RANDOMNESS %.2f and SEED %d &#&#&#&#&#",
+                randomness,
+                seed,
+            )
 
         user_prompt = prompt
 

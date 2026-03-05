@@ -240,7 +240,14 @@ def evaluate_model_on_prompt(
                     logger.debug("Failed to parse model output: %r", response)
             elif parse_status == OutputParseStatus.FALLBACK_SUCCESS:
                 if debug_parse:
-                    logger.debug("Fallback parsed model output: %r", response)
+                    logger.debug(
+                        "Fallback parsed score %s from model output: %r",
+                        parsed_output,
+                        response,
+                    )
+            else:
+                if debug_parse:
+                    logger.debug("Parsed score: %s", parsed_output)
 
         model_result["output_errors"] = output_errors
         model_result["performance"] = calculate_performance_metrics(all_latencies)

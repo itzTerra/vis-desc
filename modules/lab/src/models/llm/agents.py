@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import copy
 import logging
 import os
 import sys
@@ -234,29 +235,21 @@ class VLLMAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
         **kwargs,
     ) -> str:
         chosen_schema = _choose_schema(structured_schema, "cot")
 
-        base_params = self.model_config.params
-        sampling_kwargs = {
-            "temperature": base_params.temperature,
-            "max_tokens": MAX_TOKENS,
-            "top_p": base_params.top_p,
-            "top_k": base_params.top_k,
-            "min_p": base_params.min_p,
-            "repetition_penalty": base_params.repetition_penalty,
-        }
-
+        sampling_params = copy.copy(self.model_config.params)
+        sampling_params.max_tokens = MAX_TOKENS
+        if temperature is not None:
+            sampling_params.temperature = temperature
         if seed is not None:
-            sampling_kwargs["seed"] = seed
-
+            sampling_params.seed = seed
         if use_structured_outputs and chosen_schema:
-            sampling_kwargs["structured_outputs"] = StructuredOutputsParams(
+            sampling_params.structured_outputs = StructuredOutputsParams(
                 json=chosen_schema
             )
-
-        sampling_params = SamplingParams(**sampling_kwargs)
 
         full_prompt = prompt
         if self.model_config.system_prefix and system_prompt:
@@ -272,7 +265,10 @@ class VLLMAgent(ModelAgent):
             )
 
         outputs = self.llm.generate([full_prompt], sampling_params)
-        return outputs[0].outputs[0].text.strip()
+        result = outputs[0].outputs[0].text.strip()
+        if self.logger:
+            self.logger.debug("llm.generate | output\n```\n%s\n```", result)
+        return result
 
     def generate_batch(
         self,
@@ -286,27 +282,16 @@ class VLLMAgent(ModelAgent):
     ) -> list[str]:
         chosen_schema = _choose_schema(structured_schema, "cot")
 
-        base_params = self.model_config.params
-        sampling_kwargs = {
-            "temperature": temperature
-            if temperature is not None
-            else base_params.temperature,
-            "max_tokens": MAX_TOKENS,
-            "top_p": base_params.top_p,
-            "top_k": base_params.top_k,
-            "min_p": base_params.min_p,
-            "repetition_penalty": base_params.repetition_penalty,
-        }
-
+        sampling_params = copy.copy(self.model_config.params)
+        sampling_params.max_tokens = MAX_TOKENS
+        if temperature is not None:
+            sampling_params.temperature = temperature
         if seed is not None:
-            sampling_kwargs["seed"] = seed
-
+            sampling_params.seed = seed
         if use_structured_outputs and chosen_schema:
-            sampling_kwargs["structured_outputs"] = StructuredOutputsParams(
+            sampling_params.structured_outputs = StructuredOutputsParams(
                 json=chosen_schema
             )
-
-        sampling_params = SamplingParams(**sampling_kwargs)
 
         full_prompts = []
         for prompt in prompts:
@@ -325,7 +310,13 @@ class VLLMAgent(ModelAgent):
             )
 
         outputs = self.llm.generate(full_prompts, sampling_params)
-        return [output.outputs[0].text.strip() for output in outputs]
+        results = [output.outputs[0].text.strip() for output in outputs]
+        if self.logger:
+            self.logger.debug(
+                "llm.generate_batch | outputs\n```\n%s\n```",
+                "\n---\n".join(results),
+            )
+        return results
 
 
 class APIAgent(ModelAgent):
@@ -349,12 +340,18 @@ class APIAgent(ModelAgent):
 
     @_create_retry_decorator()
     def _call_chat_completions(
-        self, messages: list, response_format=None, seed: int | None = None
+        self,
+        messages: list,
+        response_format=None,
+        seed: int | None = None,
+        temperature: float | None = None,
     ) -> str:
         """Call chat completions API with automatic retry on transient errors."""
         kwargs = {
             "model": self.model_id,
-            "temperature": self.model_config.params.temperature,
+            "temperature": temperature
+            if temperature is not None
+            else self.model_config.params.temperature,
             "max_tokens": MAX_TOKENS,
             "messages": messages,
         }
@@ -374,6 +371,7 @@ class APIAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
         **kwargs,
     ) -> str:
         messages = []
@@ -393,7 +391,9 @@ class APIAgent(ModelAgent):
             else None
         )
 
-        return self._call_chat_completions(messages, response_format, seed=seed)
+        return self._call_chat_completions(
+            messages, response_format, seed=seed, temperature=temperature
+        )
 
     def generate_batch(
         self,
@@ -402,6 +402,7 @@ class APIAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
         **kwargs,
     ) -> list[str]:
         if self.use_batch_api:
@@ -411,6 +412,7 @@ class APIAgent(ModelAgent):
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
                 seed=seed,
+                temperature=temperature,
             )
         else:
             return self._generate_batch_sequential(
@@ -419,6 +421,7 @@ class APIAgent(ModelAgent):
                 use_structured_outputs=use_structured_outputs,
                 structured_schema=structured_schema,
                 seed=seed,
+                temperature=temperature,
             )
 
     def _generate_batch_sequential(
@@ -428,6 +431,7 @@ class APIAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
     ) -> list[str]:
         """Process prompts sequentially using individual API calls."""
         responses = []
@@ -449,7 +453,9 @@ class APIAgent(ModelAgent):
                 else None
             )
 
-            content = self._call_chat_completions(messages, response_format, seed=seed)
+            content = self._call_chat_completions(
+                messages, response_format, seed=seed, temperature=temperature
+            )
             responses.append(content)
         return responses
 
@@ -460,6 +466,7 @@ class APIAgent(ModelAgent):
         use_structured_outputs: bool = True,
         structured_schema: dict | None = None,
         seed: int | None = None,
+        temperature: float | None = None,
     ) -> list[str]:
         """Process prompts using OpenAI Batch API (asynchronous, discounted pricing)."""
         requests = []
@@ -472,7 +479,9 @@ class APIAgent(ModelAgent):
             body = {
                 "model": self.model_id,
                 "messages": messages,
-                "temperature": self.model_config.params.temperature,
+                "temperature": temperature
+                if temperature is not None
+                else self.model_config.params.temperature,
                 "max_tokens": MAX_TOKENS,
             }
 

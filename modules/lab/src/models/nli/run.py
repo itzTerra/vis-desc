@@ -653,6 +653,9 @@ Examples:
                     import traceback
 
                     traceback.print_exc()
+        print(
+            f"\nCompleted evaluations for config {config_idx}. Metrics saved to {metrics.filename}"
+        )
 
     print(f"\n{'=' * 60}")
     print(f"✓ Evaluation complete! ({successful_evals}/{total_evals} successful)")

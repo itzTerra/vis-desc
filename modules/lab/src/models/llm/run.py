@@ -250,11 +250,15 @@ def evaluate_model_on_prompt(
         metrics._dump()
 
 
-def create_agent_for_model(model_config: ModelConfig) -> ModelAgent:
+def create_agent_for_model(
+    model_config: ModelConfig,
+    agent_logger: logging.Logger | None = None,
+) -> ModelAgent:
     """Create appropriate agent based on model config.
 
     Args:
         model_config: ModelConfig instance to create agent for
+        agent_logger: Optional logger to attach to the agent for debug output
 
     Returns:
         ModelAgent instance configured for the model
@@ -271,7 +275,7 @@ def create_agent_for_model(model_config: ModelConfig) -> ModelAgent:
             )
         return APIAgent(model_config=model_config, api_key=api_key, base_url=base_url)
     elif is_local:
-        return VLLMAgent(model_config=model_config)
+        return VLLMAgent(model_config=model_config, logger=agent_logger)
     else:
         raise ValueError(f"Unknown model: {model_config.id}")
 
@@ -562,13 +566,12 @@ Examples:
     login(token=os.environ.get("HF_TOKEN"))
 
     for model_config in models_to_eval:
-        logger.info("\n%s", "=" * 60)
-        logger.info("🤖 Loading model: %s (%s)", model_config.name, model_config.id)
-        logger.info("%s", "=" * 60)
-
         agent = None
         try:
-            agent = create_agent_for_model(model_config)
+            agent = create_agent_for_model(
+                model_config,
+                agent_logger=logger if args.debug else None,
+            )
             logger.info("✓ Model loaded successfully")
 
             for prompt_idx in prompts_to_eval:
@@ -622,6 +625,10 @@ Examples:
                                 e,
                             )
                             logger.debug("Traceback:", exc_info=True)
+
+                print(
+                    f"\nCompleted evaluations for prompt {prompt_idx}. Metrics saved to {metrics.filename}"
+                )
 
         except Exception as e:
             logger.error("Error loading model %s: %s", model_config.name, e)

@@ -3,7 +3,6 @@ import asyncio
 from contextlib import redirect_stdout
 from io import StringIO
 import json
-import math
 import logging
 import sys
 from dataclasses import dataclass
@@ -24,6 +23,7 @@ from models.llm.agents import VLLMAgent, MODEL_BY_NAME
 from models.llm.prompts import PROMPT_PARTS, schema_for_suffix_key
 from models.llm.run import parse_output
 from utils import DATA_DIR
+from datetime import datetime
 
 load_dotenv()
 
@@ -119,12 +119,6 @@ class VLLMBatchedRunner(Runner):
         is_mutation_request = any(
             keyword in prompt.lower() for keyword in ["rewrite", "paraphrase"]
         )
-        # if not is_mutation_request:
-        #     logger.debug(
-        #         "#&#&#&#&#&# GENERATE_TEXT CALLED WITH RANDOMNESS %.2f and SEED %d &#&#&#&#&#",
-        #         randomness,
-        #         seed,
-        #     )
 
         user_prompt = prompt
 
@@ -132,11 +126,6 @@ class VLLMBatchedRunner(Runner):
         if not is_mutation_request:
             if system_prompt is None and "\n\n" in prompt:
                 system_prompt, user_prompt = prompt.split("\n\n", 1)
-
-        # if DEBUG_MODE and DEBUG_LOG_PATH:
-        #     logger.debug(
-        #         f"[Model Input]\nSystem prompt: {system_prompt}\nUser prompt: {user_prompt}"
-        #     )
 
         use_structured = self.use_structured_outputs and not is_mutation_request
         schema = self.structured_schema if use_structured else None
@@ -201,14 +190,6 @@ class VLLMBatchedRunner(Runner):
             randomness = requests[0].randomness if requests else None
             schema = requests[0].structured_schema if requests else None
 
-            # if DEBUG_MODE and DEBUG_LOG_PATH:
-            #     for idx, (sys_p, user_p) in enumerate(
-            #         zip([system_prompt] * len(prompts), prompts)
-            #     ):
-            #         logger.debug(
-            #             f"[Batch Input {idx}]\nSystem prompt: {sys_p}\nUser prompt: {user_p}"
-            #         )
-
             try:
                 responses = await asyncio.to_thread(
                     self.agent.generate_batch,
@@ -261,39 +242,6 @@ def load_train_dataset(data_file: str | None = None) -> tuple[list[str], list[in
     return texts, ratings
 
 
-def accuracy_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
-    """Calculate accuracy metric for rating predictions.
-
-    Extracts integer ratings from predictions using parse_output
-    and compares with ground truth.
-
-    Args:
-        y_true: DataTable with ground truth ratings in outputs
-        y_pred: DataTable with predicted ratings in outputs
-
-    Returns:
-        EvaluationScore with accuracy value
-    """
-    y_true_values = y_true.outputs.values
-    y_pred_values = y_pred.outputs.normalized_values()
-
-    n_correct = 0
-    for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
-        parsed_rating, _ = parse_output(str(y_p))
-        # if DEBUG_MODE and DEBUG_LOG_PATH:
-        #     logger.debug(
-        #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t}"
-        #     )
-        try:
-            if parsed_rating is not None and int(parsed_rating) == int(y_t):
-                n_correct += 1
-        except (ValueError, TypeError):
-            continue
-
-    accuracy = n_correct / len(y_true_values) if y_true_values else 0.0
-    return EvaluationScore(accuracy)
-
-
 def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
     """Calculate mean squared error for rating predictions.
 
@@ -316,10 +264,6 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
             if parsed_rating is not None:
                 error = int(parsed_rating) - int(y_t)
                 errors.append(error * error)
-                # if DEBUG_MODE and DEBUG_LOG_PATH:
-                #     logger.debug(
-                #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {y_t} | Error: {error}"
-                #     )
             else:
                 logger.debug(
                     f"Failed to parse rating from prediction {i}: {y_p!r} (true: {y_t})"
@@ -331,66 +275,6 @@ def mean_squared_error_metric(y_true: DataTable, y_pred: DataTable) -> Evaluatio
 
     mse = sum(errors) / len(errors) if errors else 25.0
     return EvaluationScore(mse)
-
-
-def accuracy_rmse_metric(y_true: DataTable, y_pred: DataTable) -> EvaluationScore:
-    """Blend accuracy and RMSE into a single score (higher is better)."""
-
-    y_true_values = y_true.outputs.values
-    y_pred_values = y_pred.outputs.normalized_values()
-
-    n_correct = 0
-    squared_errors: list[float] = []
-
-    for i, (y_p, y_t) in enumerate(zip(y_pred_values, y_true_values)):
-        try:
-            true_rating = int(y_t)
-        except (ValueError, TypeError) as exc:
-            logger.debug(f"Error parsing ground truth for sample {i}: {y_t!r} - {exc}")
-            squared_errors.append(25.0)
-            continue
-
-        parsed_rating, _ = parse_output(str(y_p))
-        # if DEBUG_MODE and DEBUG_LOG_PATH:
-        #     logger.debug(
-        #         f"[Sample {i}] Raw output: {y_p!r} | Parsed rating: {parsed_rating} | Ground truth: {true_rating}"
-        #     )
-
-        if parsed_rating is None:
-            logger.debug(
-                f"Failed to parse rating from prediction {i}: {y_p!r} (true: {true_rating})"
-            )
-            squared_errors.append(25.0)
-            continue
-
-        try:
-            pred_rating = int(parsed_rating)
-        except (ValueError, TypeError) as exc:
-            logger.debug(
-                f"Error casting prediction {i}: {parsed_rating!r} (raw: {y_p!r}) - {exc}"
-            )
-            squared_errors.append(25.0)
-            continue
-
-        if pred_rating == true_rating:
-            n_correct += 1
-
-        error = pred_rating - true_rating
-        squared_errors.append(error * error)
-
-    sample_count = len(y_true_values)
-    mse = sum(squared_errors) / sample_count if sample_count else 25.0
-    rmse = math.sqrt(mse)
-
-    rating_range = 5.0
-
-    normalized_rmse = rmse / rating_range
-    normalized_rmse = max(0.0, min(1.0, normalized_rmse))
-
-    accuracy = n_correct / sample_count if sample_count else 0.0
-    score = 0.5 * accuracy + 1 * (1 - normalized_rmse)
-
-    return EvaluationScore(score)
 
 
 class InitialPromptCandidates:
@@ -715,16 +599,16 @@ def main():
             if DEBUG_MODE and DEBUG_LOG_PATH:
                 logger.info("\n" + "=" * 80)
                 logger.info(
-                    f"[ITERATION {self._iteration_count}] Evaluating {len(candidates)} candidate(s)"
+                    f"[ITERATION {self._iteration_count}] {len(candidates)} candidate(s)"
                 )
                 logger.info("=" * 80)
 
                 for i, candidate in enumerate(candidates):
                     self._candidate_count += 1
                     logger.info(
-                        f"\n--- Candidate {self._candidate_count} (Iteration {self._iteration_count}, Index {i}) ---"
+                        f"\n\t[{self._iteration_count}.{i}] Candidate {self._candidate_count}:"
                     )
-                    logger.info(f"Prompt preview:\n{str(candidate)}")
+                    logger.info(f"```\n{str(candidate)}\n```")
 
             return await super().evaluate(
                 candidates, runner, objective, dataset, colbar
@@ -760,15 +644,29 @@ def main():
     print(prompt_optimizer.best_prompt)
 
     output_with_results_path = (
-        DATA_DIR / "output" / "optimization_results_and_prompt.txt"
+        DATA_DIR
+        / "output"
+        / f"optimization_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     )
     with open(output_with_results_path, "w", encoding="utf-8") as f:
+        # Write run metadata
+        f.write("Run Metadata\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Date: {datetime.now().isoformat()}\n")
+        f.write(f"Model: {args.model}\n")
+        f.write(f"Seed: {args.seed}\n")
+        f.write(f"Beam width: {args.beam_width}\n")
+        f.write(f"Depth: {args.depth}\n")
+        f.write(f"Mutations per beam: {args.mutations_per_beam}\n")
+        f.write("\n")
+        # Write optimization results
         f.write("Optimization Results\n")
         f.write("=" * 60 + "\n")
         if report_text:
             f.write(report_text + "\n\n")
         else:
             f.write("(No report output available)\n\n")
+        # Write best prompt
         f.write("Best Prompt\n")
         f.write("=" * 60 + "\n")
         f.write(str(prompt_optimizer.best_prompt))

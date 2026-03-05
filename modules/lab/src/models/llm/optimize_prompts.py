@@ -117,7 +117,7 @@ class VLLMBatchedRunner(Runner):
         seed: int | None = None,
         **kwargs,
     ) -> LLMResult:
-        seed = kwargs.get("seed", seed if seed is not None else self.seed)
+        seed = self.seed
         is_mutation_request = any(
             keyword in prompt.lower() for keyword in ["rewrite", "paraphrase"]
         )

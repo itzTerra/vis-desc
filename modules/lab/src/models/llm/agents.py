@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 import os
 import sys
 import time
@@ -210,9 +211,11 @@ class VLLMAgent(ModelAgent):
         tensor_parallel_size: int | None = None,
         gpu_memory_utilization: float = 0.95,
         max_model_len: int = 4096,
+        logger: logging.Logger | None = None,
     ):
         self.model_config = model_config
         self.model_name = model_config.name
+        self.logger = logger
         if tensor_parallel_size is None:
             tensor_parallel_size = torch.cuda.device_count()
         self.llm = LLM(
@@ -261,6 +264,13 @@ class VLLMAgent(ModelAgent):
         elif self.model_config.prompt_prefix:
             full_prompt = f"{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
 
+        if self.logger:
+            self.logger.debug(
+                "llm.generate params: sampling_params=%r, prompts=%r",
+                sampling_params,
+                [full_prompt],
+            )
+
         outputs = self.llm.generate([full_prompt], sampling_params)
         return outputs[0].outputs[0].text.strip()
 
@@ -306,6 +316,13 @@ class VLLMAgent(ModelAgent):
             elif self.model_config.prompt_prefix:
                 full_prompt = f"{self.model_config.prompt_prefix}{prompt}{self.model_config.prompt_suffix}"
             full_prompts.append(full_prompt)
+
+        if self.logger:
+            self.logger.debug(
+                "llm.generate_batch params: sampling_params=%r, prompts=%r",
+                sampling_params,
+                full_prompts,
+            )
 
         outputs = self.llm.generate(full_prompts, sampling_params)
         return [output.outputs[0].text.strip() for output in outputs]

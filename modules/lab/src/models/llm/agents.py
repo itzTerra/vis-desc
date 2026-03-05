@@ -266,9 +266,9 @@ class VLLMAgent(ModelAgent):
 
         if self.logger:
             self.logger.debug(
-                "llm.generate params: sampling_params=%r, prompts=%r",
+                "llm.generate | %s\n```\n%s\n```",
                 sampling_params,
-                [full_prompt],
+                full_prompt,
             )
 
         outputs = self.llm.generate([full_prompt], sampling_params)
@@ -319,9 +319,9 @@ class VLLMAgent(ModelAgent):
 
         if self.logger:
             self.logger.debug(
-                "llm.generate_batch params: sampling_params=%r, prompts=%r",
+                "llm.generate_batch | %s\n```\n%s\n```",
                 sampling_params,
-                full_prompts,
+                "\n---\n".join(full_prompts),
             )
 
         outputs = self.llm.generate(full_prompts, sampling_params)

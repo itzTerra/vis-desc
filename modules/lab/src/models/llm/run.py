@@ -232,8 +232,6 @@ def evaluate_model_on_prompt(
         all_latencies.extend([batch_latency_ms] * len(batch))
 
         for i, response in enumerate(responses):
-            logger.debug("IN: %s", batch[i])
-            logger.debug("Raw model response: %r", response)
             parsed_output, parse_status = parse_output(response)
             all_outputs.append(parsed_output)
             if parse_status == OutputParseStatus.FAILED:
@@ -423,13 +421,13 @@ Examples:
         file_handler = logging.FileHandler(debug_log_path, mode="w")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            logging.Formatter("%(asctime)s[%(levelname)s]: %(message)s")
         )
 
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            logging.Formatter("%(asctime)s[%(levelname)s]: %(message)s")
         )
 
         root_logger.setLevel(logging.DEBUG)

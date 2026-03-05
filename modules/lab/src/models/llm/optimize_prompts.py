@@ -1,5 +1,7 @@
 import argparse
 import asyncio
+from contextlib import redirect_stdout
+from io import StringIO
 import json
 import math
 import logging
@@ -745,18 +747,32 @@ def main():
     print("\n" + "=" * 60)
     print("📊 Optimization Results")
     print("=" * 60)
-    prompt_optimizer.show_report()
+    report_buffer = StringIO()
+    with redirect_stdout(report_buffer):
+        prompt_optimizer.show_report()
+    report_text = report_buffer.getvalue().rstrip()
+    if report_text:
+        print(report_text)
 
     print("\n" + "=" * 60)
     print("🏆 Best Prompt")
     print("=" * 60)
     print(prompt_optimizer.best_prompt)
 
-    output_path = DATA_DIR / "output" / "optimized_prompt.txt"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
+    output_with_results_path = (
+        DATA_DIR / "output" / "optimization_results_and_prompt.txt"
+    )
+    with open(output_with_results_path, "w", encoding="utf-8") as f:
+        f.write("Optimization Results\n")
+        f.write("=" * 60 + "\n")
+        if report_text:
+            f.write(report_text + "\n\n")
+        else:
+            f.write("(No report output available)\n\n")
+        f.write("Best Prompt\n")
+        f.write("=" * 60 + "\n")
         f.write(str(prompt_optimizer.best_prompt))
-    print(f"\n✓ Best prompt saved to: {output_path}")
+    print(f"✓ Results + prompt saved to: {output_with_results_path}")
 
     if DEBUG_MODE and DEBUG_LOG_PATH:
         print(f"✓ Debug logs saved to: {DEBUG_LOG_PATH}")

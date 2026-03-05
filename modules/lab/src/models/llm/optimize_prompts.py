@@ -407,14 +407,14 @@ def main():
         file_handler = logging.FileHandler(DEBUG_LOG_PATH, mode="w")
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            logging.Formatter("%(asctime)s[%(levelname)s]: %(message)s")
         )
         DEBUG_LOG_HANDLER = file_handler
 
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            logging.Formatter("%(asctime)s[%(levelname)s]: %(message)s")
         )
 
         root_logger.setLevel(logging.DEBUG)
@@ -424,7 +424,9 @@ def main():
     else:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(logging.Formatter("%(message)s"))
+        console_handler.setFormatter(
+            logging.Formatter("%(asctime)s[%(levelname)s]: %(message)s")
+        )
         root_logger.setLevel(logging.INFO)
         root_logger.addHandler(console_handler)
 
@@ -433,7 +435,9 @@ def main():
         print(f"❌ Error: {args.model} not found in available models")
         sys.exit(1)
 
-    vllm_agent = VLLMAgent(model_config=model_config)
+    vllm_agent = VLLMAgent(
+        model_config=model_config, logger=logger if DEBUG_MODE else None
+    )
     runner = VLLMBatchedRunner(vllm_agent, seed=args.seed)
 
     texts, ratings = load_train_dataset()

@@ -59,6 +59,8 @@ class RatingExtractor(Extractor):
 
     def _extract_from_single_value(self, text: str):
         rating, _ = parse_output(str(text))
+        if DEBUG_MODE:
+            logger.debug(f"Parsed score: {rating!r}")
         return [rating] if rating is not None else [None]
 
 

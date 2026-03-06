@@ -351,7 +351,7 @@ for plan in COMBINATION_PLANS:
 assert len(PROMPTS) == 14
 
 OPTIMIZED_PARTS = [
-    # ??
+    # 0.789 MSE | seed 42 | depth 5 | width 5 | 27 muts | 5 hours
     {
         "system": "As a visual perception analyst, assess the degree to which a given text segment activates the mind's eye, quantifying the clarity and detail with which the content can be mentally visualized. Provide a precise evaluation of the vividness of the mental imagery evoked by the text, focusing on the specificity and intensity of the visual elements it conjures.",
         "guideline": "On a scale of 0-5, rate how well this text allows a reader to visualize the scene, objects, or characters described: 0=not visualizable, 1=simple object/person, 2=recognizable place/basic character, 3=basic scene/detailed face, 4=full scene with details, 5=vivid complete scene.",

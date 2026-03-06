@@ -154,6 +154,14 @@ class VLLMBatchedRunner(Runner):
             elif self._flush_task is None or self._flush_task.done():
                 self._flush_task = asyncio.create_task(self._delayed_flush())
 
+        # Yield to the event loop before reading the future. When a full batch
+        # is flushed above, set_result schedules continuations via call_soon for
+        # all requests in queue order. The request that triggered the flush has
+        # its future already done here, so awaiting it would return without
+        # yielding — making it resolve before the others and causing SAMMO to
+        # collect results out of input order. One sleep(0) lets all pending
+        # call_soon callbacks (the other requests' continuations) run first.
+        await asyncio.sleep(0)
         return await future
 
     async def _delayed_flush(self) -> None:

@@ -652,11 +652,14 @@ def main():
             )
 
             for result in results:
+                raw_predictions = result["predictions"].outputs.normalized_values()
+                parsed_scores = [parse_output(str(p))[0] for p in raw_predictions]
                 self._all_candidates.append(
                     {
                         "iteration": self._iteration_count,
                         "objective": result["objective"],
                         "parse_errors": result["parse_errors"],
+                        "scores": parsed_scores,
                         "prompt": str(result["candidate"]),
                     }
                 )

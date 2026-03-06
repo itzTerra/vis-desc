@@ -586,6 +586,11 @@ def main():
     metric_fn = mean_squared_error_metric
     maximize = False
 
+    run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = DATA_DIR / "output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    candidates_path = output_dir / f"optimization_candidates_{run_timestamp}.json"
+
     class DebugBeamSearch(BeamSearch):
         """Beam search with debug logging."""
 
@@ -593,6 +598,32 @@ def main():
             super().__init__(*args, **kwargs)
             self._iteration_count = 0
             self._candidate_count = 0
+            self._all_candidates: list[dict] = []
+
+        def _flush_candidates(self) -> None:
+            sorted_candidates = sorted(
+                self._all_candidates,
+                key=lambda c: c["objective"],
+                reverse=maximize,
+            )
+            with open(candidates_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "meta": {
+                            "model": args.model,
+                            "seed": args.seed,
+                            "beam_width": args.beam_width,
+                            "depth": args.depth,
+                            "mutations_per_beam": args.mutations_per_beam,
+                            "maximize": maximize,
+                            "total_candidates": len(sorted_candidates),
+                        },
+                        "candidates": sorted_candidates,
+                    },
+                    f,
+                    indent=2,
+                    ensure_ascii=False,
+                )
 
         async def evaluate(
             self,
@@ -616,9 +647,23 @@ def main():
                     )
                     logger.info(f"```\n{str(candidate)}\n```")
 
-            return await super().evaluate(
+            results = await super().evaluate(
                 candidates, runner, objective, dataset, colbar
             )
+
+            for result in results:
+                self._all_candidates.append(
+                    {
+                        "iteration": self._iteration_count,
+                        "objective": result["objective"],
+                        "parse_errors": result["parse_errors"],
+                        "prompt": str(result["candidate"]),
+                    }
+                )
+
+            self._iteration_count += 1
+            self._flush_candidates()
+            return results
 
     prompt_optimizer = DebugBeamSearch(
         runner,
@@ -649,11 +694,8 @@ def main():
     print("=" * 60)
     print(prompt_optimizer.best_prompt)
 
-    output_with_results_path = (
-        DATA_DIR
-        / "output"
-        / f"optimization_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    )
+    output_with_results_path = output_dir / f"optimization_results_{run_timestamp}.txt"
+
     with open(output_with_results_path, "w", encoding="utf-8") as f:
         # Write run metadata
         f.write("Run Metadata\n")
@@ -677,6 +719,9 @@ def main():
         f.write("=" * 60 + "\n")
         f.write(str(prompt_optimizer.best_prompt))
     print(f"✓ Results + prompt saved to: {output_with_results_path}")
+    print(
+        f"✓ All {len(prompt_optimizer._all_candidates)} candidate prompts saved to: {candidates_path}"
+    )
 
     if DEBUG_MODE and DEBUG_LOG_PATH:
         print(f"✓ Debug logs saved to: {DEBUG_LOG_PATH}")

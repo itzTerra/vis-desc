@@ -609,29 +609,30 @@ def main():
             self._all_candidates: list[dict] = []
 
         def _flush_candidates(self) -> None:
-            sorted_candidates = sorted(
-                self._all_candidates,
-                key=lambda c: c["objective"],
-                reverse=maximize,
-            )
-            with open(candidates_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "meta": {
-                            "model": args.model,
-                            "seed": args.seed,
-                            "beam_width": args.beam_width,
-                            "depth": args.depth,
-                            "mutations_per_beam": args.mutations_per_beam,
-                            "maximize": maximize,
-                            "total_candidates": len(sorted_candidates),
-                        },
-                        "candidates": sorted_candidates,
-                    },
-                    f,
-                    indent=2,
-                    ensure_ascii=False,
-                )
+            pass
+            # sorted_candidates = sorted(
+            #     self._all_candidates,
+            #     key=lambda c: c["objective"],
+            #     reverse=maximize,
+            # )
+            # with open(candidates_path, "w", encoding="utf-8") as f:
+            #     json.dump(
+            #         {
+            #             "meta": {
+            #                 "model": args.model,
+            #                 "seed": args.seed,
+            #                 "beam_width": args.beam_width,
+            #                 "depth": args.depth,
+            #                 "mutations_per_beam": args.mutations_per_beam,
+            #                 "maximize": maximize,
+            #                 "total_candidates": len(sorted_candidates),
+            #             },
+            #             "candidates": sorted_candidates,
+            #         },
+            #         f,
+            #         indent=2,
+            #         ensure_ascii=False,
+            #     )
 
         async def evaluate(
             self,

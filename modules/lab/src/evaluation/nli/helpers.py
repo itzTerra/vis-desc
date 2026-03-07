@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import json
 
 from evaluation.core import format_number, latex_escape
-from evaluation.plot_style import CMAP_SEQUENTIAL_PRIMARY
+from evaluation.plot_style import CMAP_SEQUENTIAL_PRIMARY, METRIC_DECIMAL_PLACES
 
 MODEL_NAME_MAP = {
     "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
@@ -247,7 +247,7 @@ def plot_correlation_matrix(
     sns.heatmap(
         corr_matrix,
         annot=True,
-        fmt=".3f",
+        fmt=f".{METRIC_DECIMAL_PLACES}f",
         cmap=CMAP_SEQUENTIAL_PRIMARY,
         center=0,
         vmin=-1,
@@ -1087,7 +1087,7 @@ def _prepare_table_b(
     bold_cols = corr_cols + thr_cols
 
     column_decimals = {col: 1 for col in thr_cols}
-    column_decimals.update({col: 4 for col in corr_cols})
+    column_decimals.update({col: 3 for col in corr_cols})
     df_b = _round_numeric(df_b, column_decimals=column_decimals)
     latex_b = df_to_latex_multirow_header(
         df_b, bold_columns=bold_cols, column_decimals=column_decimals
@@ -1100,7 +1100,7 @@ def prepare_nli_tables(
     df_train: pd.DataFrame | None = None,
     df_test: pd.DataFrame | None = None,
 ):
-    sorted_items = _sort_items_by_best_corr(items, df_train, df_test)
-    df_a, latex_a = _prepare_table_a(sorted_items, df_train, df_test)
-    df_b, latex_b, bold_cols = _prepare_table_b(sorted_items, df_train, df_test)
+    sorted_items = _sort_items_by_best_corr(items, df_train, None)
+    df_a, latex_a = _prepare_table_a(sorted_items, df_train, None)
+    df_b, latex_b, bold_cols = _prepare_table_b(sorted_items, None, df_test)
     return df_a, latex_a, df_b, latex_b, bold_cols

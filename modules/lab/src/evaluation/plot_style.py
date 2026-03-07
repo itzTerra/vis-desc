@@ -8,6 +8,8 @@ TICK_FONT_SIZE = 12  # tick labels and x-tick text labels
 LEGEND_FONT_SIZE = 12  # legend text
 ANNOT_FONT_SIZE = 12  # in-plot numeric annotations / bar value labels
 
+METRIC_DECIMAL_PLACES = 3  # decimal places for metric values in displays/tables
+
 
 def get_deep_colormap_colors(n: int = 10) -> list[str]:
     """

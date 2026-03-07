@@ -6,9 +6,9 @@ All LaTeX table generation code found in `modules/lab/src`.
 
 ### `evaluation/core.py`
 
-| #   | Table Name                                                               | Function                   |
-| --- | ------------------------------------------------------------------------ | -------------------------- |
-| 1   | Model Metrics Comparison (RMSE, Accuracy, Macro-F1 across Train/CV/Test) | `format_metrics_for_latex` |
+| #   | Table Name                                                                        | Function                   |
+| --- | --------------------------------------------------------------------------------- | -------------------------- |
+| 1   | Model Metrics Comparison (RMSE, Accuracy, Weighted F1 (F1w) across Train/CV/Test) | `format_metrics_for_latex` |
 
 Method: `pd.to_latex(escape=False)` with bolded best values per column.
 
@@ -22,7 +22,7 @@ Method: `pd.to_latex(escape=False)` with bolded best values per column.
 | 3   | Pre/Post-Optimization Comparison with colored delta columns          | `format_optimization_comparison_latex` |
 
 - Table 2: `pd.to_latex()` with `\textbf{}` markup for best values.
-- Table 3: Manual LaTeX with `\textcolor{green!70!black}{}` / `\textcolor{red}{}` for improvement/degradation deltas, then `df.to_latex(escape=False)`.
+- Table 3: Manual LaTeX with `\textcolor{green!70!black}{}` / `\textcolor{red}{}` for improvement/degradation deltas, then `df.to_latex(escape=False, column_format=...)` with right-aligned columns for `CORR`, `RMSE`, `F1w`. Columns are `F1w` / `Δ F1w` (weighted F1).
 
 ---
 

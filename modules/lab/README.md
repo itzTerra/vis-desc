@@ -29,7 +29,9 @@ Core files in sensible running order:
     │   ├── nli/
     │   │   └── run.py
     │   └── llm/
+    │       ├── model_selection.ipynb
     │       ├── optimize_prompts.py
+    │       ├── prompt_optimization.ipynb
     │       └── run.py
     └── evaluation/
         ├── encoder/

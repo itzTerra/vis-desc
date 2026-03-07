@@ -12,6 +12,7 @@ from adjustText import adjust_text
 from utils import calculate_metrics
 
 from utils import DATA_DIR
+from evaluation.plot_style import METRIC_DECIMAL_PLACES
 from evaluation.llm.interface import compute_metrics_from_llm_data
 
 
@@ -150,7 +151,7 @@ def extract_model_metrics(
     prompt_id = metrics_file.stem
     prompt = metrics.get("prompt", "")
 
-    model_results_by_name = {}
+    model_results_by_key = {}
 
     for model_result in metrics.get("models", []):
         model_name = model_result.get("model_name", "unknown")
@@ -202,13 +203,14 @@ def extract_model_metrics(
             "latency_std": latency_std,
         }
 
-        if model_name not in model_results_by_name:
-            model_results_by_name[model_name] = []
-        model_results_by_name[model_name].append(seed_metrics)
+        key = (model_name, dataset_name)
+        if key not in model_results_by_key:
+            model_results_by_key[key] = []
+        model_results_by_key[key].append(seed_metrics)
 
     results = []
 
-    for model_name, seed_metrics_list in model_results_by_name.items():
+    for (model_name, _dataset_name), seed_metrics_list in model_results_by_key.items():
         if len(seed_metrics_list) == 1:
             metric = seed_metrics_list[0]
             results.append(
@@ -306,6 +308,48 @@ def load_metric_files(files: list[Path]) -> list[dict]:
         except Exception as e:
             print(f"Skip {fp}: {e}")
     return data
+
+
+def load_metrics_from_dir(
+    metrics_dir: Path,
+) -> tuple[pd.DataFrame, list[dict], list[str]]:
+    """Load all LLM metric JSON files from a directory.
+
+    Combines the two common loading patterns used across evaluation notebooks:
+    extracting per-model metric rows into a DataFrame and loading raw items with
+    config metadata.
+
+    Args:
+        metrics_dir: Directory containing metric JSON files
+
+    Returns:
+        Tuple of:
+        - df_metrics: DataFrame with one row per model result and computed metrics
+        - items: Raw metric dicts with config_id and prompt_id fields added
+        - config_names: List of prompt IDs ordered by config_id
+    """
+    metric_files = sorted(metrics_dir.glob("*.json"))
+
+    items = load_metric_files(metric_files)
+    config_names = [
+        item.get("prompt_id", f"config_{i}") for i, item in enumerate(items)
+    ]
+
+    all_metrics = []
+    for metric_file in metric_files:
+        try:
+            model_metrics = extract_model_metrics(metric_file)
+            all_metrics.extend(model_metrics)
+        except Exception as e:
+            print(f"✗ Error processing {metric_file.name}: {e}")
+
+    df_metrics = pd.DataFrame(all_metrics)
+    print(
+        f"Loaded {len(metric_files)} metric file(s) → "
+        f"{len(df_metrics)} model result(s), {len(config_names)} configuration(s)"
+    )
+
+    return df_metrics, items, config_names
 
 
 def prepare_llm_metrics_summary(items: list[dict]) -> pd.DataFrame:
@@ -744,20 +788,20 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                 if not config_metrics.empty:
                     corr_val = config_metrics["correlation"].max()
                     if pd.notna(corr_val):
-                        best_corr = f"{corr_val:.3f}"
+                        best_corr = f"{corr_val:.{METRIC_DECIMAL_PLACES}f}"
                         all_corr_values.append((row_idx, corr_val))
 
                     rmse_val = config_metrics["rmse"].min()
                     if pd.notna(rmse_val):
-                        best_rmse = f"{rmse_val:.3f}"
+                        best_rmse = f"{rmse_val:.{METRIC_DECIMAL_PLACES}f}"
                         all_rmse_values.append((row_idx, rmse_val))
 
                     f1_val = config_metrics["weighted_f1"].max()
                     if pd.notna(f1_val):
-                        best_f1 = f"{f1_val:.3f}"
+                        best_f1 = f"{f1_val:.{METRIC_DECIMAL_PLACES}f}"
                         all_f1_values.append((row_idx, f1_val))
 
-                examples_val = "yes" if plan["include_examples"] else ""
+                examples_val = "✓" if plan["include_examples"] else ""
                 cot_val = cot_option if cot_option != "none" else ""
 
                 table_data.append(
@@ -768,7 +812,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
                         "CoT": cot_val,
                         "CORR": best_corr,
                         "RMSE": best_rmse,
-                        "F1": best_f1,
+                        "F1w": best_f1,
                     }
                 )
                 row_idx += 1
@@ -791,8 +835,8 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
             df.at[idx, "CORR"] = r"\textbf{" + row["CORR"] + "}"
         if row_num == best_rmse_row and row["RMSE"]:
             df.at[idx, "RMSE"] = r"\textbf{" + row["RMSE"] + "}"
-        if row_num == best_f1_row and row["F1"]:
-            df.at[idx, "F1"] = r"\textbf{" + row["F1"] + "}"
+        if row_num == best_f1_row and row["F1w"]:
+            df.at[idx, "F1w"] = r"\textbf{" + row["F1w"] + "}"
 
     # Apply bold to column headers and add direction arrows for metric columns
     _ARROW_UP = r" $\uparrow$"
@@ -805,7 +849,7 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
         bold = r"\textbf{" + col + "}"
         if col == "RMSE":
             return bold + _ARROW_DOWN
-        if col in ("CORR", "F1"):
+        if col in ("CORR", "F1w"):
             return bold + _ARROW_UP
         return bold
 
@@ -817,8 +861,6 @@ def build_prompt_configuration_table(df_metrics: pd.DataFrame) -> pd.DataFrame:
 def compute_optimization_comparison_table(
     df_current: pd.DataFrame,
     df_pre_optim: pd.DataFrame,
-    selected_config_idx: int,
-    config_names: list[str],
     selected_model_name: str,
 ) -> pd.DataFrame:
     """Compute optimization comparison table showing pre vs post optimization metrics.
@@ -828,41 +870,20 @@ def compute_optimization_comparison_table(
     - Delta metrics (Δ CORR, Δ RMSE, Δ F1) as signed differences from pre-optimization
 
     Args:
-        df_current: DataFrame with current metrics
-        df_pre_optim: DataFrame with pre-optimization metrics
-        selected_config_idx: Index of selected configuration
-        config_names: List of configuration names
+        df_current: Pre-filtered DataFrame with current metrics
+        df_pre_optim: Pre-filtered DataFrame with pre-optimization metrics
         selected_model_name: Name of the selected model
 
     Returns:
         DataFrame with columns: Model, CORR, Δ CORR, RMSE, Δ RMSE, F1, Δ F1
     """
-    config_name = config_names[selected_config_idx]
-
-    # Filter metrics for selected configuration
-    pre_optim_config_data = df_pre_optim[
-        df_pre_optim["prompt_id"].str.startswith(config_name)
-    ].reset_index(drop=True)
-
-    current_config_data = df_current[
-        df_current["prompt_id"].str.startswith(config_name)
-    ].reset_index(drop=True)
-
     # Get metrics for selected model
-    selected_model_pre = pre_optim_config_data[
-        pre_optim_config_data["model_name"] == selected_model_name
-    ]
-    selected_model_current = current_config_data[
-        current_config_data["model_name"] == selected_model_name
-    ]
+    selected_model_pre = df_pre_optim[df_pre_optim["model_name"] == selected_model_name]
+    selected_model_current = df_current[df_current["model_name"] == selected_model_name]
 
     # Calculate averages of other models
-    other_models_pre = pre_optim_config_data[
-        pre_optim_config_data["model_name"] != selected_model_name
-    ]
-    other_models_current = current_config_data[
-        current_config_data["model_name"] != selected_model_name
-    ]
+    other_models_pre = df_pre_optim[df_pre_optim["model_name"] != selected_model_name]
+    other_models_current = df_current[df_current["model_name"] != selected_model_name]
 
     comparison_data = []
 
@@ -876,8 +897,8 @@ def compute_optimization_comparison_table(
                 "Δ CORR": sel_curr["correlation"] - sel_pre["correlation"],
                 "RMSE": sel_curr["rmse"],
                 "Δ RMSE": sel_curr["rmse"] - sel_pre["rmse"],
-                "F1": sel_curr["weighted_f1"],
-                "Δ F1": sel_curr["weighted_f1"] - sel_pre["weighted_f1"],
+                "F1w": sel_curr["weighted_f1"],
+                "Δ F1w": sel_curr["weighted_f1"] - sel_pre["weighted_f1"],
             }
         else:
             row = {
@@ -886,8 +907,8 @@ def compute_optimization_comparison_table(
                 "Δ CORR": None,
                 "RMSE": sel_curr["rmse"],
                 "Δ RMSE": None,
-                "F1": sel_curr["weighted_f1"],
-                "Δ F1": None,
+                "F1w": sel_curr["weighted_f1"],
+                "Δ F1w": None,
             }
         comparison_data.append(row)
     elif not selected_model_pre.empty:
@@ -898,8 +919,8 @@ def compute_optimization_comparison_table(
             "Δ CORR": None,
             "RMSE": sel_pre["rmse"],
             "Δ RMSE": None,
-            "F1": sel_pre["weighted_f1"],
-            "Δ F1": None,
+            "F1w": sel_pre["weighted_f1"],
+            "Δ F1w": None,
         }
         comparison_data.append(row)
 
@@ -912,23 +933,23 @@ def compute_optimization_comparison_table(
             avg_rmse_pre = other_models_pre["rmse"].mean()
             avg_f1_pre = other_models_pre["weighted_f1"].mean()
             row = {
-                "Model": "Avg-of-Others",
+                "Model": "Other (AVG)",
                 "CORR": avg_corr_curr,
                 "Δ CORR": avg_corr_curr - avg_corr_pre,
                 "RMSE": avg_rmse_curr,
                 "Δ RMSE": avg_rmse_curr - avg_rmse_pre,
-                "F1": avg_f1_curr,
-                "Δ F1": avg_f1_curr - avg_f1_pre,
+                "F1w": avg_f1_curr,
+                "Δ F1w": avg_f1_curr - avg_f1_pre,
             }
         else:
             row = {
-                "Model": "Avg-of-Others",
+                "Model": "Other (AVG)",
                 "CORR": avg_corr_curr,
                 "Δ CORR": None,
                 "RMSE": avg_rmse_curr,
                 "Δ RMSE": None,
-                "F1": avg_f1_curr,
-                "Δ F1": None,
+                "F1w": avg_f1_curr,
+                "Δ F1w": None,
             }
         comparison_data.append(row)
     elif not other_models_pre.empty:
@@ -936,13 +957,13 @@ def compute_optimization_comparison_table(
         avg_rmse_pre = other_models_pre["rmse"].mean()
         avg_f1_pre = other_models_pre["weighted_f1"].mean()
         row = {
-            "Model": "Avg-of-Others",
+            "Model": "Other (AVG)",
             "CORR": avg_corr_pre,
             "Δ CORR": None,
             "RMSE": avg_rmse_pre,
             "Δ RMSE": None,
-            "F1": avg_f1_pre,
-            "Δ F1": None,
+            "F1w": avg_f1_pre,
+            "Δ F1w": None,
         }
         comparison_data.append(row)
 
@@ -1011,12 +1032,20 @@ def compute_scale_comparison_table(
     comparison_data = {
         "Scale": ["Normal", "Relaxed"],
         "RMSE": [
-            f"{normal_rmse:.4f}" if normal_rmse is not None else "N/A",
-            f"{relaxed_rmse:.4f}" if relaxed_rmse is not None else "N/A",
+            f"{normal_rmse:.{METRIC_DECIMAL_PLACES}f}"
+            if normal_rmse is not None
+            else "N/A",
+            f"{relaxed_rmse:.{METRIC_DECIMAL_PLACES}f}"
+            if relaxed_rmse is not None
+            else "N/A",
         ],
-        "F1": [
-            f"{normal_f1:.4f}" if normal_f1 is not None else "N/A",
-            f"{relaxed_f1:.4f}" if relaxed_f1 is not None else "N/A",
+        "F1w": [
+            f"{normal_f1:.{METRIC_DECIMAL_PLACES}f}"
+            if normal_f1 is not None
+            else "N/A",
+            f"{relaxed_f1:.{METRIC_DECIMAL_PLACES}f}"
+            if relaxed_f1 is not None
+            else "N/A",
         ],
     }
 
@@ -1096,7 +1125,7 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
     _lower_is_better = {"RMSE", "Δ RMSE"}
     best_idx: dict[str, int] = {}
     for col in df_latex.columns:
-        if col in ("CORR", "RMSE", "F1", "Δ CORR", "Δ RMSE", "Δ F1"):
+        if col in ("CORR", "RMSE", "F1w", "Δ CORR", "Δ RMSE", "Δ F1w"):
             series = pd.to_numeric(df_latex[col], errors="coerce")
             if series.notna().any():
                 best_idx[col] = int(
@@ -1108,17 +1137,17 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
         if "CORR" in df_latex.columns:
             corr = row["CORR"]
             if pd.notna(corr):
-                df_latex.at[idx, "CORR"] = f"{corr:.3f}"
+                df_latex.at[idx, "CORR"] = f"{corr:.{METRIC_DECIMAL_PLACES}f}"
 
         if "RMSE" in df_latex.columns:
             rmse = row["RMSE"]
             if pd.notna(rmse):
-                df_latex.at[idx, "RMSE"] = f"{rmse:.3f}"
+                df_latex.at[idx, "RMSE"] = f"{rmse:.{METRIC_DECIMAL_PLACES}f}"
 
-        if "F1" in df_latex.columns:
-            f1 = row["F1"]
+        if "F1w" in df_latex.columns:
+            f1 = row["F1w"]
             if pd.notna(f1):
-                df_latex.at[idx, "F1"] = f"{f1:.3f}"
+                df_latex.at[idx, "F1w"] = f"{f1:.{METRIC_DECIMAL_PLACES}f}"
 
         # Format and color delta columns
         if "Δ CORR" in df_latex.columns:
@@ -1126,11 +1155,11 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
             if pd.notna(delta_corr) and delta_corr != 0:
                 if delta_corr > 0:
                     df_latex.at[idx, "Δ CORR"] = (
-                        f"\\textcolor{{green!70!black}}{{{delta_corr:+.3f}}}"
+                        f"\\textcolor{{green!70!black}}{{{delta_corr:+.{METRIC_DECIMAL_PLACES}f}}}"
                     )
                 else:
                     df_latex.at[idx, "Δ CORR"] = (
-                        f"\\textcolor{{red}}{{{delta_corr:+.3f}}}"
+                        f"\\textcolor{{red}}{{{delta_corr:+.{METRIC_DECIMAL_PLACES}f}}}"
                     )
 
         if "Δ RMSE" in df_latex.columns:
@@ -1138,22 +1167,24 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
             if pd.notna(delta_rmse) and delta_rmse != 0:
                 if delta_rmse < 0:
                     df_latex.at[idx, "Δ RMSE"] = (
-                        f"\\textcolor{{green!70!black}}{{{delta_rmse:+.3f}}}"
+                        f"\\textcolor{{green!70!black}}{{{delta_rmse:+.{METRIC_DECIMAL_PLACES}f}}}"
                     )
                 else:
                     df_latex.at[idx, "Δ RMSE"] = (
-                        f"\\textcolor{{red}}{{{delta_rmse:+.3f}}}"
+                        f"\\textcolor{{red}}{{{delta_rmse:+.{METRIC_DECIMAL_PLACES}f}}}"
                     )
 
-        if "Δ F1" in df_latex.columns:
-            delta_f1 = row["Δ F1"]
+        if "Δ F1w" in df_latex.columns:
+            delta_f1 = row["Δ F1w"]
             if pd.notna(delta_f1) and delta_f1 != 0:
                 if delta_f1 > 0:
-                    df_latex.at[idx, "Δ F1"] = (
-                        f"\\textcolor{{green!70!black}}{{{delta_f1:+.3f}}}"
+                    df_latex.at[idx, "Δ F1w"] = (
+                        f"\\textcolor{{green!70!black}}{{{delta_f1:+.{METRIC_DECIMAL_PLACES}f}}}"
                     )
                 else:
-                    df_latex.at[idx, "Δ F1"] = f"\\textcolor{{red}}{{{delta_f1:+.3f}}}"
+                    df_latex.at[idx, "Δ F1w"] = (
+                        f"\\textcolor{{red}}{{{delta_f1:+.{METRIC_DECIMAL_PLACES}f}}}"
+                    )
 
     # Bold the best-value cell in each metric column.
     for col, bidx in best_idx.items():
@@ -1169,8 +1200,15 @@ def format_optimization_comparison_latex(df_comparison_table: pd.DataFrame) -> s
             return bold + r" $\uparrow$"
         return bold
 
+    _right_cols = {"CORR", "RMSE", "F1w"}
+    column_format = "".join(
+        "r" if col in _right_cols else "l" for col in df_latex.columns
+    )
+
     header_bold_table = df_latex.rename(columns=_header)
-    latex_table = header_bold_table.to_latex(index=False, escape=False, bold_rows=False)
+    latex_table = header_bold_table.to_latex(
+        index=False, escape=False, bold_rows=False, column_format=column_format
+    )
 
     return latex_table
 

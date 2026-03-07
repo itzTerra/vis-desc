@@ -11,6 +11,7 @@ from evaluation.plot_style import (
     CMAP_QUALITATIVE_PRIMARY,
     GRID_ALPHA,
     GRID_LINESTYLE,
+    METRIC_DECIMAL_PLACES,
     apply_plot_style,
 )
 from evaluation.core import (
@@ -455,23 +456,33 @@ def print_model_summary(models: list[dict[str, Any]]) -> None:
                 continue
 
             print(f"\n    {dataset.upper()}:")
-            print(f"      MSE: {data.get('mse', 'N/A'):.4f}")
-            print(f"      RMSE: {compute_rmse(data.get('mse', 0)):.4f}")
-            print(f"      Accuracy: {data.get('accuracy', 'N/A'):.4f}")
+            print(f"      MSE: {data.get('mse', 'N/A'):.{METRIC_DECIMAL_PLACES}f}")
+            print(
+                f"      RMSE: {compute_rmse(data.get('mse', 0)):.{METRIC_DECIMAL_PLACES}f}"
+            )
+            print(
+                f"      Accuracy: {data.get('accuracy', 'N/A'):.{METRIC_DECIMAL_PLACES}f}"
+            )
 
             f1 = data.get("f1", [])
             if f1:
                 macro_f1 = compute_macro_f1(f1)
-                print(f"      Macro-F1: {macro_f1:.4f}")
-                print(f"      Per-label F1: {[f'{v:.4f}' for v in f1]}")
+                print(f"      Macro-F1: {macro_f1:.{METRIC_DECIMAL_PLACES}f}")
+                print(
+                    f"      Per-label F1: {[f'{v:.{METRIC_DECIMAL_PLACES}f}' for v in f1]}"
+                )
 
             precision = data.get("precision", [])
             if precision:
-                print(f"      Per-label Precision: {[f'{v:.4f}' for v in precision]}")
+                print(
+                    f"      Per-label Precision: {[f'{v:.{METRIC_DECIMAL_PLACES}f}' for v in precision]}"
+                )
 
             recall = data.get("recall", [])
             if recall:
-                print(f"      Per-label Recall: {[f'{v:.4f}' for v in recall]}")
+                print(
+                    f"      Per-label Recall: {[f'{v:.{METRIC_DECIMAL_PLACES}f}' for v in recall]}"
+                )
 
             support = data.get("support", [])
             if support:
@@ -945,7 +956,7 @@ def print_comparison_table(models: list[dict[str, Any]]) -> None:
                 return "N/A".rjust(10)
             if transform:
                 val = transform(val)
-            return f"{val:.4f}"
+            return f"{val:.{METRIC_DECIMAL_PLACES}f}"
 
         train_rmse = safe_metric("train", "mse", compute_rmse)
         cv_rmse = safe_metric("val", "mse", compute_rmse)
@@ -994,7 +1005,7 @@ def print_confusion_matrix_stats(
     print(f"Total predictions: {total}")
     print(f"Correct predictions: {correct}")
     print(f"Incorrect predictions: {total - correct}")
-    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Accuracy: {accuracy:.{METRIC_DECIMAL_PLACES}f}")
 
     print("\nPer-label accuracy:")
     for i in range(6):
@@ -1230,7 +1241,7 @@ def export_feature_importance_latex(
                 if "Baseline" in str(val):
                     cell_str = r"\textbf{" + cell_str + "}"
             elif isinstance(val, (int, float)) and not pd.isna(val):
-                cell_str = f"{val:.4f}"
+                cell_str = f"{val:.{METRIC_DECIMAL_PLACES}f}"
                 if col in gradient_info:
                     rgb = _color_for_value(
                         val, col, gradient_info[col]["vmin"], gradient_info[col]["vmax"]

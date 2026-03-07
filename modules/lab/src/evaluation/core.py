@@ -18,6 +18,7 @@ from evaluation.plot_style import (  # noqa: F401 – re-exported for callers
     GRID_ALPHA,
     GRID_LINESTYLE,
     LABEL_FONT_SIZE,
+    METRIC_DECIMAL_PLACES,
     TITLE_FONT_SIZE,
     TICK_FONT_SIZE,
     LEGEND_FONT_SIZE,
@@ -273,7 +274,7 @@ def plot_confusion_matrix(
     print(f"  Total predictions: {total}")
     print(f"  Correct predictions (diagonal): {correct}")
     print(f"  Incorrect predictions (off-diagonal): {total - correct}")
-    print(f"  Accuracy: {accuracy:.4f}")
+    print(f"  Accuracy: {accuracy:.{METRIC_DECIMAL_PLACES}f}")
     print("\nPer-label statistics:")
     for i in range(cm.shape[0]):
         true_count = cm[i, :].sum()
@@ -302,14 +303,14 @@ def print_per_label_metrics(
     print("-" * 60)
     for _, row in df.iterrows():
         print(
-            f"{int(row['Label']):<8} {row['Precision']:<12.4f} {row['Recall']:<12.4f} {row['F1']:<12.4f} {int(row['Support']):<10}"
+            f"{int(row['Label']):<8} {row['Precision']:<12.{METRIC_DECIMAL_PLACES}f} {row['Recall']:<12.{METRIC_DECIMAL_PLACES}f} {row['F1']:<12.{METRIC_DECIMAL_PLACES}f} {int(row['Support']):<10}"
         )
     print("-" * 60)
 
     data = getattr(metrics_dict, dataset)
-    print(f"Accuracy: {data.accuracy:.4f}")
-    print(f"MSE: {data.mse:.4f}")
-    print(f"RMSE: {np.sqrt(data.mse):.4f}")
+    print(f"Accuracy: {data.accuracy:.{METRIC_DECIMAL_PLACES}f}")
+    print(f"MSE: {data.mse:.{METRIC_DECIMAL_PLACES}f}")
+    print(f"RMSE: {np.sqrt(data.mse):.{METRIC_DECIMAL_PLACES}f}")
     if data.f1 and data.support:
         total_support = sum(data.support)
         weighted_f1 = (
@@ -317,7 +318,7 @@ def print_per_label_metrics(
             if total_support > 0
             else 0.0
         )
-        print(f"Weighted F1: {weighted_f1:.4f}")
+        print(f"Weighted F1: {weighted_f1:.{METRIC_DECIMAL_PLACES}f}")
 
 
 def vis_specific_model_tables(
@@ -327,9 +328,9 @@ def vis_specific_model_tables(
 
     def _styled_no_index(df):
         fmt = {
-            "Precision": "{:.4f}",
-            "Recall": "{:.4f}",
-            "F1": "{:.4f}",
+            "Precision": f"{{:.{METRIC_DECIMAL_PLACES}f}}",
+            "Recall": f"{{:.{METRIC_DECIMAL_PLACES}f}}",
+            "F1": f"{{:.{METRIC_DECIMAL_PLACES}f}}",
             "Support": "{:d}",
         }
         return df.style.format(fmt).set_table_styles(
@@ -342,8 +343,8 @@ def vis_specific_model_tables(
         print("TRAIN METRICS")
         print("=" * 60)
         display(_styled_no_index(train_df))
-        print(f"Accuracy: {metrics_data.train.accuracy:.4f}")
-        print(f"MSE: {metrics_data.train.mse:.4f}")
+        print(f"Accuracy: {metrics_data.train.accuracy:.{METRIC_DECIMAL_PLACES}f}")
+        print(f"MSE: {metrics_data.train.mse:.{METRIC_DECIMAL_PLACES}f}")
 
     cv_df = extract_per_label_metrics(metrics_data, "val")
     if cv_df is not None:
@@ -351,8 +352,8 @@ def vis_specific_model_tables(
         print("CROSS-VALIDATION METRICS (Averaged Across Folds)")
         print("=" * 60)
         display(_styled_no_index(cv_df))
-        print(f"Accuracy: {metrics_data.val.accuracy:.4f}")
-        print(f"MSE: {metrics_data.val.mse:.4f}")
+        print(f"Accuracy: {metrics_data.val.accuracy:.{METRIC_DECIMAL_PLACES}f}")
+        print(f"MSE: {metrics_data.val.mse:.{METRIC_DECIMAL_PLACES}f}")
 
     test_df = extract_per_label_metrics(metrics_data, "test")
     if test_df is not None:
@@ -360,8 +361,8 @@ def vis_specific_model_tables(
         print("TEST METRICS")
         print("=" * 60)
         display(_styled_no_index(test_df))
-        print(f"Accuracy: {metrics_data.test.accuracy:.4f}")
-        print(f"MSE: {metrics_data.test.mse:.4f}")
+        print(f"Accuracy: {metrics_data.test.accuracy:.{METRIC_DECIMAL_PLACES}f}")
+        print(f"MSE: {metrics_data.test.mse:.{METRIC_DECIMAL_PLACES}f}")
 
     if metrics_data.val and metrics_data.val.folds:
         print("\n" + "=" * 60)
@@ -382,8 +383,8 @@ def vis_specific_model_tables(
             )
 
             display(_styled_no_index(fold_df))
-            print(f"Accuracy: {fold_metrics.accuracy:.4f}")
-            print(f"MSE: {fold_metrics.mse:.4f}")
+            print(f"Accuracy: {fold_metrics.accuracy:.{METRIC_DECIMAL_PLACES}f}")
+            print(f"MSE: {fold_metrics.mse:.{METRIC_DECIMAL_PLACES}f}")
 
 
 def vis_specific_model_conf_matrices(
@@ -423,8 +424,89 @@ def vis_all_models_plots(
     dataset: str = "test",
     class_mode: str = "full",
     file_prefix: str = "models",
+    mode: str = "models",
+    single_model: str | None = None,
 ) -> None:
     """Compare per-label metrics across multiple aggregated model dicts."""
+    if mode == "train_test":
+        target = (
+            next((m for m in models if m.model == single_model), None)
+            if single_model is not None
+            else (models[0] if models else None)
+        )
+        if target is None:
+            print("No model found for train/test mode")
+            return
+
+        splits: dict[str, DatasetMetrics] = {}
+        for split_name, attr in [("Train", "train"), ("Test", "test")]:
+            md = getattr(target, attr, None)
+            if md is not None:
+                original_mse = md.mse
+                md = (
+                    collapse_dataset_metrics_relaxed(md)
+                    if class_mode == "relaxed"
+                    else md
+                )
+                md.mse = original_mse
+                splits[split_name] = md
+
+        if not splits:
+            print(f"No train/test data available for model {target.model}")
+            return
+
+        split_names = list(splits.keys())
+        n_splits = len(split_names)
+        _split_colors = sns.color_palette(CMAP_QUALITATIVE_PRIMARY, n_splits).as_hex()
+        split_colors = {name: _split_colors[i] for i, name in enumerate(split_names)}
+
+        model_display_name = MODEL_DISPLAY_NAMES.get(target.model, target.model)
+        sample_md = next(iter(splits.values()))
+
+        for metric_name in ["Precision", "Recall", "F1"]:
+            metric_key = metric_name.lower()
+            n_labels = len(sample_md.__dict__.get(metric_key, []))
+            x = np.arange(n_labels)
+            bar_width = 0.35
+            offsets = (
+                np.linspace(-(n_splits - 1) / 2, (n_splits - 1) / 2, n_splits)
+                * bar_width
+            )
+
+            fig, ax = plt.subplots(figsize=(12, 6))
+            for s_idx, (split_name, md) in enumerate(splits.items()):
+                values = md.__dict__.get(metric_key, [])
+                ax.bar(
+                    x + offsets[s_idx],
+                    values[:n_labels],
+                    width=bar_width,
+                    label=f"{model_display_name} ({split_name})",
+                    color=split_colors[split_name],
+                    alpha=0.9,
+                    edgecolor="white",
+                    linewidth=0.5,
+                )
+            ax.set_xlabel("Label")
+            ax.set_ylabel(metric_name)
+            if class_mode == "relaxed":
+                xticks = ["0/1", "2/3", "4/5"][:n_labels]
+            else:
+                xticks = [f"Label {i}" for i in range(n_labels)]
+            ax.set_xticks(x)
+            ax.set_xticklabels(xticks)
+            ax.set_ylim(0, 1.0)
+            ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
+            ax.legend(ncol=n_splits)
+            plt.tight_layout()
+            fig.savefig(
+                DATA_DIR
+                / "figures"
+                / f"{file_prefix}_{metric_name.lower()}_train_test_{class_mode}.pdf",
+                bbox_inches="tight",
+            )
+            plt.show()
+        return
+
     models_data = []
     lg_models_data = []
     for m in models:
@@ -669,7 +751,7 @@ def vis_all_models_plots(
             ax.text(
                 bar.get_x() + bar.get_width() / 2,
                 bar.get_height(),
-                f"{val:.4f}",
+                f"{val:.{METRIC_DECIMAL_PLACES}f}",
                 ha="center",
                 va="bottom",
                 fontsize=ANNOT_FONT_SIZE,
@@ -814,7 +896,7 @@ def vis_all_models_tables(
         DataFrame with comparison table
     """
     if metrics is None:
-        metrics = ["RMSE", "Acc", "F1"]
+        metrics = ["RMSE", "Acc", "F1w"]
     if splits is None:
         splits = ["Train", "CV", "Test"]
 
@@ -864,9 +946,9 @@ def vis_all_models_tables(
                 "Train Acc": _safe_val(train_d, "accuracy"),
                 "CV Acc": _safe_val(val_d, "accuracy"),
                 "Test Acc": _safe_val(test_d, "accuracy"),
-                "Train F1": _weighted_f1(train_d),
-                "CV F1": _weighted_f1(val_d),
-                "Test F1": _weighted_f1(test_d),
+                "Train F1w": _weighted_f1(train_d),
+                "CV F1w": _weighted_f1(val_d),
+                "Test F1w": _weighted_f1(test_d),
             }
         )
 
@@ -967,7 +1049,7 @@ def vis_all_models_tables(
         if pd.isna(x):
             return ""
         try:
-            return f"{float(x):.4f}"
+            return f"{float(x):.{METRIC_DECIMAL_PLACES}f}"
         except (ValueError, TypeError):
             return str(x)
 
@@ -1019,9 +1101,9 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
                 try:
                     float_val = float(val)
                     df_latex.loc[idx, col] = (
-                        f"\\textbf{{{float_val:.4f}}}"
+                        f"\\textbf{{{float_val:.{METRIC_DECIMAL_PLACES}f}}}"
                         if is_best[idx]
-                        else f"{float_val:.4f}"
+                        else f"{float_val:.{METRIC_DECIMAL_PLACES}f}"
                     )
                 except (ValueError, TypeError):
                     df_latex.loc[idx, col] = str(val)
@@ -1063,7 +1145,7 @@ def latex_escape(text: str) -> str:
     return text
 
 
-def format_number(val: Any, decimals: int = 4) -> str:
+def format_number(val: Any, decimals: int = 3) -> str:
     try:
         num = float(val)
     except (TypeError, ValueError):

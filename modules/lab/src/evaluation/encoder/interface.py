@@ -126,7 +126,7 @@ def format_encoder_metrics_latex(
     """
     from evaluation.core import vis_all_models_tables, format_metrics_for_latex
 
-    metrics = ["RMSE", "F1"] if class_mode == "full" else ["RMSE", "F1"]
+    metrics = ["RMSE", "F1w"] if class_mode == "full" else ["RMSE", "F1w"]
     model_groups, show_large_variants = get_encoder_model_groups()
     df_metrics = vis_all_models_tables(
         aggregated_models,

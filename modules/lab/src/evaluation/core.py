@@ -23,13 +23,14 @@ from evaluation.plot_style import (  # noqa: F401 – re-exported for callers
     TICK_FONT_SIZE,
     LEGEND_FONT_SIZE,
     ANNOT_FONT_SIZE,
+    apply_plot_style,
 )
 
 
 MODEL_DISPLAY_NAMES: dict[str, str] = {
     "random": "Random",
     "ridge_minilm": "Ridge",
-    "rf_minilm": "Random Forest",
+    "rf_minilm": "RandomForest",
     "svm_minilm": "SVM",
     "catboost_minilm": "CatBoost",
     "finetuned-mbert": "Finetuned ModernBERT",
@@ -428,6 +429,20 @@ def vis_all_models_plots(
     single_model: str | None = None,
 ) -> None:
     """Compare per-label metrics across multiple aggregated model dicts."""
+
+    apply_plot_style()
+
+    def _make_paired_x(
+        n_labels: int, pair_inner_gap: float = 0.45, group_sep: float = 1.3
+    ) -> np.ndarray:
+        n_pairs = n_labels // 2
+        group_centers = np.arange(n_pairs) * group_sep
+        x = np.zeros(n_labels)
+        for p in range(n_pairs):
+            x[p * 2] = group_centers[p] - pair_inner_gap / 2
+            x[p * 2 + 1] = group_centers[p] + pair_inner_gap / 2
+        return x
+
     if mode == "train_test":
         target = (
             next((m for m in models if m.model == single_model), None)
@@ -439,16 +454,24 @@ def vis_all_models_plots(
             return
 
         splits: dict[str, DatasetMetrics] = {}
+        splits_relaxed: dict[str, DatasetMetrics] = {}
         for split_name, attr in [("Train", "train"), ("Test", "test")]:
             md = getattr(target, attr, None)
             if md is not None:
                 original_mse = md.mse
-                md = (
-                    collapse_dataset_metrics_relaxed(md)
-                    if class_mode == "relaxed"
-                    else md
-                )
-                md.mse = original_mse
+                if class_mode == "combined":
+                    if split_name == "Test":
+                        r_md = collapse_dataset_metrics_relaxed(md)
+                        r_md.mse = original_mse
+                        splits_relaxed[split_name] = r_md
+                    md.mse = original_mse
+                else:
+                    md = (
+                        collapse_dataset_metrics_relaxed(md)
+                        if class_mode == "relaxed"
+                        else md
+                    )
+                    md.mse = original_mse
                 splits[split_name] = md
 
         if not splits:
@@ -457,8 +480,11 @@ def vis_all_models_plots(
 
         split_names = list(splits.keys())
         n_splits = len(split_names)
-        _split_colors = sns.color_palette(CMAP_QUALITATIVE_PRIMARY, n_splits).as_hex()
+        _split_colors = sns.color_palette(
+            CMAP_QUALITATIVE_PRIMARY, n_splits + 1
+        ).as_hex()
         split_colors = {name: _split_colors[i] for i, name in enumerate(split_names)}
+        relaxed_split_colors = {name: _split_colors[n_splits] for name in split_names}
 
         model_display_name = MODEL_DISPLAY_NAMES.get(target.model, target.model)
         sample_md = next(iter(splits.values()))
@@ -466,14 +492,45 @@ def vis_all_models_plots(
         for metric_name in ["Precision", "Recall", "F1"]:
             metric_key = metric_name.lower()
             n_labels = len(sample_md.__dict__.get(metric_key, []))
-            x = np.arange(n_labels)
-            bar_width = 0.35
-            offsets = (
-                np.linspace(-(n_splits - 1) / 2, (n_splits - 1) / 2, n_splits)
-                * bar_width
-            )
+
+            if class_mode == "combined":
+                pair_inner_gap = 0.4
+                group_sep = 0.95
+                bar_width = 0.18
+                x = _make_paired_x(n_labels, pair_inner_gap, group_sep)
+                offsets = (
+                    np.linspace(-(n_splits - 1) / 2, (n_splits - 1) / 2, n_splits)
+                    * bar_width
+                )
+                n_pairs = n_labels // 2
+                group_centers = np.arange(n_pairs) * group_sep
+                relaxed_bar_width = (
+                    pair_inner_gap + n_splits * bar_width + bar_width / 2
+                )
+            else:
+                x = np.arange(n_labels)
+                bar_width = 0.35
+                offsets = (
+                    np.linspace(-(n_splits - 1) / 2, (n_splits - 1) / 2, n_splits)
+                    * bar_width
+                )
 
             fig, ax = plt.subplots(figsize=(12, 6))
+
+            if class_mode == "combined" and splits_relaxed:
+                for split_name, r_md in splits_relaxed.items():
+                    r_values = r_md.__dict__.get(metric_key, [])
+                    ax.bar(
+                        group_centers,
+                        r_values[:n_pairs],
+                        width=relaxed_bar_width,
+                        color=relaxed_split_colors[split_name],
+                        alpha=1.0,
+                        edgecolor="none",
+                        zorder=1,
+                        label=f"{model_display_name} ({split_name}, relaxed)",
+                    )
+
             for s_idx, (split_name, md) in enumerate(splits.items()):
                 values = md.__dict__.get(metric_key, [])
                 ax.bar(
@@ -482,14 +539,17 @@ def vis_all_models_plots(
                     width=bar_width,
                     label=f"{model_display_name} ({split_name})",
                     color=split_colors[split_name],
-                    alpha=0.9,
+                    alpha=1.0,
                     edgecolor="white",
                     linewidth=0.5,
+                    zorder=2,
                 )
             ax.set_xlabel("Label")
             ax.set_ylabel(metric_name)
             if class_mode == "relaxed":
                 xticks = ["0/1", "2/3", "4/5"][:n_labels]
+            elif class_mode == "combined":
+                xticks = [str(i) for i in range(n_labels)]
             else:
                 xticks = [f"Label {i}" for i in range(n_labels)]
             ax.set_xticks(x)
@@ -524,13 +584,21 @@ def vis_all_models_plots(
             else:
                 md = getattr(m, dataset)
                 original_mse = md.mse
-                md = (
-                    collapse_dataset_metrics_relaxed(md)
-                    if class_mode == "relaxed"
-                    else md
-                )
-                md.mse = original_mse
-                models_data.append({"model": m.model, "metrics": md})
+                if class_mode == "combined":
+                    r_md = collapse_dataset_metrics_relaxed(md)
+                    r_md.mse = original_mse
+                    md.mse = original_mse
+                    models_data.append(
+                        {"model": m.model, "metrics": md, "metrics_relaxed": r_md}
+                    )
+                else:
+                    md = (
+                        collapse_dataset_metrics_relaxed(md)
+                        if class_mode == "relaxed"
+                        else md
+                    )
+                    md.mse = original_mse
+                    models_data.append({"model": m.model, "metrics": md})
 
     if not models_data:
         print(f"No models with {dataset} available")
@@ -570,8 +638,12 @@ def vis_all_models_plots(
         if class_mode == "relaxed"
         else CMAP_QUALITATIVE_PRIMARY
     )
-    _palette_colors = sns.color_palette(palette, len(ordered_bases)).as_hex()
+    _palette_colors = sns.color_palette(palette, 2 * len(ordered_bases)).as_hex()
     base_colors = {base: _palette_colors[i] for i, base in enumerate(ordered_bases)}
+    relaxed_base_colors = {
+        base: _palette_colors[len(ordered_bases) + i]
+        for i, base in enumerate(ordered_bases)
+    }
 
     def darken(hex_color, factor=0.75):
         hex_color = hex_color.lstrip("#")
@@ -594,6 +666,9 @@ def vis_all_models_plots(
     if max_variants == 0:
         max_variants = 1
 
+    combined_pair_inner_gap = 0.45
+    combined_group_sep = 1.3
+
     for metric_name in ["Precision", "Recall", "F1"]:
         fig, ax = plt.subplots(figsize=(12, 6))
         for base_idx, base in enumerate(ordered_bases):
@@ -605,11 +680,45 @@ def vis_all_models_plots(
             base_center_offset = -total_cluster_width / 2 + base_slot_width * (
                 base_idx + 0.5
             )
+
+            if class_mode == "combined":
+                sample_vals = variants[0][1]["metrics"].__dict__.get(
+                    metric_name.lower(), []
+                )
+                n_labels = len(sample_vals)
+                x_template = _make_paired_x(
+                    n_labels, combined_pair_inner_gap, combined_group_sep
+                )
+                n_pairs = n_labels // 2
+                group_centers_base = (
+                    np.arange(n_pairs) * combined_group_sep + base_center_offset
+                )
+                relaxed_bar_width = (
+                    combined_pair_inner_gap + n_variants * bar_width + bar_width
+                )
+                first_r_md = variants[0][1].get(
+                    "metrics_relaxed", variants[0][1].get("metrics")
+                )
+                r_values = first_r_md.__dict__.get(metric_name.lower(), [])
+                ax.bar(
+                    group_centers_base,
+                    r_values[:n_pairs],
+                    width=relaxed_bar_width,
+                    color=relaxed_base_colors[base],
+                    alpha=1.0,
+                    edgecolor="none",
+                    zorder=1,
+                )
+
             for v_idx, (emb, md) in enumerate(variants):
                 metric_key = metric_name.lower()
                 values = md["metrics"].__dict__.get(metric_key, [])
                 n_labels = len(values)
-                base_positions = np.arange(n_labels) + base_center_offset
+
+                if class_mode == "combined":
+                    base_positions = x_template + base_center_offset
+                else:
+                    base_positions = np.arange(n_labels) + base_center_offset
 
                 variant_offset_start = (v_idx - (n_variants - 1) / 2) * bar_width
 
@@ -622,10 +731,11 @@ def vis_all_models_plots(
                     values[:n_labels],
                     width=bar_width,
                     label=MODEL_DISPLAY_NAMES.get(md["model"], md["model"]),
-                    alpha=0.9,
+                    alpha=1.0,
                     color=c,
                     edgecolor="white",
                     linewidth=0.5,
+                    zorder=2,
                 )
 
                 lg_md = lg_lookup.get(md["model"])
@@ -663,9 +773,15 @@ def vis_all_models_plots(
             n_labels = 6
         if class_mode == "relaxed":
             xticks = ["0/1", "2/3", "4/5"][:n_labels]
+            ax.set_xticks(np.arange(n_labels))
+        elif class_mode == "combined":
+            xticks = [str(i) for i in range(n_labels)]
+            ax.set_xticks(
+                _make_paired_x(n_labels, combined_pair_inner_gap, combined_group_sep)
+            )
         else:
             xticks = [f"Label {i}" for i in range(n_labels)]
-        ax.set_xticks(np.arange(n_labels))
+            ax.set_xticks(np.arange(n_labels))
         ax.set_xticklabels(xticks)
         ax.set_ylim(0, 1.0)
         ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)
@@ -970,22 +1086,27 @@ def vis_all_models_tables(
                 for m in models
             )
         ):
-            row = [prefix] + [""] * len(columns)
+            row = [prefix]
+            m_dict = model_to_metrics.get("finetuned-mbert", {})
+            for col in columns:
+                val = m_dict.get(col, np.nan)
+                row.append(val if not pd.isna(val) else "")
             rows.append(row)
 
-            # Add three sub-rows for different dataset configurations
-            variants = [
-                ("finetuned-mbert_lg-only", "Large only"),
-                ("finetuned-mbert", "Small only"),
-                ("finetuned-mbert_lg", "Small+Large"),
-            ]
-            for model_name, label in variants:
-                row = [label]
-                m_dict = model_to_metrics.get(model_name, {})
+            if show_large_variants:
+                row = ["(+Large)"]
+                m_dict = model_to_metrics.get("finetuned-mbert_lg", {})
                 for col in columns:
                     val = m_dict.get(col, np.nan)
                     row.append(val if not pd.isna(val) else "")
                 rows.append(row)
+
+            row = ["(Large only)"]
+            m_dict = model_to_metrics.get("finetuned-mbert_lg-only", {})
+            for col in columns:
+                val = m_dict.get(col, np.nan)
+                row.append(val if not pd.isna(val) else "")
+            rows.append(row)
         elif len(models) == 1 or len(models) == 2 and any("_lg" in m for m in models):
             model, model_lg = (
                 next(model for model in models if "_lg" not in model),
@@ -1076,14 +1197,28 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
     models_to_bold = [
         "Random",
         "Ridge",
-        "Random Forest",
+        "RandomForest",
         "SVM",
         "CatBoost",
         "Finet. MBERT",
+        "RoBERTa",
+        "DeBERTa-L",
+        "MBERT-L",
+        "Llama4-Scout",
     ]
 
     df_latex = df_metrics.copy()
     numeric_cols = df_latex.columns[1:]
+
+    # Identify group header rows (all data columns are empty/nan)
+    n_data_cols = len(numeric_cols)
+    group_header_positions = {
+        pos
+        for pos in range(len(df_metrics))
+        if all(
+            str(df_metrics.iloc[pos, j + 1]) in ("", "nan") for j in range(n_data_cols)
+        )
+    }
 
     for col in numeric_cols:
         s = pd.to_numeric(df_latex[col], errors="coerce")
@@ -1108,13 +1243,30 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
                 except (ValueError, TypeError):
                     df_latex.loc[idx, col] = str(val)
 
-    def col_header(col: str) -> str:
-        if col == "Model":
-            return f"\\textbf{{{col}}}"
-        arrow = "$\\downarrow$" if "RMSE" in col else "$\\uparrow$"
-        return f"\\textbf{{{col}}} {arrow}"
+    # Build two-row column header: top spans metric groups, bottom lists split names.
+    # Columns (excluding Model) follow "{Split} {Metric}" naming.
+    seen_metrics: list[str] = []
+    metric_splits: dict[str, list[str]] = {}
+    for col in numeric_cols:
+        parts = col.split(" ", 1)
+        split, metric = (parts[0], parts[1]) if len(parts) == 2 else ("", parts[0])
+        if metric not in metric_splits:
+            seen_metrics.append(metric)
+            metric_splits[metric] = []
+        metric_splits[metric].append(split)
 
-    df_latex.columns = [col_header(col) for col in df_latex.columns]
+    def _arrow(metric: str) -> str:
+        return "$\\downarrow$" if "RMSE" in metric else "$\\uparrow$"
+
+    top_cells = ["\\textbf{Model}"] + [
+        f"\\multicolumn{{{len(metric_splits[m])}}}{{c}}{{\\textbf{{{m}}} {_arrow(m)}}}"
+        for m in seen_metrics
+    ]
+    bottom_cells = [""] + [s for m in seen_metrics for s in metric_splits[m]]
+    header_top = " & ".join(top_cells) + " \\\\"
+    header_bottom = " & ".join(bottom_cells) + " \\\\"
+
+    df_latex.columns = ["Model"] + list(numeric_cols)
 
     model_col = df_latex.columns[0]
 
@@ -1123,8 +1275,76 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
 
     df_latex[model_col] = df_latex[model_col].apply(format_model_name)
 
-    col_format = "r" * len(df_latex.columns)
-    return df_latex.to_latex(index=False, escape=False, column_format=col_format)
+    n_total_cols = len(df_latex.columns)
+    col_format = "l" + "r" * (n_total_cols - 1)
+    latex = df_latex.to_latex(index=False, escape=False, column_format=col_format)
+
+    # Post-process the generated LaTeX:
+    # 1. Replace the auto-generated header line with the two-row metric/split header.
+    # 2. Replace group-label rows with \midrule + \multicolumn span.
+    lines = latex.split("\n")
+    result = []
+    data_row_idx = 0
+    in_data_section = False
+    prev_was_midrule = False
+    header_replaced = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        if stripped == "\\toprule":
+            in_data_section = False
+            prev_was_midrule = False
+            result.append(line)
+            continue
+
+        if stripped == "\\midrule" and not header_replaced:
+            # This is the midrule after the column header row — replace header
+            result.append(header_top)
+            result.append(header_bottom)
+            result.append(line)
+            header_replaced = True
+            in_data_section = True
+            prev_was_midrule = True
+            continue
+
+        if stripped == "\\midrule":
+            in_data_section = True
+            prev_was_midrule = True
+            result.append(line)
+            continue
+
+        if stripped == "\\bottomrule":
+            in_data_section = False
+            prev_was_midrule = False
+            result.append(line)
+            continue
+
+        # Skip the original pandas-generated header line (before first \midrule)
+        if (
+            not header_replaced
+            and in_data_section is False
+            and stripped.endswith("\\\\")
+        ):
+            continue
+
+        if in_data_section and stripped:
+            if data_row_idx in group_header_positions:
+                label = df_metrics.iloc[data_row_idx, 0]
+                if not prev_was_midrule:
+                    result.append("\\midrule")
+                result.append(
+                    f"\\multicolumn{{{n_total_cols}}}{{l}}{{\\textit{{{label}}}}} \\\\"
+                )
+                data_row_idx += 1
+                prev_was_midrule = False
+                continue
+            data_row_idx += 1
+            prev_was_midrule = False
+
+        result.append(line)
+
+    return "\n".join(result)
 
 
 def latex_escape(text: str) -> str:

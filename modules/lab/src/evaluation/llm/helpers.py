@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 import re
 import pandas as pd
 import numpy as np
@@ -9,11 +9,73 @@ import seaborn as sns
 from scipy.stats import pearsonr, spearmanr
 from dataclasses import dataclass
 from adjustText import adjust_text
-from utils import calculate_metrics
-
+from utils import calculate_metrics, to_int_0_5
+from sklearn.metrics import (
+    mean_squared_error,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+)
 from utils import DATA_DIR
 from evaluation.plot_style import METRIC_DECIMAL_PLACES
-from evaluation.llm.interface import compute_metrics_from_llm_data
+
+MODEL_NAME_MAP = {"Llama4-Scout-17b": "Llama4-Scout"}
+
+
+def compute_metrics_from_llm_data(
+    predictions: np.ndarray,
+    labels: np.ndarray,
+) -> dict[str, Any]:
+    """Compute classification metrics from LLM predictions and true labels.
+
+    Args:
+        predictions: Predicted ratings (continuous values, typically 0-5 range)
+        labels: True labels (discrete values 0-5)
+
+    Returns:
+        Dictionary with mse, accuracy, precision, recall, f1, support, confusion_matrix
+    """
+    predictions = np.asarray(predictions, dtype=float)
+    labels = np.asarray(labels, dtype=float)
+
+    pred_labels = to_int_0_5(predictions)
+    true_labels = to_int_0_5(labels)
+
+    mse = float(mean_squared_error(true_labels, pred_labels))
+    accuracy = float(accuracy_score(true_labels, pred_labels))
+
+    precision_arr = precision_score(
+        true_labels, pred_labels, labels=list(range(6)), average=None, zero_division=0
+    )
+    recall_arr = recall_score(
+        true_labels, pred_labels, labels=list(range(6)), average=None, zero_division=0
+    )
+    f1_arr = f1_score(
+        true_labels, pred_labels, labels=list(range(6)), average=None, zero_division=0
+    )
+
+    precision = [float(p) for p in precision_arr]
+    recall = [float(r) for r in recall_arr]
+    f1 = [float(f) for f in f1_arr]
+    support = [int(np.sum(true_labels == label_val)) for label_val in range(6)]
+    weighted_f1 = float(
+        f1_score(true_labels, pred_labels, average="weighted", zero_division=0)
+    )
+
+    cm = confusion_matrix(true_labels, pred_labels, labels=list(range(6)))
+
+    return {
+        "mse": mse,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "weighted_f1": weighted_f1,
+        "support": support,
+        "confusion_matrix": cm,
+    }
 
 
 def load_metric_file(filepath: Path) -> dict:

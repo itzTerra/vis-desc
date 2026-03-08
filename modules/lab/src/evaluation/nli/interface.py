@@ -16,10 +16,10 @@ from sklearn.metrics import (
 from evaluation.core import AggregatedModelData, DatasetMetrics
 from evaluation.nli.helpers import (
     IsotonicCalibration,
-    to_int_0_5,
     Calibrator,
     MODEL_NAME_MAP,
 )
+from utils import to_int_0_5
 
 
 def compute_metrics_from_scores(

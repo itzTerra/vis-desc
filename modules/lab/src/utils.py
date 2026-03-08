@@ -160,3 +160,15 @@ def average_metrics(metrics: list[dict[str, Any]]) -> dict[str, Any]:
         result["corr"] = float(np.nanmean([m["corr"] for m in metrics]))
 
     return result
+
+
+def to_int_0_5(values: np.ndarray) -> np.ndarray:
+    """Round continuous scores to discrete 0-5 labels.
+
+    Args:
+        values: Continuous values (typically in 0-5 range)
+
+    Returns:
+        Array of rounded integer values between 0-5
+    """
+    return np.clip(np.rint(values), 0, 5).astype(int)

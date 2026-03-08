@@ -83,7 +83,7 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
             "ridge_minilm_lg",
             #   "ridge_mbert_lg"
         ],
-        "Random Forest": [
+        "RandomForest": [
             "rf_minilm",
             # "rf_mbert",
             "rf_minilm_lg",

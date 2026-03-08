@@ -11,6 +11,7 @@ import json
 
 from evaluation.core import format_number, latex_escape
 from evaluation.plot_style import CMAP_SEQUENTIAL_PRIMARY, METRIC_DECIMAL_PLACES
+from utils import to_int_0_5
 
 MODEL_NAME_MAP = {
     "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
@@ -219,10 +220,6 @@ class OrdinalLogisticCalibration:
         thresholds = np.sort(result.x[1:])
 
         return _OrdinalLogisticCalibrator(thresholds, coef)
-
-
-def to_int_0_5(arr: np.ndarray) -> np.ndarray:
-    return np.clip(np.rint(arr), 0, 5).astype(int)
 
 
 def plot_correlation_matrix(

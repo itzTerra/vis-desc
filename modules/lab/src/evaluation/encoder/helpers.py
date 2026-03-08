@@ -1187,7 +1187,7 @@ def export_feature_importance_latex(
         norm_value = (value - vmin) / (vmax - vmin)
         if col_name == "RMSE Δ":
             rgba = cmap_rdylgn(norm_value)
-        elif col_name == "Accuracy Δ":
+        elif col_name in ("Accuracy Δ", "F1w Δ"):
             rgba = cmap_rdylgn_r(norm_value)
         else:
             return None
@@ -1215,7 +1215,7 @@ def export_feature_importance_latex(
     latex_lines.append(r"\midrule")
 
     gradient_info = {}
-    for col in ["RMSE Δ", "Accuracy Δ"]:
+    for col in ["RMSE Δ", "Accuracy Δ", "F1w Δ"]:
         if col in df.columns:
             abs_max = max(abs(df[col].min()), abs(df[col].max()))
             gradient_info[col] = {"vmin": -abs_max, "vmax": abs_max}

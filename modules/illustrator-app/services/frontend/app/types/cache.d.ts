@@ -17,6 +17,7 @@ export interface ModelGroup {
   id: string;
   name: string;
   downloadables: Downloadable[];
+  supportsGpu?: boolean;
 }
 
 export interface ScorerStage {

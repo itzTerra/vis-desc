@@ -70,7 +70,7 @@
     />
     <Hero v-else :disabled="!isAppReady" @file-selected="handleFileUpload" />
     <div class="bottom-bar flex-col items-end md:flex-row md:items-center">
-      <div v-if="!seenHelpOnce" class="tooltip tooltip-open tooltip-info tooltip-left">
+      <div v-if="!seenHelpOnce && !pdfUrl" class="tooltip tooltip-open tooltip-info tooltip-left">
         <div class="tooltip-content pointer-events-auto p-0">
           <div class="relative flex items-end px-2 py-2">
             Start a 1-minute guided tour now!
@@ -83,9 +83,18 @@
           ?
         </button>
       </div>
-      <button v-else class="btn btn-circle btn-sm btn-info text-lg" title="Help" @click="toggleHelp(true)">
-        ?
-      </button>
+      <span
+        v-else
+        :title="pdfUrl ? 'Help cannot be used when a PDF is already loaded' : 'Help'"
+      >
+        <button
+          class="btn btn-circle btn-sm btn-info text-lg"
+          :disabled="!!pdfUrl"
+          @click="toggleHelp(true)"
+        >
+          ?
+        </button>
+      </span>
       <CacheManager
         ref="cacheManagerRef"
         v-model:is-expanded="cacheManagerExpanded"
@@ -514,6 +523,16 @@ onMounted(() => {
       }
     },
     "Load example PDF and segments"
+  );
+
+  $debugPanel.addAction(
+    "Long Ping API",
+    async () => {
+      await call("/api/long-ping", {
+        method: "GET",
+      });
+    },
+    "Test long ping API endpoint"
   );
 });
 </script>

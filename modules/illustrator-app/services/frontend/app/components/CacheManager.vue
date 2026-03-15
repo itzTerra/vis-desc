@@ -98,8 +98,9 @@
                       <span class="label-text text-xs">GPU</span>
                       <input
                         type="checkbox"
-                        class="toggle toggle-sm"
+                        class="toggle toggle-sm toggle-accent"
                         :checked="provider[group.id] === 'webgpu'"
+                        :disabled="!group.supportsGpu"
                         @change="(e: any) => updateProvider(group.id, e.target.checked)"
                       >
                     </label>
@@ -334,6 +335,17 @@ onMounted(async () => {
     } catch {
       // Invalid JSON, use defaults
     }
+  }
+
+  let providerChanged = false;
+  for (const group of MODEL_GROUPS) {
+    if (!group.supportsGpu && provider.value[group.id] !== "wasm") {
+      provider.value[group.id] = "wasm";
+      providerChanged = true;
+    }
+  }
+  if (providerChanged) {
+    localStorage.setItem("onnx_provider", JSON.stringify(provider.value));
   }
 
   try {

@@ -181,7 +181,7 @@ class MiniLMCatBoostScorer extends Scorer {
       "CatBoost",
       "Fast local inference with feature extraction",
       4,
-      4,
+      3,
       false,
       false
     );
@@ -305,7 +305,7 @@ class NLIRobertaScorer extends Scorer {
       "NLI-RoBERTa",
       "Zero-shot classification with NLI",
       3,
-      3,
+      4,
       false,
       false
     );
@@ -452,6 +452,7 @@ export const MODEL_GROUPS: ModelGroup[] = [
   {
     id: "minilm_catboost",
     name: "CatBoost",
+    supportsGpu: false,
     downloadables: [
       DOWNLOADABLES.featureService,
       DOWNLOADABLES.catboost,
@@ -460,6 +461,7 @@ export const MODEL_GROUPS: ModelGroup[] = [
   {
     id: "nli_roberta",
     name: "NLI-RoBERTa",
+    supportsGpu: false,
     downloadables: [
       DOWNLOADABLES.nliRoberta,
     ],

@@ -80,6 +80,14 @@ def ping(request):
     return "pong"
 
 
+@api.get("/long-ping")
+def long_ping(request):
+    import time
+
+    time.sleep(15)
+    return "pong"
+
+
 @api.post("/segment/pdf", response=ProcessPdfSegmentsOnlyResponse)
 def segment_pdf(request, pdf: File[UploadedFile], model: Form[ProcessPdfBody]):
     segments, segments_with_pos = get_segments_with_boxes(pdf)

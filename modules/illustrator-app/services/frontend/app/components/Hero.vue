@@ -15,8 +15,15 @@
               'flex justify-center w-full h-24 px-4 border-2 border-dashed rounded-md appearance-none',
               disabled
                 ? 'cursor-not-allowed text-primary/40 border-primary/40 bg-primary/5'
-                : 'cursor-pointer transition text-primary/80 border-primary/80 bg-primary/5 hover:text-primary hover:border-primary focus:outline-none hover:bg-primary/15'
+                : [
+                  'cursor-pointer transition text-primary/80 border-primary/80 bg-primary/5',
+                  (isDragOver ? 'hover:text-primary hover:border-primary focus:outline-none hover:bg-primary/15 text-primary border-primary bg-primary/15' : 'hover:text-primary hover:border-primary focus:outline-none hover:bg-primary/15')
+                ]
             ]"
+            @dragover.prevent="onDragOver"
+            @dragenter.prevent="onDragEnter"
+            @dragleave.prevent="onDragLeave"
+            @drop="onDrop"
           >
             <span class="flex items-center space-x-2 ">
               <Icon name="lucide:upload" />
@@ -33,10 +40,36 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { ref } from "vue";
+const props = defineProps<{
   disabled?: boolean;
 }>();
-defineEmits<{
+const emit = defineEmits<{
   fileSelected: [event: any];
 }>();
+
+const isDragOver = ref(false);
+
+function onDragOver() {
+  if (props.disabled) return;
+  isDragOver.value = true;
+}
+function onDragEnter() {
+  if (props.disabled) return;
+  isDragOver.value = true;
+}
+function onDragLeave() {
+  if (props.disabled) return;
+  isDragOver.value = false;
+}
+function onDrop(e: DragEvent) {
+  if (props.disabled) return;
+  e.preventDefault();
+  isDragOver.value = false;
+  const files = e.dataTransfer?.files;
+  if (files && files.length > 0) {
+    // Wrap in a synthetic event to match input @change
+    emit("fileSelected", { target: { files } });
+  }
+}
 </script>

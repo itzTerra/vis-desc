@@ -119,7 +119,8 @@ def format_encoder_metrics_latex(
 
     Args:
         aggregated_models: List of AggregatedModelData objects.
-        class_mode: "full" for 6-class or "relaxed" for merged 0/1, 2/3, 4/5.
+        class_mode: "full" for 6-class, "relaxed" for merged 0/1, 2/3, 4/5,
+            or "neighbor" for 6-class with ±1 predictions counted as correct.
 
     Returns:
         LaTeX table string.

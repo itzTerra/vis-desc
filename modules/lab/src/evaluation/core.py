@@ -198,6 +198,8 @@ def get_confusion_matrix(
     class_mode:
       - "full": returns a 6x6 matrix, padding if needed
       - "relaxed": merges classes (0,1), (2,3), (4,5) into a 3x3 matrix
+      - "neighbor": returns the raw 6x6 matrix (same as "full"); metrics are
+        relaxed separately via collapse_dataset_metrics_neighbor
     """
     data = getattr(metrics_dict, dataset, None)
     if data is None:
@@ -244,9 +246,9 @@ def plot_confusion_matrix(
         ax2 = None
 
     cmap = (
-        CMAP_SEQUENTIAL_PRIMARY
-        if class_mode != "relaxed"
-        else CMAP_SEQUENTIAL_SECONDARY
+        CMAP_SEQUENTIAL_SECONDARY
+        if class_mode in ("relaxed", "neighbor")
+        else CMAP_SEQUENTIAL_PRIMARY
     )
 
     sns.heatmap(
@@ -268,6 +270,8 @@ def plot_confusion_matrix(
     ax1.set_ylabel("True Label")
     if class_mode == "relaxed":
         labels = ["0/1", "2/3", "4/5"]
+    elif class_mode == "neighbor":
+        labels = [f"{i}" for i in range(6)]
     else:
         labels = [f"{i}" for i in range(6)]
     ax1.set_xticklabels(labels[: cm.shape[1]])

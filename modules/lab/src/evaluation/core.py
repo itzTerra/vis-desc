@@ -514,11 +514,10 @@ def vis_all_models_plots(
                         splits_relaxed[split_name] = r_md
                     md.mse = original_mse
                 else:
-                    md = (
-                        collapse_dataset_metrics_relaxed(md)
-                        if class_mode == "relaxed"
-                        else md
-                    )
+                    if class_mode == "relaxed":
+                        md = collapse_dataset_metrics_relaxed(md)
+                    elif class_mode == "neighbor":
+                        md = collapse_dataset_metrics_neighbor(md)
                     md.mse = original_mse
                 splits[split_name] = md
 

@@ -9,8 +9,11 @@ import pandas as pd
 
 from models.nli.classifiers import (
     NLIRoberta,
+    NLIRobertaFull,
     NLIDebertaLarge,
+    NLIDebertaLargeFull,
     NLIModernBERTLarge,
+    NLIModernBERTLargeFull,
     ORTNLIZeroshotClassifier,
 )
 from models.nli.common import (
@@ -26,8 +29,11 @@ BATCH_SIZE = 16
 
 AVAILABLE_MODELS = {
     "roberta": NLIRoberta,
+    "roberta_full": NLIRobertaFull,
     "deberta_large": NLIDebertaLarge,
+    "deberta_large_full": NLIDebertaLargeFull,
     "modernbert_large": NLIModernBERTLarge,
+    "modernbert_large_full": NLIModernBERTLargeFull,
 }
 
 BINARY_CONFIGS = [

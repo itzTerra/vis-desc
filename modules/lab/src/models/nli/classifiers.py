@@ -116,6 +116,11 @@ class NLIRoberta(ORTNLIZeroshotClassifier):
         return "model_quantized.onnx"
 
 
+class NLIRobertaFull(NLIRoberta):
+    def get_model_file_name(self):
+        return "model.onnx"
+
+
 class NLIDebertaLarge(ORTNLIZeroshotClassifier):
     """https://huggingface.co/richardr1126/deberta-v3-large-zeroshot-v2.0-ONNX"""
 
@@ -126,6 +131,11 @@ class NLIDebertaLarge(ORTNLIZeroshotClassifier):
         return "model_quantized.onnx"
 
 
+class NLIDebertaLargeFull(NLIDebertaLarge):
+    def get_model_file_name(self):
+        return "model.onnx"
+
+
 class NLIModernBERTLarge(ORTNLIZeroshotClassifier):
     """https://huggingface.co/onnx-community/ModernBERT-large-zeroshot-v2.0-ONNX"""
 
@@ -134,3 +144,8 @@ class NLIModernBERTLarge(ORTNLIZeroshotClassifier):
 
     def get_model_file_name(self):
         return "model_int8.onnx"
+
+
+class NLIModernBERTLargeFull(NLIModernBERTLarge):
+    def get_model_file_name(self):
+        return "model.onnx"

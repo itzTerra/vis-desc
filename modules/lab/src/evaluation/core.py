@@ -596,7 +596,7 @@ def vis_all_models_plots(
             ax.set_ylabel(metric_name)
             if class_mode == "relaxed":
                 xticks = ["0/1", "2/3", "4/5"][:n_labels]
-            elif class_mode == "combined":
+            elif class_mode in ("combined", "neighbor"):
                 xticks = [str(i) for i in range(n_labels)]
             else:
                 xticks = [f"Label {i}" for i in range(n_labels)]
@@ -622,11 +622,10 @@ def vis_all_models_plots(
             if "_lg" in m.model:
                 md = getattr(m, dataset)
                 original_mse = md.mse
-                md = (
-                    collapse_dataset_metrics_relaxed(md)
-                    if class_mode == "relaxed"
-                    else md
-                )
+                if class_mode == "relaxed":
+                    md = collapse_dataset_metrics_relaxed(md)
+                elif class_mode == "neighbor":
+                    md = collapse_dataset_metrics_neighbor(md)
                 md.mse = original_mse
                 lg_models_data.append({"model": m.model, "metrics": md})
             else:
@@ -640,11 +639,10 @@ def vis_all_models_plots(
                         {"model": m.model, "metrics": md, "metrics_relaxed": r_md}
                     )
                 else:
-                    md = (
-                        collapse_dataset_metrics_relaxed(md)
-                        if class_mode == "relaxed"
-                        else md
-                    )
+                    if class_mode == "relaxed":
+                        md = collapse_dataset_metrics_relaxed(md)
+                    elif class_mode == "neighbor":
+                        md = collapse_dataset_metrics_neighbor(md)
                     md.mse = original_mse
                     models_data.append({"model": m.model, "metrics": md})
 
@@ -827,6 +825,9 @@ def vis_all_models_plots(
             ax.set_xticks(
                 _make_paired_x(n_labels, combined_pair_inner_gap, combined_group_sep)
             )
+        elif class_mode == "neighbor":
+            xticks = [str(i) for i in range(n_labels)]
+            ax.set_xticks(np.arange(n_labels))
         else:
             xticks = [f"Label {i}" for i in range(n_labels)]
             ax.set_xticks(np.arange(n_labels))

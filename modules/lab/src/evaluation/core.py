@@ -76,6 +76,24 @@ def _collapse_cm_relaxed(cm6: np.ndarray) -> np.ndarray:
     return out
 
 
+def _neighbor_correct_cm(cm: np.ndarray) -> np.ndarray:
+    """Return a copy of cm where ±1 off-diagonal predictions count as correct.
+
+    For each row i and each column j with |i - j| == 1, the count cm[i, j]
+    is moved to the diagonal cm[i, i].  Predictions off by ≥ 2 are untouched.
+    The total sample count is preserved.
+    """
+    out = cm.copy()
+    n = min(cm.shape[0], cm.shape[1])
+    for i in range(n):
+        for delta in (-1, 1):
+            j = i + delta
+            if 0 <= j < n:
+                out[i, i] += cm[i, j]
+                out[i, j] = 0
+    return out
+
+
 def _metrics_from_cm(
     cm: np.ndarray,
 ) -> tuple[list[float], list[float], list[float], list[int], float, float]:
@@ -118,6 +136,32 @@ def collapse_dataset_metrics_relaxed(dm: DatasetMetrics) -> DatasetMetrics:
         f1=f1,
         support=support,
         confusion_matrix=cm3,
+        folds=folds,
+    )
+
+
+def collapse_dataset_metrics_neighbor(dm: DatasetMetrics) -> DatasetMetrics:
+    """Compute DatasetMetrics where predictions within ±1 count as correct.
+
+    The confusion matrix shape stays 6×6; only the off-by-one entries are
+    folded into the diagonal before recomputing precision/recall/F1/accuracy.
+    MSE is taken from the original DatasetMetrics (distance-weighted, already
+    meaningful on its own).
+    """
+    cm6 = _pad_cm_to_six(dm.confusion_matrix)
+    cm_corrected = _neighbor_correct_cm(cm6)
+    precision, recall, f1, support, accuracy, _ = _metrics_from_cm(cm_corrected)
+    folds = None
+    if dm.folds:
+        folds = [collapse_dataset_metrics_neighbor(f) for f in dm.folds]
+    return DatasetMetrics(
+        mse=dm.mse,  # preserve original distance-based MSE
+        accuracy=accuracy,
+        precision=precision,
+        recall=recall,
+        f1=f1,
+        support=support,
+        confusion_matrix=cm6,  # intentional: keep raw matrix for display; metrics derived from cm_corrected
         folds=folds,
     )
 

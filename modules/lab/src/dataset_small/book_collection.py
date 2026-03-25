@@ -302,7 +302,7 @@ def plot_genre_distribution() -> None:
         colors=colors,
         labels=None,
         autopct=autopct_fmt,
-        startangle=90,
+        startangle=180,
         counterclock=False,
         pctdistance=0.8,
         textprops={"color": "#000", "fontsize": 38, "fontweight": "bold"},
@@ -310,7 +310,7 @@ def plot_genre_distribution() -> None:
     )
 
     for t in autotexts:
-        t.set_fontsize(38)
+        t.set_fontsize(56)
         t.set_fontweight("bold")
 
     legend_patches = [
@@ -323,15 +323,17 @@ def plot_genre_distribution() -> None:
         loc="center left",
         bbox_to_anchor=(0.9, 0.5),
         frameon=True,
-        title_fontsize=44,
+        title_fontsize=48,
         borderpad=0.1,
         labelspacing=0.6,
         handlelength=2.0,
         handleheight=1.5,
         title="Genre: Book Count",
-        fontsize=42,
+        fontsize=50,
         markerscale=1.1,
     )
+    if leg.get_title():
+        leg.get_title().set_fontweight("bold")
     frame = leg.get_frame()
     frame.set_alpha(0.18)
     frame.set_edgecolor("#bcbcbc")

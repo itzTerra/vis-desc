@@ -26,11 +26,5 @@ description: Creates commit(s) based on code changes.
 1. Fetch latest: `git fetch`
 2. Run `git diff HEAD` to analyze changes — look at each modified file and determine logical groupings
 3. **Ask if ambiguous** — If it's not clear how to split changes, ask the user
-4. Stage and commit files in order (skip empty groups) for each logical group:
-    - `packages/database/` → `feat(database):` or `fix(database):`
-    - `packages/emails/` → `feat(emails):` or `fix(emails):`
-    - `apps/web/` → `feat(web):` or `fix(web):`
-    - `packages/web-tests/` → `test(web-tests):` or `fix(web-tests):`
-    - Remaining files → `ci:`, `docs:`, `chore:`, etc.
-5. Verify with `git log --oneline origin..HEAD -10`
+4. Verify with `git log --oneline origin..HEAD -10`
 

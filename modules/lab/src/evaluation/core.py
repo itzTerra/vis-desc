@@ -1074,7 +1074,11 @@ def vis_all_models_tables(
             d = getattr(m, dataset, None)
             if d is None:
                 return None
-            return collapse_dataset_metrics_relaxed(d) if class_mode == "relaxed" else d
+            if class_mode == "relaxed":
+                return collapse_dataset_metrics_relaxed(d)
+            if class_mode == "neighbor":
+                return collapse_dataset_metrics_neighbor(d)
+            return d
 
         def _safe_val(d: Optional[DatasetMetrics], key: str):
             if d is None:

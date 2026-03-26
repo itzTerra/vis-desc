@@ -160,18 +160,21 @@ def vis_combined_conf_matrices(
     methods = [enc_model, nli_model, llm_model]
     col_headers = ["Feature-based", "NLI", "LLM"]
     col_titles = [f"{h}: {m.model}" for h, m in zip(col_headers, methods)]
-    modes = ["relaxed", "full"]
-    row_labels = ["Relaxed", "Normal"]
+    # modes = ["relaxed", "full"]
+    # row_labels = ["Relaxed", "Normal"]
+    modes = ["full"]
+    row_labels = ["Normal"]
     cmaps = [CMAP_SEQUENTIAL_PRIMARY, CMAP_SEQUENTIAL_SECONDARY]
 
     fig, axes = plt.subplots(
-        2,
+        len(modes),
         3,
-        figsize=(6.8, 5.2),
+        figsize=(6.8, 2.6 * len(modes)),
         gridspec_kw={"hspace": 0.02, "wspace": 0.02},
+        squeeze=False,
     )
 
-    for row in range(2):
+    for row in range(len(modes)):
         mode = modes[row]
         cmap = cmaps[row]
         labels = (
@@ -190,7 +193,7 @@ def vis_combined_conf_matrices(
                 ax=ax,
                 linewidths=0,
                 cbar=False,
-                xticklabels=labels if row == 1 else False,
+                xticklabels=labels if row == len(modes) - 1 else False,
                 yticklabels=labels if col == 0 else False,
                 annot_kws={"size": ANNOT_FONT_SIZE},
             )
@@ -213,12 +216,14 @@ def vis_combined_conf_matrices(
 
             if col == 0:
                 ax.set_ylabel(
-                    f"True Label\n({row_labels[row]})",
+                    f"True Label{f'\\n({row_labels[row]})' if len(row_labels) > 1 else ''}",
                     fontsize=LABEL_FONT_SIZE,
                     labelpad=6,
                 )
 
-    axes[1, 1].set_xlabel("Predicted Label", fontsize=LABEL_FONT_SIZE, labelpad=4)
+    axes[len(modes) - 1, 1].set_xlabel(
+        "Predicted Label", fontsize=LABEL_FONT_SIZE, labelpad=4
+    )
 
     fig.subplots_adjust(left=0.15, bottom=0.09, right=0.99, top=0.95)
     fig.savefig(DATA_DIR / "figures" / "conf_matrices_overall.pdf", bbox_inches="tight")

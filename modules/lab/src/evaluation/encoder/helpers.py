@@ -1220,26 +1220,11 @@ def export_feature_importance_latex(
             abs_max = max(abs(df[col].min()), abs(df[col].max()))
             gradient_info[col] = {"vmin": -abs_max, "vmax": abs_max}
 
-    # Pre-compute best row index per numeric metric column for bold highlighting.
-    _best_row: dict[str, int] = {}
-    for col in df.columns:
-        if col == "Removed Feature Group":
-            continue
-        cu = col.upper()
-        if "RMSE" in cu or "ACCURACY" in cu or "F1" in cu:
-            series = pd.to_numeric(df[col], errors="coerce")
-            if series.notna().any():
-                _best_row[col] = int(
-                    series.idxmin() if "RMSE" in cu else series.idxmax()
-                )
-
     for row_label, row in df.iterrows():
         cells = []
         for col, val in row.items():
             if col == "Removed Feature Group":
                 cell_str = str(val).replace("–", r"--")
-                if "Baseline" in str(val):
-                    cell_str = r"\textbf{" + cell_str + "}"
             elif isinstance(val, (int, float)) and not pd.isna(val):
                 cell_str = f"{val:.{METRIC_DECIMAL_PLACES}f}"
                 if col in gradient_info:
@@ -1254,12 +1239,6 @@ def export_feature_importance_latex(
                             + "}"
                             + cell_str
                         )
-                if col in _best_row and row_label == _best_row[col]:
-                    if cell_str.startswith(r"\cellcolor"):
-                        end = cell_str.index("}") + 1
-                        cell_str = cell_str[:end] + r"\textbf{" + cell_str[end:] + "}"
-                    else:
-                        cell_str = r"\textbf{" + cell_str + "}"
             else:
                 cell_str = str(val)
             cells.append(cell_str)

@@ -144,7 +144,7 @@ def vis_combined_conf_matrices(
     llm_models: list[AggregatedModelData],
     encoder_model_name: str = "catboost_minilm",
     encoder_display_name: str = "CatBoost",
-    nli_model_name: str = "RoBERTa",
+    nli_model_name: str = "NLI-RoBERTa",
 ) -> None:
     """Plot a 2×3 grid of confusion matrices (test set) for the best model per method.
 
@@ -159,7 +159,7 @@ def vis_combined_conf_matrices(
 
     methods = [enc_model, nli_model, llm_model]
     col_headers = ["Feature-based", "NLI", "LLM"]
-    col_titles = [f"{h}: {m.model}" for h, m in zip(col_headers, methods)]
+    col_titles = [f"{m.model}" for h, m in zip(col_headers, methods)]
     # modes = ["relaxed", "full"]
     # row_labels = ["Relaxed", "Normal"]
     modes = ["full"]

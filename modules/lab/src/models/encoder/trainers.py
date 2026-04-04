@@ -481,7 +481,7 @@ class RidgeTrainer(BaseSklearnTrainer, RidgeNamer):
 
 
 class SVMTrainer(BaseSklearnTrainer, SVMNamer):
-    """Trainer for SVM regression."""
+    """Trainer for SVR regression."""
 
     def _create_model(self):
         if self.include_large:

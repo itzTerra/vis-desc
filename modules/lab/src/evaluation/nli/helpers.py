@@ -14,9 +14,9 @@ from evaluation.plot_style import CMAP_SEQUENTIAL_PRIMARY, METRIC_DECIMAL_PLACES
 from utils import to_int_0_5
 
 MODEL_NAME_MAP = {
-    "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "RoBERTa",
-    "onnx-community/ModernBERT-large-zeroshot-v2.0-ONNX": "MBERT-L",
-    "richardr1126/deberta-v3-large-zeroshot-v2.0-ONNX": "DeBERTa-L",
+    "richardr1126/roberta-base-zeroshot-v2.0-c-ONNX": "NLI-RoBERTa",
+    "onnx-community/ModernBERT-large-zeroshot-v2.0-ONNX": "NLI-MBERT",
+    "richardr1126/deberta-v3-large-zeroshot-v2.0-ONNX": "NLI-DeBERTa",
 }
 
 

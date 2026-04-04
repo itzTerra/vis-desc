@@ -30,10 +30,10 @@ from evaluation.plot_style import (  # noqa: F401 – re-exported for callers
 MODEL_DISPLAY_NAMES: dict[str, str] = {
     "random": "Random",
     "ridge_minilm": "Ridge",
-    "rf_minilm": "RandomForest",
-    "svm_minilm": "SVM",
+    "rf_minilm": "RF",
+    "svm_minilm": "SVR",
     "catboost_minilm": "CatBoost",
-    "finetuned-mbert": "Finetuned ModernBERT",
+    "finetuned-mbert": "FtMBERT",
 }
 
 
@@ -1130,7 +1130,7 @@ def vis_all_models_tables(
     for prefix, models in model_groups.items():
         # Special handling for finetuned-mbert with three variants
         if (
-            prefix == "Finet. MBERT"
+            prefix == "FtMBERT"
             and len(models) == 3
             and all(
                 m
@@ -1249,13 +1249,13 @@ def format_metrics_for_latex(df_metrics: pd.DataFrame) -> str:
     models_to_bold = [
         "Random",
         "Ridge",
-        "RandomForest",
-        "SVM",
+        "RF",
+        "SVR",
         "CatBoost",
-        "Finet. MBERT",
-        "RoBERTa",
-        "DeBERTa-L",
-        "MBERT-L",
+        "FtMBERT",
+        "NLI-RoBERTa",
+        "NLI-DeBERTa",
+        "NLI-MBERT",
         "Llama4-Scout",
     ]
 

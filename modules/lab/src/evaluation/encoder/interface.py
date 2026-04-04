@@ -83,13 +83,13 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
             "ridge_minilm_lg",
             #   "ridge_mbert_lg"
         ],
-        "RandomForest": [
+        "RF": [
             "rf_minilm",
             # "rf_mbert",
             "rf_minilm_lg",
             # "rf_mbert_lg"
         ],
-        "SVM": [
+        "SVR": [
             "svm_minilm",
             # "svm_mbert"
         ],
@@ -99,7 +99,7 @@ def get_encoder_model_groups() -> tuple[dict[str, list[str]], bool]:
             "catboost_minilm_lg",
             # "catboost_mbert_lg",
         ],
-        "Finet. MBERT": [
+        "FtMBERT": [
             "finetuned-mbert_lg-only",
             "finetuned-mbert",
             "finetuned-mbert_lg",

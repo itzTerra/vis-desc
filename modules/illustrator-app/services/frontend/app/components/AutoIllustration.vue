@@ -200,6 +200,24 @@ const minScoreInvalid = computed(() => {
   right: 0;
 }
 
+@media (max-width: 1023px) {
+  /* Make the component root the positioning anchor so the dropdown
+     is placed relative to it (full panel width) rather than the gear button */
+  .auto-illustration {
+    width: 100%;
+    position: relative;
+  }
+
+  .dropdown {
+    position: static;
+  }
+
+  .dropdown-content {
+    right: 0 !important;
+    left: auto !important;
+  }
+}
+
 .auto-illustration-status {
   display: flex;
   align-items: center;

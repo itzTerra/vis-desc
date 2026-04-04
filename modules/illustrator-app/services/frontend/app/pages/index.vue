@@ -1,7 +1,9 @@
 <template>
   <div>
+    <!-- Desktop top bar -->
     <div
-      class="top-bar w-full px-3 py-2 bg-base-200 flex flex-col lg:flex-row gap-3 justify-between lg:items-center sticky top-0 z-50 lg:h-14.5"
+      v-if="!isMobile"
+      class="top-bar w-full px-3 py-2 bg-base-200 flex flex-row gap-3 justify-between items-center sticky top-0 z-50 h-14.5"
     >
       <div class="flex items-center gap-2 min-w-44">
         <input
@@ -59,6 +61,94 @@
         <ThemeToggle data-help-target="theme" />
       </div>
     </div>
+
+    <!-- Mobile top bar + drawer -->
+    <template v-if="isMobile">
+      <!-- Mobile top bar -->
+      <div class="top-bar w-full px-3 bg-base-200 flex gap-3 h-14.5 items-center sticky top-0 z-50">
+        <button class="btn btn-square btn-ghost" @click="drawerOpen = !drawerOpen">
+          <Icon name="lucide:menu" size="22" />
+        </button>
+        <input
+          type="file"
+          accept="application/pdf,.txt,text/plain"
+          class="file-input file-input-primary min-w-12"
+          data-help-target="file"
+          :disabled="!isAppReady"
+          @change="handleFileUpload"
+        >
+      </div>
+
+      <!-- Backdrop -->
+      <div
+        class="fixed top-14.5 left-0 right-0 bottom-0 bg-black/50 z-200 transition-opacity duration-300"
+        :class="drawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"
+        @click="drawerOpen = false"
+      />
+
+      <!-- Slide-in panel -->
+      <div
+        class="fixed top-14.5 left-0 bottom-0 w-72 bg-base-200 z-210 transform transition-transform duration-300 overflow-y-auto"
+        :class="drawerOpen ? 'translate-x-0' : '-translate-x-full'"
+      >
+        <div class="flex items-center justify-between px-3 py-2 border-b border-base-300">
+          <span class="font-semibold">Controls</span>
+          <button class="btn btn-square btn-ghost btn-sm" @click="drawerOpen = false">
+            <Icon name="lucide:x" size="18" />
+          </button>
+        </div>
+        <div class="flex flex-col gap-3 p-3">
+          <div class="drawer-model-select w-full">
+            <ModelSelect
+              v-model="selectedModel"
+              class="w-full"
+              data-help-target="model"
+              @request-model-download="handleModelDownload"
+            />
+          </div>
+          <EvalProgress
+            v-model="isLoading"
+            data-help-target="progress"
+            :is-cancelled="isCancelled"
+            :highlights="highlights"
+            :current-stage="currentStage"
+            :scorer="selectedScorer"
+            @cancel="cancelSegmentLoading"
+          />
+          <AutoIllustration
+            v-model:enabled="autoIllustration.enabled.value"
+            v-model:min-gap-pages="autoIllustration.minGapPages.value"
+            v-model:max-gap-pages="autoIllustration.maxGapPages.value"
+            v-model:min-score="autoIllustration.minScore.value"
+            v-model:enable-enhance="autoIllustration.enableEnhance.value"
+            v-model:enable-generate="autoIllustration.enableGenerate.value"
+            :run-pass="autoIllustration.runPass"
+            :clear-auto-selections="autoIllustration.clearAutoSelections"
+            :progress="autoIllustration.progress.value"
+            data-help-target="auto-illustration"
+          />
+          <button
+            v-if="pdfUrl || showHelp"
+            class="btn btn-primary btn-soft"
+            title="Export as HTML"
+            data-help-target="export"
+            :disabled="(!pdfFile || !pdfViewer) && !showHelp"
+            @click="handleExportConfirm"
+          >
+            <Icon name="lucide:download" size="18" />
+            Export
+          </button>
+          <HighlightNav
+            ref="highlightNav"
+            data-help-target="nav"
+            :highlights="highlights"
+            :selected-highlights="selectedHighlights"
+            class="min-w-48"
+          />
+          <ThemeToggle data-help-target="theme">Theme</ThemeToggle>
+        </div>
+      </div>
+    </template>
     <PdfViewer
       v-if="pdfUrl || showHelp"
       ref="pdfViewer"
@@ -70,31 +160,33 @@
     />
     <Hero v-else :disabled="!isAppReady" @file-selected="handleFileUpload" />
     <div class="bottom-bar flex-col items-end md:flex-row md:items-center">
-      <div v-if="!seenHelpOnce && !pdfUrl" class="tooltip tooltip-open tooltip-info tooltip-left">
-        <div class="tooltip-content pointer-events-auto p-0">
-          <div class="relative flex items-end px-2 py-2">
-            Start a 1-minute guided tour now!
-            <button class="ms-2 cursor-pointer text-xs" @click="seenHelpOnce = true">
-              ✕
-            </button>
+      <template v-if="!isMobile">
+        <div v-if="!seenHelpOnce && !pdfUrl" class="tooltip tooltip-open tooltip-info tooltip-left">
+          <div class="tooltip-content pointer-events-auto p-0">
+            <div class="relative flex items-end px-2 py-2">
+              Start a 1-minute guided tour now!
+              <button class="ms-2 cursor-pointer text-xs" @click="seenHelpOnce = true">
+                ✕
+              </button>
+            </div>
           </div>
+          <button class="btn btn-circle btn-sm btn-info text-lg animate-bounce" title="Help" @click="toggleHelp(true)">
+            ?
+          </button>
         </div>
-        <button class="btn btn-circle btn-sm btn-info text-lg animate-bounce" title="Help" @click="toggleHelp(true)">
-          ?
-        </button>
-      </div>
-      <span
-        v-else
-        :title="pdfUrl ? 'Help cannot be used when a PDF is already loaded' : 'Help'"
-      >
-        <button
-          class="btn btn-circle btn-sm btn-info text-lg"
-          :disabled="!!pdfUrl"
-          @click="toggleHelp(true)"
+        <span
+          v-else
+          :title="pdfUrl ? 'Help cannot be used when a PDF is already loaded' : 'Help'"
         >
-          ?
-        </button>
-      </span>
+          <button
+            class="btn btn-circle btn-sm btn-info text-lg"
+            :disabled="!!pdfUrl"
+            @click="toggleHelp(true)"
+          >
+            ?
+          </button>
+        </span>
+      </template>
       <CacheManager
         ref="cacheManagerRef"
         v-model:is-expanded="cacheManagerExpanded"
@@ -140,6 +232,9 @@ const runtimeConfig = useRuntimeConfig();
 
 const isAppReady = computed(() => $appReadyState?.apiReady && $appReadyState?.scorerWorkerReady && !$appReadyState?.apiError);
 
+const isMobile = useMediaQuery("(max-width: 1023px)");
+const drawerOpen = ref(false);
+
 const pdfUrl = ref<string | null>(null);
 const pdfFile = ref<File | null>(null);
 const pdfRenderedQueue = [] as (() => void)[];
@@ -175,6 +270,7 @@ const handleFileUpload = async (event: any) => {
   }
   event.target.value = "";
   fullReset();
+  drawerOpen.value = false;
 
   const isTxt = file.name.endsWith(".txt") || file.type === "text/plain";
 
@@ -431,6 +527,11 @@ async function handleExportConfirm() {
   }
 }
 
+function handleModelDownload(scorerId: string) {
+  drawerOpen.value = false;
+  checkScorer(SCORERS.find(s => s.id === scorerId)!);
+}
+
 function checkScorer(scorer: Scorer) {
   if (scorer.disabled) {
     useNotifier().error("Selected scorer is not available.");
@@ -546,5 +647,15 @@ onMounted(() => {
   justify-content: end;
   gap: 0.5rem;
   z-index: 130;
+}
+
+/* Drawer: ModelSelect trigger and dropdown fill the full panel width */
+.drawer-model-select :deep(.dropdown) {
+  width: 100%;
+}
+.drawer-model-select :deep(.dropdown-content) {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
 }
 </style>

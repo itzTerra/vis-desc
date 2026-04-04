@@ -74,30 +74,30 @@
       :page-height="pdfPageHeight"
     />
     <div class="fixed bottom-0 left-0 flex justify-center z-120">
-      <div class="join flex items-center bg-base-100 space-x-2 border border-base-content/25 rounded-tr">
-        <button class="join-item btn btn-sm px-2 me-0" :disabled="currentPage <= 1" title="Previous Page" @click="setCurrentPage(currentPage - 1)">
+      <div class="join flex items-center bg-base-100 space-x-2 max-lg:space-x-1 border border-base-content/25 rounded-tr">
+        <button class="join-item btn btn-sm max-lg:btn-xs px-2 me-0" :disabled="currentPage <= 1" title="Previous Page" @click="setCurrentPage(currentPage - 1)">
           <Icon name="lucide:chevron-up" size="16" />
         </button>
-        <input v-model="currentPageModel" type="number" class="input input-sm join-item px-2 text-base w-12 text-end" min="1" :max="pageNums.length" @keydown.enter="setCurrentPage(currentPageModel)" @blur="setCurrentPage(currentPageModel)">
-        <div class="join-item">
+        <input v-model="currentPageModel" type="number" class="input input-sm max-lg:input-xs join-item px-2 text-base max-lg:text-xs w-12 max-lg:w-8 text-end" min="1" :max="pageNums.length" @keydown.enter="setCurrentPage(currentPageModel)" @blur="setCurrentPage(currentPageModel)">
+        <div class="join-item max-lg:text-xs">
           /&nbsp;{{ pageNums.length }}
         </div>
-        <button class="join-item btn btn-sm px-2 me-1" :disabled="currentPage >= pageNums.length" title="Next Page" @click="setCurrentPage(currentPage + 1)">
+        <button class="join-item btn btn-sm max-lg:btn-xs px-2 me-1" :disabled="currentPage >= pageNums.length" title="Next Page" @click="setCurrentPage(currentPage + 1)">
           <Icon name="lucide:chevron-down" size="16" />
         </button>
         <div class="join-item">
-          <button class="btn btn-sm px-2" :disabled="pdfScale <= 0.1" title="Zoom Out" @click="setPdfScale(pdfScale - 0.1)">
+          <button class="btn btn-sm max-lg:btn-xs px-2" :disabled="pdfScale <= 0.1" title="Zoom Out" @click="setPdfScale(pdfScale - 0.1)">
             <Icon name="lucide:zoom-out" size="16" />
           </button>
-          <label class="join-item input input-sm px-2 text-base w-16 gap-1">
+          <label class="join-item input input-sm max-lg:input-xs px-2 text-base max-lg:text-xs w-16 max-lg:w-10 gap-1">
             <input v-model="pdfScaleModel" type="number" min="10" max="300" step="10" class="text-end" @keydown.enter="setPdfScale(pdfScaleModel / 100)" @blur="setPdfScale(pdfScaleModel / 100)">
             %
           </label>
-          <button class="btn btn-sm px-2" :disabled="pdfScale >= 3" title="Zoom In" @click="setPdfScale(pdfScale + 0.1)">
+          <button class="btn btn-sm max-lg:btn-xs px-2" :disabled="pdfScale >= 3" title="Zoom In" @click="setPdfScale(pdfScale + 0.1)">
             <Icon name="lucide:zoom-in" size="16" />
           </button>
         </div>
-        <label class="join-item pe-2 flex items-center gap-1">
+        <label class="join-item pe-2 flex items-center gap-1 max-lg:hidden">
           <input v-model="textLayerEnabled" type="checkbox" class="checkbox checkbox-sm">
           Render text (slow)
         </label>

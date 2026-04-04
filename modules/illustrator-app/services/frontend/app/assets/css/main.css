@@ -24,12 +24,7 @@ input[type=number] {
 }
 
 .hero {
-  min-height: calc(100vh - 114px);
-}
-@media (width >= 40rem) {
-  .hero {
-    min-height: calc(100vh - 58px);
-  }
+  min-height: calc(100vh - 58px);
 }
 
 .pdf-wrapper {

@@ -16,13 +16,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import type { AppReadyState } from '~/types/common';
+import type { AppReadyState } from "~/types/common";
 
-let appReady = ref<AppReadyState | null>(null);
+const appReady = ref<AppReadyState | null>(null);
 
 onNuxtReady(() => {
   appReady.value = useNuxtApp().$appReadyState;
-})
+});
 
 const statusMessage = computed(() => {
   if (appReady.value?.apiError) {

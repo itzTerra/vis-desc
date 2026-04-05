@@ -43,10 +43,11 @@
           class="btn btn-primary btn-soft"
           title="Export as HTML"
           data-help-target="export"
-          :disabled="(!pdfFile || !pdfViewer) && !showHelp"
+          :disabled="((!pdfFile || !pdfViewer) && !showHelp) || isExporting"
           @click="handleExportConfirm"
         >
-          <Icon name="lucide:download" size="18" />
+          <span v-if="isExporting" class="loading loading-spinner loading-xs" />
+          <Icon v-else name="lucide:download" size="18" />
           Export
         </button>
       </div>
@@ -132,10 +133,11 @@
             class="btn btn-primary btn-soft"
             title="Export as HTML"
             data-help-target="export"
-            :disabled="(!pdfFile || !pdfViewer) && !showHelp"
+            :disabled="((!pdfFile || !pdfViewer) && !showHelp) || isExporting"
             @click="handleExportConfirm"
           >
-            <Icon name="lucide:download" size="18" />
+            <span v-if="isExporting" class="loading loading-spinner loading-xs" />
+            <Icon v-else name="lucide:download" size="18" />
             Export
           </button>
           <HighlightNav
@@ -253,8 +255,7 @@ const groupInConfirmation = ref<ModelGroup | null>(null);
 const cacheManagerRef = ref<InstanceType<typeof CacheManager> | null>(null);
 const cacheManagerExpanded = ref(false);
 const pdfViewer = ref<InstanceType<typeof import("~/components/PdfViewer.vue").default> | null>(null);
-const { confirmExport } = useExport();
-
+const { confirmExport, isExporting } = useExport();
 const { showHelp, seenHelpOnce, helpSteps, toggleHelp, helpPdfUrl } = useHelpSteps({
   isLoading,
   currentStage,

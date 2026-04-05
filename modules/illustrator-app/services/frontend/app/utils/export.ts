@@ -3,13 +3,32 @@ import type { Highlight } from "~/types/common";
 interface ExportHighlight {
   id: number;
   text: string;
-  imageUrl?: string;
   polygons: Record<number, number[][]>;
 }
 
 interface ExportSnapshot {
   pdfBase64: string;
   highlights: ExportHighlight[];
+  imageData: Record<number, string>;
+}
+
+async function convertToWebP(
+  dataUri: string,
+  quality = 0.80,
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/webp", quality));
+    };
+    img.onerror = () => resolve(dataUri);
+    img.src = dataUri;
+  });
 }
 
 function arrayBufferToBase64Chunked(arrayBuffer: ArrayBuffer): string {
@@ -40,20 +59,31 @@ export async function createExportSnapshot(
   const exportHighlights: ExportHighlight[] = highlights.map((h) => ({
     id: h.id,
     text: h.text,
-    imageUrl: imageUrls[h.id],
     polygons: h.polygons,
   }));
+
+  const imageData: Record<number, string> = {};
+  for (const [idStr, url] of Object.entries(imageUrls)) {
+    imageData[Number(idStr)] = await convertToWebP(url);
+  }
 
   return {
     pdfBase64,
     highlights: exportHighlights,
+    imageData,
   };
 }
 
 export function generateExportHtml(snapshot: ExportSnapshot): string {
   const pdfBase64 = snapshot.pdfBase64;
-  const highlightsWithImages = snapshot.highlights.filter((h) => h.imageUrl);
-  const hasImages = highlightsWithImages.length > 0;
+  const hasImages = Object.keys(snapshot.imageData).length > 0;
+
+  const imageDataTags = Object.entries(snapshot.imageData)
+    .map(
+      ([id, uri]) =>
+        `<script type="application/json" data-image-id="${id}">${JSON.stringify(uri)}</script>`,
+    )
+    .join("\n  ");
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -216,6 +246,8 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
   ${hasImages ? "<div class=\"modal-overlay\" id=\"imageModal\"><button class=\"modal-close\" onclick=\"closeImageModal()\">✕</button><div class=\"modal-content\"><img id=\"modalImage\" src=\"\" alt=\"Image preview\"></div></div>" : ""}
 
+  ${imageDataTags}
+
   <script type="module">
     // Note: Due to pdfjs-dist library size constraints, the main library is loaded from CDN.
     // For fully offline single-file HTML, you would need to bundle pdfjs-dist during export.
@@ -231,6 +263,15 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
 
     const pdf = \`data:application/pdf;base64,${pdfBase64}\`;
     const highlights = ${JSON.stringify(snapshot.highlights)};
+
+    const imageCache = new Map();
+    function getImageUrl(id) {
+      if (imageCache.has(id)) return imageCache.get(id);
+      const tag = document.querySelector('script[data-image-id="' + id + '"]');
+      const url = tag ? JSON.parse(tag.textContent) : null;
+      imageCache.set(id, url);
+      return url;
+    }
 
     let pdfDoc = null;
     let pageRendering = {};
@@ -409,7 +450,7 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
         }
 
         // Add image buttons for highlights on this page
-        const highlightsOnPage = highlights.filter(h => h.imageUrl && h.polygons[\`\${pageNum - 1}\`]);
+        const highlightsOnPage = highlights.filter(h => h.polygons[\`\${pageNum - 1}\`]);
         const imagesContainer = document.querySelector(\`[data-page="\${pageNum}"].page-images\`);
 
         if (imagesContainer && highlightsOnPage.length > 0 && pageWrapper) {
@@ -427,14 +468,17 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
           imagesContainer.innerHTML = '';
 
           highlightsOnPage.forEach((highlight) => {
+            const url = getImageUrl(highlight.id);
+            if (!url) return;
+
             const button = document.createElement('button');
             button.className = 'image-button';
             button.setAttribute('data-highlight', highlight.id);
             button.title = highlight.text.substring(0, 50);
-            button.onclick = () => openImageModal(highlight.imageUrl);
+            button.onclick = () => openImageModal(url);
 
             const img = document.createElement('img');
-            img.src = highlight.imageUrl;
+            img.src = url;
             img.alt = highlight.text;
             button.appendChild(img);
 
@@ -461,10 +505,6 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
       } finally {
         activeRenders--;
       }
-    }
-
-    function initImageButtons() {
-      // Image buttons are now added per-page in renderPage() function
     }
 
     function openImageModal(imageUrl) {
@@ -503,7 +543,6 @@ export function generateExportHtml(snapshot: ExportSnapshot): string {
     });
 
     initPdf();
-    initImageButtons();
 
     window.addEventListener('resize', () => {
       const newDpr = window.devicePixelRatio || 1;

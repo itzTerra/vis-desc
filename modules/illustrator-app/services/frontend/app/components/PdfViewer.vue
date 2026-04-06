@@ -57,6 +57,8 @@
       :page-height="pdfPageHeight"
       :current-page="currentPage"
       :auto-enabled="props.autoEnabled"
+      :enable-enhance="props.enableEnhance"
+      :enable-generate="props.enableGenerate"
       :style="{ width: IMAGES_WIDTH + 'px' }"
       data-help-target="images"
       @close-editor="(id) => closeImageEditors([id])"
@@ -130,6 +132,8 @@ const PRELOAD_PAGES = 3;
 const props = defineProps<{
   pdfUrl: string;
   autoEnabled?: boolean;
+  enableEnhance?: boolean;
+  enableGenerate?: boolean;
 }>();
 
 watch(() => props.pdfUrl, () => {

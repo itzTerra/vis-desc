@@ -158,6 +158,8 @@
       v-model:selected-highlights="selectedHighlights"
       :pdf-url="pdfUrl || helpPdfUrl"
       :auto-enabled="autoIllustration.enabled.value"
+      :enable-enhance="autoIllustration.enableEnhance.value"
+      :enable-generate="autoIllustration.enableGenerate.value"
       @pdf:rendered="onPdfRendered"
     />
     <Hero v-else :disabled="!isAppReady" @file-selected="handleFileUpload" />

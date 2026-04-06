@@ -39,6 +39,8 @@ const props = defineProps<{
   currentPage: number;
   pageRefs?: Element[];
   autoEnabled?: boolean;
+  enableEnhance?: boolean;
+  enableGenerate?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -344,7 +346,7 @@ const enhancedTexts = new Map<number, string>();
 
 async function processEnhanceQueue() {
   if (enhanceQueue.length === 0) return;
-  const skipAuto = !props.autoEnabled;
+  const skipAuto = !props.autoEnabled || props.enableEnhance === false;
   // Build batch without removing auto records when the toggle is off
   const batch: EnhanceQueueRecord[] = [];
   for (let i = 0; i < enhanceQueue.length && batch.length < enhanceConfig.batchSize; i++) {
@@ -392,14 +394,14 @@ async function processEnhanceQueue() {
 
 async function processGenerateQueue() {
   if (generateQueue.length === 0) return;
-  const skipAuto = !props.autoEnabled;
+  const skipAuto = !props.autoEnabled || props.enableGenerate === false;
   // Only process up to generateConfig.batchSize at a time, skipping auto records when disabled
   // and those with requireEnhanced=true if not yet enhanced
   const readyBatch: GenerateQueueRecord[] = [];
   for (const rec of generateQueue) {
     if (readyBatch.length >= generateConfig.batchSize) break;
     if (skipAuto && rec.auto) continue;
-    if (rec.auto) {
+    if (rec.auto && props.enableEnhance !== false) {
       // Check if enhanced: look up enhancedTexts for this highlightId
       const ed = idToEditor.get(rec.highlightId);
       const currentPrompt = ed && typeof ed.getCurrentPrompt === "function" ? ed.getCurrentPrompt() : getHighlightText(rec.highlightId);
@@ -494,7 +496,7 @@ defineExpose({
     }
     if (generate) {
       for (const id of ids) {
-        // Trigger generate in the editor, with requireEnhanced=true so it waits for enhance if needed
+        // Trigger generate in the editor, with auto=true so it waits for enhance if needed
         const ed = idToEditor.get(id);
         if (!ed || typeof ed.triggerGenerate !== "function") {
           console.error("Editor not found in runAutoActions for generate", id);

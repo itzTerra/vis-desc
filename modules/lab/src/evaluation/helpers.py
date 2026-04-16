@@ -228,3 +228,90 @@ def vis_combined_conf_matrices(
     fig.subplots_adjust(left=0.15, bottom=0.09, right=0.99, top=0.95)
     fig.savefig(DATA_DIR / "figures" / "conf_matrices_overall.pdf", bbox_inches="tight")
     plt.show()
+
+
+def vis_combined_conf_matrices_train_test(
+    encoder_models: list[AggregatedModelData],
+    nli_models: list[AggregatedModelData],
+    llm_models: list[AggregatedModelData],
+    encoder_model_name: str = "catboost_minilm",
+    encoder_display_name: str = "CatBoost",
+    nli_model_name: str = "NLI-RoBERTa",
+) -> None:
+    """Plot a 2×3 grid of confusion matrices for the best model per method.
+
+    Rows correspond to splits (train, test) for the normal 6-class mode; columns to
+    methods (Feature-based encoder, NLI, LLM).  The figure is saved to
+    DATA_DIR/figures/conf_matrices_train_test.pdf.
+    """
+    enc_model = copy(next(m for m in encoder_models if m.model == encoder_model_name))
+    enc_model.model = encoder_display_name
+    nli_model = next(m for m in nli_models if m.model == nli_model_name)
+    llm_model = llm_models[0]
+
+    methods = [enc_model, nli_model, llm_model]
+    col_headers = ["Feature-based", "NLI", "LLM"]
+    col_titles = [f"{m.model}" for h, m in zip(col_headers, methods)]
+    splits = ["train", "test"]
+    row_labels = ["Train", "Test"]
+    cmaps = [CMAP_SEQUENTIAL_PRIMARY, CMAP_SEQUENTIAL_SECONDARY]
+    labels = [str(i) for i in range(6)]
+
+    fig, axes = plt.subplots(
+        len(splits),
+        3,
+        figsize=(6.8, 2.6 * len(splits)),
+        gridspec_kw={"hspace": 0.02, "wspace": 0.02},
+        squeeze=False,
+    )
+
+    for row, (split, cmap) in enumerate(zip(splits, cmaps)):
+        for col in range(3):
+            ax = axes[row, col]
+            cm = get_confusion_matrix(methods[col], split, class_mode="full")
+
+            sns.heatmap(
+                cm,
+                annot=True,
+                fmt=".0f",
+                cmap=cmap,
+                ax=ax,
+                linewidths=0,
+                cbar=False,
+                xticklabels=labels if row == len(splits) - 1 else False,
+                yticklabels=labels if col == 0 else False,
+                annot_kws={"size": ANNOT_FONT_SIZE},
+            )
+
+            ax.grid(False)
+            for collection in ax.collections:
+                collection.set_edgecolor("face")
+
+            n_classes = cm.shape[0]
+            for idx, text in enumerate(ax.texts):
+                if idx // n_classes == idx % n_classes:
+                    text.set_fontweight("bold")
+
+            if row == 0:
+                ax.set_title(col_titles[col], fontsize=LABEL_FONT_SIZE, pad=4)
+
+            ax.set_xlabel("")
+            ax.set_ylabel("")
+            ax.tick_params(axis="both", labelsize=TICK_FONT_SIZE, length=2, pad=2)
+
+            if col == 0:
+                ax.set_ylabel(
+                    f"True Label\n({row_labels[row]})",
+                    fontsize=LABEL_FONT_SIZE,
+                    labelpad=6,
+                )
+
+    axes[len(splits) - 1, 1].set_xlabel(
+        "Predicted Label", fontsize=LABEL_FONT_SIZE, labelpad=4
+    )
+
+    fig.subplots_adjust(left=0.15, bottom=0.05, right=0.99, top=0.95)
+    fig.savefig(
+        DATA_DIR / "figures" / "conf_matrices_train_test.pdf", bbox_inches="tight"
+    )
+    plt.show()

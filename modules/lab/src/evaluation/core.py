@@ -591,6 +591,17 @@ def vis_all_models_plots(
                     linewidth=0.5,
                     zorder=2,
                 )
+                for label_idx in range(n_labels):
+                    if label_idx < len(md.support):
+                        ax.text(
+                            x[label_idx] + offsets[s_idx],
+                            values[label_idx] + 0.01,
+                            str(md.support[label_idx]),
+                            ha="center",
+                            va="bottom",
+                            fontsize=ANNOT_FONT_SIZE,
+                            zorder=3,
+                        )
             ax.set_xlabel("Label")
             ax.set_ylabel(metric_name)
             if class_mode == "relaxed":
@@ -814,22 +825,31 @@ def vis_all_models_plots(
                 metric_name.lower(), []
             )
             n_labels = len(sample_vals)
+            support_list = models_data[0]["metrics"].support or []
         else:
             n_labels = 6
+            support_list = []
         if class_mode == "relaxed":
-            xticks = ["0/1", "2/3", "4/5"][:n_labels]
+            base_ticks = ["0/1", "2/3", "4/5"][:n_labels]
             ax.set_xticks(np.arange(n_labels))
         elif class_mode == "combined":
-            xticks = [str(i) for i in range(n_labels)]
+            base_ticks = [str(i) for i in range(n_labels)]
             ax.set_xticks(
                 _make_paired_x(n_labels, combined_pair_inner_gap, combined_group_sep)
             )
         elif class_mode == "neighbor":
-            xticks = [str(i) for i in range(n_labels)]
+            base_ticks = [str(i) for i in range(n_labels)]
             ax.set_xticks(np.arange(n_labels))
         else:
-            xticks = [f"Label {i}" for i in range(n_labels)]
+            base_ticks = [f"Label {i}" for i in range(n_labels)]
             ax.set_xticks(np.arange(n_labels))
+        if support_list:
+            xticks = [
+                f"{t}\n(n={support_list[i]})" if i < len(support_list) else t
+                for i, t in enumerate(base_ticks)
+            ]
+        else:
+            xticks = base_ticks
         ax.set_xticklabels(xticks)
         ax.set_ylim(0, 1.0)
         ax.grid(axis="y", alpha=GRID_ALPHA, linestyle=GRID_LINESTYLE)

@@ -471,7 +471,7 @@ export const MODEL_GROUPS: ModelGroup[] = [
 export const SCORERS: Scorer[] = [
   new MiniLMCatBoostScorer(),
   new NLIRobertaScorer(),
-  new RandomScorer(),
+  // new RandomScorer(),
 ];
 
 export { Scorer, FeatureServiceDownloadable, HuggingFacePipelineDownloadable, OnnxDownloadable };

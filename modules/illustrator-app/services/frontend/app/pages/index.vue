@@ -89,7 +89,7 @@
 
       <!-- Slide-in panel -->
       <div
-        class="fixed top-14.5 left-0 bottom-0 w-72 bg-base-200 z-210 transform transition-transform duration-300 overflow-y-auto"
+        class="fixed top-14.5 left-0 bottom-0 w-72 bg-base-200 z-210 transform transition-transform duration-300 overflow-y-auto flex flex-column"
         :class="drawerOpen ? 'translate-x-0' : '-translate-x-full'"
       >
         <div class="flex items-center justify-between px-3 py-2 border-b border-base-300">
@@ -98,7 +98,7 @@
             <Icon name="lucide:x" size="18" />
           </button>
         </div>
-        <div class="flex flex-col gap-3 p-3">
+        <div class="flex flex-col gap-3 p-3 flex-1 grow">
           <div class="drawer-model-select w-full">
             <ModelSelect
               v-model="selectedModel"
@@ -148,6 +148,28 @@
             class="min-w-48"
           />
           <ThemeToggle data-help-target="theme">Theme</ThemeToggle>
+          <div class="divider mt-auto mb-0" />
+          <CacheManager
+            ref="cacheManagerRef"
+            v-model:is-expanded="cacheManagerExpanded"
+            data-help-target="cache"
+          />
+          <div class="flex justify-start gap-2">
+            <button class="btn btn-warning btn-sm btn-circle" title="Debug" @click="$debugPanel.toggle(); drawerOpen = false">
+              <Icon name="uil:bug" size="18px" />
+            </button>
+            <NuxtLink
+        :href="$config.public.githubUrl"
+        target="_blank"
+        class="flex items-end space-x-1 bg-base-200 rounded-2xl shadow hover:opacity-70"
+      >
+        <Icon name="uil:github" size="34px" />
+        <div class="pe-2 text-xs/3 flex flex-col grow-0 font-light font-mono">
+          <span class="text-base-content/70">v{{ $config.public.appVersion }}</span>
+          <small class="truncate text-base-content/50 max-w-15">#{{ $config.public.commitHash }}</small>
+        </div>
+      </NuxtLink>
+          </div>
         </div>
       </div>
     </template>
@@ -192,14 +214,16 @@
         </span>
       </template>
       <CacheManager
+        v-if="!isMobile"
         ref="cacheManagerRef"
         v-model:is-expanded="cacheManagerExpanded"
         data-help-target="cache"
       />
-      <button class="btn btn-circle btn-sm btn-warning" title="Debug" @click="$debugPanel.toggle()">
+      <button v-if="!isMobile" class="btn btn-circle btn-sm btn-warning" title="Debug" @click="$debugPanel.toggle()">
         <Icon name="uil:bug" size="20px" />
       </button>
       <NuxtLink
+        v-if="!isMobile"
         :href="$config.public.githubUrl"
         target="_blank"
         class="flex items-end space-x-1 bg-base-200 rounded-2xl shadow hover:opacity-70"

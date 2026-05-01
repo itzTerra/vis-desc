@@ -155,6 +155,7 @@ class Token:
         return sents
 
 
+# Code adapted from https://github.com/booknlp/booknlp
 class SpacyPipeline:
     def __init__(self, spacy_nlp) -> None:  # type: ignore[no-untyped-def]
         # We intentionally keep spacy_nlp untyped to avoid importing large spaCy types.

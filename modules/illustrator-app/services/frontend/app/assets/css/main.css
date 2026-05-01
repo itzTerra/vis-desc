@@ -56,8 +56,6 @@ input[type=number] {
     cursor: pointer;
 
     &.highlight-selected {
-      /* background-color: oklch(from var(--color-info) l c h / 0.15); */
-
       .poly-shape {
         opacity: 1;
         fill: oklch(from var(--color-info) l c h / 0.15);
@@ -69,8 +67,6 @@ input[type=number] {
     &:hover,
     &:has(+ .dropdown-content:hover),
     &.highlight-selected-hover {
-      /* background-color: oklch(from var(--color-info) l c h / 0.25); */
-
       .poly-shape {
         opacity: 1;
         fill: oklch(from var(--color-info) l c h / 0.25);
@@ -91,21 +87,7 @@ input[type=number] {
   pointer-events: auto;
 }
 
-/* .textLayer {
-  contain: layout style;
-  width: 800px !important;
-  height: 1035px !important;
-  overflow: hidden !important;
-
-  > * {
-    contain: all;
-    will-change: transform;
-  }
-} */
-
 .stat {
-  /* padding-inline: 0.25rem; */
-  /* padding-block: 0.1rem; */
   display: flex;
   column-gap: 0.1rem;
   align-items: stretch;

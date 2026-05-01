@@ -1,0 +1,1 @@
+{"model": "catboost_minilm_features-extract_lexical_density", "type": "train", "seed": 41, "train_losses": [], "val_losses": [], "time_start": "2026-03-01T15:25:20.457207"}

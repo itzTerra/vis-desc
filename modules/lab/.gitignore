@@ -227,6 +227,8 @@ data/datasets/large/split
 !data/optuna/*.py
 !data/metrics
 !data/metrics/encoder
+!data/metrics/encoder/feature-importance
+!data/metrics/llm
 !data/metrics/nli
 !data/metrics/**/*.json
 !data/**/*.md

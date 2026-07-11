@@ -96,7 +96,9 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
 
     const maxImageWidth = appendixWidth - MARGIN * 2;
     const maxImageHeight = appendixHeight * 0.55;
-    const imageDims = jpegImage.scaleToFit(maxImageWidth, maxImageHeight);
+    // Never upscale past the image's native resolution — only shrink to fit.
+    const scale = Math.min(maxImageWidth / jpegImage.width, maxImageHeight / jpegImage.height, 1);
+    const imageDims = { width: jpegImage.width * scale, height: jpegImage.height * scale };
     const imageX = (appendixWidth - imageDims.width) / 2;
     const imageY = appendixHeight - MARGIN - imageDims.height;
 

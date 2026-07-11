@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PDFDocument, PDFArray, PDFDict, PDFName } from "pdf-lib";
+import { PDFDocument, PDFArray, PDFName } from "pdf-lib";
+import type { PDFDict } from "pdf-lib";
 
 import { addInternalLink } from "./linkAnnotations.ts";
 

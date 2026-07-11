@@ -1,5 +1,5 @@
-import { PDFDocument, PDFPage, StandardFonts } from "pdf-lib";
-import type { PDFFont } from "pdf-lib";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import type { PDFFont, PDFPage } from "pdf-lib";
 import type { Highlight, ExportImageData } from "~/types/common";
 
 import { computeThumbnailPlacement, computeThumbnailRect, computeThumbnailSize } from "./thumbnailPlacement.ts";

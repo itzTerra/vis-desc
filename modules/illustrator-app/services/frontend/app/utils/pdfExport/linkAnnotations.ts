@@ -1,4 +1,5 @@
-import { PDFDocument, PDFName, PDFPage } from "pdf-lib";
+import { PDFName } from "pdf-lib";
+import type { PDFDocument, PDFPage } from "pdf-lib";
 
 export interface LinkRect {
   x: number;

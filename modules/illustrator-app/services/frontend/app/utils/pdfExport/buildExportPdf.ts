@@ -1,5 +1,5 @@
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import type { PDFFont, PDFPage } from "pdf-lib";
+import type { PDFFont, PDFImage, PDFPage } from "pdf-lib";
 import type { Highlight, ExportImageData } from "~/types/common";
 
 import { computeThumbnailPlacement, computeThumbnailRect, computeThumbnailSize } from "./thumbnailPlacement.ts";
@@ -17,7 +17,7 @@ export interface BuildExportPdfOptions {
 interface AppendixEntry {
   highlight: Highlight;
   prompt: string;
-  jpegBytes: Uint8Array;
+  jpegImage: PDFImage;
   originPage: PDFPage;
   originPageIndex: number;
   thumbnailRect: { x: number; y: number; width: number; height: number };
@@ -97,7 +97,7 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
     appendixEntries.push({
       highlight,
       prompt: imageData.prompt,
-      jpegBytes,
+      jpegImage,
       originPage,
       originPageIndex: placement.page,
       thumbnailRect: rect,
@@ -112,7 +112,7 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
 
   for (const entry of appendixEntries) {
     const appendixPage = doc.addPage([appendixWidth, appendixHeight]);
-    const jpegImage = await doc.embedJpg(entry.jpegBytes);
+    const jpegImage = entry.jpegImage;
 
     const maxImageWidth = appendixWidth - MARGIN * 2;
     const maxImageHeight = appendixHeight * 0.55;

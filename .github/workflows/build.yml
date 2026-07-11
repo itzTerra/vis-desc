@@ -97,7 +97,7 @@ jobs:
       - name: Build (production)
         env:
           NODE_ENV: production
-          NODE_OPTIONS: --max_old_space_size=4096
+          NODE_OPTIONS: --max_old_space_size=8192
           VITE_APP_VERSION: ${{ steps.vars.outputs.version }}
           VITE_COMMIT_HASH: ${{ steps.vars.outputs.commit }}
         run: pnpm run build

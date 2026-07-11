@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import type { ImageEditor } from "#components";
-import type { ActionState, EditorImageState, Highlight } from "~/types/common";
+import type { ActionState, EditorImageState, ExportImageData, Highlight } from "~/types/common";
 
 const props = defineProps<{
   pdfEmbedWrapper: HTMLElement | null;
@@ -463,14 +463,14 @@ onBeforeUnmount(() => {
   if (generateInterval) clearInterval(generateInterval);
 });
 
-function getExportImages(): Record<number, string> {
-  const result: Record<number, string> = {};
+function getExportImages(): Record<number, ExportImageData> {
+  const result: Record<number, ExportImageData> = {};
 
   for (const editor of editorRefs.value) {
     if (!editor) continue;
     const exportData = editor.getExportImage();
     if (exportData) {
-      result[exportData.highlightId] = exportData.imageUrl;
+      result[exportData.highlightId] = { imageUrl: exportData.imageUrl, prompt: exportData.prompt };
     }
   }
   return result;

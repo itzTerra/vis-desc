@@ -50,6 +50,11 @@ export type EditorImageState = {
   hasImage: boolean;
 };
 
+export type ExportImageData = {
+  imageUrl: string;
+  prompt: string;
+};
+
 /**
  * Props for the HeatmapViewer component.
  */

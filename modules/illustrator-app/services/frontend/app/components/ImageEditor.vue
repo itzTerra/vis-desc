@@ -206,7 +206,8 @@ function getExportImage() {
   if (!item?.imageUrl) return null;
   return {
     highlightId: props.highlightId,
-    imageUrl: item.imageUrl
+    imageUrl: item.imageUrl,
+    prompt: item.text,
   };
 }
 

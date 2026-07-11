@@ -1,13 +1,10 @@
 import { ref } from "vue";
-import type { Highlight } from "~/types/common";
-import {
-  createExportSnapshot,
-  generateExportHtml,
-  downloadExport,
-} from "~/utils/export";
+import type { ExportImageData, Highlight } from "~/types/common";
+import { buildExportPdf } from "~/utils/pdfExport/buildExportPdf";
+import { downloadPdf } from "~/utils/pdfExport/download";
 
 interface ExportResult {
-  html: string;
+  pdfBytes: Uint8Array;
 }
 
 export function useExport() {
@@ -17,7 +14,7 @@ export function useExport() {
   async function exportPdf(
     pdfFile: File | null,
     highlights: Highlight[],
-    imageUrls: Record<number, string>
+    images: Record<number, ExportImageData>
   ): Promise<ExportResult> {
     if (!pdfFile) {
       throw new Error("PDF file is required for export");
@@ -26,15 +23,9 @@ export function useExport() {
     isExporting.value = true;
 
     try {
-      const snapshot = await createExportSnapshot(
-        pdfFile,
-        highlights,
-        imageUrls
-      );
-
-      const html = generateExportHtml(snapshot);
-
-      return { html };
+      const pdfBytes = await pdfFile.arrayBuffer();
+      const resultBytes = await buildExportPdf({ pdfBytes, highlights, images });
+      return { pdfBytes: resultBytes };
     } finally {
       isExporting.value = false;
     }
@@ -43,15 +34,12 @@ export function useExport() {
   async function confirmExport(
     pdfFile: File | null,
     highlights: Highlight[],
-    imageUrls: Record<number, string>,
+    images: Record<number, ExportImageData>,
     filename: string
   ): Promise<void> {
-    const result = await exportPdf(
-      pdfFile,
-      highlights,
-      imageUrls
-    );
-    await downloadExport(result.html, filename);
+    const result = await exportPdf(pdfFile, highlights, images);
+    const finalFilename = filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`;
+    await downloadPdf(result.pdfBytes, finalFilename);
   }
 
   return {

@@ -4,6 +4,7 @@ import { PDFDocument } from "pdf-lib";
 
 import { buildExportPdf } from "./buildExportPdf.ts";
 import { dataUriToBytes } from "./imageReencode.ts";
+import type { Highlight } from "~/types/common";
 
 // A minimal valid 1x1 JPEG, used so PDFDocument#embedJpg has real bytes to parse.
 const TINY_JPEG_DATA_URI =
@@ -19,7 +20,7 @@ const fakeReencode = async () => dataUriToBytes(TINY_JPEG_DATA_URI);
 
 test("buildExportPdf preserves the original page count plus one appendix page per illustrated segment", async () => {
   const pdfBytes = await buildBlankPdf(3);
-  const highlights = [
+  const highlights: Highlight[] = [
     { id: 1, text: "First segment", polygons: { 0: [[0, 0.1, 0.2, 0.1, 0.2, 0.2, 0, 0.2]] } },
     { id: 2, text: "Second segment", polygons: { 1: [[0, 0.3, 0.2, 0.3, 0.2, 0.4, 0, 0.4]] } },
   ];
@@ -41,7 +42,7 @@ test("buildExportPdf preserves the original page count plus one appendix page pe
 
 test("buildExportPdf skips segments with no generated image", async () => {
   const pdfBytes = await buildBlankPdf(1);
-  const highlights = [
+  const highlights: Highlight[] = [
     { id: 1, text: "Illustrated", polygons: { 0: [[0, 0.1, 0.2, 0.1, 0.2, 0.2, 0, 0.2]] } },
     { id: 2, text: "Not illustrated", polygons: { 0: [[0, 0.5, 0.2, 0.5, 0.2, 0.6, 0, 0.6]] } },
   ];
@@ -56,7 +57,7 @@ test("buildExportPdf skips segments with no generated image", async () => {
 
 test("buildExportPdf places only one thumbnail link when a segment spans two pages", async () => {
   const pdfBytes = await buildBlankPdf(2);
-  const highlights = [
+  const highlights: Highlight[] = [
     {
       id: 1,
       text: "Spans a page break",
@@ -81,7 +82,7 @@ test("buildExportPdf places only one thumbnail link when a segment spans two pag
 
 test("buildExportPdf continues past an image that fails to re-encode", async () => {
   const pdfBytes = await buildBlankPdf(1);
-  const highlights = [
+  const highlights: Highlight[] = [
     { id: 1, text: "Bad image", polygons: { 0: [[0, 0.1, 0.2, 0.1, 0.2, 0.2, 0, 0.2]] } },
     { id: 2, text: "Good image", polygons: { 0: [[0, 0.5, 0.2, 0.5, 0.2, 0.6, 0, 0.6]] } },
   ];

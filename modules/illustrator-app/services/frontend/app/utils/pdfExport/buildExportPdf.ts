@@ -37,11 +37,6 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
   const doc = await PDFDocument.load(pdfBytes);
   const originalPages = doc.getPages();
   const originalSizes = originalPages.map((page) => page.getSize());
-  // Captured before any page is widened for a thumbnail, so appendix pages
-  // keep the original (unwidened) page dimensions.
-  const [appendixWidth, appendixHeight] = originalSizes.length > 0
-    ? [originalSizes[0].width, originalSizes[0].height]
-    : [612, 792];
 
   // Every page — illustrated or not — is widened by the same amount, so the
   // page width (and therefore a reader's scroll position/zoom) stays
@@ -56,6 +51,12 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
     const { width, height } = originalSizes[i];
     page.setSize(width + extraWidth, height);
   });
+
+  // Appendix pages match the (now-widened) content page width, so the whole
+  // document — including the appendix — keeps a consistent page size.
+  const [appendixWidth, appendixHeight] = originalSizes.length > 0
+    ? [originalSizes[0].width + extraWidth, originalSizes[0].height]
+    : [612, 792];
 
   // Pass 1: draw a thumbnail overlay on each illustrated segment's chosen
   // page, deferring appendix creation (and the forward link into it) until

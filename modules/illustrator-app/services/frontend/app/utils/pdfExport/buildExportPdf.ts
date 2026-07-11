@@ -27,7 +27,8 @@ const MARGIN = 48;
 const BODY_SIZE = 11;
 const LABEL_SIZE = 12;
 const LINE_HEIGHT = 14;
-const BACK_LINK_SIZE = 10;
+const BACK_LINK_SIZE = 18;
+const THUMBNAIL_MARGIN = 8;
 
 export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Uint8Array> {
   const { pdfBytes, highlights, images } = options;
@@ -35,11 +36,22 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
 
   const doc = await PDFDocument.load(pdfBytes);
   const originalPages = doc.getPages();
+  // Captured before any page is widened for a thumbnail, so appendix pages
+  // keep the original (unwidened) page dimensions.
+  const [appendixWidth, appendixHeight] = originalPages.length > 0
+    ? [originalPages[0].getSize().width, originalPages[0].getSize().height]
+    : [612, 792];
 
   // Pass 1: draw a thumbnail overlay on each illustrated segment's chosen
   // page, deferring appendix creation (and the forward link into it) until
   // every appendix page's index is known.
   const appendixEntries: AppendixEntry[] = [];
+
+  // Pages that get a thumbnail are widened once, so the thumbnail sits in
+  // newly added blank space to the right of the original content instead of
+  // overlapping it. Widening keeps existing content anchored at the same
+  // (bottom-left-origin) coordinates, so it's applied at most once per page.
+  const widenedPages = new Map<number, { pageWidth: number; size: number }>();
 
   for (const highlight of highlights) {
     const imageData = images[highlight.id];
@@ -65,9 +77,18 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
       continue;
     }
 
-    const { width: pageWidth, height: pageHeight } = originPage.getSize();
-    const size = computeThumbnailSize(pageWidth);
-    const rect = computeThumbnailRect(placement.minY, pageWidth, pageHeight, size);
+    let widened = widenedPages.get(placement.page);
+    if (!widened) {
+      const { width: origWidth, height: origHeight } = originPage.getSize();
+      const size = computeThumbnailSize(origWidth);
+      const pageWidth = origWidth + size + THUMBNAIL_MARGIN * 2;
+      originPage.setSize(pageWidth, origHeight);
+      widened = { pageWidth, size };
+      widenedPages.set(placement.page, widened);
+    }
+    const { pageWidth, size } = widened;
+    const { height: pageHeight } = originPage.getSize();
+    const rect = computeThumbnailRect(placement.minY, pageWidth, pageHeight, size, THUMBNAIL_MARGIN);
 
     originPage.drawImage(jpegImage, { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
 
@@ -86,9 +107,6 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
-  const [appendixWidth, appendixHeight] = originalPages.length > 0
-    ? [originalPages[0].getSize().width, originalPages[0].getSize().height]
-    : [612, 792];
 
   for (const entry of appendixEntries) {
     const appendixPage = doc.addPage([appendixWidth, appendixHeight]);
@@ -109,19 +127,22 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
       height: imageDims.height,
     });
 
-    let cursorY = imageY - LINE_HEIGHT * 2;
-    cursorY = drawAppendixText(appendixPage, font, boldFont, entry.highlight.text, entry.prompt, cursorY);
-
+    // Back link sits centered directly below the image, sized to be an
+    // obvious, easy-to-hit tap target.
     const backLinkText = `<- back to page ${entry.originPageIndex + 1}`;
-    const backLinkY = MARGIN;
-    appendixPage.drawText(backLinkText, { x: MARGIN, y: backLinkY, size: BACK_LINK_SIZE, font });
     const backLinkWidth = font.widthOfTextAtSize(backLinkText, BACK_LINK_SIZE);
+    const backLinkX = (appendixWidth - backLinkWidth) / 2;
+    const backLinkY = imageY - LINE_HEIGHT * 1.5;
+    appendixPage.drawText(backLinkText, { x: backLinkX, y: backLinkY, size: BACK_LINK_SIZE, font });
     addInternalLink(
       doc,
       appendixPage,
-      { x: MARGIN, y: backLinkY - 2, width: backLinkWidth, height: BACK_LINK_SIZE + 4 },
+      { x: backLinkX - 6, y: backLinkY - 6, width: backLinkWidth + 12, height: BACK_LINK_SIZE + 12 },
       entry.originPage,
     );
+
+    let cursorY = backLinkY - LINE_HEIGHT * 2.5;
+    cursorY = drawAppendixText(appendixPage, font, boldFont, entry.highlight.text, entry.prompt, cursorY);
 
     // Forward link: clicking the thumbnail on the origin page opens this appendix page.
     addInternalLink(doc, entry.originPage, entry.thumbnailRect, appendixPage);

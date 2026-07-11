@@ -12,6 +12,7 @@
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
     "@nuxt/icon": "2.0.0",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "@vueuse/nuxt": "^13.9.0",
     "booknlp-ts": "^1.1.0",

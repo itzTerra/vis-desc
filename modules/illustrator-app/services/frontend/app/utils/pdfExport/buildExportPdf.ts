@@ -1,4 +1,5 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import type { PDFFont, PDFImage, PDFPage } from "pdf-lib";
 import type { Highlight, ExportImageData } from "~/types/common";
 
@@ -6,12 +7,15 @@ import { computeThumbnailPlacement, computeThumbnailRect, computeThumbnailSize }
 import { addInternalLink } from "./linkAnnotations.ts";
 import { wrapText } from "./textWrap.ts";
 import { reencodeToJpeg as defaultReencodeToJpeg } from "./imageReencode.ts";
+import { loadAppendixFonts as defaultLoadAppendixFonts } from "./fontLoader.ts";
+import type { AppendixFontBytes } from "./fontLoader.ts";
 
 export interface BuildExportPdfOptions {
   pdfBytes: ArrayBuffer | Uint8Array;
   highlights: Highlight[];
   images: Record<number, ExportImageData>;
   reencodeToJpeg?: (dataUri: string) => Promise<Uint8Array>;
+  loadAppendixFonts?: () => Promise<AppendixFontBytes>;
 }
 
 interface AppendixEntry {
@@ -33,8 +37,10 @@ const THUMBNAIL_MARGIN = 8;
 export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Uint8Array> {
   const { pdfBytes, highlights, images } = options;
   const reencodeToJpeg = options.reencodeToJpeg ?? defaultReencodeToJpeg;
+  const loadAppendixFonts = options.loadAppendixFonts ?? defaultLoadAppendixFonts;
 
   const doc = await PDFDocument.load(pdfBytes);
+  doc.registerFontkit(fontkit);
   const originalPages = doc.getPages();
   const originalSizes = originalPages.map((page) => page.getSize());
 
@@ -108,8 +114,9 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
   // Appendix pages are ordered by the page number of the originating highlight.
   appendixEntries.sort((a, b) => a.originPageIndex - b.originPageIndex);
 
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+  const { regular: regularFontBytes, bold: boldFontBytes } = await loadAppendixFonts();
+  const font = await doc.embedFont(regularFontBytes);
+  const boldFont = await doc.embedFont(boldFontBytes);
 
   for (const entry of appendixEntries) {
     const appendixPage = doc.addPage([appendixWidth, appendixHeight]);

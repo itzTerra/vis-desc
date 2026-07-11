@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { PDFDocument } from "pdf-lib";
 
 import { buildExportPdf } from "./buildExportPdf.ts";
@@ -18,6 +20,17 @@ async function buildBlankPdf(pageCount: number, size: [number, number] = [612, 7
 
 const fakeReencode = async () => dataUriToBytes(TINY_JPEG_DATA_URI);
 
+// buildExportPdf normally fetches these from /fonts/ in the browser; tests read
+// the same files straight off disk since there's no fetch/server in node:test.
+const fontsDir = new URL("../../../public/fonts/", import.meta.url);
+const fakeLoadAppendixFonts = async () => {
+  const [regular, bold] = await Promise.all([
+    readFile(fileURLToPath(new URL("SourceSerif4-Regular.otf", fontsDir))),
+    readFile(fileURLToPath(new URL("SourceSerif4-Bold.otf", fontsDir))),
+  ]);
+  return { regular: regular.buffer.slice(regular.byteOffset, regular.byteOffset + regular.byteLength), bold: bold.buffer.slice(bold.byteOffset, bold.byteOffset + bold.byteLength) };
+};
+
 test("buildExportPdf preserves the original page count plus one appendix page per illustrated segment", async () => {
   const pdfBytes = await buildBlankPdf(3);
   const highlights: Highlight[] = [
@@ -34,6 +47,7 @@ test("buildExportPdf preserves the original page count plus one appendix page pe
     highlights,
     images,
     reencodeToJpeg: fakeReencode,
+    loadAppendixFonts: fakeLoadAppendixFonts,
   });
 
   const resultDoc = await PDFDocument.load(resultBytes);
@@ -50,7 +64,7 @@ test("buildExportPdf skips segments with no generated image", async () => {
     1: { imageUrl: TINY_JPEG_DATA_URI, prompt: "Illustrated" },
   };
 
-  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: fakeReencode });
+  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: fakeReencode, loadAppendixFonts: fakeLoadAppendixFonts });
   const resultDoc = await PDFDocument.load(resultBytes);
   assert.equal(resultDoc.getPageCount(), 1 + 1); // one original + one appendix page
 });
@@ -69,7 +83,7 @@ test("buildExportPdf places only one thumbnail link when a segment spans two pag
   ];
   const images = { 1: { imageUrl: TINY_JPEG_DATA_URI, prompt: "Spans a page break" } };
 
-  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: fakeReencode });
+  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: fakeReencode, loadAppendixFonts: fakeLoadAppendixFonts });
   const resultDoc = await PDFDocument.load(resultBytes);
   const pages = resultDoc.getPages();
 
@@ -95,7 +109,7 @@ test("buildExportPdf continues past an image that fails to re-encode", async () 
     return dataUriToBytes(TINY_JPEG_DATA_URI);
   };
 
-  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: failingReencode });
+  const resultBytes = await buildExportPdf({ pdfBytes, highlights, images, reencodeToJpeg: failingReencode, loadAppendixFonts: fakeLoadAppendixFonts });
   const resultDoc = await PDFDocument.load(resultBytes);
   assert.equal(resultDoc.getPageCount(), 1 + 1); // only the good image gets an appendix page
 });

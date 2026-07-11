@@ -44,7 +44,8 @@
     "openapi-typescript": "^7.13.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.55.0",
-    "vue-eslint-parser": "^9.4.3"
+    "vue-eslint-parser": "^9.4.3",
+    "vue-tsc": "^2.2.12"
   },
   "packageManager": "pnpm@10.12.2+sha512.a32540185b964ee30bb4e979e405adc6af59226b438ee4cc19f9e8773667a66d302f5bfee60a39d3cac69e35e4b96e708a71dd002b7e9359c4112a1722ac323f"
 }

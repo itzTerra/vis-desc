@@ -38,5 +38,6 @@ test("addInternalLink appends to an existing Annots array instead of replacing i
   addInternalLink(doc, fromPage, { x: 20, y: 20, width: 10, height: 10 }, toPageB);
 
   const annots = fromPage.node.Annots();
+  assert.ok(annots, "Annots array should exist on the page");
   assert.equal(annots.size(), 2);
 });

@@ -36,22 +36,31 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
 
   const doc = await PDFDocument.load(pdfBytes);
   const originalPages = doc.getPages();
+  const originalSizes = originalPages.map((page) => page.getSize());
   // Captured before any page is widened for a thumbnail, so appendix pages
   // keep the original (unwidened) page dimensions.
-  const [appendixWidth, appendixHeight] = originalPages.length > 0
-    ? [originalPages[0].getSize().width, originalPages[0].getSize().height]
+  const [appendixWidth, appendixHeight] = originalSizes.length > 0
+    ? [originalSizes[0].width, originalSizes[0].height]
     : [612, 792];
+
+  // Every page — illustrated or not — is widened by the same amount, so the
+  // page width (and therefore a reader's scroll position/zoom) stays
+  // consistent while paging through the document. The thumbnail size is
+  // derived from the widest original page so the added strip fits it on
+  // every page.
+  const maxOriginalWidth = originalSizes.reduce((max, s) => Math.max(max, s.width), 0);
+  const thumbnailSize = computeThumbnailSize(maxOriginalWidth);
+  const extraWidth = thumbnailSize + THUMBNAIL_MARGIN;
+
+  originalPages.forEach((page, i) => {
+    const { width, height } = originalSizes[i];
+    page.setSize(width + extraWidth, height);
+  });
 
   // Pass 1: draw a thumbnail overlay on each illustrated segment's chosen
   // page, deferring appendix creation (and the forward link into it) until
   // every appendix page's index is known.
   const appendixEntries: AppendixEntry[] = [];
-
-  // Pages that get a thumbnail are widened once, so the thumbnail sits in
-  // newly added blank space to the right of the original content instead of
-  // overlapping it. Widening keeps existing content anchored at the same
-  // (bottom-left-origin) coordinates, so it's applied at most once per page.
-  const widenedPages = new Map<number, { pageWidth: number; size: number }>();
 
   for (const highlight of highlights) {
     const imageData = images[highlight.id];
@@ -77,18 +86,10 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
       continue;
     }
 
-    let widened = widenedPages.get(placement.page);
-    if (!widened) {
-      const { width: origWidth, height: origHeight } = originPage.getSize();
-      const size = computeThumbnailSize(origWidth);
-      const pageWidth = origWidth + size + THUMBNAIL_MARGIN * 2;
-      originPage.setSize(pageWidth, origHeight);
-      widened = { pageWidth, size };
-      widenedPages.set(placement.page, widened);
-    }
-    const { pageWidth, size } = widened;
-    const { height: pageHeight } = originPage.getSize();
-    const rect = computeThumbnailRect(placement.minY, pageWidth, pageHeight, size, THUMBNAIL_MARGIN);
+    const { width: pageWidth, height: pageHeight } = originPage.getSize();
+    // No right-side margin: the thumbnail sits flush against the page's
+    // (already-widened) right edge, leaving no leftover blank strip.
+    const rect = computeThumbnailRect(placement.minY, pageWidth, pageHeight, thumbnailSize, 0);
 
     originPage.drawImage(jpegImage, { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
 

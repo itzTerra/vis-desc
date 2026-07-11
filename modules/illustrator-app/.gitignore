@@ -153,3 +153,5 @@ services/api/data
 settings.local.json
 .directory
 .olc-skills/
+.cursor
+.olc

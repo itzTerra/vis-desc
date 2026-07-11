@@ -105,6 +105,30 @@ docker compose run --rm frontend pnpm gen-types
 
 This fetches the OpenAPI schema from `http://api:8000/api/openapi.json` and generates TypeScript types in `app/types/schema.d.ts`.
 
+### Format and Lint
+
+All commands are to be executed from project root dir.
+
+**Run ESLint** (Typescript, Vue):
+```bash
+pnpm lint
+```
+
+ESLint config: `eslint.config.mjs`
+
+**Run Ruff Format** (Python):
+```bash
+docker compose run --rm --user root api uv run ruff format .
+```
+
+**Run Ruff Lint** (Python):
+```bash
+docker compose run --rm --user root api uv run ruff check . --fix
+```
+
+Ruff config: `services/api/pyproject.toml` (under `[tool.ruff]`)
+
+
 ### Pre-commit Validation
 
 Pre-commit runs linting and formatting checks:

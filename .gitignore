@@ -20,3 +20,4 @@ public_html/
 vllm_cache/
 figures/
 .worktrees/
+modules/word-explainer

@@ -540,12 +540,12 @@ async function handleExportConfirm() {
       return;
     }
 
-    const imageUrls = imageLayer.getExportImages();
+    const images = imageLayer.getExportImages();
 
     await confirmExport(
       pdfFile.value,
       highlights,
-      imageUrls,
+      images,
       `${pdfFile.value.name.replace(/\.pdf$/i, "")}-export`
     );
   } catch (error) {

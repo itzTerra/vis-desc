@@ -1,6 +1,6 @@
 export interface ThumbnailPlacement {
   page: number;
-  minY: number;
+  centerY: number;
 }
 
 export interface ThumbnailRect {
@@ -35,6 +35,16 @@ export function computeMinY(polygons: number[][]): number {
   return minY;
 }
 
+export function computeMaxY(polygons: number[][]): number {
+  let maxY = -Infinity;
+  for (const polygon of polygons) {
+    for (let i = 1; i < polygon.length; i += 2) {
+      maxY = Math.max(maxY, polygon[i]);
+    }
+  }
+  return maxY;
+}
+
 export function computeThumbnailPlacement(
   polygons: Record<number, number[][]>,
 ): ThumbnailPlacement | null {
@@ -45,9 +55,10 @@ export function computeThumbnailPlacement(
   if (!pagePolygons || pagePolygons.length === 0) return null;
 
   const minY = computeMinY(pagePolygons);
-  if (!Number.isFinite(minY) || minY < 0) return null;
+  const maxY = computeMaxY(pagePolygons);
+  if (!Number.isFinite(minY) || minY < 0 || !Number.isFinite(maxY)) return null;
 
-  return { page, minY };
+  return { page, centerY: (minY + maxY) / 2 };
 }
 
 /**
@@ -68,18 +79,18 @@ export function computeThumbnailSize(
 
 /**
  * Positions the thumbnail box in the page's top-right area, vertically
- * centered on the segment's starting point (minY, normalized 0-1, top-down —
- * same convention as Highlight.polygons). PDF page coordinates are
- * bottom-up, so this flips the y axis.
+ * centered on the segment's vertical midpoint (centerY, normalized 0-1,
+ * top-down — same convention as Highlight.polygons). PDF page coordinates
+ * are bottom-up, so this flips the y axis.
  */
 export function computeThumbnailRect(
-  minY: number,
+  centerY: number,
   pageWidth: number,
   pageHeight: number,
   size: number,
   margin = 8,
 ): ThumbnailRect {
   const x = clamp(pageWidth - size - margin, 0, Math.max(0, pageWidth - size));
-  const y = clamp(pageHeight * (1 - minY) - size / 2, 0, Math.max(0, pageHeight - size));
+  const y = clamp(pageHeight * (1 - centerY) - size / 2, 0, Math.max(0, pageHeight - size));
   return { x, y, width: size, height: size };
 }

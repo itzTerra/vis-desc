@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   selectThumbnailPage,
   computeMinY,
+  computeMaxY,
   computeThumbnailPlacement,
   computeThumbnailSize,
   computeThumbnailRect,
@@ -35,13 +36,22 @@ test("computeMinY finds the smallest normalized y across all polygon points", ()
   assert.equal(computeMinY(polygons), 0.3);
 });
 
-test("computeThumbnailPlacement uses only the selected page's polygons for minY", () => {
+test("computeMaxY finds the largest normalized y across all polygon points", () => {
+  const polygons = [
+    [0, 0.5, 0.2, 0.5, 0.2, 0.6, 0, 0.6],
+    [0, 0.3, 0.2, 0.3, 0.2, 0.4, 0, 0.4],
+  ];
+  assert.equal(computeMaxY(polygons), 0.6);
+});
+
+test("computeThumbnailPlacement uses only the selected page's polygons, centered between minY and maxY", () => {
   const polygons = {
-    4: [[0, 0.9, 0.2, 0.9, 0.2, 1.0, 0, 1.0]], // minY 0.9 on page 4 — must be ignored
-    5: [[0, 0.05, 0.2, 0.05, 0.2, 0.1, 0, 0.1]], // minY 0.05 on page 5 — this one wins
+    4: [[0, 0.9, 0.2, 0.9, 0.2, 1.0, 0, 1.0]], // page 4 — must be ignored
+    5: [[0, 0.05, 0.2, 0.05, 0.2, 0.1, 0, 0.1]], // minY 0.05, maxY 0.1 on page 5 — this one wins
   };
   const placement = computeThumbnailPlacement(polygons);
-  assert.deepEqual(placement, { page: 5, minY: 0.05 });
+  assert.equal(placement?.page, 5);
+  assert.ok(placement && Math.abs(placement.centerY - 0.075) < 1e-9);
 });
 
 test("computeThumbnailPlacement returns null when polygons is empty", () => {
@@ -60,8 +70,8 @@ test("computeThumbnailSize never exceeds baseSize for wider pages", () => {
   assert.equal(computeThumbnailSize(1200), 72);
 });
 
-test("computeThumbnailRect anchors to the top-right near minY, converted to PDF's bottom-up y axis", () => {
-  // pageHeight 800, size 72, minY 0 (top of page) -> box should hug the top edge
+test("computeThumbnailRect anchors to the top-right near centerY, converted to PDF's bottom-up y axis", () => {
+  // pageHeight 800, size 72, centerY 0 (top of page) -> box should hug the top edge
   const rect = computeThumbnailRect(0, 600, 800, 72);
   assert.equal(rect.width, 72);
   assert.equal(rect.height, 72);
@@ -70,6 +80,6 @@ test("computeThumbnailRect anchors to the top-right near minY, converted to PDF'
 });
 
 test("computeThumbnailRect clamps the bottom edge so the box never runs off the page", () => {
-  const rect = computeThumbnailRect(1, 600, 800, 72); // minY 1 = bottom of page
+  const rect = computeThumbnailRect(1, 600, 800, 72); // centerY 1 = bottom of page
   assert.equal(rect.y, 0);
 });

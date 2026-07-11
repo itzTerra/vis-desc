@@ -90,7 +90,8 @@ export async function buildExportPdf(options: BuildExportPdfOptions): Promise<Ui
     const { width: pageWidth, height: pageHeight } = originPage.getSize();
     // No right-side margin: the thumbnail sits flush against the page's
     // (already-widened) right edge, leaving no leftover blank strip.
-    const rect = computeThumbnailRect(placement.minY, pageWidth, pageHeight, thumbnailSize, 0);
+    const rect = computeThumbnailRect(placement.centerY, pageWidth, pageHeight, thumbnailSize, 0);
+    if (![rect.x, rect.y, rect.width, rect.height].every(Number.isFinite)) continue; // skip this image's marker/appendix rather than failing the export
 
     originPage.drawImage(jpegImage, { x: rect.x, y: rect.y, width: rect.width, height: rect.height });
 

@@ -5,9 +5,10 @@ export interface AppendixFontBytes {
 
 /** Fetches the appendix body font (Source Serif 4) from the app's static assets. */
 export async function loadAppendixFonts(): Promise<AppendixFontBytes> {
+  const base = useRuntimeConfig().app.baseURL.replace(/\/$/, "");
   const [regular, bold] = await Promise.all([
-    fetch("/fonts/SourceSerif4-Regular.otf").then((r) => r.arrayBuffer()),
-    fetch("/fonts/SourceSerif4-Bold.otf").then((r) => r.arrayBuffer()),
+    fetch(`${base}/fonts/SourceSerif4-Regular.otf`).then((r) => r.arrayBuffer()),
+    fetch(`${base}/fonts/SourceSerif4-Bold.otf`).then((r) => r.arrayBuffer()),
   ]);
   return { regular, bold };
 }

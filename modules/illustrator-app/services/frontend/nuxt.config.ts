@@ -2,13 +2,14 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
   app: {
+    baseURL: process.env.NUXT_APP_BASE_URL || "/",
     head: {
       title: "vd-Illustrator",
       htmlAttrs: {
         lang: "en",
       },
       link: [
-        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+        { rel: "icon", type: "image/x-icon", href: "favicon.ico" },
       ]
     }
   },
@@ -34,9 +35,6 @@ export default defineNuxtConfig({
       generateThroughput: process.env.VITE_GENERATE_THROUGHPUT ? parseFloat(process.env.VITE_GENERATE_THROUGHPUT) : 0.2,
       loginPassword: process.env.NUXT_PUBLIC_LOGIN_PASSWORD || "admin",
     },
-    app: {
-      baseURL: "/"
-    }
   },
   vite: {
     plugins: [tailwindcss()],
